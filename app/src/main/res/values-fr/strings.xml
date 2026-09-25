@@ -448,4 +448,10 @@
     <string name="setup_paused">en pause</string>
     <string name="setup_project_paused">Ce projet est en pause. Relancez-le sur supabase.com et réessayez.</string>
     <string name="use_token_instead">Utiliser un jeton à la place</string>
+    <string name="update_check_now">Vérifier maintenant</string>
+    <string name="update_checking">Vérification…</string>
+    <string name="update_up_to_date">Fulla est à jour.</string>
+    <string name="update_found_text">Une nouvelle version est prête : voyez en haut des Réglages.</string>
+    <string name="update_check_failed">Impossible de joindre GitHub. Réessayez plus tard.</string>
+    <string name="update_test_build">Les versions de test ne se mettent pas à jour seules.</string>
 </resources>

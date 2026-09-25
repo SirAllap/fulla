@@ -448,4 +448,10 @@
     <string name="setup_paused">pausiert</string>
     <string name="setup_project_paused">Dieses Projekt ist pausiert. Setze es auf supabase.com fort und versuche es erneut.</string>
     <string name="use_token_instead">Stattdessen ein Token verwenden</string>
+    <string name="update_check_now">Jetzt prüfen</string>
+    <string name="update_checking">Wird geprüft…</string>
+    <string name="update_up_to_date">Fulla ist aktuell.</string>
+    <string name="update_found_text">Eine neue Version ist bereit: siehe oben in den Einstellungen.</string>
+    <string name="update_check_failed">GitHub ist nicht erreichbar. Versuche es später erneut.</string>
+    <string name="update_test_build">Testversionen aktualisieren sich nicht selbst.</string>
 </resources>

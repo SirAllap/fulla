@@ -417,6 +417,20 @@ fun AboutSettings() {
         SwitchRow(stringResource(R.string.update_check), stringResource(R.string.update_check_text),
             checked = settings?.checkForUpdates ?: true,
             onChange = { on -> scope.launch { container.settings.setCheckForUpdates(on) } })
+        var checking by remember { mutableStateOf(false) }
+        var checked by remember { mutableStateOf<io.github.sirallap.fulla.AppContainer.UpdateCheckResult?>(null) }
+        val result = when (checked) {
+            io.github.sirallap.fulla.AppContainer.UpdateCheckResult.FOUND -> stringResource(R.string.update_found_text)
+            io.github.sirallap.fulla.AppContainer.UpdateCheckResult.UP_TO_DATE -> stringResource(R.string.update_up_to_date)
+            io.github.sirallap.fulla.AppContainer.UpdateCheckResult.FAILED -> stringResource(R.string.update_check_failed)
+            io.github.sirallap.fulla.AppContainer.UpdateCheckResult.SKIPPED -> stringResource(R.string.update_test_build)
+            null -> null
+        }
+        ListRow(stringResource(if (checking) R.string.update_checking else R.string.update_check_now), context = result,
+            onClick = if (checking) null else ({
+                checking = true
+                scope.launch { checked = container.checkForUpdates(now = true); checking = false }
+            }))
         ListRow(stringResource(R.string.licence), context = stringResource(R.string.licence_text))
         ListRow(stringResource(R.string.privacy), context = stringResource(R.string.privacy_text))
         ListRow(stringResource(R.string.third_party_licences), context = stringResource(R.string.third_party_licences_text), onClick = {

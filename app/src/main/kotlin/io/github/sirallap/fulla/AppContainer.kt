@@ -72,18 +72,28 @@ class AppContainer(private val context: Context) {
      * stored pending update once this build is that version or newer, so a
      * phone that just installed the update stops offering it to itself.
      */
-    suspend fun checkForUpdates() {
-        if (BuildConfig.DEBUG) return
+    enum class UpdateCheckResult { FOUND, UP_TO_DATE, FAILED, SKIPPED }
+
+    /**
+     * Asks GitHub for a newer release. On its own (app start) at most every
+     * 12 hours and only when the setting is on; [now] is the "Check now" row,
+     * which asks right away.
+     */
+    suspend fun checkForUpdates(now: Boolean = false): UpdateCheckResult {
+        if (BuildConfig.DEBUG) return UpdateCheckResult.SKIPPED
         val current = settings.current()
         current.pendingUpdate?.let { pending ->
             if (!Versions.isNewer(BuildConfig.VERSION_NAME, pending.version)) settings.setPendingUpdate(null)
         }
-        if (!current.checkForUpdates) return
-        val now = System.currentTimeMillis()
-        if (now - settings.lastUpdateCheckAt() < UPDATE_CHECK_INTERVAL_MS) return
-        settings.setLastUpdateCheckAt(now)
-        val update = runCatching { updateCheck.latest() }.getOrNull() ?: return
-        if (Versions.isNewer(BuildConfig.VERSION_NAME, update.version)) settings.setPendingUpdate(update)
+        if (!now && !current.checkForUpdates) return UpdateCheckResult.SKIPPED
+        val time = System.currentTimeMillis()
+        if (!now && time - settings.lastUpdateCheckAt() < UPDATE_CHECK_INTERVAL_MS) return UpdateCheckResult.SKIPPED
+        settings.setLastUpdateCheckAt(time)
+        val update = runCatching { updateCheck.latest() }.getOrElse { return UpdateCheckResult.FAILED }
+            ?: return UpdateCheckResult.UP_TO_DATE
+        return if (Versions.isNewer(BuildConfig.VERSION_NAME, update.version)) {
+            settings.setPendingUpdate(update); UpdateCheckResult.FOUND
+        } else UpdateCheckResult.UP_TO_DATE
     }
 
     /** The database setup script shipped inside the app, bundled from the migrations at build time. */

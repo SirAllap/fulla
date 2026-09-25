@@ -448,4 +448,10 @@
     <string name="setup_paused">in pausa</string>
     <string name="setup_project_paused">Quel progetto è in pausa. Riattivalo su supabase.com e riprova.</string>
     <string name="use_token_instead">Usa un token invece</string>
+    <string name="update_check_now">Controlla ora</string>
+    <string name="update_checking">Controllo…</string>
+    <string name="update_up_to_date">Fulla è aggiornata.</string>
+    <string name="update_found_text">È pronta una nuova versione: guarda in cima alle Impostazioni.</string>
+    <string name="update_check_failed">Impossibile raggiungere GitHub. Riprova più tardi.</string>
+    <string name="update_test_build">Le versioni di prova non si aggiornano da sole.</string>
 </resources>
