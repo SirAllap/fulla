@@ -1,0 +1,3 @@
+#!/bin/sh
+# The commit message is published too.
+exec node tools/leakcheck/leakcheck.mjs --message "$1"

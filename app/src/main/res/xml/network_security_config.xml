@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later
+     No cleartext anywhere. This file cannot restrict which hosts the app talks
+     to; that is enforced in code, by the HttpSend host interceptors in
+     client/remote (Supabase.kt, ProjectSetup.kt, UpdateCheck.kt), with tests. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,33 @@
+name: Something is wrong
+description: The app does something it should not, or does not do something it should.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. Please **leave out real amounts, names, emails and bank details**: an issue is public. Invented examples are just as useful.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to make it happen again
+      placeholder: "1. Open Add\n2. …"
+  - type: input
+    id: version
+    attributes:
+      label: Fulla version (Settings › About)
+  - type: input
+    id: android
+    attributes:
+      label: Phone and Android version
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Household
+      options:
+        - On this phone only
+        - Shared (Supabase)

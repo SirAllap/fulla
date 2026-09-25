@@ -1,0 +1,33 @@
+{
+  "rule": "normalize_name",
+  "vectors": [
+    {
+      "input": "Ámbar",
+      "expected": "ambar"
+    },
+    {
+      "input": "  Groceries  ",
+      "expected": "groceries"
+    },
+    {
+      "input": "Ámbar",
+      "expected": "ambar"
+    },
+    {
+      "input": "ÑANDÚ",
+      "expected": "nandu"
+    },
+    {
+      "input": "Crème Brûlée",
+      "expected": "creme brulee"
+    },
+    {
+      "input": "Straße",
+      "expected": "straße"
+    },
+    {
+      "input": "",
+      "expected": ""
+    }
+  ]
+}

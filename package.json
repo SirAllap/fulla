@@ -1,0 +1,19 @@
+{
+  "name": "fulla",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fulla: a household finance app for Android that runs on your own Supabase project.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test:db": "node supabase/tests/run.js",
+    "db:bundle": "node supabase/scripts/bundle.js",
+    "db:migrate": "node supabase/scripts/migrate.js",
+    "i18n": "node tools/i18n/check.mjs",
+    "leakcheck": "node tools/leakcheck/leakcheck.mjs",
+    "leakcheck:history": "node tools/leakcheck/leakcheck.mjs --history",
+    "hooks:install": "git config core.hooksPath .githooks"
+  }
+}

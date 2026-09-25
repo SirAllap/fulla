@@ -1,0 +1,29 @@
+# Build output
+build/
+.gradle/
+.kotlin/
+dist/
+*.apk
+*.aab
+captures/
+.cxx/
+local.properties
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Node
+node_modules/
+
+# Secrets and personal data. None of these may ever be committed.
+.env
+.env.*
+*.jks
+*.keystore
+keystore.properties
+*.dump
+*.sql.gz
+denylist*
+screenshots/

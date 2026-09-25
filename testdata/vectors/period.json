@@ -1,0 +1,192 @@
+{
+  "rule": "period_of",
+  "vectors": [
+    {
+      "why": "calendar month by default",
+      "input": {
+        "date": "2030-03-15",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 1,
+        "income_shift_day": null
+      },
+      "expected": "2030-03"
+    },
+    {
+      "why": "first day",
+      "input": {
+        "date": "2030-03-01",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 1,
+        "income_shift_day": null
+      },
+      "expected": "2030-03"
+    },
+    {
+      "why": "last day",
+      "input": {
+        "date": "2030-03-31",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 1,
+        "income_shift_day": null
+      },
+      "expected": "2030-03"
+    },
+    {
+      "why": "before the start day stays in the month",
+      "input": {
+        "date": "2030-03-19",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 20,
+        "income_shift_day": null
+      },
+      "expected": "2030-03"
+    },
+    {
+      "why": "on the start day moves to the period it ends in",
+      "input": {
+        "date": "2030-03-20",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 20,
+        "income_shift_day": null
+      },
+      "expected": "2030-04"
+    },
+    {
+      "why": "December rolls over the year",
+      "input": {
+        "date": "2030-12-20",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 20,
+        "income_shift_day": null
+      },
+      "expected": "2031-01"
+    },
+    {
+      "why": "start day 28 in February",
+      "input": {
+        "date": "2030-02-28",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null
+      },
+      "expected": "2030-03"
+    },
+    {
+      "why": "leap day with start day 28",
+      "input": {
+        "date": "2032-02-29",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 28,
+        "income_shift_day": null
+      },
+      "expected": "2032-03"
+    },
+    {
+      "why": "fixed income on or after the shift day moves",
+      "input": {
+        "date": "2030-01-31",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": 25
+      },
+      "expected": "2030-02"
+    },
+    {
+      "why": "fixed income on the shift day moves",
+      "input": {
+        "date": "2030-01-25",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": 25
+      },
+      "expected": "2030-02"
+    },
+    {
+      "why": "fixed income before the shift day stays",
+      "input": {
+        "date": "2030-01-24",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": 25
+      },
+      "expected": "2030-01"
+    },
+    {
+      "why": "variable income never moves",
+      "input": {
+        "date": "2030-01-28",
+        "kind": "income",
+        "recurrence": "variable",
+        "period_start_day": 1,
+        "income_shift_day": 25
+      },
+      "expected": "2030-01"
+    },
+    {
+      "why": "spending never moves",
+      "input": {
+        "date": "2030-01-28",
+        "kind": "expense",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": 25
+      },
+      "expected": "2030-01"
+    },
+    {
+      "why": "shifted income rolls over the year",
+      "input": {
+        "date": "2030-12-30",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": 25
+      },
+      "expected": "2031-01"
+    },
+    {
+      "why": "shift day 31 never happens in a 30-day month",
+      "input": {
+        "date": "2030-04-30",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": 31
+      },
+      "expected": "2030-04"
+    },
+    {
+      "why": "shift day 31 in a 31-day month",
+      "input": {
+        "date": "2030-01-31",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": 31
+      },
+      "expected": "2030-02"
+    },
+    {
+      "why": "transfers never move",
+      "input": {
+        "date": "2030-06-10",
+        "kind": "transfer",
+        "recurrence": "variable",
+        "period_start_day": 1,
+        "income_shift_day": 5
+      },
+      "expected": "2030-06"
+    }
+  ]
+}
