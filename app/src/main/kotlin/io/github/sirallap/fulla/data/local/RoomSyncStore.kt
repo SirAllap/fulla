@@ -2,6 +2,7 @@
 package io.github.sirallap.fulla.data.local
 
 import androidx.room.withTransaction
+import io.github.sirallap.fulla.client.local.LocalHousehold
 import io.github.sirallap.fulla.client.sync.GuardedWrite
 import io.github.sirallap.fulla.client.sync.SyncStore
 import io.github.sirallap.fulla.client.wire.Wire
@@ -78,7 +79,11 @@ class RoomSyncStore(private val db: FullaDatabase, private val clock: () -> Long
         cursor: Long,
     ) {
         db.withTransaction {
-            if (config != null) db.households().setConfig(householdId, config.toString(), configVersion)
+            if (config != null) {
+                // A pot chosen before the household was shared stays waiting until it is set (Ledger.finishSharing).
+                val stored = db.households().get(householdId)?.configJson?.let { Wire.json.parseToJsonElement(it).jsonObject }
+                db.households().setConfig(householdId, LocalHousehold.keepDeferred(stored, config).toString(), configVersion)
+            }
             db.transactions().writeGuarded(householdId, writes.map { it.expectedStamp to Rows.entity(householdId, it.row) })
             if (notes.isNotEmpty()) db.conflicts().insert(notes.map { Rows.note(householdId, it, clock()) })
             db.households().advanceCursor(householdId, cursor)

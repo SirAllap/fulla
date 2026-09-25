@@ -148,6 +148,7 @@ class AppContainer(private val context: Context) {
         for (h in shared) {
             try {
                 syncer.sync(h.id)
+                ledger.finishSharing(h.id, api)
                 db.households().setSyncResult(h.id, System.currentTimeMillis(), null)
             } catch (e: FullaError) {
                 error = e

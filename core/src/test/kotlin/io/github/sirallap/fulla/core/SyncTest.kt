@@ -30,7 +30,8 @@ import kotlin.test.assertTrue
  * deletes are applied without comparing clocks, an older edit is refused and
  * answered with the stored row, a new row goes through the shared pot rule
  * (fulla.shared_pot_for_new, 0011_money_mode.sql) and comes back as stored
- * when that changed it, and the cursor is the highest server_seq a pull
+ * when that changed it (new to the phone: no base, even if the id is already
+ * stored), and the cursor is the highest server_seq a pull
  * returned. Modelling any of that more conveniently would hide exactly the
  * bugs this suite exists to find.
  */
@@ -69,10 +70,14 @@ class FakeServer {
                         conflict = Conflict(Conflict.Winner.SERVER, SyncEngine.diff(m.transaction, prior)),
                         serverTransaction = prior)
                 else -> {
-                    rows[prior.id] = m.transaction.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
+                    // A phone that never saw the stored row wrote it as new (same recurring occurrence, same import line).
+                    val kept = if (m.baseClientUpdatedAt == null) SharedPot.forNew(m.transaction, household) else m.transaction
+                    val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
+                    rows[prior.id] = stored
                     val collided = m.baseClientUpdatedAt != prior.clientUpdatedAt
                     PushResult(m.mutationId, prior.id, ok = true, applied = true,
-                        conflict = if (collided) Conflict(Conflict.Winner.CLIENT, SyncEngine.diff(prior, m.transaction)) else null)
+                        conflict = if (collided) Conflict(Conflict.Winner.CLIENT, SyncEngine.diff(prior, kept)) else null,
+                        serverTransaction = if (kept != m.transaction) stored else null)
                 }
             }
         }
@@ -147,6 +152,10 @@ fun Transaction.seen(): Seen = Triple(status, note, split)
 
 
 class SyncTest {
+
+    private companion object {
+        const val RULE = "00000000-0000-4000-8000-00000000abcd"
+    }
 
     private val t0: Instant = Instant.parse("2030-01-15T12:00:00Z")
     private fun at(minutes: Long): Instant = t0.plusSeconds(minutes * 60)
@@ -331,6 +340,28 @@ class SyncTest {
     }
 
     @Test
+    fun `a recurring occurrence a stale phone also writes stays its payer's alone`() {
+        val server = FakeServer()
+        val alice = Phone("alice", server)
+        val bob = Phone("bob", server)
+        bob.sync()
+        server.household = server.household.copy(moneyMode = MoneyMode.SHARED)
+        alice.sync()
+        val id = DeterministicId.occurrence(RULE, LocalDate.of(2030, 2, 1))
+        alice.create(Fixtures.expense(id = id), at(0))
+        alice.sync()
+        // Bob's phone still thinks the household splits, writes the same occurrence later and pushes before pulling.
+        bob.create(Fixtures.expense(id = id), at(5))
+        assertEquals(Split.Equal(listOf(Fixtures.ALICE, Fixtures.BOB)), bob.rows.getValue(id).transaction.split)
+        bob.sync()
+        alice.sync()
+        val payerOnly = Split.Equal(listOf(Fixtures.ALICE))
+        assertEquals(payerOnly, server.rows.getValue(id).split)
+        assertEquals(payerOnly, bob.rows.getValue(id).transaction.split)
+        assertEquals(payerOnly, alice.rows.getValue(id).transaction.split)
+    }
+
+    @Test
     fun `a new settlement pushed to a shared pot is held back with the reason`() {
         val server = FakeServer()
         server.household = server.household.copy(moneyMode = MoneyMode.SHARED)
@@ -365,7 +396,14 @@ class SyncTest {
                 val phone = phones.random(random)
                 when (random.nextInt(11)) {
                     0 -> phone.online = !phone.online
-                    1, 2 -> phone.create(Fixtures.expense(payer = if (random.nextBoolean()) Fixtures.ALICE else Fixtures.BOB), at(minute))
+                    1, 2 -> {
+                        // Half of them with ids every phone derives alike, as recurring occurrences have.
+                        val id = if (random.nextBoolean()) DeterministicId.occurrence(RULE, LocalDate.of(2030, 1, 1).plusDays(random.nextLong(0, 30)))
+                        else Fixtures.newId()
+                        if (id !in phone.rows) {
+                            phone.create(Fixtures.expense(id = id, payer = if (random.nextBoolean()) Fixtures.ALICE else Fixtures.BOB), at(minute))
+                        }
+                    }
                     3, 4, 5 -> phone.rows.values.filter { it.transaction.isActive }.randomOrNull(random)?.let {
                         phone.write(it.transaction.copy(note = "edit $seed/$minute by ${phone.name}"), at(minute))
                     }

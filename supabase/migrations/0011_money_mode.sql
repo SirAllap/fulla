@@ -12,7 +12,16 @@
 -- where fulla_sync_push inserts a row) and in core/ (SharedPot.forNew). Both
 -- pass testdata/vectors/shared_pot.json. It applies to new rows only: an edit
 -- of an older row keeps the split it has, and nothing in the past is
--- rewritten when a household switches.
+-- rewritten when a household switches. A phone's own new row that meets one
+-- already stored under the same id (a recurring occurrence or an imported
+-- line two phones both wrote) is still new for that phone and follows the
+-- rule too.
+--
+-- fulla_household_create_from_local does not take money_mode. A household
+-- that lived on one phone uploads its history as new rows; were the pot
+-- already shared on the server, that history would be rewritten and its
+-- settlements refused. The phone sets money_mode with fulla_household_update
+-- once its old rows are in.
 
 alter table fulla.households
   add column money_mode text check (money_mode in ('split', 'shared'));
@@ -131,110 +140,6 @@ $$;
 -- ── household settings and sync, as before, knowing about money_mode ─────────
 
 /*
- * Turns a household that has lived only on a phone into a shared one.
- *
- * Everything keeps the id the phone gave it, so the phone's rows need no
- * renumbering: its transactions are pushed afterwards through the ordinary
- * sync, pointing at ids that now exist here. The caller becomes the owner and
- * claims the member the phone called "me"; the other members arrive as members
- * without an account, ready to be claimed through invites.
- *
- * Idempotent: calling it again for a household the caller already owns
- * returns the same ids, so an interrupted upload can simply be retried.
- *
- * Payload:
- *   {"household": {"id", "name", "currency", "locale", "period_start_day",
- *                  "income_shift_day", "week_start", "money_mode"},
- *    "me_member_id": "...",
- *    "members": [...], "accounts": [...], "categories": [...],
- *    "custom_fields": [...], "budgets": [...], "recurring_rules": [...],
- *    "categorization_rules": [...], "import_profiles": [...]}
- */
-create or replace function public.fulla_household_create_from_local(p_payload jsonb) returns jsonb
-language plpgsql volatile security definer
-set search_path = ''
-as $$
-declare
-  v_uid uuid := fulla.require_user();
-  v_h jsonb := p_payload -> 'household';
-  v_household uuid := fulla.json_uuid(p_payload -> 'household', 'id');
-  v_me uuid := fulla.json_uuid(p_payload, 'me_member_id');
-  v_existing fulla.members;
-  x jsonb;
-begin
-  if v_household is null or v_me is null then
-    perform fulla.invalid('`household.id` and `me_member_id` are required.');
-  end if;
-
-  if exists (select 1 from fulla.households h where h.id = v_household) then
-    select * into v_existing from fulla.members m
-     where m.household_id = v_household and m.user_id = v_uid and m.status = 'active';
-    if v_existing.id is null then
-      perform fulla.fail(409, 'already_exists', 'A household with this id already exists.');
-    end if;
-    return jsonb_build_object('household_id', v_household, 'member_id', v_existing.id,
-                              'config', fulla.config_bundle(v_household));
-  end if;
-
-  perform fulla.check_household_fields(v_h ->> 'name', v_h ->> 'currency', v_h ->> 'locale');
-  perform fulla.check_money_mode(v_h -> 'money_mode');
-  insert into fulla.households (id, name, currency, locale, period_start_day, income_shift_day, week_start, money_mode, created_by)
-  values (v_household, btrim(v_h ->> 'name'), upper(v_h ->> 'currency'), v_h ->> 'locale',
-          coalesce((v_h ->> 'period_start_day')::smallint, 1),
-          (v_h ->> 'income_shift_day')::smallint,
-          coalesce((v_h ->> 'week_start')::smallint, 1),
-          v_h ->> 'money_mode',
-          v_uid);
-
-  if not exists (select 1 from jsonb_array_elements(coalesce(p_payload -> 'members', '[]')) m
-                  where fulla.try_uuid(m ->> 'id') = v_me) then
-    perform fulla.invalid('`me_member_id` must be one of `members`.');
-  end if;
-  for x in select value from jsonb_array_elements(coalesce(p_payload -> 'members', '[]')) loop
-    perform fulla.check_person(x ->> 'display_name', x ->> 'initials', coalesce((x ->> 'color_index')::integer, 0));
-    insert into fulla.members (id, household_id, display_name, initials, color_index, status)
-    values (fulla.json_uuid(x, 'id'), v_household, btrim(x ->> 'display_name'), btrim(x ->> 'initials'),
-            coalesce((x ->> 'color_index')::smallint, 0),
-            case when x ->> 'status' = 'archived' then 'archived' else 'active' end);
-  end loop;
-  update fulla.members
-     set user_id = v_uid, role = 'owner', status = 'active', joined_at = now()
-   where household_id = v_household and id = v_me;
-
-  if fulla.active_member_count(v_household) > (select h.member_limit from fulla.households h where h.id = v_household) then
-    perform fulla.fail(409, 'household_full', 'More members than the household allows.');
-  end if;
-
-  for x in select value from jsonb_array_elements(coalesce(p_payload -> 'accounts', '[]')) loop
-    perform fulla.save_account(v_household, x);
-  end loop;
-  -- Parents before children.
-  for x in select value from jsonb_array_elements(coalesce(p_payload -> 'categories', '[]'))
-            order by (value ->> 'parent_id') is not null loop
-    perform fulla.save_category(v_household, x);
-  end loop;
-  for x in select value from jsonb_array_elements(coalesce(p_payload -> 'custom_fields', '[]')) loop
-    perform fulla.save_field(v_household, x);
-  end loop;
-  for x in select value from jsonb_array_elements(coalesce(p_payload -> 'budgets', '[]')) loop
-    perform fulla.save_budget(v_household, x);
-  end loop;
-  for x in select value from jsonb_array_elements(coalesce(p_payload -> 'recurring_rules', '[]')) loop
-    perform fulla.save_recurring(v_household, x);
-  end loop;
-  for x in select value from jsonb_array_elements(coalesce(p_payload -> 'categorization_rules', '[]')) loop
-    perform fulla.save_rule(v_household, x);
-  end loop;
-  for x in select value from jsonb_array_elements(coalesce(p_payload -> 'import_profiles', '[]')) loop
-    perform fulla.save_import_profile(v_household, x);
-  end loop;
-
-  return jsonb_build_object('household_id', v_household, 'member_id', v_me,
-                            'config', fulla.config_bundle(v_household));
-end;
-$$;
-
-/*
  * Household settings. Admins may change the name, locale, period rules, first
  * day of the week and how money works between members (money_mode); only the owner may change the currency or the member
  * limit. Changing the currency converts nothing: amounts keep their numbers.
@@ -310,7 +215,9 @@ $$;
  * carries it as `server_transaction` and the phone adopts it at once; an edit
  * refused as older also names the winner in `conflict`. A new row that the
  * shared pot rule changed on its way in (fulla.shared_pot_for_new) comes back
- * as `server_transaction` too, so the phone holds what was stored.
+ * as `server_transaction` too, so the phone holds what was stored. New means
+ * new to the phone: an upsert without base_client_updated_at that finds a row
+ * already stored (two phones generated the same recurring occurrence) counts.
  */
 create or replace function public.fulla_sync_push(p_household_id uuid, p_mutations jsonb) returns jsonb
 language plpgsql volatile security definer
@@ -436,24 +343,33 @@ begin
               'client_updated_at', fulla.iso(v_stamp),
               'overwritten', fulla.tx_diff(v_new, v_prior_json)));
         else
+          -- Written by a phone that never saw the stored row: new to that phone.
+          v_stored := v_new;
+          if v_base is null and v_new ->> 'kind' in ('expense', 'refund') then
+            v_stored := fulla.shared_pot_for_new(p_household_id, v_new);
+          end if;
           update fulla.transactions t
-             set kind = v_new ->> 'kind', date = (v_new ->> 'date')::date,
-                 amount_minor = (v_new ->> 'amount_minor')::bigint,
-                 category_id = (v_new ->> 'category_id')::uuid, account_id = (v_new ->> 'account_id')::uuid,
-                 to_account_id = (v_new ->> 'to_account_id')::uuid,
-                 paid_by_member_id = (v_new ->> 'paid_by_member_id')::uuid,
-                 to_member_id = (v_new ->> 'to_member_id')::uuid,
-                 split = nullif(v_new -> 'split', 'null'::jsonb), recurrence = v_new ->> 'recurrence',
-                 note = v_new ->> 'note', tags = array(select jsonb_array_elements_text(v_new -> 'tags')),
-                 extras = v_new -> 'extras', status = v_new ->> 'status',
-                 recurring_rule_id = (v_new ->> 'recurring_rule_id')::uuid,
-                 occurrence_date = (v_new ->> 'occurrence_date')::date,
-                 import_fingerprint = v_new ->> 'import_fingerprint',
-                 original_amount_minor = (v_new ->> 'original_amount_minor')::bigint,
-                 original_currency = v_new ->> 'original_currency',
+             set kind = v_stored ->> 'kind', date = (v_stored ->> 'date')::date,
+                 amount_minor = (v_stored ->> 'amount_minor')::bigint,
+                 category_id = (v_stored ->> 'category_id')::uuid, account_id = (v_stored ->> 'account_id')::uuid,
+                 to_account_id = (v_stored ->> 'to_account_id')::uuid,
+                 paid_by_member_id = (v_stored ->> 'paid_by_member_id')::uuid,
+                 to_member_id = (v_stored ->> 'to_member_id')::uuid,
+                 split = nullif(v_stored -> 'split', 'null'::jsonb), recurrence = v_stored ->> 'recurrence',
+                 note = v_stored ->> 'note', tags = array(select jsonb_array_elements_text(v_stored -> 'tags')),
+                 extras = v_stored -> 'extras', status = v_stored ->> 'status',
+                 recurring_rule_id = (v_stored ->> 'recurring_rule_id')::uuid,
+                 occurrence_date = (v_stored ->> 'occurrence_date')::date,
+                 import_fingerprint = v_stored ->> 'import_fingerprint',
+                 original_amount_minor = (v_stored ->> 'original_amount_minor')::bigint,
+                 original_currency = v_stored ->> 'original_currency',
                  client_updated_at = v_stamp, updated_by_user_id = auth.uid()
-           where t.id = v_id;
+           where t.id = v_id
+          returning * into v_row;
           v_result := jsonb_build_object('ok', true, 'applied', true, 'warnings', v_checked -> 'warnings');
+          if v_stored is distinct from v_new then
+            v_result := v_result || jsonb_build_object('server_transaction', fulla.tx_json(v_row));
+          end if;
           -- Somebody else's edit landed between this phone's read and its
           -- write. The phone's version wins (it is newer), but it is told.
           if v_mut ? 'base_client_updated_at'
@@ -462,7 +378,7 @@ begin
               'winner', 'client',
               'server_updated_at', fulla.iso(v_prior.client_updated_at),
               'client_updated_at', fulla.iso(v_stamp),
-              'overwritten', fulla.tx_diff(v_prior_json, v_new)));
+              'overwritten', fulla.tx_diff(v_prior_json, v_stored)));
           end if;
         end if;
       end if;

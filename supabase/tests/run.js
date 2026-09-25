@@ -1149,16 +1149,28 @@ test('money_mode: not chosen at first, carried by the bundle, changed by admins 
   assert.equal(pull(ctx, bob.user, 0, null).config.household.money_mode, 'split');
 });
 
-rawTest('a household that lived on one phone keeps its money_mode when it becomes shared', ({ db }) => {
+rawTest('a household that lived on one phone keeps its history when it becomes shared, whatever pot it chose', ({ db }) => {
   const alice = newUser(db, 'alice@example.com');
   const { ids, payload } = localPayload();
+  // The upload leaves money_mode out; one that sends it anyway is not listened to.
   payload.household.money_mode = 'shared';
   const r = rpc(db, alice, 'fulla_household_create_from_local', { p_payload: payload });
-  assert.equal(r.config.household.money_mode, 'shared');
-  assert.equal(r.household_id, ids.household);
-  const other = localPayload().payload;
-  other.household.money_mode = 'halves';
-  expectError(db, alice, 'fulla_household_create_from_local', { p_payload: other }, 'validation_failed');
+  assert.equal(r.config.household.money_mode, null);
+  // What the phone wrote while splitting, then its settling up when it chose the pot.
+  const both = { mode: 'equal', members: [ids.me, ids.kid] };
+  const food = { id: uuid(), kind: 'expense', date: '2030-01-10', amount_minor: 10000, category_id: ids.food,
+                 paid_by_member_id: ids.me, split: both };
+  const settle = { id: uuid(), kind: 'settlement', date: '2030-01-12', amount_minor: 5000,
+                   paid_by_member_id: ids.kid, to_member_id: ids.me, note: 'Shared pot started' };
+  const res = rpc(db, alice, 'fulla_sync_push', { p_household_id: ids.household, p_mutations: [upsert(food), upsert(settle)] }).results;
+  assert.deepEqual(res.map((x) => [x.ok, x.applied, x.server_transaction]), [[true, true, undefined], [true, true, undefined]]);
+  // Only once its history is in does the phone choose the pot on the server.
+  const cfg = rpc(db, alice, 'fulla_household_update', { p_household_id: ids.household, p_patch: { money_mode: 'shared' } });
+  assert.equal(cfg.household.money_mode, 'shared');
+  const storedFood = JSON.parse(db.admin(`select split::text from fulla.transactions where id = ${h.literal(food.id)};`).out);
+  assert.deepEqual(storedFood, both, 'the history keeps its split');
+  const balances = rpc(db, alice, 'fulla_member_balances', { p_household_id: ids.household });
+  assert.deepEqual(balances.map((b) => b.balance_minor), [0, 0], 'settled before the pot, nothing owed after');
 });
 
 test('in a shared pot a new expense is stored as its payer\'s alone, and the phone is handed that version', (ctx) => {
@@ -1187,7 +1199,8 @@ test('an edit of a row written before the shared pot keeps its split', (ctx) => 
   const tx = expense(ctx, { members: [ctx.aliceMember, bob.member] });
   push(ctx, ctx.alice, [upsert(tx, iso(0))]);
   setMoneyMode(ctx, 'shared');
-  const [r] = push(ctx, bob.user, [upsert(Object.assign({}, tx, { note: 'GROCERY STORE 02' }), iso(5))]);
+  // Bob edits the row his phone holds: the edit names the version it started from.
+  const [r] = push(ctx, bob.user, [upsert(Object.assign({}, tx, { note: 'GROCERY STORE 02' }), iso(5), iso(0))]);
   assert.equal(r.applied, true);
   assert.equal(r.server_transaction, undefined);
   assert.deepEqual(stored(ctx, tx.id).split, both);
@@ -1195,6 +1208,25 @@ test('an edit of a row written before the shared pot keeps its split', (ctx) => 
     .map((b) => [b.member_id, b.balance_minor]));
   assert.equal(balances[ctx.aliceMember], 617, 'what was owed before stays owed');
   assert.equal(balances[bob.member], -617);
+});
+
+test('in a shared pot a row two phones both wrote as new is its payer\'s alone, whichever lands last', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  setMoneyMode(ctx, 'shared');
+  // The same id from two phones, as a recurring occurrence or an imported line has.
+  const tx = expense(ctx, { members: [ctx.aliceMember, bob.member] });
+  assert.equal(push(ctx, ctx.alice, [upsert(tx, iso(0))])[0].applied, true);
+  // Bob's phone had not heard of the pot and never saw Alice's row: no base.
+  const [r] = push(ctx, bob.user, [upsert(Object.assign({}, tx), iso(5))]);
+  assert.equal(r.applied, true);
+  const payerOnly = { mode: 'equal', members: [ctx.aliceMember] };
+  assert.deepEqual(stored(ctx, tx.id).split, payerOnly);
+  assert.deepEqual(r.server_transaction.split, payerOnly);
+  // An edit made after seeing the stored row is an edit, and keeps what it says.
+  const both = { mode: 'equal', members: [ctx.aliceMember, bob.member] };
+  const [e] = push(ctx, bob.user, [upsert(Object.assign({}, tx, { split: both }), iso(10), iso(5))]);
+  assert.equal(e.applied, true);
+  assert.deepEqual(stored(ctx, tx.id).split, both);
 });
 
 test('in a shared pot a new settlement is refused, an old one can still be edited', (ctx) => {
@@ -1236,7 +1268,7 @@ for (const v of vectors('shared_pot.json')) {
       setMoneyMode(ctx, 'split');
       assert.equal(push(ctx, ctx.alice, [upsert(tx, iso(0))])[0].applied, true);
       setMoneyMode(ctx, i.money_mode);
-      [r] = push(ctx, ctx.alice, [upsert(Object.assign({}, tx, { note: 'edited' }), iso(5))]);
+      [r] = push(ctx, ctx.alice, [upsert(Object.assign({}, tx, { note: 'edited' }), iso(5), iso(0))]);
     }
     if (v.expected === 'refused') {
       assert.equal(r.ok, false, JSON.stringify(r));

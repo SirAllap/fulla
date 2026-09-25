@@ -135,6 +135,11 @@ is refused: `SharedPot.forNew` in `core/.../split/SharedPot.kt` on the phone
 creates no debt. Both pass `testdata/vectors/shared_pot.json`. It applies to
 new rows only: an edit keeps its split, and nothing written before a switch is
 rewritten (`an edit of a row written before the shared pot keeps its split`).
+New means new to the phone: an upsert without a base that meets a stored row
+(two phones wrote the same recurring occurrence) follows the rule too. A
+phone-only household uploads without `money_mode` and sets it once its history
+is pushed (`LocalHousehold.forUpload`, `Ledger.finishSharing`), or its old rows
+would arrive as new ones and be rewritten.
 
 ### The simulation is the sync's real test
 

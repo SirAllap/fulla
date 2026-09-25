@@ -63,6 +63,7 @@ import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.money.MoneyParser
 import io.github.sirallap.fulla.core.roles.Permissions
 import io.github.sirallap.fulla.core.split.SharedPot
+import io.github.sirallap.fulla.core.sync.SyncState
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AmountText
@@ -155,18 +156,20 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             try {
                 val api = if (view.state.connected) container.api() else null
                 if (view.state.connected && api == null) { modeError = syncFailed; return@launch }
-                if (settle) {
-                    ledger.saveAll(view.id, SettlementPlanner.plan(balances).map { p ->
-                        Transaction(
-                            id = UUID.randomUUID().toString(), kind = TransactionKind.SETTLEMENT, date = LocalDate.now(),
-                            amountMinor = p.amountMinor, paidByMemberId = p.fromMemberId, toMemberId = p.toMemberId,
-                            note = startedNote, createdAt = "", clientUpdatedAt = "", createdByMemberId = view.config.meMemberId,
-                        )
-                    })
+                val payments = if (!settle) emptyList() else SettlementPlanner.plan(balances).map { p ->
+                    Transaction(
+                        id = UUID.randomUUID().toString(), kind = TransactionKind.SETTLEMENT, date = LocalDate.now(),
+                        amountMinor = p.amountMinor, paidByMemberId = p.fromMemberId, toMemberId = p.toMemberId,
+                        note = startedNote, createdAt = "", clientUpdatedAt = "", createdByMemberId = view.config.meMemberId,
+                    )
                 }
+                if (payments.isNotEmpty()) ledger.saveAll(view.id, payments)
                 if (view.state.connected && ledger.hasUnsentSettlements(view.id)) {
                     container.syncAll()
-                    if (ledger.hasUnsentSettlements(view.id)) { modeError = syncFailed; return@launch }
+                    // Refused (the pot may already be shared on the server): they would be debts on this phone only.
+                    val refused = payments.filter { ledger.transaction(it.id)?.state == SyncState.REJECTED }
+                    refused.forEach { ledger.delete(view.id, it.id) }
+                    if (refused.isNotEmpty() || ledger.hasUnsentSettlements(view.id)) { modeError = syncFailed; return@launch }
                 }
                 ledger.updateHousehold(view.id, buildJsonObject { put("money_mode", MoneyMode.SHARED.key) }, api)
             } catch (e: Exception) {

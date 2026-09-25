@@ -3,6 +3,7 @@ package io.github.sirallap.fulla.client
 
 import io.github.sirallap.fulla.client.Fixtures.HOUSEHOLD
 import io.github.sirallap.fulla.client.Fixtures.expense
+import io.github.sirallap.fulla.client.local.LocalHousehold
 import io.github.sirallap.fulla.client.sync.Edits
 import io.github.sirallap.fulla.client.sync.Syncer
 import io.github.sirallap.fulla.client.wire.Wire
@@ -13,6 +14,7 @@ import io.github.sirallap.fulla.core.sync.SyncState
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.put
 import java.time.Instant
 import kotlin.random.Random
 import kotlin.test.Test
@@ -206,6 +208,52 @@ class SyncerTest {
         a.store.rows[next.id] = next
         a.syncer.sync(HOUSEHOLD)
         assertEquals(payerOnly, server.rows.getValue(next.id).split)
+    }
+
+    @Test
+    fun `a household that chose one pot on this phone keeps its history when it is shared`() = runTest {
+        // Alice's phone-only household: Bob without an account, an expense they split, then the pot chosen
+        // with "Settle it now". All of it LOCAL_ONLY.
+        var local = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        val me = Wire.config(local).meMemberId!!
+        local = LocalHousehold.upsertMember(local, kotlinx.serialization.json.buildJsonObject {
+            put("id", Fixtures.BOB); put("display_name", "Bob"); put("initials", "B")
+        })
+        val both = Split.Equal(listOf(me, Fixtures.BOB))
+        val food = Edits.create(expense(amount = 10000).copy(paidByMemberId = me, split = both), false, t0, Wire.config(local).household)
+        val settle = Edits.create(expense(amount = 5000).copy(kind = io.github.sirallap.fulla.core.model.TransactionKind.SETTLEMENT,
+            categoryId = null, split = null, paidByMemberId = Fixtures.BOB, toMemberId = me), false, t0.plusSeconds(1))
+        local = LocalHousehold.updateHousehold(local, kotlinx.serialization.json.buildJsonObject { put("money_mode", "shared") })
+
+        // Sharing it: the upload says nothing about the pot.
+        val upload = LocalHousehold.forUpload(local)
+        assertTrue("money_mode" !in (upload["household"] as JsonObject))
+        val server = FakeBackend()
+        val serverBundle = Wire.bundle(Wire.config(upload))
+        var stored = LocalHousehold.afterUpload(local, serverBundle)
+        assertEquals(MoneyMode.SHARED, LocalHousehold.config(stored).household.moneyMode, "the phone already works as one pot")
+
+        val a = Phone(server, "a")
+        Edits.connect(listOf(food, settle)).forEach { a.store.rows[it.id] = it }
+        // Before the first push nothing is set on the server.
+        assertNull(LocalHousehold.applyDeferred(stored, unsent = a.store.pending(HOUSEHOLD).size) { error("too early") })
+        a.syncer.sync(HOUSEHOLD)
+
+        // The history arrived as it was: the split kept, the settlement accepted.
+        assertEquals(both, server.rows.getValue(food.id).split)
+        assertEquals(SyncState.SYNCED, a.store.rows.getValue(settle.id).state)
+        assertTrue(io.github.sirallap.fulla.core.balance.Balances.of(server.rows.values, listOf(me, Fixtures.BOB)).all { it.balanceMinor == 0L })
+
+        // Only now the pot is set on the server, and the waiting mark goes.
+        stored = LocalHousehold.applyDeferred(stored, unsent = a.store.pending(HOUSEHOLD).size) { patch ->
+            assertEquals("shared", (patch["money_mode"] as JsonPrimitive).content)
+            server.household = server.household.copy(moneyMode = MoneyMode.SHARED)
+            Wire.bundle(Wire.config(serverBundle).let { it.copy(household = it.household.copy(moneyMode = MoneyMode.SHARED)) })
+        }!!
+        assertNull(LocalHousehold.deferredMoneyMode(stored))
+        assertEquals(MoneyMode.SHARED, Wire.config(stored).household.moneyMode)
+        // A config pulled in the meantime would not have lost it.
+        assertEquals(MoneyMode.SHARED, LocalHousehold.deferredMoneyMode(LocalHousehold.keepDeferred(LocalHousehold.afterUpload(local, serverBundle), serverBundle)))
     }
 
     @Test

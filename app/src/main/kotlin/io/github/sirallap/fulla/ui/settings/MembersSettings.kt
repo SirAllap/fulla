@@ -173,7 +173,9 @@ fun MembersSettings(view: HouseholdView, change: Change, onShare: () -> Unit) {
             }
             askFirst {
                 change { api ->
-                    val next = if (api == null) LocalHousehold.upsertMember(view.state.bundle, member) else api.memberCreateVirtual(view.id, member)
+                    // The stored bundle, not the one this screen drew: the question just before may have changed it.
+                    val bundle = container.ledger.household(view.id)?.bundle ?: view.state.bundle
+                    val next = if (api == null) LocalHousehold.upsertMember(bundle, member) else api.memberCreateVirtual(view.id, member)
                     container.ledger.storeConfig(view.id, next)
                 }
             }

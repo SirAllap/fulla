@@ -21,7 +21,9 @@ import io.github.sirallap.fulla.core.roles.Permissions
  *   income, transfer  unchanged; they never moved a balance.
  *
  * Only for new rows. An edit keeps the split its row has: nothing written
- * before a household switched is ever rewritten.
+ * before a household switched is ever rewritten. New means new to the phone
+ * that wrote it: a row two phones both created under one id (a recurring
+ * occurrence) follows the rule whichever reaches the server last.
  *
  * The same rule is fulla.shared_pot_for_new, applied where fulla_sync_push
  * inserts a row, so a phone that has not heard of the switch yet (or an app

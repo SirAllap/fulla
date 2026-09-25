@@ -2,7 +2,10 @@
 package io.github.sirallap.fulla.client.local
 
 import io.github.sirallap.fulla.client.remote.Structure
+import io.github.sirallap.fulla.client.wire.Wire
 import io.github.sirallap.fulla.core.defaults.Defaults
+import io.github.sirallap.fulla.core.model.Config
+import io.github.sirallap.fulla.core.model.MoneyMode
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -140,6 +143,56 @@ object LocalHousehold {
         }
         if (added.isEmpty()) return bundle
         return bump(JsonObject(bundle + ("budgets" to JsonArray(budgets + added))))
+    }
+
+    // ── the pot chosen before sharing ────────────────────────────────────────
+
+    /**
+     * Kept in the stored bundle on this phone only, never sent: how money
+     * works, chosen while the household lived here alone. The upload leaves
+     * money_mode out, because its history arrives on the server as new rows
+     * and a shared pot would rewrite them and refuse its settlements; the
+     * phone sets it on the server once every one of those rows is in.
+     */
+    const val DEFERRED_MONEY_MODE = "deferred_money_mode"
+
+    /** What fulla_household_create_from_local receives: the bundle without money_mode. */
+    fun forUpload(bundle: JsonObject): JsonObject {
+        val h = bundle["household"] as JsonObject
+        return JsonObject(bundle - DEFERRED_MONEY_MODE + ("household" to JsonObject(h - "money_mode")))
+    }
+
+    /** The server's answer to the upload, remembering the pot [local] chose until its history is in. */
+    fun afterUpload(local: JsonObject, server: JsonObject): JsonObject {
+        val mode = Wire.config(local).household.moneyMode ?: return server
+        return JsonObject(server + (DEFERRED_MONEY_MODE to JsonPrimitive(mode.key)))
+    }
+
+    fun deferredMoneyMode(bundle: JsonObject): MoneyMode? = MoneyMode.of(bundle.text(DEFERRED_MONEY_MODE))
+
+    /** A config from the server taking the place of [stored]: a pot still waiting to be set survives it. */
+    fun keepDeferred(stored: JsonObject?, incoming: JsonObject): JsonObject {
+        val waiting = stored?.get(DEFERRED_MONEY_MODE) ?: return incoming
+        return JsonObject(incoming + (DEFERRED_MONEY_MODE to waiting))
+    }
+
+    /** The household as the phone works with it: a pot waiting to be set already applies here. */
+    fun config(bundle: JsonObject): Config {
+        val c = Wire.config(bundle)
+        val mode = deferredMoneyMode(bundle) ?: return c
+        return c.copy(household = c.household.copy(moneyMode = mode))
+    }
+
+    /**
+     * Sets a waiting pot on the server once nothing is left to send
+     * ([unsent] is 0), through [update] (fulla_household_update). Returns the
+     * bundle to store, without the waiting pot, or null if there is nothing
+     * to do yet.
+     */
+    suspend fun applyDeferred(bundle: JsonObject, unsent: Int, update: suspend (JsonObject) -> JsonObject): JsonObject? {
+        val mode = deferredMoneyMode(bundle) ?: return null
+        if (unsent > 0) return null
+        return JsonObject(update(buildJsonObject { put("money_mode", mode.key) }) - DEFERRED_MONEY_MODE)
     }
 
     fun version(bundle: JsonObject): Int = (bundle["config_version"] as? JsonPrimitive)?.intOrNull ?: 0

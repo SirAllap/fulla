@@ -80,8 +80,10 @@ class FakeBackend : SyncBackend {
                 m.clientUpdatedAt < prior.clientUpdatedAt -> PushResult(m.mutationId, prior.id, true, false,
                     conflict = Conflict(Conflict.Winner.SERVER, SyncEngine.diff(m.transaction, prior)), serverTransaction = prior)
                 else -> {
-                    rows[prior.id] = m.transaction.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
-                    PushResult(m.mutationId, prior.id, true, true)
+                    val kept = if (m.baseClientUpdatedAt == null) SharedPot.forNew(m.transaction, household) else m.transaction
+                    val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
+                    rows[prior.id] = stored
+                    PushResult(m.mutationId, prior.id, true, true, serverTransaction = if (kept != m.transaction) stored else null)
                 }
             }
         }

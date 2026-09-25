@@ -192,19 +192,35 @@ class Ledger(
 
     /**
      * Local mode becoming shared: the bundle is uploaded as it is, every id
-     * kept, and every row this phone wrote becomes owed to the server.
+     * kept, and every row this phone wrote becomes owed to the server. The
+     * pot chosen here waits until those rows are in ([finishSharing]).
      */
     suspend fun connect(householdId: String, api: FullaApi) {
         val h = households.get(householdId) ?: return
         if (h.mode == CONNECTED) return
-        val joined = api.householdCreateFromLocal(Wire.json.parseToJsonElement(h.configJson).jsonObject)
+        val local = Wire.json.parseToJsonElement(h.configJson).jsonObject
+        val joined = api.householdCreateFromLocal(LocalHousehold.forUpload(local))
+        val config = LocalHousehold.afterUpload(local, joined.config)
         db.withTransaction {
-            households.upsert(h.copy(mode = CONNECTED, configJson = joined.config.toString(),
+            households.upsert(h.copy(mode = CONNECTED, configJson = config.toString(),
                 configVersion = LocalHousehold.version(joined.config), cursor = 0))
             val rows = Edits.connect(transactions.all(householdId).map(Rows::local))
             transactions.upsert(rows.map { Rows.entity(householdId, it) })
         }
         requestSync()
+    }
+
+    /**
+     * Sets on the server the pot this household chose before it was shared,
+     * once nothing this phone wrote is left to send. Called after each sync.
+     */
+    suspend fun finishSharing(householdId: String, api: FullaApi) {
+        val h = households.get(householdId) ?: return
+        val unsent = transactions.inState(householdId, SyncState.PENDING.name).size
+        val next = LocalHousehold.applyDeferred(Wire.json.parseToJsonElement(h.configJson).jsonObject, unsent) { patch ->
+            api.householdUpdate(householdId, patch)
+        } ?: return
+        households.setConfig(householdId, next.toString(), LocalHousehold.version(next))
     }
 
     suspend fun connectedIds(): List<String> = households.all().filter { it.mode == CONNECTED }.map { it.id }
@@ -228,27 +244,32 @@ class Ledger(
         if (api == null) LocalHousehold.upsert(bundle, kind, item) else api.upsert(householdId, kind, item)
     }
 
-    suspend fun updateHousehold(householdId: String, patch: JsonObject, api: FullaApi?) = updateConfig(householdId, api) { bundle ->
-        if (api == null) LocalHousehold.updateHousehold(bundle, patch) else api.householdUpdate(householdId, patch)
-    }
+    /** A money_mode in [patch] is the choice from now on: a pot still waiting from before sharing is dropped. */
+    suspend fun updateHousehold(householdId: String, patch: JsonObject, api: FullaApi?) =
+        updateConfig(householdId, api, keepDeferred = "money_mode" !in patch) { bundle ->
+            if (api == null) LocalHousehold.updateHousehold(bundle, patch) else api.householdUpdate(householdId, patch)
+        }
 
-    /** Stores whatever config a structure call answered with. */
+    /** Stores whatever config a structure call answered with. A pot waiting from before sharing survives it. */
     suspend fun storeConfig(householdId: String, bundle: JsonObject) {
-        households.setConfig(householdId, bundle.toString(), LocalHousehold.version(bundle))
+        val stored = households.get(householdId)?.configJson?.let { Wire.json.parseToJsonElement(it).jsonObject }
+        val next = LocalHousehold.keepDeferred(stored, bundle)
+        households.setConfig(householdId, next.toString(), LocalHousehold.version(next))
     }
 
-    private suspend fun updateConfig(householdId: String, api: FullaApi?, change: suspend (JsonObject) -> JsonObject) {
+    private suspend fun updateConfig(householdId: String, api: FullaApi?, keepDeferred: Boolean = true, change: suspend (JsonObject) -> JsonObject) {
         val h = households.get(householdId) ?: return
         require((h.mode == CONNECTED) == (api != null)) { "A shared household changes through the server, a local one on the phone." }
         val next = change(Wire.json.parseToJsonElement(h.configJson).jsonObject)
-        storeConfig(householdId, next)
+        if (keepDeferred) storeConfig(householdId, next)
+        else households.setConfig(householdId, JsonObject(next - LocalHousehold.DEFERRED_MONEY_MODE).toString(), LocalHousehold.version(next))
     }
 
-    private fun householdOf(e: HouseholdEntity) = Wire.config(Wire.json.parseToJsonElement(e.configJson).jsonObject).household
+    private fun householdOf(e: HouseholdEntity) = LocalHousehold.config(Wire.json.parseToJsonElement(e.configJson).jsonObject).household
 
     private fun state(e: HouseholdEntity): HouseholdState {
         val bundle = Wire.json.parseToJsonElement(e.configJson).jsonObject
-        return HouseholdState(e.id, e.mode == CONNECTED, bundle, Wire.config(bundle), Wire.rules(bundle), e.lastSyncAt, e.lastError)
+        return HouseholdState(e.id, e.mode == CONNECTED, bundle, LocalHousehold.config(bundle), Wire.rules(bundle), e.lastSyncAt, e.lastError)
     }
 
     companion object {
