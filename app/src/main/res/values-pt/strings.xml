@@ -234,7 +234,7 @@
     <string name="url_not_supabase">Isso não é a URL de um projeto Supabase (https://&lt;projeto&gt;.supabase.co).</string>
     <string name="usually">Normalmente %1$s</string>
     <string name="version">Versão %1$s</string>
-    <string name="welcome_line">O que entrou, o que saiu e o que sobrou.</string>
+    <string name="welcome_line">O que entra, o que sai e o que fica.</string>
     <string name="welcome_text">Para uma pessoa ou para a casa toda. Funciona offline, e seus dados ficam onde você decidir.</string>
     <string name="where_it_lives">Onde fica</string>
     <string name="where_it_went">Para onde foi</string>
