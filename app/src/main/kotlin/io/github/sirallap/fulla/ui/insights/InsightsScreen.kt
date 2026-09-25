@@ -90,7 +90,8 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
                         end = { AmountText(f.money(t.currentMinor)) })
                 }
             }
-            if (byMember.size > 1) {
+            // In one shared pot who paid what is nobody's business but the pot's.
+            if (byMember.size > 1 && !io.github.sirallap.fulla.core.split.SharedPot.isShared(view.config.household)) {
                 item { Section(stringResource(R.string.who_paid_period)) }
                 items(byMember, key = { "m-" + it.memberId }) { m ->
                     val member = view.config.member(m.memberId)

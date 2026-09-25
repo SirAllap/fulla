@@ -69,6 +69,7 @@ import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.model.TransactionValidator
 import io.github.sirallap.fulla.core.schema.SchemaEngine
+import io.github.sirallap.fulla.core.split.SharedPot
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.BackHeader
@@ -149,8 +150,9 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
 
     fun save() {
         if (saved) return
-        val built = draft.build()
-        val problems = TransactionValidator.problems(built, view.config)
+        // A new row in one shared pot is the payer's alone; an edit keeps the split it has.
+        val built = draft.build().let { if (existing == null) SharedPot.forNew(it, view.config.household) else it }
+        val problems = TransactionValidator.problems(built, view.config, isNew = existing == null)
         if (problems.isNotEmpty()) { problem = problems.first(); return }
         // Custom fields: checked and put in canonical form the way the server will.
         val merged = SchemaEngine.merge(view.config.fields, built.kind, draft.extras, emptyMap(),
@@ -283,7 +285,7 @@ private fun androidx.compose.foundation.layout.FlowRowScope.Tile(label: String, 
     }
 }
 
-/** Date · account · who paid · split, in one tappable line. */
+/** Date · account · who paid · split, in one tappable line. In one shared pot nobody is asked who paid. */
 @Composable
 private fun DetailsLine(view: HouseholdView, draft: Draft, onClick: () -> Unit) {
     val c = FullaTheme.colors
@@ -291,7 +293,7 @@ private fun DetailsLine(view: HouseholdView, draft: Draft, onClick: () -> Unit) 
         add(if (draft.date == LocalDate.now()) stringResource(R.string.today) else view.formats.day(draft.date))
         view.accountName(draft.accountId)?.let(::add)
         if (draft.kind == TransactionKind.TRANSFER) view.accountName(draft.toAccountId)?.let { add("→ $it") }
-        if (view.config.activeMembers.size > 1 && draft.kind != TransactionKind.TRANSFER) {
+        if (view.config.activeMembers.size > 1 && draft.kind != TransactionKind.TRANSFER && !SharedPot.isShared(view.config.household)) {
             add(stringResource(R.string.paid_by, view.memberName(draft.paidBy)))
             if (draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND) {
                 add(if (draft.splitWith.size == view.config.activeMembers.size) stringResource(R.string.split_everyone)
@@ -333,7 +335,7 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
                 Section(stringResource(R.string.to_account))
                 ChoiceFlow(accounts.filter { it.id != draft.accountId }.map { it.id to it.name }, draft.toAccountId) { draft.toAccountId = it }
             }
-            if (members.size > 1 && draft.kind != TransactionKind.TRANSFER) {
+            if (members.size > 1 && draft.kind != TransactionKind.TRANSFER && !SharedPot.isShared(view.config.household)) {
                 Section(stringResource(if (draft.kind == TransactionKind.INCOME) R.string.received_by else R.string.who_paid))
                 ChoiceFlow(members.map { it.id to it.displayName }, draft.paidBy) { draft.paidBy = it }
                 if (draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND) {

@@ -458,4 +458,25 @@
     <string name="update_found_text">A new version is ready: see the top of Settings.</string>
     <string name="update_check_failed">Could not reach GitHub. Try again later.</string>
     <string name="update_test_build">Test builds do not update themselves.</string>
+    <string name="money_mode_ask_title">How do you handle money together?</string>
+    <string name="money_mode_shared">One shared pot</string>
+    <string name="money_mode_shared_help">Everything goes in together. It doesn\'t matter who adds what; nobody owes anybody.</string>
+    <string name="money_mode_split">We split expenses</string>
+    <string name="money_mode_split_help">Each expense is shared between people, and Balances shows who owes whom.</string>
+    <string name="money_mode_ask_footer">You can change this later in Household settings.</string>
+    <string name="not_now">Not now</string>
+    <string name="money_between_members">Money between members</string>
+    <string name="money_mode_split_value">Split expenses</string>
+    <string name="shared_pot_card_title">Shared pot</string>
+    <string name="shared_pot_card_text">Everything goes into one pot, so nobody owes anybody.</string>
+    <string name="shared_pot_change">Change in Household settings</string>
+    <string name="household_total">All accounts together</string>
+    <string name="shared_pot_existing_title">From before</string>
+    <string name="shared_pot_existing_text">%1$s is owed %2$s from before. From now on nobody owes anybody. What about what\'s already owed?</string>
+    <string name="settle_now">Settle it now</string>
+    <string name="keep_it">Keep it</string>
+    <string name="shared_pot_sync_failed">The payments could not be sent, so nothing changed. Try again when you are online.</string>
+    <string name="shared_pot_started_note">Shared pot started</string>
+    <string name="split_again_text">New expenses will be split between members again. What you added while sharing stays shared.</string>
+    <string name="added_by">Added by %1$s</string>
 </resources>

@@ -457,4 +457,25 @@
     <string name="update_found_text">Há uma versão nova: vê no topo das Definições.</string>
     <string name="update_check_failed">Não foi possível contactar o GitHub. Tenta mais tarde.</string>
     <string name="update_test_build">As versões de teste não se atualizam sozinhas.</string>
+    <string name="money_mode_ask_title">Como vocês cuidam do dinheiro juntos?</string>
+    <string name="money_mode_shared">Um caixa comum</string>
+    <string name="money_mode_shared_help">Tudo vai junto. Não importa quem adiciona o quê; ninguém deve nada a ninguém.</string>
+    <string name="money_mode_split">Dividimos as despesas</string>
+    <string name="money_mode_split_help">Cada despesa é dividida entre as pessoas, e Saldos mostra quem deve a quem.</string>
+    <string name="money_mode_ask_footer">Você pode mudar isso depois nas configurações da casa.</string>
+    <string name="not_now">Agora não</string>
+    <string name="money_between_members">O dinheiro entre vocês</string>
+    <string name="money_mode_split_value">Dividir despesas</string>
+    <string name="shared_pot_card_title">Caixa comum</string>
+    <string name="shared_pot_card_text">Tudo vai para um só caixa, então ninguém deve nada a ninguém.</string>
+    <string name="shared_pot_change">Mudar nas configurações da casa</string>
+    <string name="household_total">Todas as contas juntas</string>
+    <string name="shared_pot_existing_title">De antes</string>
+    <string name="shared_pot_existing_text">%1$s tem %2$s a receber de antes. De agora em diante ninguém deve nada a ninguém. O que fazer com o que já se deve?</string>
+    <string name="settle_now">Acertar agora</string>
+    <string name="keep_it">Deixar assim</string>
+    <string name="shared_pot_sync_failed">Não foi possível enviar os pagamentos, então nada mudou. Tente de novo quando estiver online.</string>
+    <string name="shared_pot_started_note">Começa o caixa comum</string>
+    <string name="split_again_text">As novas despesas voltarão a ser divididas entre vocês. O que vocês adicionaram com o caixa comum continua sendo de todos.</string>
+    <string name="added_by">Adicionado por %1$s</string>
 </resources>

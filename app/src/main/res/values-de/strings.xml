@@ -457,4 +457,25 @@
     <string name="update_found_text">Eine neue Version ist bereit: siehe oben in den Einstellungen.</string>
     <string name="update_check_failed">GitHub ist nicht erreichbar. Versuche es später erneut.</string>
     <string name="update_test_build">Testversionen aktualisieren sich nicht selbst.</string>
+    <string name="money_mode_ask_title">Wie macht ihr das mit dem Geld?</string>
+    <string name="money_mode_shared">Eine gemeinsame Kasse</string>
+    <string name="money_mode_shared_help">Alles kommt zusammen. Egal, wer was einträgt: Niemand schuldet jemandem etwas.</string>
+    <string name="money_mode_split">Wir teilen die Ausgaben</string>
+    <string name="money_mode_split_help">Jede Ausgabe wird unter euch aufgeteilt, und unter Salden seht ihr, wer wem etwas schuldet.</string>
+    <string name="money_mode_ask_footer">Du kannst das später in den Haushaltseinstellungen ändern.</string>
+    <string name="not_now">Nicht jetzt</string>
+    <string name="money_between_members">Geld unter euch</string>
+    <string name="money_mode_split_value">Ausgaben teilen</string>
+    <string name="shared_pot_card_title">Gemeinsame Kasse</string>
+    <string name="shared_pot_card_text">Alles kommt in eine Kasse, also schuldet niemand jemandem etwas.</string>
+    <string name="shared_pot_change">In den Haushaltseinstellungen ändern</string>
+    <string name="household_total">Alle Konten zusammen</string>
+    <string name="shared_pot_existing_title">Von vorher</string>
+    <string name="shared_pot_existing_text">%1$s bekommt von vorher noch %2$s. Ab jetzt schuldet niemand jemandem etwas. Was passiert mit dem, was noch offen ist?</string>
+    <string name="settle_now">Jetzt ausgleichen</string>
+    <string name="keep_it">So lassen</string>
+    <string name="shared_pot_sync_failed">Die Zahlungen konnten nicht gesendet werden, also hat sich nichts geändert. Versuch es noch einmal, wenn du online bist.</string>
+    <string name="shared_pot_started_note">Gemeinsame Kasse beginnt</string>
+    <string name="split_again_text">Neue Ausgaben werden wieder unter euch aufgeteilt. Was ihr mit der gemeinsamen Kasse eingetragen habt, bleibt gemeinsam.</string>
+    <string name="added_by">Eingetragen von %1$s</string>
 </resources>

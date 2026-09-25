@@ -69,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.core.model.MoneyMode
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.delay
@@ -457,4 +458,37 @@ fun PasswordField(
         },
         supportingText = supportingText?.let { { Text(it) } },
     )
+}
+
+/**
+ * How the household handles money together: one shared pot, or splitting
+ * expenses. Asked before somebody else joins while nobody has chosen, and
+ * offered again from Household settings, where [current] is ticked.
+ */
+@Composable
+fun MoneyModeSheet(
+    current: MoneyMode?,
+    onChoose: (MoneyMode) -> Unit,
+    onDismiss: () -> Unit,
+    dismissLabel: String = stringResource(R.string.not_now),
+) {
+    val c = FullaTheme.colors
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.paper) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+            Text(stringResource(R.string.money_mode_ask_title), style = FullaType.title, color = c.ink,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp).semantics { heading() })
+            for ((mode, title, help) in listOf(
+                Triple(MoneyMode.SHARED, R.string.money_mode_shared, R.string.money_mode_shared_help),
+                Triple(MoneyMode.SPLIT, R.string.money_mode_split, R.string.money_mode_split_help),
+            )) {
+                ListRow(stringResource(title), context = stringResource(help), onClick = { onChoose(mode) },
+                    end = { if (current == mode) Icon(Icons.Outlined.Check, null, tint = c.accent) })
+            }
+            Text(stringResource(R.string.money_mode_ask_footer), style = FullaType.secondary, color = c.inkMuted,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
+            androidx.compose.material3.TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp)) {
+                Text(dismissLabel)
+            }
+        }
+    }
 }

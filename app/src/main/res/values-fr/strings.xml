@@ -457,4 +457,25 @@
     <string name="update_found_text">Une nouvelle version est prête : voyez en haut des Réglages.</string>
     <string name="update_check_failed">Impossible de joindre GitHub. Réessayez plus tard.</string>
     <string name="update_test_build">Les versions de test ne se mettent pas à jour seules.</string>
+    <string name="money_mode_ask_title">Comment gérez-vous l\'argent ensemble ?</string>
+    <string name="money_mode_shared">Une cagnotte commune</string>
+    <string name="money_mode_shared_help">Tout est mis en commun. Peu importe qui ajoute quoi : personne ne doit rien à personne.</string>
+    <string name="money_mode_split">Nous partageons les dépenses</string>
+    <string name="money_mode_split_help">Chaque dépense est partagée entre les personnes, et Soldes montre qui doit quoi à qui.</string>
+    <string name="money_mode_ask_footer">Vous pourrez changer cela plus tard dans les réglages du foyer.</string>
+    <string name="not_now">Pas maintenant</string>
+    <string name="money_between_members">L\'argent entre vous</string>
+    <string name="money_mode_split_value">Partager les dépenses</string>
+    <string name="shared_pot_card_title">Cagnotte commune</string>
+    <string name="shared_pot_card_text">Tout va dans une seule cagnotte, donc personne ne doit rien à personne.</string>
+    <string name="shared_pot_change">Changer dans les réglages du foyer</string>
+    <string name="household_total">Tous les comptes ensemble</string>
+    <string name="shared_pot_existing_title">D\'avant</string>
+    <string name="shared_pot_existing_text">On doit %2$s à %1$s d\'avant. Désormais, personne ne doit rien à personne. Que faire de ce qui est déjà dû ?</string>
+    <string name="settle_now">Régler maintenant</string>
+    <string name="keep_it">Garder tel quel</string>
+    <string name="shared_pot_sync_failed">Les paiements n\'ont pas pu être envoyés, donc rien n\'a changé. Réessayez quand vous serez en ligne.</string>
+    <string name="shared_pot_started_note">Début de la cagnotte commune</string>
+    <string name="split_again_text">Les nouvelles dépenses seront de nouveau partagées entre vous. Ce que vous avez ajouté pendant la cagnotte commune reste commun.</string>
+    <string name="added_by">Ajouté par %1$s</string>
 </resources>

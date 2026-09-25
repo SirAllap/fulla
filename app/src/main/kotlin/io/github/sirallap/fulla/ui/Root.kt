@@ -164,7 +164,7 @@ private fun Household(state: HouseholdState) {
                         Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW })
                         Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") })
                         Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
-                        Tab.BALANCES -> BalancesScreen(view, headerActions)
+                        Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") })
                     }
                 }
                 LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal) { tab = Tab.entries[it] }

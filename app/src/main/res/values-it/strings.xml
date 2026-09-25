@@ -457,4 +457,25 @@
     <string name="update_found_text">È pronta una nuova versione: guarda in cima alle Impostazioni.</string>
     <string name="update_check_failed">Impossibile raggiungere GitHub. Riprova più tardi.</string>
     <string name="update_test_build">Le versioni di prova non si aggiornano da sole.</string>
+    <string name="money_mode_ask_title">Come gestite i soldi insieme?</string>
+    <string name="money_mode_shared">Una cassa comune</string>
+    <string name="money_mode_shared_help">Tutto finisce insieme. Non importa chi aggiunge cosa: nessuno deve niente a nessuno.</string>
+    <string name="money_mode_split">Dividiamo le spese</string>
+    <string name="money_mode_split_help">Ogni spesa viene divisa tra le persone, e Saldi mostra chi deve a chi.</string>
+    <string name="money_mode_ask_footer">Puoi cambiarlo più avanti nelle impostazioni della casa.</string>
+    <string name="not_now">Non ora</string>
+    <string name="money_between_members">I soldi tra voi</string>
+    <string name="money_mode_split_value">Dividere le spese</string>
+    <string name="shared_pot_card_title">Cassa comune</string>
+    <string name="shared_pot_card_text">Tutto va in un\'unica cassa, quindi nessuno deve niente a nessuno.</string>
+    <string name="shared_pot_change">Cambia nelle impostazioni della casa</string>
+    <string name="household_total">Tutti i conti insieme</string>
+    <string name="shared_pot_existing_title">Da prima</string>
+    <string name="shared_pot_existing_text">%1$s deve ricevere %2$s da prima. D\'ora in poi nessuno deve niente a nessuno. Cosa facciamo con quello che è già dovuto?</string>
+    <string name="settle_now">Pareggia ora</string>
+    <string name="keep_it">Lascia così</string>
+    <string name="shared_pot_sync_failed">Non è stato possibile inviare i pagamenti, quindi non è cambiato niente. Riprova quando sei online.</string>
+    <string name="shared_pot_started_note">Inizia la cassa comune</string>
+    <string name="split_again_text">Le nuove spese verranno di nuovo divise tra voi. Quello che avete aggiunto con la cassa comune resta di tutti.</string>
+    <string name="added_by">Aggiunto da %1$s</string>
 </resources>

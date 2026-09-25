@@ -38,10 +38,12 @@ import io.github.sirallap.fulla.client.remote.InviteLink
 import io.github.sirallap.fulla.core.model.Member
 import io.github.sirallap.fulla.core.model.Role
 import io.github.sirallap.fulla.core.roles.Permissions
+import io.github.sirallap.fulla.core.split.SharedPot
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.ListRow
 import io.github.sirallap.fulla.ui.components.MemberBadge
+import io.github.sirallap.fulla.ui.components.MoneyModeSheet
 import io.github.sirallap.fulla.ui.components.PrimaryButton
 import io.github.sirallap.fulla.ui.components.QrImage
 import io.github.sirallap.fulla.ui.components.Section
@@ -92,6 +94,15 @@ fun MembersSettings(view: HouseholdView, change: Change, onShare: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     val failed = stringResource(R.string.something_failed)
     val canInvite = connected && me != null && Permissions.canInvite(me, Role.MEMBER)
+    var asking by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    /**
+     * Before somebody else joins, an admin whose household has not chosen yet
+     * is asked how it handles money; [then] goes ahead whatever they answer.
+     */
+    fun askFirst(then: () -> Unit) {
+        if (SharedPot.shouldAsk(view.config, me)) asking = then else then()
+    }
 
     LaunchedEffect(refresh, connected) {
         if (canInvite) open = runCatching { container.api()!!.inviteList(view.id) }.getOrDefault(emptyList())
@@ -132,7 +143,7 @@ fun MembersSettings(view: HouseholdView, change: Change, onShare: () -> Unit) {
                 shown?.let { InvitePanel(it.link, it.code, it.forName) }
                 Text(stringResource(R.string.invite_text), style = FullaType.secondary, color = FullaTheme.colors.inkMuted, modifier = Modifier.padding(20.dp))
                 Column(Modifier.padding(horizontal = 20.dp)) {
-                    PrimaryButton(stringResource(if (shown == null) R.string.create_invite else R.string.create_another_invite), { invite(null) }, icon = Icons.Outlined.QrCode)
+                    PrimaryButton(stringResource(if (shown == null) R.string.create_invite else R.string.create_another_invite), { askFirst { invite(null) } }, icon = Icons.Outlined.QrCode)
                 }
                 if (open.isNotEmpty()) {
                     Section(stringResource(R.string.open_invites))
@@ -160,14 +171,27 @@ fun MembersSettings(view: HouseholdView, change: Change, onShare: () -> Unit) {
                 put("id", UUID.randomUUID().toString()); put("display_name", name); put("initials", initialsOf(name))
                 put("color_index", view.config.members.size % 10)
             }
-            change { api ->
-                val next = if (api == null) LocalHousehold.upsertMember(view.state.bundle, member) else api.memberCreateVirtual(view.id, member)
-                container.ledger.storeConfig(view.id, next)
+            askFirst {
+                change { api ->
+                    val next = if (api == null) LocalHousehold.upsertMember(view.state.bundle, member) else api.memberCreateVirtual(view.id, member)
+                    container.ledger.storeConfig(view.id, next)
+                }
             }
         }
     }
 
-    selected?.let { m -> MemberSheet(view, m, change, onInviteToClaim = { invite(m) }, onDismiss = { selected = null }) }
+    selected?.let { m -> MemberSheet(view, m, change, onInviteToClaim = { askFirst { invite(m) } }, onDismiss = { selected = null }) }
+
+    asking?.let { then ->
+        // "Not now" leaves it unchosen: the question comes back with the next invite.
+        MoneyModeSheet(current = null, onDismiss = { asking = null; then() }, onChoose = { mode ->
+            asking = null
+            change { api ->
+                container.ledger.updateHousehold(view.id, buildJsonObject { put("money_mode", mode.key) }, api)
+                then()
+            }
+        })
+    }
 }
 
 @Composable

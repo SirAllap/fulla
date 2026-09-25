@@ -46,6 +46,7 @@ import io.github.sirallap.fulla.core.importers.StatementResult
 import io.github.sirallap.fulla.core.importers.TextDecoding
 import io.github.sirallap.fulla.core.model.AppliesTo
 import io.github.sirallap.fulla.core.model.Split
+import io.github.sirallap.fulla.core.split.SharedPot
 import io.github.sirallap.fulla.core.money.DecimalStyle
 import io.github.sirallap.fulla.core.sync.SyncEngine
 import io.github.sirallap.fulla.ui.HouseholdView
@@ -342,7 +343,9 @@ fun ImportScreen(view: HouseholdView, change: Change) {
         }
         Column(Modifier.padding(20.dp)) {
             PrimaryButton(stringResource(R.string.import_n, fresh.size), {
+                // In one shared pot an imported expense is its payer's alone, like any other new row.
                 val rows = fresh.map { p -> overrides[p.transaction.id]?.let { p.transaction.copy(categoryId = it) } ?: p.transaction }
+                    .map { SharedPot.forNew(it, view.config.household) }
                 val used = rows.mapNotNull { it.categoryId }.toSet()
                 // Categories first: a row must never reach the server before the category it names.
                 val accountsUsed = rows.flatMap { listOfNotNull(it.accountId, it.toAccountId) }.toSet()

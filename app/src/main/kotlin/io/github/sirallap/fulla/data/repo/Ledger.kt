@@ -14,6 +14,7 @@ import io.github.sirallap.fulla.core.demo.DemoData
 import io.github.sirallap.fulla.core.importers.CategorizationRule
 import io.github.sirallap.fulla.core.model.Config
 import io.github.sirallap.fulla.core.model.Transaction
+import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.sync.LocalTransaction
 import io.github.sirallap.fulla.core.sync.SyncEngine
 import io.github.sirallap.fulla.core.sync.SyncState
@@ -81,13 +82,14 @@ class Ledger(
 
     // ── transactions ─────────────────────────────────────────────────────────
 
-    /** Creates or changes a row. The id decides which. */
+    /** Creates or changes a row. The id decides which. A new row follows the household's shared pot rule. */
     suspend fun save(householdId: String, t: Transaction) {
         val h = households.get(householdId) ?: return
         val connected = h.mode == CONNECTED
+        val household = householdOf(h)
         db.withTransaction {
             val existing = transactions.get(t.id)?.let(Rows::local)
-            val row = if (existing == null) Edits.create(t, connected, now()) else Edits.edit(existing, t, connected, now())
+            val row = if (existing == null) Edits.create(t, connected, now(), household) else Edits.edit(existing, t, connected, now())
             transactions.upsert(listOf(Rows.entity(householdId, row)))
         }
         if (connected) requestSync()
@@ -96,11 +98,12 @@ class Ledger(
     suspend fun saveAll(householdId: String, rows: List<Transaction>) {
         val h = households.get(householdId) ?: return
         val connected = h.mode == CONNECTED
+        val household = householdOf(h)
         db.withTransaction {
             val held = rows.map { it.id }.chunked(500).flatMap { transactions.byIds(householdId, it) }.associateBy { it.id }
             transactions.upsert(rows.map { t ->
                 val existing = held[t.id]?.let(Rows::local)
-                Rows.entity(householdId, if (existing == null) Edits.create(t, connected, now()) else Edits.edit(existing, t, connected, now()))
+                Rows.entity(householdId, if (existing == null) Edits.create(t, connected, now(), household) else Edits.edit(existing, t, connected, now()))
             })
         }
         if (connected) requestSync()
@@ -119,6 +122,10 @@ class Ledger(
         }
         if (connected) requestSync()
     }
+
+    /** Whether a settlement written on this phone has not reached the server yet. */
+    suspend fun hasUnsentSettlements(householdId: String): Boolean =
+        transactions.all(householdId).map(Rows::local).any { it.state == SyncState.PENDING && it.transaction.kind == TransactionKind.SETTLEMENT }
 
     /** Writes the recurring occurrences that are due. Safe to call as often as you like. */
     suspend fun generateRecurring(householdId: String, today: LocalDate = LocalDate.now()) {
@@ -236,6 +243,8 @@ class Ledger(
         val next = change(Wire.json.parseToJsonElement(h.configJson).jsonObject)
         storeConfig(householdId, next)
     }
+
+    private fun householdOf(e: HouseholdEntity) = Wire.config(Wire.json.parseToJsonElement(e.configJson).jsonObject).household
 
     private fun state(e: HouseholdEntity): HouseholdState {
         val bundle = Wire.json.parseToJsonElement(e.configJson).jsonObject

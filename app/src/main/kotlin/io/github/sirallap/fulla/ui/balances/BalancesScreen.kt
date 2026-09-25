@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,6 +26,7 @@ import io.github.sirallap.fulla.core.balance.Payment
 import io.github.sirallap.fulla.core.balance.SettlementPlanner
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.split.SharedPot
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AmountText
@@ -42,9 +44,13 @@ import java.util.UUID
  * Who owes whom, and the fewest payments that would settle it; then what is
  * in each account. Recording a payment writes a settlement, which moves the
  * balances and no total.
+ *
+ * In one shared pot nobody owes anybody: the screen says so, and shows the
+ * accounts and what they hold together. Debts kept from before the switch
+ * stay hidden, and come back if the household splits again.
  */
 @Composable
-fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit) {
+fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
@@ -56,11 +62,17 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit) {
         view.analytics.accountBalances(view.active, view.config.accounts.filter { !it.archived }, LocalDate.now())
     }
     var confirming by remember { mutableStateOf<Payment?>(null) }
+    val shared = SharedPot.isShared(view.config.household)
 
     Column(Modifier.fillMaxSize()) {
         TabHeader(stringResource(R.string.tab_balances), actions = { headerActions() })
         LazyColumn(Modifier.weight(1f)) {
-            if (members.size >= 2) {
+            if (shared) {
+                item {
+                    EmptyState(Icons.Outlined.Savings, stringResource(R.string.shared_pot_card_title), stringResource(R.string.shared_pot_card_text),
+                        action = { TextButton(onClick = onHouseholdSettings) { Text(stringResource(R.string.shared_pot_change)) } })
+                }
+            } else if (members.size >= 2) {
                 item { Section(stringResource(R.string.between_you), top = 8.dp) }
                 items(balances.filter { b -> view.config.member(b.memberId)?.isActive == true || b.balanceMinor != 0L }, key = { it.memberId }) { b ->
                     val m = view.config.member(b.memberId)
@@ -100,6 +112,13 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit) {
             items(view.config.accounts.filter { !it.archived }, key = { it.id }) { a ->
                 val amount = accounts[a.id] ?: 0
                 ListRow(a.name, end = { AmountText(f.money(amount), color = if (amount < 0) c.moneyOut else c.ink) })
+            }
+            if (shared) {
+                item {
+                    val total = view.config.accounts.filter { !it.archived }.sumOf { accounts[it.id] ?: 0L }
+                    ListRow(stringResource(R.string.household_total), divider = false,
+                        end = { AmountText(f.money(total), color = if (total < 0) c.moneyOut else c.ink) })
+                }
             }
         }
     }

@@ -165,7 +165,9 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, onClick: () -
         icon = if (payer == null || view.config.activeMembers.size < 2) CategoryIcons.of(category?.icon ?: "label") else null,
         iconTint = c.category(category?.colorIndex ?: 0),
         start = if (payer != null && view.config.activeMembers.size >= 2) ({
-            MemberBadge(payer.initials, payer.colorIndex, description = stringResource(R.string.paid_by, payer.displayName))
+            // In one shared pot who paid is only who added it.
+            val badge = if (io.github.sirallap.fulla.core.split.SharedPot.isShared(view.config.household)) R.string.added_by else R.string.paid_by
+            MemberBadge(payer.initials, payer.colorIndex, description = stringResource(badge, payer.displayName))
         }) else null,
         onClick = onClick,
         end = {

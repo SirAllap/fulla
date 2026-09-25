@@ -47,14 +47,22 @@ import io.github.sirallap.fulla.BuildConfig
 import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.client.local.LocalHousehold
 import io.github.sirallap.fulla.client.remote.FullaApi
+import io.github.sirallap.fulla.client.remote.FullaError
 import io.github.sirallap.fulla.client.remote.InviteLink
 import io.github.sirallap.fulla.client.remote.Structure
 import io.github.sirallap.fulla.client.wire.Wire
+import io.github.sirallap.fulla.core.balance.Balances
+import io.github.sirallap.fulla.core.balance.MemberBalance
+import io.github.sirallap.fulla.core.balance.SettlementPlanner
 import io.github.sirallap.fulla.core.design.MoneyPalette
 import io.github.sirallap.fulla.core.model.AppliesTo
+import io.github.sirallap.fulla.core.model.MoneyMode
 import io.github.sirallap.fulla.core.model.Role
+import io.github.sirallap.fulla.core.model.Transaction
+import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.money.MoneyParser
 import io.github.sirallap.fulla.core.roles.Permissions
+import io.github.sirallap.fulla.core.split.SharedPot
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AmountText
@@ -63,6 +71,7 @@ import io.github.sirallap.fulla.ui.components.CopyableText
 import io.github.sirallap.fulla.ui.components.EmptyState
 import io.github.sirallap.fulla.ui.components.ListRow
 import io.github.sirallap.fulla.ui.components.MemberBadge
+import io.github.sirallap.fulla.ui.components.MoneyModeSheet
 import io.github.sirallap.fulla.ui.components.PrimaryButton
 import io.github.sirallap.fulla.ui.components.QrImage
 import io.github.sirallap.fulla.ui.components.Section
@@ -78,6 +87,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.LocalDate
 import java.util.UUID
 
 typealias Change = (suspend (FullaApi?) -> Unit) -> Unit
@@ -113,10 +123,73 @@ internal fun EditDialog(
 
 @Composable
 fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
-    val ledger = LocalContainer.current.ledger
+    val container = LocalContainer.current
+    val ledger = container.ledger
+    val scope = rememberCoroutineScope()
     val h = view.config.household
     var editing by remember { mutableStateOf<String?>(null) }
     val me = view.me
+    val shared = SharedPot.isShared(h)
+    var choosingMode by remember { mutableStateOf(false) }
+    var owedFromBefore by remember { mutableStateOf<MemberBalance?>(null) }
+    var splittingAgain by remember { mutableStateOf(false) }
+    var switching by remember { mutableStateOf(false) }
+    var modeError by remember { mutableStateOf<String?>(null) }
+    val syncFailed = stringResource(R.string.shared_pot_sync_failed)
+    val failed = stringResource(R.string.something_failed)
+    val startedNote = stringResource(R.string.shared_pot_started_note)
+    val balances = remember(view) { Balances.of(view.active, view.config.members.map { it.id }) }
+
+    fun setMode(mode: MoneyMode) = change { api -> ledger.updateHousehold(view.id, buildJsonObject { put("money_mode", mode.key) }, api) }
+
+    /**
+     * One shared pot from now on. What is owed from before is settled first
+     * when [settle], with ordinary settlements dated today, and those must
+     * reach the server before the switch: once the pot is shared the server
+     * refuses new settlements. If they cannot be sent, nothing changes.
+     */
+    fun switchToShared(settle: Boolean) {
+        switching = true
+        modeError = null
+        scope.launch {
+            try {
+                val api = if (view.state.connected) container.api() else null
+                if (view.state.connected && api == null) { modeError = syncFailed; return@launch }
+                if (settle) {
+                    ledger.saveAll(view.id, SettlementPlanner.plan(balances).map { p ->
+                        Transaction(
+                            id = UUID.randomUUID().toString(), kind = TransactionKind.SETTLEMENT, date = LocalDate.now(),
+                            amountMinor = p.amountMinor, paidByMemberId = p.fromMemberId, toMemberId = p.toMemberId,
+                            note = startedNote, createdAt = "", clientUpdatedAt = "", createdByMemberId = view.config.meMemberId,
+                        )
+                    })
+                }
+                if (view.state.connected && ledger.hasUnsentSettlements(view.id)) {
+                    container.syncAll()
+                    if (ledger.hasUnsentSettlements(view.id)) { modeError = syncFailed; return@launch }
+                }
+                ledger.updateHousehold(view.id, buildJsonObject { put("money_mode", MoneyMode.SHARED.key) }, api)
+            } catch (e: Exception) {
+                modeError = (e as? FullaError)?.message ?: failed
+            } finally {
+                switching = false
+            }
+        }
+    }
+
+    fun choose(mode: MoneyMode) {
+        when {
+            mode == h.moneyMode -> Unit
+            mode == MoneyMode.SPLIT && shared -> splittingAgain = true
+            mode == MoneyMode.SPLIT -> setMode(MoneyMode.SPLIT)
+            else -> {
+                // Whoever is owed the most names the question; the settling covers everyone.
+                val owed = balances.filter { it.balanceMinor > 0 }.maxByOrNull { it.balanceMinor }
+                if (owed == null) switchToShared(settle = false) else owedFromBefore = owed
+            }
+        }
+    }
+
     Column {
         ListRow(stringResource(R.string.household_name), context = h.name, onClick = if (canEdit) ({ editing = "name" }) else null)
         ListRow(stringResource(R.string.currency), context = h.currency,
@@ -127,6 +200,34 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         ListRow(stringResource(R.string.income_shift_day), context = h.incomeShiftDay?.let { stringResource(R.string.income_shift_day_value, it) }
             ?: stringResource(R.string.off), detail = stringResource(R.string.income_shift_day_help),
             onClick = if (canEdit) ({ editing = "income_shift_day" }) else null)
+        ListRow(stringResource(R.string.money_between_members),
+            context = stringResource(if (shared) R.string.shared_pot_card_title else R.string.money_mode_split_value),
+            onClick = if (canEdit && !switching) ({ choosingMode = true }) else null)
+        modeError?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
+    }
+    if (choosingMode) {
+        MoneyModeSheet(h.moneyMode, dismissLabel = stringResource(R.string.cancel), onDismiss = { choosingMode = false }, onChoose = { mode ->
+            choosingMode = false
+            choose(mode)
+        })
+    }
+    owedFromBefore?.let { owed ->
+        AlertDialog(
+            onDismissRequest = { owedFromBefore = null },
+            title = { Text(stringResource(R.string.shared_pot_existing_title)) },
+            text = { Text(stringResource(R.string.shared_pot_existing_text, view.memberName(owed.memberId), view.formats.money(owed.balanceMinor))) },
+            confirmButton = { TextButton(onClick = { owedFromBefore = null; switchToShared(settle = true) }) { Text(stringResource(R.string.settle_now)) } },
+            dismissButton = { TextButton(onClick = { owedFromBefore = null; switchToShared(settle = false) }) { Text(stringResource(R.string.keep_it)) } },
+        )
+    }
+    if (splittingAgain) {
+        AlertDialog(
+            onDismissRequest = { splittingAgain = false },
+            title = { Text(stringResource(R.string.money_between_members)) },
+            text = { Text(stringResource(R.string.split_again_text)) },
+            confirmButton = { TextButton(onClick = { splittingAgain = false; setMode(MoneyMode.SPLIT) }) { Text(stringResource(R.string.money_mode_split_value)) } },
+            dismissButton = { TextButton(onClick = { splittingAgain = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
     editing?.let { field ->
         val initial = when (field) {

@@ -457,4 +457,25 @@
     <string name="update_found_text">Hay una versión nueva: mírala arriba del todo en Ajustes.</string>
     <string name="update_check_failed">No se pudo contactar con GitHub. Inténtalo más tarde.</string>
     <string name="update_test_build">Las versiones de prueba no se actualizan solas.</string>
+    <string name="money_mode_ask_title">¿Cómo lleváis el dinero juntos?</string>
+    <string name="money_mode_shared">Un bote común</string>
+    <string name="money_mode_shared_help">Todo va junto. Da igual quién añada qué; nadie le debe nada a nadie.</string>
+    <string name="money_mode_split">Repartimos los gastos</string>
+    <string name="money_mode_split_help">Cada gasto se reparte entre las personas, y Saldos muestra quién debe a quién.</string>
+    <string name="money_mode_ask_footer">Puedes cambiarlo más tarde en los ajustes del hogar.</string>
+    <string name="not_now">Ahora no</string>
+    <string name="money_between_members">El dinero entre vosotros</string>
+    <string name="money_mode_split_value">Repartir gastos</string>
+    <string name="shared_pot_card_title">Bote común</string>
+    <string name="shared_pot_card_text">Todo va a un mismo bote, así que nadie le debe nada a nadie.</string>
+    <string name="shared_pot_change">Cambiarlo en los ajustes del hogar</string>
+    <string name="household_total">Todas las cuentas juntas</string>
+    <string name="shared_pot_existing_title">De antes</string>
+    <string name="shared_pot_existing_text">A %1$s le deben %2$s de antes. A partir de ahora nadie le debe nada a nadie. ¿Qué hacemos con lo que ya se debe?</string>
+    <string name="settle_now">Saldarlo ahora</string>
+    <string name="keep_it">Dejarlo así</string>
+    <string name="shared_pot_sync_failed">No se pudieron enviar los pagos, así que no ha cambiado nada. Inténtalo de nuevo cuando tengas conexión.</string>
+    <string name="shared_pot_started_note">Empieza el bote común</string>
+    <string name="split_again_text">Los gastos nuevos volverán a repartirse entre vosotros. Lo que añadisteis con el bote común sigue siendo de todos.</string>
+    <string name="added_by">Añadido por %1$s</string>
 </resources>
