@@ -9,6 +9,8 @@
 [![CI](https://github.com/SirAllap/fulla/actions/workflows/ci.yml/badge.svg)](https://github.com/SirAllap/fulla/actions/workflows/ci.yml)
 [![Licence: GPL-3.0-or-later](https://img.shields.io/badge/licence-GPL--3.0--or--later-E9B949)](LICENSE)
 
+**[sirallap.github.io/fulla](https://sirallap.github.io/fulla/)** · [Download](https://github.com/SirAllap/fulla/releases/latest) · [Get started](#get-started)
+
 Fulla keeps a household's money straight: what came in, what went out, what
 is left, and who owes whom. It is an Android app for one person or a whole
 household. It works offline, it collects nothing, and your data lives on your

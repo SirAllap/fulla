@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fulla: what comes in, what goes out, and what stays</title>
+<meta name="description" content="Fulla is a free, open source household money app for Android. It works offline, can be shared by QR code, and keeps your data on your phone or in your own Supabase project.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#FAF8F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13111B" media="(prefers-color-scheme: dark)">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'%3E%3Crect width='108' height='108' rx='24' fill='%231B1830'/%3E%3CclipPath id='i'%3E%3Ccircle cx='54' cy='54' r='24'/%3E%3C/clipPath%3E%3Cg clip-path='url(%23i)'%3E%3Cpath d='M26,56 C36,52 44,52 54,56 S72,60 82,56 L82,82 L26,82 Z' fill='%23F6F1E7'/%3E%3C/g%3E%3Ccircle cx='54' cy='54' r='27' fill='none' stroke='%23E9B949' stroke-width='5'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<script>
+  // Decide before first paint whether this visit moves: reduced motion gets the still page.
+  document.documentElement.classList.add(matchMedia('(prefers-reduced-motion: reduce)').matches ? 'still' : 'moves');
+</script>
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+<!--
+THESIS: The page is the jar. Fulla's golden band opens the page full of a real liquid you can stir, then you fall
+inside it and live one month as the app draws it. It refuses the category default of a phone mockup, three feature
+cards and a gradient.
+OWN-WORLD: Ink #1B1830, gold #E9B949, cream #F6F1E7, paper #FAF8F3. Archivo alone. The band, the two liquids and the gap,
+the tab-bar drop, the keypad key that gathers into a check. Springs taken from the app's Motion.kt (snappy 0.9/400,
+settle 0.72/200, trail 0.85/110). No cards, no eyebrows, no gradients used as decoration.
+STORY: A household sees its money as a vessel. What comes in fills it, what goes out settles, and what stays is the
+gap. It is free, it works offline, you share it by QR code and your data lives where you choose. The visitor downloads the APK.
+FIRST VIEWPORT: The band is large (right on desktop, top on phone) with live liquid in it. "Fulla" is set large beside
+it, then the tagline and Download for Android as the one primary action.
+FALL: Inside the band, the ring passes beyond the edges of the viewport, so the month fills the screen as the jar's inside;
+the ring is the door, not the frame.
+FORM: A brief-pinned world (the app's own). The owner approved the research proposal on 2026-09-25, so the direction was not rolled.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar" id="bar">
+  <a class="bar-brand" href="#top" aria-label="Fulla, back to top">
+    <svg class="bar-mark" viewBox="0 0 60 60" aria-hidden="true"><use href="#mark"/></svg>
+    <span>Fulla</span>
+  </a>
+  <nav class="bar-links" aria-label="Primary">
+    <a class="bar-cta" href="https://github.com/SirAllap/fulla/releases/latest">Download</a>
+    <a class="bar-link" href="https://github.com/SirAllap/fulla">GitHub</a>
+  </nav>
+</header>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="mark-in"><circle cx="54" cy="54" r="24"/></clipPath>
+    <symbol id="mark" viewBox="24 24 60 60">
+      <g clip-path="url(#mark-in)"><path class="mark-liquid" d="M26,56 C36,52 44,52 54,56 S72,60 82,56 L82,82 L26,82 Z"/></g>
+      <circle class="mark-ring" cx="54" cy="54" r="27" fill="none" stroke-width="5"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main id="main">
+  <!-- 1 + 2. The band, and falling into your month -->
+  <section class="intro" id="top" aria-label="Fulla">
+    <div class="stage" id="stage">
+      <div class="month-layer" id="monthLayer" aria-hidden="true">
+        <canvas class="month-canvas" id="monthCanvas"></canvas>
+        <div class="month-copy" id="monthCopy">
+          <p class="month-day" id="monthDay">September, day 0</p>
+          <p class="month-line" id="monthLine">Your month is a vessel.</p>
+          <p class="month-stay" id="monthStayWrap"><span class="month-stay-label">What stays</span> <span class="month-stay-figure" id="monthStay">€0.00</span></p>
+          <p class="month-row" id="monthRow">&nbsp;</p>
+        </div>
+        <p class="month-in" id="monthIn">In <span id="monthInFig">+€0.00</span></p>
+        <p class="month-out" id="monthOut">Out <span id="monthOutFig">€0.00</span></p>
+      </div>
+
+      <div class="hero" id="hero">
+        <div class="hero-text">
+          <h1 class="hero-name">Fulla</h1>
+          <p class="hero-tagline">What comes in, what goes out, and what&nbsp;stays.</p>
+          <p class="hero-sub">A household money app for Android, for one person or a whole&nbsp;home.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://github.com/SirAllap/fulla/releases/latest">
+              <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Download for Android
+            </a>
+            <a class="btn btn-quiet" href="https://github.com/SirAllap/fulla">View on GitHub</a>
+          </div>
+        </div>
+        <div class="band-slot" id="bandSlot"></div>
+      </div>
+
+      <div class="band" id="band">
+        <canvas class="band-fluid" id="bandFluid" role="img" aria-label="Fulla's mark: a golden band holding a liquid. Move over it to stir it."></canvas>
+        <svg class="band-still" viewBox="24 24 60 60" aria-hidden="true">
+          <g clip-path="url(#mark-in)"><path class="mark-liquid" d="M26,56 C36,52 44,52 54,56 S72,60 82,56 L82,82 L26,82 Z"/></g>
+        </svg>
+        <svg class="band-ring" viewBox="24 24 60 60" aria-hidden="true">
+          <circle id="ringPath" cx="54" cy="54" r="27" fill="none" stroke-width="5" pathLength="1"/>
+        </svg>
+      </div>
+      <button class="tilt" id="tiltBtn" type="button" hidden>Tilt to pour</button>
+    </div>
+  </section>
+
+  <!-- Still version of the month, for reduced motion -->
+  <section class="month-still" aria-labelledby="stillTitle">
+    <h2 id="stillTitle" class="section-title">Your month is a vessel.</h2>
+    <p class="section-lede">What comes in fills it. What goes out settles at the bottom. The space between is what you keep.</p>
+    <canvas class="month-still-canvas" id="monthStillCanvas" role="img" aria-label="An example month: 6,000.00 came in, 1,954.21 went out, and 4,045.79 stays."></canvas>
+  </section>
+
+  <!-- 3. Features: the drop, with a small drawing per tab -->
+  <section class="features wrap" aria-labelledby="featTitle">
+    <div class="feat-copy">
+    <h2 id="featTitle" class="section-title">Yours, and nobody else's.</h2>
+    <div class="drop-tabs" role="tablist" aria-label="What Fulla does" id="tabs">
+      <span class="drop" id="drop" aria-hidden="true"></span>
+      <button role="tab" id="t0" aria-controls="p0" aria-selected="true" tabindex="0">Offline</button>
+      <button role="tab" id="t1" aria-controls="p1" aria-selected="false" tabindex="-1">Shared</button>
+      <button role="tab" id="t2" aria-controls="p2" aria-selected="false" tabindex="-1">Your data</button>
+      <button role="tab" id="t3" aria-controls="p3" aria-selected="false" tabindex="-1">Open source</button>
+    </div>
+    <div class="drop-panels">
+      <p role="tabpanel" id="p0" aria-labelledby="t0">Works with no signal. Everything is on your phone first.</p>
+      <p role="tabpanel" id="p1" aria-labelledby="t1" hidden>Share one household: scan a QR code and you are&nbsp;in.</p>
+      <p role="tabpanel" id="p2" aria-labelledby="t2" hidden>Your data lives in your own Supabase project, or only on your&nbsp;phone.</p>
+      <p role="tabpanel" id="p3" aria-labelledby="t3" hidden>No ads, no tracking. Free and open source under the&nbsp;GPL.</p>
+    </div>
+    </div>
+    <div class="feat-art" aria-hidden="true">
+      <svg class="art on" data-art="0" viewBox="0 0 400 300">
+        <rect class="a-phone" x="150" y="50" width="100" height="200" rx="18"/><rect class="a-notch" x="186.0" y="59" width="28" height="5" rx="2.5"/>
+        <g class="a-vessel a-settle"><clipPath id="vc16284"><rect x="162" y="84" width="76" height="128" rx="10"/></clipPath><rect class="a-gap" x="162" y="84" width="76" height="128" rx="10"/><g clip-path="url(#vc16284)"><path class="a-in" d="M162 84 H238 V142.88 C215.2 137.76 188.6 150.56 162 144.16 Z"/><path class="a-out" d="M162 212 H238 V188.95999999999998 C211.4 194.07999999999998 184.8 185.12 162 190.24 Z"/></g></g>
+        <g class="a-bars" transform="translate(284 78)"><rect x="0" y="24" width="7" height="10" rx="2"/><rect x="11" y="17" width="7" height="17" rx="2"/><rect x="22" y="10" width="7" height="24" rx="2"/><rect x="33" y="2" width="7" height="32" rx="2"/><path class="a-slash" d="M-4 38 L46 -2"/></g>
+        <text class="a-label" x="306" y="136" text-anchor="middle">No signal</text>
+        <text class="a-label" x="200" y="274" text-anchor="middle">Still all there</text>
+      </svg>
+      <svg class="art" data-art="1" viewBox="0 0 400 300">
+        <rect class="a-phone" x="48" y="60" width="100" height="180" rx="18"/><rect class="a-notch" x="84.0" y="69" width="28" height="5" rx="2.5"/><rect class="a-phone" x="252" y="60" width="100" height="180" rx="18"/><rect class="a-notch" x="288.0" y="69" width="28" height="5" rx="2.5"/>
+        <g class="a-qr"><rect x="67.0" y="112.0" width="5.2" height="5.2"/><rect x="72.2" y="112.0" width="5.2" height="5.2"/><rect x="77.4" y="112.0" width="5.2" height="5.2"/><rect x="82.6" y="112.0" width="5.2" height="5.2"/><rect x="87.8" y="112.0" width="5.2" height="5.2"/><rect x="93.0" y="112.0" width="5.2" height="5.2"/><rect x="98.2" y="112.0" width="5.2" height="5.2"/><rect x="108.6" y="112.0" width="5.2" height="5.2"/><rect x="119.0" y="112.0" width="5.2" height="5.2"/><rect x="124.2" y="112.0" width="5.2" height="5.2"/><rect x="129.4" y="112.0" width="5.2" height="5.2"/><rect x="67.0" y="117.2" width="5.2" height="5.2"/><rect x="98.2" y="117.2" width="5.2" height="5.2"/><rect x="108.6" y="117.2" width="5.2" height="5.2"/><rect x="113.8" y="117.2" width="5.2" height="5.2"/><rect x="129.4" y="117.2" width="5.2" height="5.2"/><rect x="67.0" y="122.4" width="5.2" height="5.2"/><rect x="77.4" y="122.4" width="5.2" height="5.2"/><rect x="82.6" y="122.4" width="5.2" height="5.2"/><rect x="87.8" y="122.4" width="5.2" height="5.2"/><rect x="98.2" y="122.4" width="5.2" height="5.2"/><rect x="113.8" y="122.4" width="5.2" height="5.2"/><rect x="119.0" y="122.4" width="5.2" height="5.2"/><rect x="129.4" y="122.4" width="5.2" height="5.2"/><rect x="67.0" y="127.6" width="5.2" height="5.2"/><rect x="77.4" y="127.6" width="5.2" height="5.2"/><rect x="82.6" y="127.6" width="5.2" height="5.2"/><rect x="87.8" y="127.6" width="5.2" height="5.2"/><rect x="98.2" y="127.6" width="5.2" height="5.2"/><rect x="103.4" y="127.6" width="5.2" height="5.2"/><rect x="108.6" y="127.6" width="5.2" height="5.2"/><rect x="119.0" y="127.6" width="5.2" height="5.2"/><rect x="129.4" y="127.6" width="5.2" height="5.2"/><rect x="67.0" y="132.8" width="5.2" height="5.2"/><rect x="77.4" y="132.8" width="5.2" height="5.2"/><rect x="82.6" y="132.8" width="5.2" height="5.2"/><rect x="87.8" y="132.8" width="5.2" height="5.2"/><rect x="98.2" y="132.8" width="5.2" height="5.2"/><rect x="108.6" y="132.8" width="5.2" height="5.2"/><rect x="129.4" y="132.8" width="5.2" height="5.2"/><rect x="67.0" y="138.0" width="5.2" height="5.2"/><rect x="98.2" y="138.0" width="5.2" height="5.2"/><rect x="113.8" y="138.0" width="5.2" height="5.2"/><rect x="119.0" y="138.0" width="5.2" height="5.2"/><rect x="129.4" y="138.0" width="5.2" height="5.2"/><rect x="67.0" y="143.2" width="5.2" height="5.2"/><rect x="72.2" y="143.2" width="5.2" height="5.2"/><rect x="77.4" y="143.2" width="5.2" height="5.2"/><rect x="82.6" y="143.2" width="5.2" height="5.2"/><rect x="87.8" y="143.2" width="5.2" height="5.2"/><rect x="93.0" y="143.2" width="5.2" height="5.2"/><rect x="98.2" y="143.2" width="5.2" height="5.2"/><rect x="108.6" y="143.2" width="5.2" height="5.2"/><rect x="119.0" y="143.2" width="5.2" height="5.2"/><rect x="129.4" y="143.2" width="5.2" height="5.2"/><rect x="108.6" y="148.4" width="5.2" height="5.2"/><rect x="113.8" y="148.4" width="5.2" height="5.2"/><rect x="67.0" y="153.6" width="5.2" height="5.2"/><rect x="72.2" y="153.6" width="5.2" height="5.2"/><rect x="82.6" y="153.6" width="5.2" height="5.2"/><rect x="93.0" y="153.6" width="5.2" height="5.2"/><rect x="98.2" y="153.6" width="5.2" height="5.2"/><rect x="103.4" y="153.6" width="5.2" height="5.2"/><rect x="119.0" y="153.6" width="5.2" height="5.2"/><rect x="124.2" y="153.6" width="5.2" height="5.2"/><rect x="129.4" y="153.6" width="5.2" height="5.2"/><rect x="72.2" y="158.8" width="5.2" height="5.2"/><rect x="77.4" y="158.8" width="5.2" height="5.2"/><rect x="87.8" y="158.8" width="5.2" height="5.2"/><rect x="103.4" y="158.8" width="5.2" height="5.2"/><rect x="113.8" y="158.8" width="5.2" height="5.2"/><rect x="124.2" y="158.8" width="5.2" height="5.2"/><rect x="67.0" y="164.0" width="5.2" height="5.2"/><rect x="77.4" y="164.0" width="5.2" height="5.2"/><rect x="82.6" y="164.0" width="5.2" height="5.2"/><rect x="87.8" y="164.0" width="5.2" height="5.2"/><rect x="93.0" y="164.0" width="5.2" height="5.2"/><rect x="98.2" y="164.0" width="5.2" height="5.2"/><rect x="108.6" y="164.0" width="5.2" height="5.2"/><rect x="124.2" y="164.0" width="5.2" height="5.2"/><rect x="129.4" y="164.0" width="5.2" height="5.2"/><rect x="72.2" y="169.2" width="5.2" height="5.2"/><rect x="93.0" y="169.2" width="5.2" height="5.2"/><rect x="103.4" y="169.2" width="5.2" height="5.2"/><rect x="108.6" y="169.2" width="5.2" height="5.2"/><rect x="119.0" y="169.2" width="5.2" height="5.2"/><rect x="129.4" y="169.2" width="5.2" height="5.2"/><rect x="67.0" y="174.4" width="5.2" height="5.2"/><rect x="72.2" y="174.4" width="5.2" height="5.2"/><rect x="77.4" y="174.4" width="5.2" height="5.2"/><rect x="87.8" y="174.4" width="5.2" height="5.2"/><rect x="98.2" y="174.4" width="5.2" height="5.2"/><rect x="108.6" y="174.4" width="5.2" height="5.2"/><rect x="113.8" y="174.4" width="5.2" height="5.2"/><rect x="124.2" y="174.4" width="5.2" height="5.2"/><rect x="129.4" y="174.4" width="5.2" height="5.2"/></g>
+        <path class="a-corners" d="M272 104 v-10 h10 M328 94 h10 v10 M338 188 v10 h-10 M282 198 h-10 v-10"/>
+        <g class="a-vessel a-arrive"><clipPath id="vc270104"><rect x="270" y="104" width="64" height="88" rx="10"/></clipPath><rect class="a-gap" x="270" y="104" width="64" height="88" rx="10"/><g clip-path="url(#vc270104)"><path class="a-in" d="M270 104 H334 V144.48000000000002 C314.8 140.96 292.4 149.76 270 145.36 Z"/><path class="a-out" d="M270 192 H334 V176.16 C311.6 179.68 289.2 173.52 270 177.04 Z"/></g></g>
+        <path class="a-arc" d="M152 116 C185 40 215 40 248 116"/>
+        <circle class="a-dot" r="6"/>
+        <text class="a-label" x="98" y="270" text-anchor="middle">Your phone</text>
+        <text class="a-label" x="302" y="270" text-anchor="middle">Theirs</text>
+      </svg>
+      <svg class="art" data-art="2" viewBox="0 0 400 300">
+        <rect class="a-phone" x="60" y="60" width="100" height="180" rx="18"/><rect class="a-notch" x="96.0" y="69" width="28" height="5" rx="2.5"/>
+        <g class="a-vessel a-settle"><clipPath id="vc7294"><rect x="72" y="94" width="76" height="112" rx="10"/></clipPath><rect class="a-gap" x="72" y="94" width="76" height="112" rx="10"/><g clip-path="url(#vc7294)"><path class="a-in" d="M72 94 H148 V145.52 C125.19999999999999 141.04 98.6 152.24 72 146.64 Z"/><path class="a-out" d="M72 206 H148 V185.83999999999997 C121.4 190.32 94.8 182.48000000000002 72 186.95999999999998 Z"/></g></g>
+        <g class="a-db"><path class="a-dbody" d="M258 96 v100 a44 14 0 0 0 88 0 v-100"/><ellipse class="a-dtop" cx="302" cy="96" rx="44" ry="14"/><path class="a-dline" d="M258 130 a44 14 0 0 0 88 0 M258 164 a44 14 0 0 0 88 0"/></g>
+        <path class="a-link" d="M172 150 H246"/><path class="a-link-head" d="M238 143 l8 7 -8 7 M180 143 l-8 7 8 7"/>
+        <text class="a-label" x="110" y="270" text-anchor="middle">On your phone</text>
+        <text class="a-label" x="302" y="240" text-anchor="middle">Your own Supabase</text>
+      </svg>
+      <svg class="art" data-art="3" viewBox="0 0 400 300">
+        <rect class="a-win" x="40" y="46" width="320" height="208" rx="18"/>
+        <circle class="a-wdot" cx="62" cy="66" r="4"/><circle class="a-wdot" cx="76" cy="66" r="4"/><circle class="a-wdot" cx="90" cy="66" r="4"/>
+        <g class="a-code"><rect x="62" y="96" width="96" height="8" rx="4"/><rect class="g" x="78" y="116" width="120" height="8" rx="4"/><rect x="78" y="136" width="84" height="8" rx="4"/><rect x="94" y="156" width="104" height="8" rx="4"/><rect class="g" x="78" y="176" width="64" height="8" rx="4"/><rect x="62" y="196" width="40" height="8" rx="4"/></g>
+        <svg x="232" y="92" width="96" height="96" viewBox="0 0 60 60"><use href="#mark"/></svg>
+        <text class="a-label strong" x="280" y="220" text-anchor="middle">GPL-3.0</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 4. The app, alive + the rail of real screens -->
+  <section class="screens" aria-labelledby="screensTitle">
+    <div class="screens-head wrap">
+      <h2 id="screensTitle" class="section-title">The real app.</h2>
+      <p class="section-lede">The first phone is live, so try its arrows. The rest are screenshots from the app, showing example data.</p>
+    </div>
+    <div class="rail" id="rail" tabindex="0" role="region" aria-label="App screens. Scroll sideways or use the arrow keys.">
+      <figure class="phone phone-live" id="livePhone">
+        <div class="phone-screen app" aria-label="Live Overview screen with example data">
+          <div class="app-top">
+            <p class="app-title">Demo household</p>
+            <svg class="app-kebab" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          </div>
+          <div class="app-month">
+            <button class="app-arrow" id="prevMonth" type="button" aria-label="Previous month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <p class="app-month-name" id="appMonth" aria-live="polite">September</p>
+            <button class="app-arrow" id="nextMonth" type="button" aria-label="Next month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+          </div>
+          <div class="app-jar" id="appJar">
+            <canvas id="appJarCanvas" aria-hidden="true"></canvas>
+            <p class="app-jar-figure" id="appSaved">€4,045.79</p>
+          </div>
+          <dl class="app-stats">
+            <div><dt>In</dt><dd class="app-in" id="appIn">+€6,000.00</dd></div>
+            <div><dt>Out</dt><dd id="appOut">€1,954.21</dd></div>
+            <div><dt>Saved</dt><dd id="appPct">67 %</dd></div>
+          </dl>
+          <p class="app-where">Where it went</p>
+          <ul class="app-rows" id="appRows"></ul>
+        </div>
+        <figcaption>Overview, live</figcaption>
+      </figure>
+      <figure class="phone"><picture><source srcset="img/add-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/add-light.webp" width="540" height="1171" loading="lazy" decoding="async" alt="The Add screen: a keypad for the amount, with category tiles for groceries, eating out, transport, utilities, subscriptions and health."></picture><figcaption>Add</figcaption></figure>
+      <figure class="phone"><picture><source srcset="img/history-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/history-light.webp" width="540" height="1171" loading="lazy" decoding="async" alt="The History screen: the month's movements listed by day, with filters for spending, income and transfers."></picture><figcaption>History</figcaption></figure>
+      <figure class="phone"><picture><source srcset="img/balances-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/balances-light.webp" width="540" height="1171" loading="lazy" decoding="async" alt="The Balances screen: who is owed and who owes, what to settle up, and the balance of each account."></picture><figcaption>Balances</figcaption></figure>
+      <figure class="phone"><picture><source srcset="img/insights-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/insights-light.webp" width="540" height="1171" loading="lazy" decoding="async" alt="The Insights screen: each category against the usual, who paid this period, and costs that look like they repeat."></picture><figcaption>Insights</figcaption></figure>
+      <figure class="phone"><picture><source srcset="img/people-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/people-light.webp" width="540" height="1171" loading="lazy" decoding="async" alt="The People screen: household members, each with a colour and initials, and a way to share the household with another phone."></picture><figcaption>People</figcaption></figure>
+      <figure class="phone"><picture><source srcset="img/welcome-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/welcome-light.webp" width="540" height="1171" loading="lazy" decoding="async" alt="The Welcome screen: the golden band, Get started, I have an invite, and More options."></picture><figcaption>Welcome</figcaption></figure>
+    </div>
+    <div class="rail-nav">
+      <button type="button" class="rail-btn" id="railPrev" aria-controls="rail" aria-label="Previous screen">&larr;</button>
+      <div class="rail-progress" aria-hidden="true"><span id="railBar"></span></div>
+      <button type="button" class="rail-btn" id="railNext" aria-controls="rail" aria-label="Next screen">&rarr;</button>
+    </div>
+  </section>
+
+  <!-- 5. Get started -->
+  <section class="start wrap" aria-labelledby="startTitle">
+    <div class="start-head">
+      <h2 id="startTitle" class="section-title">Three steps, and it is yours.</h2>
+      <p class="start-more"><a href="https://github.com/SirAllap/fulla#get-started">Read the full guide in the README</a></p>
+    </div>
+    <ol class="steps" id="steps">
+      <li class="step">
+        <span class="key" aria-hidden="true"><span class="key-n">1</span><svg class="key-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/></svg></span>
+        <p><a href="https://github.com/SirAllap/fulla/releases/latest">Install the APK.</a></p>
+      </li>
+      <li class="step">
+        <span class="key" aria-hidden="true"><span class="key-n">2</span><svg class="key-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/></svg></span>
+        <p>Open it and tap <strong>Get started</strong>. For a shared household, choose <strong>Shared</strong> and paste a Supabase&nbsp;token.</p>
+      </li>
+      <li class="step">
+        <span class="key" aria-hidden="true"><span class="key-n">3</span><svg class="key-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/></svg></span>
+        <p>Invite the rest of your home. They tap <strong>I have an invite</strong> and scan the QR&nbsp;code.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 6. The name -->
+  <section class="name wrap" aria-labelledby="nameTitle" id="name">
+    <div class="name-art" aria-hidden="true">
+      <svg viewBox="24 24 60 60">
+        <g clip-path="url(#mark-in)"><path class="mark-liquid name-liq" d="M26,56 C36,52 44,52 54,56 S72,60 82,56 L82,86 L26,86 Z"/></g>
+        <circle class="mark-ring" cx="54" cy="54" r="27" fill="none" stroke-width="5"/>
+      </svg>
+    </div>
+    <div class="name-copy">
+      <h2 id="nameTitle" class="section-title">Why Fulla.</h2>
+      <p class="name-lede">Fulla is the Norse goddess of plenty. Her name means <em>full</em>, and the old poems call gold "Fulla's headband". The app takes two things from her: a vessel that fills, and the&nbsp;gold.</p>
+      <dl class="name-facts">
+        <div><dt>Full</dt><dd>What her name means. A month is a vessel, and the app shows how full it&nbsp;is.</dd></div>
+        <div><dt>The golden band</dt><dd>Gold is her headband in the poems, and the mark is a band of&nbsp;gold.</dd></div>
+        <div><dt>The casket</dt><dd>She keeps Frigg's casket. The app keeps a household's accounts, and nobody else reads&nbsp;them.</dd></div>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot-close wrap">
+    <p class="foot-tagline">What comes in, what goes out, and what&nbsp;stays.</p>
+    <div class="foot-actions">
+      <a class="btn btn-primary" href="https://github.com/SirAllap/fulla/releases/latest">
+        <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download for Android
+      </a>
+      <a class="btn btn-quiet" href="https://github.com/SirAllap/fulla">View on GitHub</a>
+    </div>
+  </div>
+  <div class="foot-bar wrap">
+    <a class="foot-brand" href="#top" aria-label="Fulla, back to top"><svg viewBox="0 0 60 60" aria-hidden="true"><use href="#mark"/></svg><span>Fulla</span></a>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="https://github.com/SirAllap/fulla">Source on GitHub</a>
+      <a href="https://github.com/SirAllap/fulla/releases">Releases</a>
+      <a href="https://github.com/SirAllap/fulla#get-started">Guide</a>
+      <a href="NOTICE">Credits</a>
+    </nav>
+  </div>
+  <div class="foot-fine wrap">
+    <p>Free and open source, <a href="https://github.com/SirAllap/fulla/blob/main/LICENSE">GPL-3.0</a>.</p>
+    <p>This page has no analytics and no cookies.</p>
+    <p class="foot-made">Made by <a href="https://github.com/SirAllap">SirAllap</a></p>
+  </div>
+</footer>
+</body>
+</html>
