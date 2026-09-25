@@ -126,6 +126,16 @@ member balances and name normalisation also exist in the app. Their vectors
 are in `testdata/vectors/`; both sides must pass them. Change one side, change
 the other.
 
+The shared pot is one of them. In a household with `money_mode = 'shared'` a
+new expense or refund is stored split to its payer alone, and a new settlement
+is refused: `SharedPot.forNew` in `core/.../split/SharedPot.kt` on the phone
+(through `Edits.create`, so recurring items and imports follow it too) and
+`fulla.shared_pot_for_new` in `0011_money_mode.sql`, called where
+`fulla_sync_push` inserts, so a phone that has not heard of the switch still
+creates no debt. Both pass `testdata/vectors/shared_pot.json`. It applies to
+new rows only: an edit keeps its split, and nothing written before a switch is
+rewritten (`an edit of a row written before the shared pot keeps its split`).
+
 ### The simulation is the sync's real test
 
 `ten phones converge whatever the order` in `core/.../SyncTest.kt` runs ten

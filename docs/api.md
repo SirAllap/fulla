@@ -67,7 +67,7 @@ active member with at least the role shown.
 |---|---|---|
 | `fulla_household_create(p_name, p_currency, p_locale, p_display_name, p_initials, p_color_index)` | signed in | Creates the household with default categories and accounts in the locale's language; the caller is owner. Returns `{household_id, member_id, config}` |
 | `fulla_household_create_from_local(p_payload)` | signed in | Uploads a household that lived on one phone, keeping every id. Idempotent for its owner |
-| `fulla_household_update(p_household_id, p_patch)` | admin | `name`, `locale`, `period_start_day`, `income_shift_day`, `week_start`; owner only: `currency`, `member_limit` |
+| `fulla_household_update(p_household_id, p_patch)` | admin | `name`, `locale`, `period_start_day`, `income_shift_day`, `week_start`, `money_mode` (`split`, `shared` or null); owner only: `currency`, `member_limit` |
 | `fulla_invite_create(p_household_id, p_role, p_claim_member_id, p_ttl_hours)` | admin (owner for `admin`) | `{code, expires_at, role, claim_member_id}` |
 | `fulla_invite_list(p_household_id)` | admin | Open invites |
 | `fulla_invite_revoke(p_household_id, p_code)` | admin | |
@@ -100,7 +100,7 @@ The config bundle:
 
 ```json
 {"config_version": 17,
- "household": {"id", "name", "currency", "locale", "period_start_day", "income_shift_day", "week_start", "member_limit"},
+ "household": {"id", "name", "currency", "locale", "period_start_day", "income_shift_day", "week_start", "member_limit", "money_mode"},
  "me_member_id": "…",
  "members": [{"id", "display_name", "initials", "color_index", "role", "status", "has_account"}],
  "accounts": [...], "categories": [...], "custom_fields": [...], "budgets": [...],
