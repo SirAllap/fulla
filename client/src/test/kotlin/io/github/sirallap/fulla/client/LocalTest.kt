@@ -6,6 +6,7 @@ import io.github.sirallap.fulla.client.local.RecurringPlanner
 import io.github.sirallap.fulla.client.remote.Structure
 import io.github.sirallap.fulla.client.sync.Edits
 import io.github.sirallap.fulla.client.wire.Wire
+import io.github.sirallap.fulla.core.model.MoneyMode
 import io.github.sirallap.fulla.core.model.Role
 import io.github.sirallap.fulla.core.model.Split
 import io.github.sirallap.fulla.core.model.Status
@@ -113,6 +114,41 @@ class LocalTest {
         assertEquals(config.meMemberId, due.last().createdByMemberId)
         // A deleted occurrence still holds its id and is not generated again.
         assertEquals(listOf(LocalDate.of(2030, 2, 1)), RecurringPlanner.due(config, setOf(due.last().id), today).map { it.date })
+    }
+
+    @Test
+    fun `a household on this phone chooses one shared pot, and what it writes next follows`() {
+        val ruleId = "00000000-0000-4000-8000-000000000302"
+        var bundle = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        assertNull(Wire.config(bundle).household.moneyMode, "nobody has chosen yet")
+        val me = Wire.config(bundle).meMemberId!!
+        bundle = LocalHousehold.upsertMember(bundle, buildJsonObject { put("id", Fixtures.BOB); put("display_name", "Bob"); put("initials", "B") })
+        bundle = LocalHousehold.upsert(bundle, Structure.RECURRING, buildJsonObject {
+            put("id", ruleId); put("name", "Rent"); put("start_date", "2030-01-01"); put("auto_create", true); put("active", true)
+            put("schedule", buildJsonObject { put("freq", "monthly"); put("interval", 1); put("by_month_day", 1) })
+            put("template", buildJsonObject {
+                put("kind", "expense"); put("amount_minor", 50000); put("recurrence", "fixed"); put("note", "RENT")
+                put("paid_by_member_id", me)
+                put("split", buildJsonObject { put("mode", "equal"); put("members", kotlinx.serialization.json.JsonArray(listOf(JsonPrimitive(me), JsonPrimitive(Fixtures.BOB)))) })
+            })
+        })
+        bundle = LocalHousehold.updateHousehold(bundle, buildJsonObject { put("money_mode", "shared") })
+        val config = Wire.config(bundle)
+        assertEquals(MoneyMode.SHARED, config.household.moneyMode)
+        // The rule's template still splits; what it writes while the pot is shared does not.
+        assertEquals(Split.Equal(listOf(me, Fixtures.BOB)), config.recurringRules.single().template.split)
+        val due = RecurringPlanner.due(config, emptySet(), LocalDate.of(2030, 1, 10))
+        assertEquals(listOf(Split.Equal(listOf(me))), due.map { it.split })
+        // An expense written on this phone is the payer's alone; an edit keeps whatever split it has.
+        val created = Edits.create(Fixtures.expense(), false, t0, config.household)
+        assertEquals(Split.Equal(listOf(Fixtures.ALICE)), created.transaction.split)
+        val edited = Edits.edit(created, created.transaction.copy(split = Split.Equal(listOf(Fixtures.ALICE, Fixtures.BOB))), false, t0)
+        assertEquals(Split.Equal(listOf(Fixtures.ALICE, Fixtures.BOB)), edited.transaction.split)
+        // The choice travels with the bundle when the household is shared, and back.
+        assertEquals(MoneyMode.SHARED, Wire.config(Wire.bundle(config)).household.moneyMode)
+        // A patch that leaves money_mode out keeps it.
+        bundle = LocalHousehold.updateHousehold(bundle, buildJsonObject { put("name", "Our place") })
+        assertEquals(MoneyMode.SHARED, Wire.config(bundle).household.moneyMode)
     }
 
     @Test

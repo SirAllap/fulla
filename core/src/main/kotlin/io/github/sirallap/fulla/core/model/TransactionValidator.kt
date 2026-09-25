@@ -3,6 +3,7 @@ package io.github.sirallap.fulla.core.model
 
 import io.github.sirallap.fulla.core.money.Currency
 import io.github.sirallap.fulla.core.split.Allocator
+import io.github.sirallap.fulla.core.split.SharedPot
 
 /**
  * What each kind of transaction requires. The same rules as
@@ -14,13 +15,17 @@ import io.github.sirallap.fulla.core.split.Allocator
  *   income      category (income or both)
  *   refund      category (expense or both), who got the money back; split as expense
  *   transfer    two different accounts
- *   settlement  two different members
+ *   settlement  two different members; none new in a household with one
+ *               shared pot (SharedPot)
+ *
+ * [isNew] is false for an edit of a row that already exists, which keeps
+ * what it was: an older settlement stays editable in a shared pot.
  *
  * Returns problems in plain English, or an empty list.
  */
 object TransactionValidator {
 
-    fun problems(t: Transaction, config: Config): List<String> {
+    fun problems(t: Transaction, config: Config, isNew: Boolean = true): List<String> {
         val out = mutableListOf<String>()
         val k = t.kind
         if (t.amountMinor <= 0) out += "The amount must be greater than zero."
@@ -51,6 +56,7 @@ object TransactionValidator {
         } else if (t.toMemberId != null) {
             out += "Only a settlement has a receiving member."
         }
+        if (isNew && SharedPot.refusesNew(t, config.household)) out += SharedPot.NOTHING_TO_SETTLE
 
         val memberIds = config.members.map { it.id }.toSet()
         listOfNotNull(t.paidByMemberId, t.toMemberId).filter { it !in memberIds }

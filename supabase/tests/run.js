@@ -1126,6 +1126,129 @@ for (const v of vectors('balance.json')) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// Shared pot
+// ═════════════════════════════════════════════════════════════════════════════
+
+function setMoneyMode(ctx, mode, user = ctx.alice) {
+  return rpc(ctx.db, user, 'fulla_household_update', { p_household_id: ctx.hh, p_patch: { money_mode: mode } });
+}
+
+test('money_mode: not chosen at first, carried by the bundle, changed by admins only', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  const before = ctx.config();
+  assert.equal(before.household.money_mode, null);
+  const cfg = setMoneyMode(ctx, 'shared');
+  assert.equal(cfg.household.money_mode, 'shared');
+  assert.ok(cfg.config_version > before.config_version, 'every phone hears about it');
+  expectError(ctx.db, bob.user, 'fulla_household_update', { p_household_id: ctx.hh, p_patch: { money_mode: 'split' } }, 'forbidden_role', 403);
+  expectError(ctx.db, ctx.alice, 'fulla_household_update', { p_household_id: ctx.hh, p_patch: { money_mode: 'halves' } }, 'validation_failed');
+  // A phone that has never heard of money_mode sends patches without it; they keep it.
+  const renamed = rpc(ctx.db, ctx.alice, 'fulla_household_update', { p_household_id: ctx.hh, p_patch: { name: 'Our place' } });
+  assert.equal(renamed.household.money_mode, 'shared');
+  assert.equal(setMoneyMode(ctx, 'split').household.money_mode, 'split');
+  assert.equal(pull(ctx, bob.user, 0, null).config.household.money_mode, 'split');
+});
+
+rawTest('a household that lived on one phone keeps its money_mode when it becomes shared', ({ db }) => {
+  const alice = newUser(db, 'alice@example.com');
+  const { ids, payload } = localPayload();
+  payload.household.money_mode = 'shared';
+  const r = rpc(db, alice, 'fulla_household_create_from_local', { p_payload: payload });
+  assert.equal(r.config.household.money_mode, 'shared');
+  assert.equal(r.household_id, ids.household);
+  const other = localPayload().payload;
+  other.household.money_mode = 'halves';
+  expectError(db, alice, 'fulla_household_create_from_local', { p_payload: other }, 'validation_failed');
+});
+
+test('in a shared pot a new expense is stored as its payer\'s alone, and the phone is handed that version', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  setMoneyMode(ctx, 'shared');
+  const tx = expense(ctx, { members: [ctx.aliceMember, bob.member] });
+  const [r] = push(ctx, bob.user, [upsert(tx)]);
+  assert.equal(r.applied, true);
+  const payerOnly = { mode: 'equal', members: [ctx.aliceMember] };
+  assert.deepEqual(r.server_transaction.split, payerOnly);
+  assert.equal(r.server_transaction.client_updated_at, iso());
+  const row = stored(ctx, tx.id);
+  assert.deepEqual(row.split, payerOnly);
+  assert.equal(row.paid_by_member_id, ctx.aliceMember, 'who paid stays, as information');
+  // A row already in that shape needs no second version.
+  const [own] = push(ctx, bob.user, [upsert(expense(ctx, { paid_by_member_id: bob.member, members: [bob.member] }))]);
+  assert.equal(own.applied, true);
+  assert.equal(own.server_transaction, undefined);
+  const balances = rpc(ctx.db, ctx.alice, 'fulla_member_balances', { p_household_id: ctx.hh });
+  assert.deepEqual(balances.map((b) => b.balance_minor), balances.map(() => 0), 'nobody owes anybody');
+});
+
+test('an edit of a row written before the shared pot keeps its split', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  const both = { mode: 'equal', members: [ctx.aliceMember, bob.member] };
+  const tx = expense(ctx, { members: [ctx.aliceMember, bob.member] });
+  push(ctx, ctx.alice, [upsert(tx, iso(0))]);
+  setMoneyMode(ctx, 'shared');
+  const [r] = push(ctx, bob.user, [upsert(Object.assign({}, tx, { note: 'GROCERY STORE 02' }), iso(5))]);
+  assert.equal(r.applied, true);
+  assert.equal(r.server_transaction, undefined);
+  assert.deepEqual(stored(ctx, tx.id).split, both);
+  const balances = Object.fromEntries(rpc(ctx.db, ctx.alice, 'fulla_member_balances', { p_household_id: ctx.hh })
+    .map((b) => [b.member_id, b.balance_minor]));
+  assert.equal(balances[ctx.aliceMember], 617, 'what was owed before stays owed');
+  assert.equal(balances[bob.member], -617);
+});
+
+test('in a shared pot a new settlement is refused, an old one can still be edited', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  const old = { id: uuid(), kind: 'settlement', date: '2030-01-15', amount_minor: 500,
+                paid_by_member_id: bob.member, to_member_id: ctx.aliceMember };
+  push(ctx, ctx.alice, [upsert(old, iso(0))]);
+  setMoneyMode(ctx, 'shared');
+  const fresh = Object.assign({}, old, { id: uuid() });
+  const [r] = push(ctx, bob.user, [upsert(fresh, iso(1))]);
+  assert.equal(r.ok, false);
+  assert.equal(r.error.code, 'validation_failed');
+  assert.match(r.error.message, /nothing to settle/);
+  assert.equal(stored(ctx, fresh.id), null);
+  const [edit] = push(ctx, ctx.alice, [upsert(Object.assign({}, old, { note: 'CASH' }), iso(2))]);
+  assert.equal(edit.applied, true);
+  // Back to splitting, settling works again.
+  setMoneyMode(ctx, 'split');
+  const [again] = push(ctx, bob.user, [upsert(fresh, iso(3))]);
+  assert.equal(again.applied, true);
+});
+
+for (const v of vectors('shared_pot.json')) {
+  test(`fulla_sync_push agrees with shared_pot.json: ${v.why}`, (ctx) => {
+    const i = v.input;
+    const members = ['00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002'];
+    for (const id of members) virtual(ctx, `M${id.slice(-2)}`, id);
+    const tx = { id: uuid(), kind: i.kind, date: '2030-01-15', amount_minor: 1000 };
+    if (['expense', 'refund'].includes(i.kind)) Object.assign(tx, { category_id: ctx.cat('Groceries'), paid_by_member_id: i.paid_by, split: i.split });
+    if (i.kind === 'income') Object.assign(tx, { category_id: ctx.cat('Salary'), paid_by_member_id: i.paid_by });
+    if (i.kind === 'settlement') Object.assign(tx, { paid_by_member_id: i.paid_by, to_member_id: i.to_member });
+    if (i.kind === 'transfer') Object.assign(tx, { account_id: ctx.account('Main account'), to_account_id: ctx.account('Cash') });
+    let r;
+    if (i.is_new) {
+      if (i.money_mode !== null) setMoneyMode(ctx, i.money_mode);
+      [r] = push(ctx, ctx.alice, [upsert(tx, iso(0))]);
+    } else {
+      // Written while the household split, edited under the mode being tested.
+      setMoneyMode(ctx, 'split');
+      assert.equal(push(ctx, ctx.alice, [upsert(tx, iso(0))])[0].applied, true);
+      setMoneyMode(ctx, i.money_mode);
+      [r] = push(ctx, ctx.alice, [upsert(Object.assign({}, tx, { note: 'edited' }), iso(5))]);
+    }
+    if (v.expected === 'refused') {
+      assert.equal(r.ok, false, JSON.stringify(r));
+      assert.equal(stored(ctx, tx.id), null);
+    } else {
+      assert.equal(r.applied, true, JSON.stringify(r));
+      assert.deepEqual(stored(ctx, tx.id).split, v.expected.split);
+    }
+  });
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Concurrency
 // ═════════════════════════════════════════════════════════════════════════════
 

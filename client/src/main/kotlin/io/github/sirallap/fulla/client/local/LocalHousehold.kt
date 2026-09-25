@@ -46,6 +46,7 @@ object LocalHousehold {
                 put("income_shift_day", JsonNull)
                 put("week_start", 1)
                 put("member_limit", 20)
+                put("money_mode", JsonNull)
             })
             put("me_member_id", memberId)
             put("members", buildJsonArray {
@@ -105,7 +106,7 @@ object LocalHousehold {
 
     /** Household settings: the same fields fulla_household_update accepts. */
     fun updateHousehold(bundle: JsonObject, patch: JsonObject): JsonObject {
-        val allowed = setOf("name", "locale", "period_start_day", "income_shift_day", "week_start", "currency", "member_limit")
+        val allowed = setOf("name", "locale", "period_start_day", "income_shift_day", "week_start", "currency", "member_limit", "money_mode")
         val h = bundle["household"] as JsonObject
         return bump(JsonObject(bundle + ("household" to JsonObject(h + patch.filterKeys { it in allowed }))))
     }

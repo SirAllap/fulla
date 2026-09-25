@@ -80,6 +80,20 @@ enum class AppliesTo(val key: String) {
     }
 }
 
+/**
+ * How money works between the people of a household. [SPLIT]: each expense is
+ * shared between people and balances say who owes whom. [SHARED]: one pot,
+ * where nobody owes anybody (split.SharedPot). A household that has not
+ * chosen (null) behaves like [SPLIT].
+ */
+enum class MoneyMode(val key: String) {
+    SPLIT("split"), SHARED("shared");
+
+    companion object {
+        fun of(key: String?): MoneyMode? = entries.firstOrNull { it.key == key }
+    }
+}
+
 data class Household(
     val id: String,
     val name: String,
@@ -89,6 +103,7 @@ data class Household(
     val incomeShiftDay: Int? = null,
     val weekStart: Int = 1,
     val memberLimit: Int = 20,
+    val moneyMode: MoneyMode? = null,
 )
 
 data class Member(

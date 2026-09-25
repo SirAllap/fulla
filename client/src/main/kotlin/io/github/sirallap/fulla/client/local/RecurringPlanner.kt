@@ -6,6 +6,7 @@ import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.recurring.DeterministicId
 import io.github.sirallap.fulla.core.recurring.Scheduler
+import io.github.sirallap.fulla.core.split.SharedPot
 import java.time.LocalDate
 
 /**
@@ -14,7 +15,8 @@ import java.time.LocalDate
  * Each occurrence's id is derived from its rule and date, so two phones that
  * both generate it write the same row and the sync merges them. An occurrence
  * somebody deleted keeps its id as a tombstone, is in [existingIds], and is
- * never generated again.
+ * never generated again. In one shared pot an occurrence is the payer's
+ * alone, whatever split the rule's template carries (SharedPot.forNew).
  */
 object RecurringPlanner {
 
@@ -27,14 +29,14 @@ object RecurringPlanner {
                 .map { date -> date to DeterministicId.occurrence(rule.id, date) }
                 .filter { (_, id) -> id !in existingIds }
                 .map { (date, id) ->
-                    rule.template.copy(
+                    SharedPot.forNew(rule.template.copy(
                         id = id,
                         date = date,
                         status = Status.ACTIVE,
                         recurringRuleId = rule.id,
                         occurrenceDate = date,
                         createdByMemberId = config.meMemberId,
-                    )
+                    ), config.household)
                 }
         }
 }

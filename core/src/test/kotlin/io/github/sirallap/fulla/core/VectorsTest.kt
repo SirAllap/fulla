@@ -3,6 +3,7 @@ package io.github.sirallap.fulla.core
 
 import io.github.sirallap.fulla.core.balance.Balances
 import io.github.sirallap.fulla.core.defaults.Defaults
+import io.github.sirallap.fulla.core.model.MoneyMode
 import io.github.sirallap.fulla.core.model.Recurrence
 import io.github.sirallap.fulla.core.model.Split
 import io.github.sirallap.fulla.core.model.Transaction
@@ -10,10 +11,13 @@ import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.money.Currencies
 import io.github.sirallap.fulla.core.rules.PeriodRule
 import io.github.sirallap.fulla.core.split.Allocator
+import io.github.sirallap.fulla.core.split.SharedPot
+import io.github.sirallap.fulla.core.model.TransactionValidator
 import io.github.sirallap.fulla.core.text.normalizeName
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -23,6 +27,8 @@ import kotlinx.serialization.json.long
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * The rules that exist in the database too, run against the same vectors the
@@ -95,6 +101,44 @@ class VectorsTest {
                 )
             }
             assertEquals(0L, got.values.sumOf { it.balanceMinor })
+        }
+    }
+
+    @Test
+    fun `shared pot agrees with shared_pot json`() {
+        for (v in vectors("shared_pot.json")) {
+            val i = v.jsonObject["input"]!!.jsonObject
+            val why = v.jsonObject["why"]!!.jsonPrimitive.content
+            val members = listOf("00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002")
+            val base = Fixtures.config(members.map { io.github.sirallap.fulla.core.model.Member(it, "M", "M") })
+            val config = base.copy(household = base.household.copy(
+                moneyMode = MoneyMode.of((i["money_mode"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull)))
+            val kind = TransactionKind.of(i["kind"]!!.jsonPrimitive.content)!!
+            val t = Transaction(
+                id = Fixtures.newId(), kind = kind, date = LocalDate.of(2030, 1, 15), amountMinor = 1000,
+                categoryId = when (kind) {
+                    TransactionKind.EXPENSE, TransactionKind.REFUND -> Fixtures.GROCERIES
+                    TransactionKind.INCOME -> Fixtures.SALARY
+                    else -> null
+                },
+                accountId = Fixtures.MAIN, toAccountId = if (kind == TransactionKind.TRANSFER) Fixtures.CASH else null,
+                paidByMemberId = (i["paid_by"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull,
+                toMemberId = (i["to_member"] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull,
+                split = split(i["split"]), createdAt = "2030-01-15T00:00:00.000Z", clientUpdatedAt = "2030-01-15T00:00:00.000Z",
+            )
+            val isNew = i["is_new"]!!.jsonPrimitive.content.toBoolean()
+            val expected = v.jsonObject["expected"]!!
+            val problems = TransactionValidator.problems(if (isNew) SharedPot.forNew(t, config.household) else t, config, isNew)
+            if (expected is kotlinx.serialization.json.JsonPrimitive && expected.content == "refused") {
+                assertTrue(isNew && SharedPot.refusesNew(t, config.household), why)
+                assertEquals(listOf(SharedPot.NOTHING_TO_SETTLE), problems, why)
+                continue
+            }
+            assertEquals(emptyList(), problems, why)
+            assertFalse(isNew && SharedPot.refusesNew(t, config.household), why)
+            // An edit never goes through the rule: its row keeps the split it has.
+            val stored = if (isNew) SharedPot.forNew(t, config.household) else t
+            assertEquals(split(expected.jsonObject["split"]), stored.split, why)
         }
     }
 

@@ -5,10 +5,12 @@ import io.github.sirallap.fulla.client.sync.GuardedWrite
 import io.github.sirallap.fulla.client.sync.SyncBackend
 import io.github.sirallap.fulla.client.sync.SyncStore
 import io.github.sirallap.fulla.client.wire.Wire
+import io.github.sirallap.fulla.core.model.Household
 import io.github.sirallap.fulla.core.model.Split
 import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.split.SharedPot
 import io.github.sirallap.fulla.core.sync.Conflict
 import io.github.sirallap.fulla.core.sync.ConflictNote
 import io.github.sirallap.fulla.core.sync.LocalTransaction
@@ -46,6 +48,9 @@ class FakeBackend : SyncBackend {
     var config: JsonObject? = null
     val pushes = mutableListOf<List<Mutation>>()
 
+    /** The household as the server holds it: new rows go through its shared pot rule. */
+    var household = Household(Fixtures.HOUSEHOLD, "Demo household", "EUR", "en-GB")
+
     /** Runs inside a push, after the server has applied it and before the phone hears back. */
     var duringPush: suspend () -> Unit = {}
 
@@ -64,9 +69,13 @@ class FakeBackend : SyncBackend {
                 }
                 m.transaction.amountMinor <= 0 ->
                     PushResult(m.mutationId, m.transaction.id, false, false, errorCode = "validation_failed", errorMessage = "Amount must be positive.")
+                prior == null && SharedPot.refusesNew(m.transaction, household) ->
+                    PushResult(m.mutationId, m.transaction.id, false, false, errorCode = "validation_failed", errorMessage = SharedPot.NOTHING_TO_SETTLE)
                 prior == null -> {
-                    rows[m.transaction.id] = m.transaction.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
-                    PushResult(m.mutationId, m.transaction.id, true, true)
+                    val kept = SharedPot.forNew(m.transaction, household)
+                    val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
+                    rows[m.transaction.id] = stored
+                    PushResult(m.mutationId, m.transaction.id, true, true, serverTransaction = if (kept != m.transaction) stored else null)
                 }
                 m.clientUpdatedAt < prior.clientUpdatedAt -> PushResult(m.mutationId, prior.id, true, false,
                     conflict = Conflict(Conflict.Winner.SERVER, SyncEngine.diff(m.transaction, prior)), serverTransaction = prior)

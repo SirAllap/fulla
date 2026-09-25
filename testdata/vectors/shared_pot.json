@@ -1,0 +1,304 @@
+{
+  "rule": "shared_pot",
+  "note": "What a household's money_mode does to a transaction as it is stored. is_new false is an edit of a row that already exists; expected is the split stored, or \"refused\".",
+  "vectors": [
+    {
+      "why": "a new expense in a shared pot is all the payer's own share",
+      "input": {
+        "money_mode": "shared",
+        "kind": "expense",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        },
+        "is_new": true
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        }
+      }
+    },
+    {
+      "why": "whoever pays, the split follows the payer",
+      "input": {
+        "money_mode": "shared",
+        "kind": "expense",
+        "paid_by": "00000000-0000-4000-8000-000000000002",
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        },
+        "is_new": true
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        }
+      }
+    },
+    {
+      "why": "a split by shares becomes the payer's alone",
+      "input": {
+        "money_mode": "shared",
+        "kind": "expense",
+        "paid_by": "00000000-0000-4000-8000-000000000002",
+        "split": {
+          "mode": "shares",
+          "shares": {
+            "00000000-0000-4000-8000-000000000001": 1,
+            "00000000-0000-4000-8000-000000000002": 3
+          }
+        },
+        "is_new": true
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        }
+      }
+    },
+    {
+      "why": "an exact split becomes the payer's alone",
+      "input": {
+        "money_mode": "shared",
+        "kind": "expense",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": {
+          "mode": "exact",
+          "amounts": {
+            "00000000-0000-4000-8000-000000000001": 400,
+            "00000000-0000-4000-8000-000000000002": 600
+          }
+        },
+        "is_new": true
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        }
+      }
+    },
+    {
+      "why": "a split that already is the payer's alone stays as it is",
+      "input": {
+        "money_mode": "shared",
+        "kind": "expense",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        },
+        "is_new": true
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        }
+      }
+    },
+    {
+      "why": "a new refund in a shared pot is the payer's alone too",
+      "input": {
+        "money_mode": "shared",
+        "kind": "refund",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        },
+        "is_new": true
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        }
+      }
+    },
+    {
+      "why": "income is never split, shared pot or not",
+      "input": {
+        "money_mode": "shared",
+        "kind": "income",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": null,
+        "is_new": true
+      },
+      "expected": {
+        "split": null
+      }
+    },
+    {
+      "why": "a transfer is never split, shared pot or not",
+      "input": {
+        "money_mode": "shared",
+        "kind": "transfer",
+        "paid_by": null,
+        "split": null,
+        "is_new": true
+      },
+      "expected": {
+        "split": null
+      }
+    },
+    {
+      "why": "in one pot there is nothing to settle",
+      "input": {
+        "money_mode": "shared",
+        "kind": "settlement",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": null,
+        "is_new": true,
+        "to_member": "00000000-0000-4000-8000-000000000002"
+      },
+      "expected": "refused"
+    },
+    {
+      "why": "a household that splits keeps the split it was sent",
+      "input": {
+        "money_mode": "split",
+        "kind": "expense",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        },
+        "is_new": true
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        }
+      }
+    },
+    {
+      "why": "a household that has not chosen behaves like one that splits",
+      "input": {
+        "money_mode": null,
+        "kind": "expense",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        },
+        "is_new": true
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        }
+      }
+    },
+    {
+      "why": "a household that splits can settle",
+      "input": {
+        "money_mode": "split",
+        "kind": "settlement",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": null,
+        "is_new": true,
+        "to_member": "00000000-0000-4000-8000-000000000002"
+      },
+      "expected": {
+        "split": null
+      }
+    },
+    {
+      "why": "a household that has not chosen can settle",
+      "input": {
+        "money_mode": null,
+        "kind": "settlement",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": null,
+        "is_new": true,
+        "to_member": "00000000-0000-4000-8000-000000000002"
+      },
+      "expected": {
+        "split": null
+      }
+    },
+    {
+      "why": "an edit of an older expense keeps its split",
+      "input": {
+        "money_mode": "shared",
+        "kind": "expense",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        },
+        "is_new": false
+      },
+      "expected": {
+        "split": {
+          "mode": "equal",
+          "members": [
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002"
+          ]
+        }
+      }
+    },
+    {
+      "why": "an edit of an older settlement is allowed",
+      "input": {
+        "money_mode": "shared",
+        "kind": "settlement",
+        "paid_by": "00000000-0000-4000-8000-000000000001",
+        "split": null,
+        "is_new": false,
+        "to_member": "00000000-0000-4000-8000-000000000002"
+      },
+      "expected": {
+        "split": null
+      }
+    }
+  ]
+}

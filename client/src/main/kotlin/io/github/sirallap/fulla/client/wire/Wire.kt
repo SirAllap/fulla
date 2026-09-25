@@ -9,6 +9,7 @@ import io.github.sirallap.fulla.core.model.Budget
 import io.github.sirallap.fulla.core.model.Category
 import io.github.sirallap.fulla.core.model.Config
 import io.github.sirallap.fulla.core.model.Household
+import io.github.sirallap.fulla.core.model.MoneyMode
 import io.github.sirallap.fulla.core.model.Member
 import io.github.sirallap.fulla.core.model.MemberStatus
 import io.github.sirallap.fulla.core.model.Recurrence
@@ -169,7 +170,7 @@ object Wire {
                 id = h.str("id")!!, name = h.str("name") ?: "", currency = h.str("currency") ?: "EUR",
                 locale = h.str("locale") ?: "en", periodStartDay = h.int("period_start_day") ?: 1,
                 incomeShiftDay = h.int("income_shift_day"), weekStart = h.int("week_start") ?: 1,
-                memberLimit = h.int("member_limit") ?: 20,
+                memberLimit = h.int("member_limit") ?: 20, moneyMode = MoneyMode.of(h.str("money_mode")),
             ),
             meMemberId = o.str("me_member_id"),
             members = o.arr("members").map { it.jsonObject }.map {
@@ -239,7 +240,7 @@ object Wire {
             put("id", c.household.id); put("name", c.household.name); put("currency", c.household.currency)
             put("locale", c.household.locale); put("period_start_day", c.household.periodStartDay)
             put("income_shift_day", c.household.incomeShiftDay); put("week_start", c.household.weekStart)
-            put("member_limit", c.household.memberLimit)
+            put("member_limit", c.household.memberLimit); put("money_mode", c.household.moneyMode?.key)
         })
         put("me_member_id", c.meMemberId)
         put("members", JsonArray(c.members.map { m ->

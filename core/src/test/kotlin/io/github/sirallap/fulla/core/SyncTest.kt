@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.core
 
+import io.github.sirallap.fulla.core.model.Household
+import io.github.sirallap.fulla.core.model.MoneyMode
+import io.github.sirallap.fulla.core.model.Split
 import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.Transaction
+import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.recurring.DeterministicId
+import io.github.sirallap.fulla.core.split.SharedPot
 import io.github.sirallap.fulla.core.sync.Conflict
 import io.github.sirallap.fulla.core.sync.LocalTransaction
 import io.github.sirallap.fulla.core.sync.Mutation
@@ -23,13 +28,18 @@ import kotlin.test.assertTrue
  * A server that behaves like fulla_sync_push and fulla_sync_pull
  * (supabase/migrations/0007_sync.sql), including the parts that matter most:
  * deletes are applied without comparing clocks, an older edit is refused and
- * answered with the stored row, and the cursor is the highest server_seq a
- * pull returned. Modelling any of that more conveniently would hide exactly
- * the bugs this suite exists to find.
+ * answered with the stored row, a new row goes through the shared pot rule
+ * (fulla.shared_pot_for_new, 0011_money_mode.sql) and comes back as stored
+ * when that changed it, and the cursor is the highest server_seq a pull
+ * returned. Modelling any of that more conveniently would hide exactly the
+ * bugs this suite exists to find.
  */
 class FakeServer {
     val rows = LinkedHashMap<String, Transaction>()
     private var seq = 0L
+
+    /** The household as the server holds it; an admin switching money_mode changes it here. */
+    var household: Household = Fixtures.config().household
 
     fun push(mutations: List<Mutation>): List<PushResult> {
         require(mutations.size <= SyncEngine.MAX_BATCH)
@@ -44,9 +54,15 @@ class FakeServer {
                     rows[prior!!.id] = prior.copy(status = Status.DELETED, clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
                     PushResult(m.mutationId, prior.id, ok = true, applied = true)
                 }
+                prior == null && SharedPot.refusesNew(m.transaction, household) ->
+                    PushResult(m.mutationId, m.transaction.id, ok = false, applied = false,
+                        errorCode = "validation_failed", errorMessage = SharedPot.NOTHING_TO_SETTLE)
                 prior == null -> {
-                    rows[m.transaction.id] = m.transaction.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
-                    PushResult(m.mutationId, m.transaction.id, ok = true, applied = true)
+                    val kept = SharedPot.forNew(m.transaction, household)
+                    val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
+                    rows[m.transaction.id] = stored
+                    PushResult(m.mutationId, m.transaction.id, ok = true, applied = true,
+                        serverTransaction = if (kept != m.transaction) stored else null)
                 }
                 m.clientUpdatedAt < prior.clientUpdatedAt ->
                     PushResult(m.mutationId, prior.id, ok = true, applied = false,
@@ -71,10 +87,11 @@ class FakeServer {
     }
 }
 
-/** A phone: its own rows, its cursor, and a clock that may be wrong. */
+/** A phone: its own rows, its cursor, what it last heard of the household, and a clock that may be wrong. */
 class Phone(val name: String, private val server: FakeServer, var clockOffsetMinutes: Long = 0) {
     val rows = LinkedHashMap<String, LocalTransaction>()
     var cursor = 0L
+    var household: Household = server.household
     var online = true
     val notes = mutableListOf<Any>()
     private var mutations = 0
@@ -102,6 +119,7 @@ class Phone(val name: String, private val server: FakeServer, var clockOffsetMin
             merged.rows.forEach { rows[it.id] = it }
             notes.addAll(merged.notes)
             cursor = SyncEngine.nextCursor(cursor, page.cursor)
+            household = server.household
         } while (page.hasMore)
         if (SyncEngine.pending(rows.values.toList()).isNotEmpty()) push()
     }
@@ -117,9 +135,16 @@ class Phone(val name: String, private val server: FakeServer, var clockOffsetMin
         }
     }
 
-    fun visible(): Map<String, Pair<Status, String>> =
-        rows.values.associate { it.id to (it.transaction.status to it.transaction.note) }
+    /** A new row, as the app creates one: through the shared pot rule, as far as this phone knows the household. */
+    fun create(tx: Transaction, world: Instant) = write(SharedPot.forNew(tx, household), world)
+
+    fun visible(): Map<String, Seen> = rows.values.associate { it.id to it.transaction.seen() }
 }
+
+typealias Seen = Triple<Status, String, Split?>
+
+fun Transaction.seen(): Seen = Triple(status, note, split)
+
 
 class SyncTest {
 
@@ -237,7 +262,7 @@ class SyncTest {
         bob.sync()
         alice.sync()
         assertEquals(alice.visible(), bob.visible())
-        assertEquals(bob.visible(), server.rows.mapValues { it.value.status to it.value.note })
+        assertEquals(bob.visible(), server.rows.mapValues { it.value.seen() })
     }
 
     @Test
@@ -274,9 +299,56 @@ class SyncTest {
         assertEquals(15 * 60_000L, SyncEngine.backoffMillis(30))
     }
 
+    @Test
+    fun `a phone that has not heard of the shared pot yet still writes no debt`() {
+        val server = FakeServer()
+        val alice = Phone("alice", server)
+        val bob = Phone("bob", server)
+        val older = Fixtures.expense()
+        alice.create(older, at(0))
+        alice.sync()
+        bob.sync()
+        // Alice's admin switch lands on the server; Bob's phone has not pulled since.
+        server.household = server.household.copy(moneyMode = MoneyMode.SHARED)
+        val groceries = Fixtures.expense(payer = Fixtures.BOB)
+        bob.create(groceries, at(1))
+        assertEquals(Split.Equal(listOf(Fixtures.ALICE, Fixtures.BOB)), bob.rows.getValue(groceries.id).transaction.split)
+        bob.sync()
+        // The server stored it as Bob's alone and handed that back at once.
+        assertEquals(Split.Equal(listOf(Fixtures.BOB)), bob.rows.getValue(groceries.id).transaction.split)
+        assertEquals(SyncState.SYNCED, bob.rows.getValue(groceries.id).state)
+        // An edit of the row written before the switch keeps its split.
+        bob.write(bob.rows.getValue(older.id).transaction.copy(note = "GROCERY STORE 02"), at(2))
+        bob.sync()
+        alice.sync()
+        assertEquals(Split.Equal(listOf(Fixtures.ALICE, Fixtures.BOB)), server.rows.getValue(older.id).split)
+        assertEquals(alice.visible(), bob.visible())
+        assertEquals(bob.visible(), server.rows.mapValues { it.value.seen() })
+        // Now that Bob has heard, his phone writes the payer's share itself and needs no second version.
+        val next = Fixtures.expense(payer = Fixtures.BOB)
+        bob.create(next, at(3))
+        assertEquals(Split.Equal(listOf(Fixtures.BOB)), bob.rows.getValue(next.id).transaction.split)
+    }
+
+    @Test
+    fun `a new settlement pushed to a shared pot is held back with the reason`() {
+        val server = FakeServer()
+        server.household = server.household.copy(moneyMode = MoneyMode.SHARED)
+        val bob = Phone("bob", server)
+        val settle = Transaction(id = Fixtures.newId(), kind = TransactionKind.SETTLEMENT, date = LocalDate.of(2030, 1, 15),
+            amountMinor = 4520, paidByMemberId = Fixtures.BOB, toMemberId = Fixtures.ALICE,
+            createdAt = "2030-01-15T12:00:00.000Z", clientUpdatedAt = "2030-01-15T12:00:00.000Z")
+        bob.create(settle, at(0))
+        bob.sync()
+        assertEquals(SyncState.REJECTED, bob.rows.getValue(settle.id).state)
+        assertEquals(SharedPot.NOTHING_TO_SETTLE, bob.rows.getValue(settle.id).rejectMessage)
+        assertTrue(settle.id !in server.rows)
+    }
+
     /**
      * Ten phones, clocks up to two hours out, going on and offline, creating,
-     * editing, deleting and restoring shared rows in random order. Once they
+     * editing, deleting and restoring shared rows in random order, while an
+     * admin switches the household between splitting and one shared pot. Once they
      * all reconnect and a full round of syncs changes nothing, every phone
      * must hold exactly what the server holds. Seeded per
      * round, so a failure names the seed that reproduces it.
@@ -291,9 +363,9 @@ class SyncTest {
             repeat(200) {
                 minute += random.nextLong(0, 5)
                 val phone = phones.random(random)
-                when (random.nextInt(10)) {
+                when (random.nextInt(11)) {
                     0 -> phone.online = !phone.online
-                    1, 2 -> phone.write(Fixtures.expense(), at(minute))
+                    1, 2 -> phone.create(Fixtures.expense(payer = if (random.nextBoolean()) Fixtures.ALICE else Fixtures.BOB), at(minute))
                     3, 4, 5 -> phone.rows.values.filter { it.transaction.isActive }.randomOrNull(random)?.let {
                         phone.write(it.transaction.copy(note = "edit $seed/$minute by ${phone.name}"), at(minute))
                     }
@@ -303,6 +375,8 @@ class SyncTest {
                     7 -> phone.rows.values.filter { !it.transaction.isActive }.randomOrNull(random)?.let {
                         phone.write(it.transaction.copy(status = Status.ACTIVE), at(minute))
                     }
+                    10 -> server.household = server.household.copy(
+                        moneyMode = if (SharedPot.isShared(server.household)) MoneyMode.SPLIT else MoneyMode.SHARED)
                     else -> phone.sync(pageSize = 1 + random.nextInt(20))
                 }
             }
@@ -318,7 +392,7 @@ class SyncTest {
                 rounds++
             } while ((server.rows.values.maxOfOrNull { it.serverSeq } ?: 0L) != before && rounds < 5)
             assertTrue(rounds < 5, "seed $seed: phones kept changing the server after $rounds rounds")
-            val truth = server.rows.mapValues { it.value.status to it.value.note }
+            val truth = server.rows.mapValues { it.value.seen() }
             for (p in phones) {
                 // A row created and deleted on one phone before it was ever
                 // pushed never reaches the server: its delete is answered
