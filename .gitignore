@@ -5,9 +5,13 @@ build/
 dist/
 *.apk
 *.aab
+*.ipa
 captures/
 .cxx/
 local.properties
+DerivedData/
+xcuserdata/
+Payload/
 
 # IDEs
 .idea/
