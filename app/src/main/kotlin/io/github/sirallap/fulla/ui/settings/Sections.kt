@@ -338,15 +338,26 @@ fun AppearanceSettings() {
                 Chip(stringResource(label), s.theme == mode, { scope.launch { container.settings.setTheme(mode) } })
             }
         }
-        // Android 13 and later keep a language per app; older phones follow the system.
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            val context = androidx.compose.ui.platform.LocalContext.current
-            Section(stringResource(R.string.language))
-            ListRow(stringResource(R.string.app_language), context = java.util.Locale.getDefault().getDisplayLanguage(java.util.Locale.getDefault())
-                .replaceFirstChar { it.titlecase() }, detail = stringResource(R.string.app_language_text), onClick = {
-                context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS,
-                    android.net.Uri.fromParts("package", context.packageName, null)))
-            })
+        val activity = LocalContext.current as? androidx.fragment.app.FragmentActivity
+        var languagePickerOpen by remember { mutableStateOf(false) }
+        Section(stringResource(R.string.language))
+        ListRow(stringResource(R.string.app_language),
+            context = java.util.Locale.getDefault().getDisplayLanguage(java.util.Locale.getDefault()).replaceFirstChar { it.titlecase() },
+            detail = stringResource(R.string.app_language_text), onClick = { languagePickerOpen = true })
+        if (languagePickerOpen && activity != null) {
+            val current = io.github.sirallap.fulla.core.text.AppLanguage.preselectFor(java.util.Locale.getDefault().toLanguageTag())
+            androidx.compose.ui.window.Dialog(onDismissRequest = { languagePickerOpen = false }) {
+                Box(Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp)).background(FullaTheme.colors.paper).padding(20.dp)) {
+                    io.github.sirallap.fulla.ui.language.LanguageChoices(current, onChoose = { chosen ->
+                        languagePickerOpen = false
+                        io.github.sirallap.fulla.ui.LanguageApplier.set(activity, chosen)
+                        scope.launch {
+                            container.settings.setLanguageChosen(true)
+                            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) activity.recreate()
+                        }
+                    })
+                }
+            }
         }
         Section(stringResource(R.string.accent))
         Text(stringResource(R.string.accent_text), style = FullaType.secondary, color = FullaTheme.colors.inkMuted,

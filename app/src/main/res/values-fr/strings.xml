@@ -392,6 +392,9 @@
     <string name="language">Langue</string>
     <string name="app_language">Langue de l’app</string>
     <string name="app_language_text">Fulla peut parler une autre langue que le reste du téléphone.</string>
+    <string name="language_picker_title">Choisissez une langue</string>
+    <string name="language_picker_text">Vous pourrez changer cela plus tard dans les réglages.</string>
+    <string name="continue_action">Continuer</string>
     <string name="accent">Accent</string>
     <string name="accent_text">Marque ce qui est choisi. Celui de Fulla est l’or.</string>
     <string name="accent_gold">Or</string>

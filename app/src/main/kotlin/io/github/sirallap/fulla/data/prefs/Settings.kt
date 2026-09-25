@@ -30,6 +30,8 @@ data class Settings(
     val accent: Accent = Accent.DEFAULT,
     val lock: Boolean = false,
     val onboarded: Boolean = false,
+    /** Set once a language has been chosen, first-run or from settings, so the picker is never shown twice. */
+    val languageChosen: Boolean = false,
     val checkForUpdates: Boolean = true,
     /** Found by AppContainer.checkForUpdates, cleared once installed. */
     val pendingUpdate: Update? = null,
@@ -47,6 +49,7 @@ class SettingsStore(context: Context) {
         val accent = stringPreferencesKey("accent")
         val lock = booleanPreferencesKey("lock")
         val onboarded = booleanPreferencesKey("onboarded")
+        val languageChosen = booleanPreferencesKey("language_chosen")
         val deviceId = stringPreferencesKey("device_id")
         val checkForUpdates = booleanPreferencesKey("check_for_updates")
         val lastUpdateCheckAt = longPreferencesKey("last_update_check_at")
@@ -66,6 +69,7 @@ class SettingsStore(context: Context) {
             accent = Accent.of(p[Keys.accent]),
             lock = p[Keys.lock] ?: false,
             onboarded = p[Keys.onboarded] ?: false,
+            languageChosen = p[Keys.languageChosen] ?: false,
             checkForUpdates = p[Keys.checkForUpdates] ?: true,
             pendingUpdate = p[Keys.updateVersion]?.let { version ->
                 p[Keys.updateApkUrl]?.let { url ->
@@ -91,6 +95,7 @@ class SettingsStore(context: Context) {
     suspend fun setAccent(accent: Accent) { store.edit { it[Keys.accent] = accent.name } }
     suspend fun setLock(on: Boolean) { store.edit { it[Keys.lock] = on } }
     suspend fun setOnboarded(done: Boolean) { store.edit { it[Keys.onboarded] = done } }
+    suspend fun setLanguageChosen(done: Boolean) { store.edit { it[Keys.languageChosen] = done } }
     suspend fun setCheckForUpdates(on: Boolean) { store.edit { it[Keys.checkForUpdates] = on } }
 
     suspend fun lastUpdateCheckAt(): Long = store.data.first()[Keys.lastUpdateCheckAt] ?: 0L

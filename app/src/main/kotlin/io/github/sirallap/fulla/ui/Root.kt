@@ -54,6 +54,7 @@ import io.github.sirallap.fulla.ui.balances.BalancesScreen
 import io.github.sirallap.fulla.ui.entry.EntryScreen
 import io.github.sirallap.fulla.ui.history.HistoryScreen
 import io.github.sirallap.fulla.ui.home.HomeScreen
+import io.github.sirallap.fulla.ui.language.LanguagePickerScreen
 import io.github.sirallap.fulla.ui.onboarding.Onboarding
 import io.github.sirallap.fulla.ui.settings.SettingsScreen
 import io.github.sirallap.fulla.ui.settings.SettingsSection
@@ -61,6 +62,7 @@ import io.github.sirallap.fulla.ui.sync.SyncSheet
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 private class Loaded(val household: HouseholdState?)
 
@@ -74,6 +76,7 @@ fun FullaRoot(container: AppContainer, activity: androidx.fragment.app.FragmentA
         CompositionLocalProvider(LocalContainer provides container) {
             Box(Modifier.fillMaxSize().background(FullaTheme.colors.paper)) {
                 val l = loaded
+                val scope = androidx.compose.runtime.rememberCoroutineScope()
                 var unlocked by rememberSaveable { mutableStateOf(false) }
                 val adding by container.addingHousehold.collectAsStateWithLifecycle()
                 val invite by container.pendingInvite.collectAsStateWithLifecycle()
@@ -81,6 +84,19 @@ fun FullaRoot(container: AppContainer, activity: androidx.fragment.app.FragmentA
                 androidx.compose.runtime.LaunchedEffect(l?.household?.id) { container.addingHousehold.value = false }
                 when {
                     s == null || l == null -> Unit // Room answers in a frame; nothing to pretend to wait for.
+                    // Upgrading users are already onboarded and never see this;
+                    // only a fresh install, before the welcome screen.
+                    !s.languageChosen && !s.onboarded -> LanguagePickerScreen(
+                        initial = io.github.sirallap.fulla.core.text.AppLanguage.preselectFor(
+                            androidx.compose.ui.platform.LocalConfiguration.current.locales[0].toLanguageTag(),
+                        ),
+                    ) { chosen ->
+                        LanguageApplier.set(activity, chosen)
+                        scope.launch {
+                            container.settings.setLanguageChosen(true)
+                            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) activity.recreate()
+                        }
+                    }
                     s.lock && !unlocked -> LockScreen(activity) { unlocked = true }
                     l.household == null -> Onboarding(onCancel = null)
                     adding || invite != null -> Onboarding(onCancel = {
