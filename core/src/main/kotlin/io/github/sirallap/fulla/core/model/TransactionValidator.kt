@@ -58,6 +58,11 @@ object TransactionValidator {
         }
         if (isNew && SharedPot.refusesNew(t, config.household)) out += SharedPot.NOTHING_TO_SETTLE
 
+        if (t.tripId != null) {
+            if (k != TransactionKind.EXPENSE && k != TransactionKind.REFUND) out += "A ${k.key} has no trip."
+            else if (config.trip(t.tripId) == null) out += "That trip does not exist in this household."
+        }
+
         val memberIds = config.members.map { it.id }.toSet()
         listOfNotNull(t.paidByMemberId, t.toMemberId).filter { it !in memberIds }
             .forEach { _ -> out += "That member does not exist in this household." }

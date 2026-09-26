@@ -226,6 +226,7 @@ object SyncEngine {
         cmp("note", before.note, after.note)
         cmp("tags", before.tags, after.tags)
         cmp("status", before.status.key, after.status.key)
+        cmp("trip_id", before.tripId, after.tripId)
         for (key in (before.extras.keys + after.extras.keys).sorted()) {
             cmp("extras.$key", before.extras[key], after.extras[key])
         }

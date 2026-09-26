@@ -9,6 +9,7 @@ import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.rules.PeriodRule
 import io.github.sirallap.fulla.core.split.Allocator
 import io.github.sirallap.fulla.core.text.normalizeName
+import io.github.sirallap.fulla.core.trips.Trip
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
@@ -116,6 +117,19 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
                 previousAverageMinor = previous.sumOf { it[id] ?: 0 } / 3,
             )
         }.sortedByDescending { it.amountMinor }
+    }
+
+    /**
+     * Spending per category as [byCategory], but leaving out rows that belong
+     * to a trip whose `inCategoryBudgets` is off: the trip already has its
+     * own jar, and counting it again would turn a category red every time
+     * someone travels. Rows on a trip that counts stay in, exactly like any
+     * other row; the "Where it went" list, unlike this one, never filters.
+     */
+    fun budgetSpend(txs: Iterable<Transaction>, period: YearMonth, trips: List<Trip>, rollUp: Boolean = true): List<CategoryRow> {
+        val excluded = trips.filter { !it.inCategoryBudgets }.map { it.id }.toSet()
+        val filtered = txs.filter { it.tripId == null || it.tripId !in excluded }
+        return byCategory(filtered, period, rollUp)
     }
 
     /** Per member: what they paid, and what their share of spending was. */

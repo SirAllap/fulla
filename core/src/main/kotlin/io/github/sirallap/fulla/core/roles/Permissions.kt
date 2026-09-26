@@ -12,6 +12,8 @@ import io.github.sirallap.fulla.core.model.Role
 object Permissions {
 
     fun canEditTransactions(me: Member): Boolean = me.isActive
+    /** A trip is closer to spending than to configuration: any active member may add one. */
+    fun canEditTrips(me: Member): Boolean = me.isActive
     fun canImport(me: Member): Boolean = me.isActive
     fun canEditStructure(me: Member): Boolean = me.isActive && me.role.atLeast(Role.ADMIN)
     fun canEditHouseholdSettings(me: Member): Boolean = canEditStructure(me)

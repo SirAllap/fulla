@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.core.model
 
+import io.github.sirallap.fulla.core.trips.Trip
 import java.time.LocalDate
 
 /**
@@ -188,6 +189,17 @@ data class Transaction(
     val importFingerprint: String? = null,
     val originalAmountMinor: Long? = null,
     val originalCurrency: String? = null,
+    /** The trip this row belongs to, only ever set on an expense or refund. */
+    val tripId: String? = null,
+    /**
+     * Whether the wire form this row was decoded from carried a `trip_id`
+     * key at all. False only for a row an old app version stored before it
+     * knew about trips: Wire writes the key only when this is true or
+     * [tripId] is not null, so such a row's own edits push without it and
+     * fulla_sync_push keeps whatever trip was already stored (the same
+     * "absent keeps its value" rule as extras).
+     */
+    val tripKnown: Boolean = true,
     /** ISO-8601 UTC, the creating phone's clock. */
     val createdAt: String,
     /** ISO-8601 UTC, the editing phone's clock. Decides conflicts; never pages the sync. */
@@ -210,10 +222,12 @@ data class Config(
     val fields: List<io.github.sirallap.fulla.core.schema.CustomField> = emptyList(),
     val budgets: List<Budget> = emptyList(),
     val recurringRules: List<io.github.sirallap.fulla.core.recurring.RecurringRule> = emptyList(),
+    val trips: List<Trip> = emptyList(),
 ) {
     val activeMembers: List<Member> get() = members.filter { it.isActive }
     fun member(id: String?): Member? = members.firstOrNull { it.id == id }
     fun category(id: String?): Category? = categories.firstOrNull { it.id == id }
     fun account(id: String?): Account? = accounts.firstOrNull { it.id == id }
+    fun trip(id: String?): Trip? = trips.firstOrNull { it.id == id }
     fun me(): Member? = member(meMemberId)
 }

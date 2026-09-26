@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-package io.github.sirallap.fulla.ui.home
+package io.github.sirallap.fulla.core.analytics
 
 import io.github.sirallap.fulla.core.model.Config
 import java.time.YearMonth

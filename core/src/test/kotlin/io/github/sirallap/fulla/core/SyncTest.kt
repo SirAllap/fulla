@@ -59,7 +59,7 @@ class FakeServer {
                     PushResult(m.mutationId, m.transaction.id, ok = false, applied = false,
                         errorCode = "validation_failed", errorMessage = SharedPot.NOTHING_TO_SETTLE)
                 prior == null -> {
-                    val kept = SharedPot.forNew(m.transaction, household)
+                    val kept = tripped(SharedPot.forNew(m.transaction, household), null)
                     val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
                     rows[m.transaction.id] = stored
                     PushResult(m.mutationId, m.transaction.id, ok = true, applied = true,
@@ -71,7 +71,7 @@ class FakeServer {
                         serverTransaction = prior)
                 else -> {
                     // A phone that never saw the stored row wrote it as new (same recurring occurrence, same import line).
-                    val kept = if (m.baseClientUpdatedAt == null) SharedPot.forNew(m.transaction, household) else m.transaction
+                    val kept = tripped(if (m.baseClientUpdatedAt == null) SharedPot.forNew(m.transaction, household) else m.transaction, prior.tripId)
                     val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
                     rows[prior.id] = stored
                     val collided = m.baseClientUpdatedAt != prior.clientUpdatedAt
@@ -81,6 +81,18 @@ class FakeServer {
                 }
             }
         }
+    }
+
+    /**
+     * As fulla.trip_for in fulla_sync_push (0012_trips.sql): a trip only
+     * survives on an expense or a refund, an absent `trip_id` keeps whatever
+     * was stored (the same "absent keeps its value" rule as extras), and any
+     * other kind drops it silently rather than failing, so a phone that
+     * changed the kind of a tripped row is never rejected for it.
+     */
+    private fun tripped(tx: Transaction, priorTripId: String?): Transaction {
+        if (tx.kind != TransactionKind.EXPENSE && tx.kind != TransactionKind.REFUND) return tx.copy(tripId = null)
+        return if (tx.tripKnown) tx else tx.copy(tripId = priorTripId)
     }
 
     data class Page(val rows: List<Transaction>, val cursor: Long, val hasMore: Boolean)
@@ -146,9 +158,9 @@ class Phone(val name: String, private val server: FakeServer, var clockOffsetMin
     fun visible(): Map<String, Seen> = rows.values.associate { it.id to it.transaction.seen() }
 }
 
-typealias Seen = Triple<Status, String, Split?>
+data class Seen(val status: Status, val note: String, val split: Split?, val tripId: String?)
 
-fun Transaction.seen(): Seen = Triple(status, note, split)
+fun Transaction.seen(): Seen = Seen(status, note, split, tripId)
 
 
 class SyncTest {
@@ -362,6 +374,47 @@ class SyncTest {
     }
 
     @Test
+    fun `an absent trip_id keeps the stored trip, an explicit null clears it`() {
+        val server = FakeServer()
+        val alice = Phone("alice", server)
+        val porto = "00000000-0000-4000-8000-0000000000t1"
+        val tx = Fixtures.expense().copy(tripId = porto, tripKnown = true)
+        alice.write(tx, at(0))
+        alice.sync()
+        assertEquals(porto, server.rows.getValue(tx.id).tripId)
+
+        // An old app version re-encodes the row without ever having heard of trips.
+        val stale = alice.rows.getValue(tx.id).transaction.copy(note = "edited by an old phone", tripId = null, tripKnown = false)
+        alice.write(stale, at(1))
+        alice.sync()
+        assertEquals(porto, server.rows.getValue(tx.id).tripId, "an absent trip_id must not clear a trip another phone set")
+
+        // An explicit null (the person removed the trip on the entry screen) does clear it.
+        val cleared = alice.rows.getValue(tx.id).transaction.copy(tripId = null, tripKnown = true)
+        alice.write(cleared, at(2))
+        alice.sync()
+        assertNull(server.rows.getValue(tx.id).tripId)
+    }
+
+    @Test
+    fun `a kind that is no longer expense or refund drops its trip instead of being refused`() {
+        val server = FakeServer()
+        val alice = Phone("alice", server)
+        val porto = "00000000-0000-4000-8000-0000000000t2"
+        val tx = Fixtures.expense().copy(tripId = porto, tripKnown = true)
+        alice.write(tx, at(0))
+        alice.sync()
+        val settlement = alice.rows.getValue(tx.id).transaction.copy(
+            kind = TransactionKind.TRANSFER, categoryId = null, split = null, tripId = null, tripKnown = false,
+            accountId = Fixtures.MAIN, toAccountId = Fixtures.CASH,
+        )
+        alice.write(settlement, at(1))
+        alice.sync()
+        assertEquals(SyncState.SYNCED, alice.rows.getValue(tx.id).state)
+        assertNull(server.rows.getValue(tx.id).tripId)
+    }
+
+    @Test
     fun `a new settlement pushed to a shared pot is held back with the reason`() {
         val server = FakeServer()
         server.household = server.household.copy(moneyMode = MoneyMode.SHARED)
@@ -436,7 +489,7 @@ class SyncTest {
                 // pushed never reaches the server: its delete is answered
                 // "not found". It stays on that phone as a tombstone nobody sees.
                 val neverSent = p.visible().filterKeys { it !in truth }
-                assertTrue(neverSent.values.all { it.first == Status.DELETED }, "seed $seed: ${p.name} holds a live row the server lacks")
+                assertTrue(neverSent.values.all { it.status == Status.DELETED }, "seed $seed: ${p.name} holds a live row the server lacks")
                 val mine = p.visible() - neverSent.keys
                 val differing = (truth.keys + mine.keys).filter { truth[it] != mine[it] }
                     .map { "$it server=${truth[it]} phone=${mine[it]} state=${p.rows[it]?.state}" }
