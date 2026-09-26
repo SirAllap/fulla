@@ -22,7 +22,7 @@ object CsvExport {
 
     val HEADER = listOf(
         "date", "kind", "amount", "currency", "category", "account", "to_account", "paid_by", "to_member",
-        "split", "recurrence", "note", "tags", "status", "custom_fields", "id", "created_at", "updated_at",
+        "split", "recurrence", "note", "tags", "status", "custom_fields", "id", "created_at", "updated_at", "trip",
     )
 
     fun write(config: Config, rows: List<Transaction>, includeDeleted: Boolean = false): String {
@@ -44,7 +44,7 @@ object CsvExport {
                 config.account(t.toAccountId)?.name ?: "", member(t.paidByMemberId), member(t.toMemberId),
                 split(t.split), t.recurrence.key, t.note, t.tags.joinToString(", "), t.status.key,
                 if (t.extras.isEmpty()) "" else kotlinx.serialization.json.JsonObject(t.extras.mapValues { Wire.element(it.value) }).toString(),
-                t.id, t.createdAt, t.clientUpdatedAt,
+                t.id, t.createdAt, t.clientUpdatedAt, config.trip(t.tripId)?.name ?: "",
             )
             out.append(cells.joinToString(",", transform = ::quote)).append("\r\n")
         }

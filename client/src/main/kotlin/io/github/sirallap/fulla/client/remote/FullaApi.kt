@@ -165,4 +165,5 @@ enum class Structure(val function: String, val argument: String, val bundleKey: 
     RECURRING("recurring", "rule", "recurring_rules"),
     RULE("rule", "rule", "categorization_rules"),
     IMPORT_PROFILE("import_profile", "profile", "import_profiles"),
+    TRIP("trip", "trip", "trips"),
 }

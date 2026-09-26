@@ -257,6 +257,34 @@ class SyncerTest {
     }
 
     @Test
+    fun `an old-format row's own edit does not clear a trip another phone set`() = runTest {
+        val server = FakeBackend()
+        val a = Phone(server, "a")
+        val b = Phone(server, "b")
+        val row = Edits.create(expense(), true, t0)
+        a.store.rows[row.id] = row
+        a.syncer.sync(HOUSEHOLD)
+        b.syncer.sync(HOUSEHOLD)
+
+        // Someone sets a trip on the server, through whatever phone knows about trips.
+        val withTrip = server.rows.getValue(row.id)
+        server.rows[row.id] = withTrip.copy(tripId = "00000000-0000-4000-8000-000000000501", serverSeq = withTrip.serverSeq + 1000)
+        a.syncer.sync(HOUSEHOLD)
+        assertEquals("00000000-0000-4000-8000-000000000501", a.store.rows.getValue(row.id).transaction.tripId)
+
+        // b's own copy was decoded from a shape that never carried trip_id at
+        // all (an old app version's own row): tripKnown stays false through
+        // this edit, as Wire's decoder would leave it.
+        val held = b.store.rows.getValue(row.id)
+        val stale = held.transaction.copy(note = "edited by an old phone", tripId = null, tripKnown = false)
+        b.store.rows[row.id] = Edits.edit(held, stale, true, t0.plusSeconds(60))
+        b.syncer.sync(HOUSEHOLD)
+
+        assertEquals("00000000-0000-4000-8000-000000000501", server.rows.getValue(row.id).tripId, "an absent trip_id must not clear a trip another phone set")
+        assertEquals("00000000-0000-4000-8000-000000000501", b.store.rows.getValue(row.id).transaction.tripId)
+    }
+
+    @Test
     fun `nothing in local mode is ever sent`() = runTest {
         val server = FakeBackend()
         val a = Phone(server, "a")

@@ -80,7 +80,7 @@ object LocalHousehold {
                     })
                 }
             })
-            for (key in listOf("custom_fields", "budgets", "recurring_rules", "categorization_rules", "import_profiles")) {
+            for (key in listOf("custom_fields", "budgets", "recurring_rules", "categorization_rules", "import_profiles", "trips")) {
                 put(key, JsonArray(emptyList()))
             }
         }

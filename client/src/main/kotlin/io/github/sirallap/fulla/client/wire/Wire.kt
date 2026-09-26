@@ -27,6 +27,7 @@ import io.github.sirallap.fulla.core.sync.Conflict
 import io.github.sirallap.fulla.core.sync.FieldChange
 import io.github.sirallap.fulla.core.sync.Mutation
 import io.github.sirallap.fulla.core.sync.PushResult
+import io.github.sirallap.fulla.core.trips.Trip
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -129,6 +130,13 @@ object Wire {
         importFingerprint = o.str("import_fingerprint"),
         originalAmountMinor = o.long("original_amount_minor"),
         originalCurrency = o.str("original_currency"),
+        tripId = o.str("trip_id"),
+        // False only when the object never carried the key at all: a row an
+        // old app version stored before it knew about trip_id, decoded back
+        // from what this phone's own database holds. Wire then writes the
+        // row's edits without the key, and fulla_sync_push keeps whatever
+        // trip another phone set instead of reading this as "no trip".
+        tripKnown = o.containsKey("trip_id"),
         createdAt = o.str("created_at") ?: o.str("client_updated_at") ?: "",
         clientUpdatedAt = o.str("client_updated_at") ?: "",
         serverSeq = o.long("server_seq") ?: 0,
@@ -156,6 +164,11 @@ object Wire {
         put("import_fingerprint", t.importFingerprint)
         t.originalAmountMinor?.let { put("original_amount_minor", it) }
         put("original_currency", t.originalCurrency)
+        // Omitted entirely for a row that never had the key (an old app
+        // version's own row, never edited on a phone that knows trips): an
+        // absent key keeps whatever trip is stored server-side, exactly the
+        // "absent keeps its value" rule extras already follows.
+        if (t.tripKnown || t.tripId != null) put("trip_id", t.tripId)
         put("created_at", t.createdAt)
         put("client_updated_at", t.clientUpdatedAt)
     }
@@ -204,7 +217,22 @@ object Wire {
                 Budget(it.str("id")!!, it.str("category_id")!!, it.str("period"), it.long("amount_minor") ?: 0)
             },
             recurringRules = o.arr("recurring_rules").map { it.jsonObject }.mapNotNull { recurring(it) },
+            trips = o.arr("trips").map { it.jsonObject }.map(::trip),
         )
+    }
+
+    fun trip(o: JsonObject): Trip = Trip(
+        id = o.str("id")!!, name = o.str("name") ?: "",
+        startDate = LocalDate.parse(o.str("start_date")), endDate = LocalDate.parse(o.str("end_date")),
+        budgetMinor = o.long("budget_minor"), inCategoryBudgets = o.bool("in_category_budgets") ?: false,
+        archived = o.bool("archived") ?: false,
+    )
+
+    fun trip(t: Trip): JsonObject = buildJsonObject {
+        put("id", t.id); put("name", t.name)
+        put("start_date", t.startDate.toString()); put("end_date", t.endDate.toString())
+        put("budget_minor", t.budgetMinor)
+        put("in_category_budgets", t.inCategoryBudgets); put("archived", t.archived)
     }
 
     fun recurring(o: JsonObject): RecurringRule? {
@@ -267,6 +295,7 @@ object Wire {
         put("recurring_rules", JsonArray(c.recurringRules.map(::recurring)))
         put("categorization_rules", JsonArray(emptyList()))
         put("import_profiles", JsonArray(emptyList()))
+        put("trips", JsonArray(c.trips.map(::trip)))
     }
 
     fun account(a: Account): JsonObject = buildJsonObject {

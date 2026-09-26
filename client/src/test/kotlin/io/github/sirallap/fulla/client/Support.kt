@@ -72,7 +72,7 @@ class FakeBackend : SyncBackend {
                 prior == null && SharedPot.refusesNew(m.transaction, household) ->
                     PushResult(m.mutationId, m.transaction.id, false, false, errorCode = "validation_failed", errorMessage = SharedPot.NOTHING_TO_SETTLE)
                 prior == null -> {
-                    val kept = SharedPot.forNew(m.transaction, household)
+                    val kept = tripped(SharedPot.forNew(m.transaction, household), null)
                     val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
                     rows[m.transaction.id] = stored
                     PushResult(m.mutationId, m.transaction.id, true, true, serverTransaction = if (kept != m.transaction) stored else null)
@@ -80,7 +80,7 @@ class FakeBackend : SyncBackend {
                 m.clientUpdatedAt < prior.clientUpdatedAt -> PushResult(m.mutationId, prior.id, true, false,
                     conflict = Conflict(Conflict.Winner.SERVER, SyncEngine.diff(m.transaction, prior)), serverTransaction = prior)
                 else -> {
-                    val kept = if (m.baseClientUpdatedAt == null) SharedPot.forNew(m.transaction, household) else m.transaction
+                    val kept = tripped(if (m.baseClientUpdatedAt == null) SharedPot.forNew(m.transaction, household) else m.transaction, prior.tripId)
                     val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
                     rows[prior.id] = stored
                     PushResult(m.mutationId, prior.id, true, true, serverTransaction = if (kept != m.transaction) stored else null)
@@ -89,6 +89,12 @@ class FakeBackend : SyncBackend {
         }
         duringPush()
         return results
+    }
+
+    /** As fulla.trip_for: absent keeps the stored trip, and a kind that is no longer expense/refund drops it silently. */
+    private fun tripped(tx: Transaction, priorTripId: String?): Transaction {
+        if (tx.kind != TransactionKind.EXPENSE && tx.kind != TransactionKind.REFUND) return tx.copy(tripId = null)
+        return if (tx.tripKnown) tx else tx.copy(tripId = priorTripId)
     }
 
     override suspend fun pull(householdId: String, since: Long, configVersion: Int, limit: Int): Wire.PullPage {

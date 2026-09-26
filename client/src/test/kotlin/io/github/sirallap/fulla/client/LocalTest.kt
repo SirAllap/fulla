@@ -189,10 +189,32 @@ class LocalTest {
             split = Split.Shares(mapOf(Fixtures.ALICE to 2, Fixtures.BOB to 1)), tags = listOf("trip"),
             extras = mapOf("receipt" to true, "mileage" to 12L, "store" to "GROCERY STORE 01", "cleared" to null),
             occurrenceDate = LocalDate.of(2030, 1, 15), originalAmountMinor = 1500, originalCurrency = "USD",
+            tripId = "00000000-0000-4000-8000-000000000501",
         )
         assertEquals(t, Wire.transaction(Wire.transaction(t)))
         val exact = t.copy(split = Split.Exact(mapOf(Fixtures.ALICE to 1000L, Fixtures.BOB to 234L)))
         assertEquals(exact, Wire.transaction(Wire.transaction(exact)))
+    }
+
+    @Test
+    fun `trip_id round-trips absent, explicit null and a uuid, each distinctly`() {
+        val withTrip = Fixtures.expense().copy(tripId = "00000000-0000-4000-8000-000000000501", tripKnown = true)
+        assertEquals(withTrip.tripId, Wire.transaction(Wire.transaction(withTrip)).tripId)
+        assertTrue(Wire.transaction(withTrip).containsKey("trip_id"))
+
+        // An old row that never heard of trips: the key must not be written at all.
+        val neverKnew = Fixtures.expense().copy(tripId = null, tripKnown = false)
+        val encoded = Wire.transaction(neverKnew)
+        assertTrue(!encoded.containsKey("trip_id"), "an unknown trip must not be written as an explicit null")
+        val decodedBack = Wire.transaction(encoded)
+        assertEquals(false, decodedBack.tripKnown)
+        assertEquals(null, decodedBack.tripId)
+
+        // The person removed the trip on the entry screen: an explicit null, distinct from never having heard of it.
+        val cleared = Fixtures.expense().copy(tripId = null, tripKnown = true)
+        val clearedJson = Wire.transaction(cleared)
+        assertTrue(clearedJson.containsKey("trip_id"))
+        assertEquals(true, Wire.transaction(clearedJson).tripKnown)
     }
 }
 
@@ -204,7 +226,11 @@ class BundleTest {
         val rule = io.github.sirallap.fulla.core.recurring.RecurringRule("00000000-0000-4000-8000-000000000301", "Rent",
             Fixtures.expense(id = "00000000-0000-4000-8000-000000000301", stamp = "").copy(date = LocalDate.of(2030, 1, 1), createdAt = ""),
             schedule, LocalDate.of(2030, 1, 1))
-        val config = demo.config.copy(recurringRules = listOf(rule))
+        val trip = io.github.sirallap.fulla.core.trips.Trip(
+            id = "00000000-0000-4000-8000-000000000501", name = "Porto",
+            startDate = LocalDate.of(2030, 8, 12), endDate = LocalDate.of(2030, 8, 19), budgetMinor = 30000,
+        )
+        val config = demo.config.copy(recurringRules = listOf(rule), trips = listOf(trip, trip.copy(id = "00000000-0000-4000-8000-000000000502", budgetMinor = null)))
         assertEquals(config, Wire.config(Wire.bundle(config)))
     }
 }
@@ -293,5 +319,31 @@ class BudgetCopyTest {
         bundle = L.upsert(bundle, io.github.sirallap.fulla.client.remote.Structure.BUDGET, budget(cats[1], "2030-02", 5000))
         val copied = Wire.config(L.copyBudgets(bundle, "2030-01", "2030-02")).budgets.filter { it.period == "2030-02" }
         assertEquals(mapOf(cats[0] to 1000L, cats[1] to 5000L), copied.associate { it.categoryId to it.amountMinor })
+    }
+}
+
+class LocalTripsTest {
+    @Test
+    fun `a trip saved locally carries through the bundle, and an edit keeps its id`() {
+        var bundle = io.github.sirallap.fulla.client.local.LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        val version = io.github.sirallap.fulla.client.local.LocalHousehold.version(bundle)
+        val L = io.github.sirallap.fulla.client.local.LocalHousehold
+        val trip = kotlinx.serialization.json.buildJsonObject {
+            put("id", "00000000-0000-4000-8000-000000000501"); put("name", "Porto")
+            put("start_date", "2030-08-12"); put("end_date", "2030-08-19"); put("budget_minor", 30000)
+            put("in_category_budgets", false); put("archived", false)
+        }
+        bundle = L.upsert(bundle, io.github.sirallap.fulla.client.remote.Structure.TRIP, trip)
+        assertEquals(version + 1, L.version(bundle))
+        assertEquals(listOf("Porto"), Wire.config(bundle).trips.map { it.name })
+
+        val renamed = kotlinx.serialization.json.buildJsonObject {
+            put("id", "00000000-0000-4000-8000-000000000501"); put("name", "Porto, again")
+            put("start_date", "2030-08-12"); put("end_date", "2030-08-19"); put("budget_minor", 30000)
+            put("in_category_budgets", false); put("archived", false)
+        }
+        bundle = L.upsert(bundle, io.github.sirallap.fulla.client.remote.Structure.TRIP, renamed)
+        assertEquals(1, Wire.config(bundle).trips.size)
+        assertEquals("Porto, again", Wire.config(bundle).trips.single().name)
     }
 }
