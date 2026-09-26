@@ -4,6 +4,7 @@ package io.github.sirallap.fulla.core
 import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.trips.Trip
+import io.github.sirallap.fulla.core.trips.TripKind
 import io.github.sirallap.fulla.core.trips.TripPhase
 import io.github.sirallap.fulla.core.trips.Trips
 import java.time.LocalDate
@@ -205,5 +206,20 @@ class TripsTest {
         val excludedTrip = counted.copy(inCategoryBudgets = false)
         val excluded = analytics.budgetSpend(txs.map { it.copy(tripId = excludedTrip.id) }, java.time.YearMonth.of(2030, 8), listOf(excludedTrip))
         assertTrue(excluded.isEmpty())
+    }
+
+    @Test
+    fun `a brand new trip defaults to holiday, and every wire value round-trips`() {
+        assertEquals(TripKind.HOLIDAY, porto.kind)
+        for (kind in TripKind.entries) assertEquals(kind, TripKind.of(kind.wire))
+    }
+
+    @Test
+    fun `an unrecognised or absent trip_kind falls back to other, never a crash`() {
+        // A kind a future app version added, read by this one: forward
+        // compatible, not refused.
+        assertEquals(TripKind.OTHER, TripKind.of("safari"))
+        assertEquals(TripKind.OTHER, TripKind.of(""))
+        assertEquals(TripKind.OTHER, TripKind.of(null))
     }
 }

@@ -533,4 +533,12 @@
     <string name="trip_everyday">Quotidien</string>
     <string name="trip_pick_title">Quel voyage ?</string>
     <string name="saved_to_trip">Enregistré dans %1$s</string>
+    <string name="trip_delete">Supprimer le voyage</string>
+    <string name="trip_delete_confirm">Supprimer %1$s ? Ses dépenses restent, comme des dépenses quotidiennes.</string>
+    <string name="trip_kind">Type</string>
+    <string name="trip_kind_holiday">Vacances</string>
+    <string name="trip_kind_work">Travail</string>
+    <string name="trip_kind_event">Événement</string>
+    <string name="trip_kind_family">Visite familiale</string>
+    <string name="trip_kind_other">Autre</string>
 </resources>

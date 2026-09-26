@@ -533,4 +533,12 @@
     <string name="trip_everyday">Do dia a dia</string>
     <string name="trip_pick_title">Qual viagem?</string>
     <string name="saved_to_trip">Guardado em %1$s</string>
+    <string name="trip_delete">Eliminar viagem</string>
+    <string name="trip_delete_confirm">Eliminar %1$s? As despesas permanecem, como despesas do dia a dia.</string>
+    <string name="trip_kind">Tipo</string>
+    <string name="trip_kind_holiday">Férias</string>
+    <string name="trip_kind_work">Trabalho</string>
+    <string name="trip_kind_event">Evento</string>
+    <string name="trip_kind_family">Visita à família</string>
+    <string name="trip_kind_other">Outro</string>
 </resources>

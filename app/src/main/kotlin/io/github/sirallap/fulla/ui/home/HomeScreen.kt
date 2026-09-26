@@ -44,6 +44,7 @@ import io.github.sirallap.fulla.ui.components.PeriodSelector
 import io.github.sirallap.fulla.ui.components.ProgressLine
 import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.TabHeader
+import io.github.sirallap.fulla.ui.components.tripKindIcon
 import io.github.sirallap.fulla.ui.entry.CategoryIcons
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
@@ -150,6 +151,7 @@ fun HomeScreen(
                         val budget = homeTrip.budgetMinor
                         ListRow(
                             title = homeTrip.name,
+                            icon = tripKindIcon(homeTrip.kind),
                             context = if (budget != null && left != null) {
                                 stringResource(R.string.trip_left, f.money(left), f.money(budget))
                             } else f.money(homeTripTotals.spentMinor),

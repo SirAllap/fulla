@@ -250,6 +250,33 @@ class Ledger(
             if (api == null) LocalHousehold.updateHousehold(bundle, patch) else api.householdUpdate(householdId, patch)
         }
 
+    /**
+     * Tombstones a trip; its expenses stay, as everyday expenses. A connected
+     * household's expenses are untripped on the server (fulla_trip_delete),
+     * which bumps their server_seq, so the ordinary pull this triggers
+     * refreshes Room's cache the normal way. A local household has no such
+     * pull to rely on: its cached rows are cleared here, directly.
+     */
+    suspend fun deleteTrip(householdId: String, tripId: String, api: FullaApi?) {
+        val h = households.get(householdId) ?: return
+        require((h.mode == CONNECTED) == (api != null)) { "A shared household changes through the server, a local one on the phone." }
+        if (api != null) {
+            storeConfig(householdId, api.tripDelete(householdId, tripId))
+            requestSync()
+        } else {
+            val next = LocalHousehold.deleteTrip(Wire.json.parseToJsonElement(h.configJson).jsonObject, tripId)
+            households.setConfig(householdId, next.toString(), LocalHousehold.version(next))
+            db.withTransaction {
+                val affected = transactions.all(householdId).map(Rows::local).filter { it.transaction.tripId == tripId }
+                if (affected.isNotEmpty()) {
+                    transactions.upsert(affected.map { row ->
+                        Rows.entity(householdId, row.copy(transaction = row.transaction.copy(tripId = null, tripKnown = true)))
+                    })
+                }
+            }
+        }
+    }
+
     /** Stores whatever config a structure call answered with. A pot waiting from before sharing survives it. */
     suspend fun storeConfig(householdId: String, bundle: JsonObject) {
         val stored = households.get(householdId)?.configJson?.let { Wire.json.parseToJsonElement(it).jsonObject }

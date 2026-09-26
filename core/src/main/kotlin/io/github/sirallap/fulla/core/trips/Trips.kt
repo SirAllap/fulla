@@ -35,7 +35,23 @@ data class Trip(
      * grocery run silently land on it).
      */
     val memberIds: List<String> = emptyList(),
+    val kind: TripKind = TripKind.HOLIDAY,
 )
+
+/**
+ * Cosmetic only (which icon a trip shows), never a rule: nothing in [Trips]
+ * or the sync reads it. `of` never fails — a value this build does not
+ * recognise (a kind a newer app added, read by an older one) becomes
+ * [OTHER], the same forward-compatible fallback as an unrecognised
+ * [io.github.sirallap.fulla.core.model.TransactionKind] elsewhere.
+ */
+enum class TripKind(val wire: String) {
+    HOLIDAY("holiday"), WORK("work"), EVENT("event"), FAMILY("family"), OTHER("other");
+
+    companion object {
+        fun of(value: String?): TripKind = entries.firstOrNull { it.wire == value } ?: OTHER
+    }
+}
 
 enum class TripPhase { UPCOMING, ACTIVE, FINISHED }
 

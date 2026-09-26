@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -34,6 +35,7 @@ import io.github.sirallap.fulla.client.remote.Structure
 import io.github.sirallap.fulla.core.money.MoneyParser
 import io.github.sirallap.fulla.core.roles.Permissions
 import io.github.sirallap.fulla.core.trips.Trip
+import io.github.sirallap.fulla.core.trips.TripKind
 import io.github.sirallap.fulla.core.trips.TripPhase
 import io.github.sirallap.fulla.core.trips.Trips
 import io.github.sirallap.fulla.ui.HouseholdView
@@ -45,6 +47,7 @@ import io.github.sirallap.fulla.ui.components.MemberBadge
 import io.github.sirallap.fulla.ui.components.PrimaryButton
 import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.SwitchRow
+import io.github.sirallap.fulla.ui.components.tripKindIcon
 import androidx.compose.foundation.layout.FlowRow
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import kotlinx.serialization.json.buildJsonObject
@@ -75,7 +78,7 @@ fun TripsSettings(view: HouseholdView, change: Change) {
     @Composable
     fun row(t: Trip) {
         ListRow(
-            t.name, icon = Icons.Outlined.Luggage,
+            t.name, icon = tripKindIcon(t.kind),
             context = t.budgetMinor?.let { stringResource(R.string.of_budget, f.money(it)) },
             onClick = { editing = t },
         )
@@ -129,6 +132,7 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
     // being assigned to an expense now is (owner feedback: a household
     // member who isn't actually on a trip must never end up on it by default).
     var members by remember { mutableStateOf(existing?.memberIds?.toSet() ?: setOfNotNull(view.config.meMemberId)) }
+    var kind by remember { mutableStateOf(existing?.kind ?: TripKind.HOLIDAY) }
     var pickingStart by remember { mutableStateOf(false) }
     var pickingEnd by remember { mutableStateOf(false) }
     val overlap = view.config.trips.firstOrNull { it.id != existing?.id && !it.archived && start <= it.endDate && end >= it.startDate }
@@ -165,6 +169,12 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), suffix = { Text(f.currency.code) },
             )
             SwitchRow(stringResource(R.string.trip_in_budgets), stringResource(R.string.trip_in_budgets_help), inBudgets) { inBudgets = it }
+            Section(stringResource(R.string.trip_kind))
+            FlowRow(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (k in TripKind.entries) {
+                    Chip(stringResource(tripKindLabel(k)), kind == k, { kind = k }, leading = { Icon(tripKindIcon(k), null, Modifier.size(18.dp)) })
+                }
+            }
             Section(stringResource(R.string.trip_who_is_going))
             FlowRow(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (m in view.config.activeMembers) {
@@ -187,6 +197,7 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
             put("in_category_budgets", inBudgets)
             put("archived", existing?.archived ?: false)
             put("member_ids", kotlinx.serialization.json.JsonArray(members.map { kotlinx.serialization.json.JsonPrimitive(it) }))
+            put("trip_kind", kind.wire)
         }
         onSave(item)
     }
@@ -213,3 +224,11 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
 
 private fun LocalDate.atStartOfDayMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 private fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
+
+internal fun tripKindLabel(kind: TripKind): Int = when (kind) {
+    TripKind.HOLIDAY -> R.string.trip_kind_holiday
+    TripKind.WORK -> R.string.trip_kind_work
+    TripKind.EVENT -> R.string.trip_kind_event
+    TripKind.FAMILY -> R.string.trip_kind_family
+    TripKind.OTHER -> R.string.trip_kind_other
+}

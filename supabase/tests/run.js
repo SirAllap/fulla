@@ -236,6 +236,7 @@ test('a stranger gets not_member from every function that takes a household', (c
     ['fulla_rule_upsert', { p_household_id: hh, p_rule: {} }],
     ['fulla_import_profile_upsert', { p_household_id: hh, p_profile: {} }],
     ['fulla_trip_upsert', { p_household_id: hh, p_trip: {} }],
+    ['fulla_trip_delete', { p_household_id: hh, p_trip_id: uuid() }],
     ['fulla_sync_push', { p_household_id: hh, p_mutations: [] }],
     ['fulla_sync_pull', { p_household_id: hh }],
     ['fulla_period_summary', { p_household_id: hh, p_from: '2030-01', p_to: '2030-12' }],
@@ -1478,6 +1479,47 @@ test('the bundle carries trips ordered by start date, and config_version moves w
   const late = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ name: 'Late', start_date: '2030-09-01', end_date: '2030-09-02' }) });
   assert.deepEqual(late.trips.map((t) => t.name), ['Late', 'Early']);
   assert.ok(late.config_version > before.config_version);
+});
+
+test('a brand new trip defaults to holiday, and trip_kind is validated and kept-on-absent', (ctx) => {
+  const created = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip() });
+  assert.equal(created.trips[0].trip_kind, 'holiday');
+
+  const t = trip({ trip_kind: 'work' });
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+  expectError(ctx.db, ctx.alice, 'fulla_trip_upsert',
+    { p_household_id: ctx.hh, p_trip: trip({ trip_kind: 'safari' }) }, 'validation_failed');
+
+  // An old app version's upsert never learned trip_kind: absent keeps it.
+  const stale = Object.assign({}, t, { name: 'Porto (renamed)' });
+  delete stale.trip_kind;
+  const kept = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: stale });
+  assert.equal(kept.trips[0].trip_kind, 'work');
+});
+
+test('fulla_trip_delete tombstones the trip, untrips its transactions, and moves server_seq', (ctx) => {
+  const t = trip();
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+  const tx = expense(ctx, { trip_id: t.id });
+  push(ctx, ctx.alice, [upsert(tx)]);
+  assert.equal(stored(ctx, tx.id).trip_id, t.id);
+  const seqBefore = ctx.db.admin(`select server_seq from fulla.transactions where id = ${h.literal(tx.id)};`).out;
+
+  const cfg = rpc(ctx.db, ctx.alice, 'fulla_trip_delete', { p_household_id: ctx.hh, p_trip_id: t.id });
+
+  // Gone from the bundle: nothing is physically deleted, but it never shows again.
+  assert.deepEqual(cfg.trips, []);
+  assert.equal(ctx.db.admin(`select status from fulla.trips where id = ${h.literal(t.id)};`).out, 'deleted');
+  // Its expense stays, as a plain everyday expense.
+  assert.equal(stored(ctx, tx.id).trip_id, null);
+  const seqAfter = ctx.db.admin(`select server_seq from fulla.transactions where id = ${h.literal(tx.id)};`).out;
+  assert.ok(Number(seqAfter) > Number(seqBefore), 'untripping must take a fresh server_seq so every phone pulls it');
+
+  // A non-member is refused; deleting twice (already deleted) is refused too.
+  const stranger = newUser(ctx.db, 'mallory@example.com');
+  expectError(ctx.db, stranger, 'fulla_trip_delete', { p_household_id: ctx.hh, p_trip_id: t.id }, 'not_member', 403);
+  expectError(ctx.db, ctx.alice, 'fulla_trip_delete', { p_household_id: ctx.hh, p_trip_id: t.id }, 'not_found', 404);
+  expectError(ctx.db, ctx.alice, 'fulla_trip_delete', { p_household_id: ctx.hh, p_trip_id: uuid() }, 'not_found', 404);
 });
 
 // ═════════════════════════════════════════════════════════════════════════════

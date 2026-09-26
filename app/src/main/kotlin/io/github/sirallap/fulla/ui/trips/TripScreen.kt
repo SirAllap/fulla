@@ -10,9 +10,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Archive
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Unarchive
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +60,7 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
     val trip = view.config.trip(tripId)
     var error by remember { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf(false) }
+    var confirmingDelete by remember { mutableStateOf(false) }
     val change = rememberChange(view) { error = it }
 
     Column(Modifier.fillMaxSize()) {
@@ -81,8 +85,23 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
                         change { api -> ledger.upsert(view.id, Structure.TRIP, item, api) }
                     },
                 ),
+                MenuItem(stringResource(R.string.trip_delete), Icons.Outlined.Delete, danger = true, onClick = { confirmingDelete = true }),
             ),
         )
+        if (confirmingDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmingDelete = false },
+                text = { Text(stringResource(R.string.trip_delete_confirm, trip.name)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmingDelete = false
+                        change { api -> ledger.deleteTrip(view.id, trip.id, api) }
+                        onBack()
+                    }) { Text(stringResource(R.string.trip_delete), color = FullaTheme.colors.danger) }
+                },
+                dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } },
+            )
+        }
         error?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
 
         val today = remember { LocalDate.now() }

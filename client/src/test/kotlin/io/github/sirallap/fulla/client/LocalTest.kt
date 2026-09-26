@@ -346,4 +346,42 @@ class LocalTripsTest {
         assertEquals(1, Wire.config(bundle).trips.size)
         assertEquals("Porto, again", Wire.config(bundle).trips.single().name)
     }
+
+    @Test
+    fun `trip_kind round-trips through the wire, absent or unrecognised falls back to other`() {
+        val work = io.github.sirallap.fulla.core.trips.Trip(
+            id = "00000000-0000-4000-8000-000000000501", name = "Porto",
+            startDate = java.time.LocalDate.of(2030, 8, 12), endDate = java.time.LocalDate.of(2030, 8, 19),
+            kind = io.github.sirallap.fulla.core.trips.TripKind.WORK,
+        )
+        assertEquals(io.github.sirallap.fulla.core.trips.TripKind.WORK, Wire.trip(Wire.trip(work)).kind)
+
+        val noKindKey = kotlinx.serialization.json.JsonObject(Wire.trip(work) - "trip_kind")
+        assertEquals(io.github.sirallap.fulla.core.trips.TripKind.OTHER, Wire.trip(noKindKey).kind)
+
+        val unknownKind = kotlinx.serialization.json.JsonObject(Wire.trip(work) + ("trip_kind" to kotlinx.serialization.json.JsonPrimitive("safari")))
+        assertEquals(io.github.sirallap.fulla.core.trips.TripKind.OTHER, Wire.trip(unknownKind).kind)
+    }
+
+    @Test
+    fun `deleting a local trip removes it from the bundle`() {
+        var bundle = io.github.sirallap.fulla.client.local.LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        val L = io.github.sirallap.fulla.client.local.LocalHousehold
+        val trip = kotlinx.serialization.json.buildJsonObject {
+            put("id", "00000000-0000-4000-8000-000000000501"); put("name", "Porto")
+            put("start_date", "2030-08-12"); put("end_date", "2030-08-19"); put("budget_minor", 30000)
+            put("in_category_budgets", false); put("archived", false)
+        }
+        bundle = L.upsert(bundle, io.github.sirallap.fulla.client.remote.Structure.TRIP, trip)
+        val version = L.version(bundle)
+        assertEquals(1, Wire.config(bundle).trips.size)
+
+        bundle = L.deleteTrip(bundle, "00000000-0000-4000-8000-000000000501")
+        assertTrue(Wire.config(bundle).trips.isEmpty())
+        assertEquals(version + 1, L.version(bundle))
+
+        // Deleting again (already gone) is a harmless no-op.
+        bundle = L.deleteTrip(bundle, "00000000-0000-4000-8000-000000000501")
+        assertTrue(Wire.config(bundle).trips.isEmpty())
+    }
 }

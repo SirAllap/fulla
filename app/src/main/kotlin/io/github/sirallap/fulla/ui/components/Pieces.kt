@@ -36,7 +36,11 @@ import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.BeachAccess
+import androidx.compose.material.icons.outlined.Celebration
+import androidx.compose.material.icons.outlined.FamilyRestroom
 import androidx.compose.material.icons.outlined.Luggage
+import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -48,6 +52,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import io.github.sirallap.fulla.core.trips.Trip
+import io.github.sirallap.fulla.core.trips.TripKind
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -313,6 +318,15 @@ fun <T> ChipRow(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Un
  * than one, tapping the trip side opens a picker instead of guessing;
  * otherwise it toggles straight to the one trip.
  */
+/** Which icon names a trip everywhere it shows one: the Add toggle, Settings › Trips, and the Overview row. */
+fun tripKindIcon(kind: TripKind): ImageVector = when (kind) {
+    TripKind.HOLIDAY -> Icons.Outlined.BeachAccess
+    TripKind.WORK -> Icons.Outlined.Work
+    TripKind.EVENT -> Icons.Outlined.Celebration
+    TripKind.FAMILY -> Icons.Outlined.FamilyRestroom
+    TripKind.OTHER -> Icons.Outlined.Luggage
+}
+
 @Composable
 fun TripToggle(
     everydayLabel: String,
@@ -327,7 +341,8 @@ fun TripToggle(
     var pickerOpen by remember { mutableStateOf(false) }
     val selected = trips.firstOrNull { it.id == selectedTripId }
     val onTrip = selected != null
-    val tripLabel = selected?.name ?: trips.first().name
+    val shown = selected ?: trips.first()
+    val tripLabel = shown.name
 
     Row(
         modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
@@ -335,7 +350,7 @@ fun TripToggle(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         ToggleOption(everydayLabel, icon = null, selected = !onTrip, modifier = Modifier.weight(1f)) { onSelect(null) }
-        ToggleOption(tripLabel, icon = Icons.Outlined.Luggage, selected = onTrip, modifier = Modifier.weight(1f)) {
+        ToggleOption(tripLabel, icon = tripKindIcon(shown.kind), selected = onTrip, modifier = Modifier.weight(1f)) {
             if (trips.size > 1) pickerOpen = true else onSelect(trips.first().id)
         }
     }
@@ -345,7 +360,7 @@ fun TripToggle(
             Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
                 Section(tripPickerTitle, top = 0.dp)
                 for (t in trips) {
-                    ListRow(t.name, icon = Icons.Outlined.Luggage, onClick = { onSelect(t.id); pickerOpen = false })
+                    ListRow(t.name, icon = tripKindIcon(t.kind), onClick = { onSelect(t.id); pickerOpen = false })
                 }
             }
         }

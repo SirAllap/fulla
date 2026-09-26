@@ -160,6 +160,20 @@ object LocalHousehold {
         return bump(JsonObject(bundle + ("budgets" to JsonArray(budgets + added))))
     }
 
+    /**
+     * Tombstones a trip: removed from the bundle's own list, exactly like
+     * `fulla.config_bundle` leaves a deleted trip out of the server's bundle
+     * (a trip is a full-snapshot structure, not a synced row, so there is no
+     * cursor to miss it on). Its transactions are not touched here: they live
+     * in Room, not in this bundle, so the caller (Ledger.deleteTrip) clears
+     * their trip_id itself.
+     */
+    fun deleteTrip(bundle: JsonObject, tripId: String): JsonObject {
+        val list = (bundle["trips"] as? JsonArray).orEmpty()
+        val next = list.filterNot { (it as? JsonObject)?.text("id") == tripId }
+        return bump(JsonObject(bundle + ("trips" to JsonArray(next))))
+    }
+
     // ── the pot chosen before sharing ────────────────────────────────────────
 
     /**

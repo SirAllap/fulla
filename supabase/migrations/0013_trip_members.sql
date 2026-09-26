@@ -27,6 +27,28 @@
 alter table fulla.trips
   add column member_ids uuid[] not null default '{}'::uuid[];
 
+-- ── deleting a trip, and a kind to show it by ────────────────────────────────
+--
+-- Owner feedback (invented example): he could not find a way to remove a
+-- test trip he had created by mistake. Nothing is ever physically deleted
+-- (docs/CLAUDE.md): `status` is a tombstone, like `fulla.members.status`,
+-- distinct from `archived` (a trip that is over but still worth keeping
+-- around for its history). A deleted trip's expenses are not deleted with
+-- it — they become plain everyday expenses, exactly like a category or an
+-- account that stops existing would not be a reason to delete what was
+-- bought with it.
+--
+-- `trip_kind` is cosmetic (which icon to show), defaulting to 'holiday' for
+-- every trip made before it existed. An unrecognised value (a kind added by
+-- a future app version, read by this one) is never stored here since the
+-- check constraint refuses it outright, and the app itself falls back to
+-- 'other' for anything it does not recognise (core's TripKind.of).
+
+alter table fulla.trips
+  add column status text not null default 'active' check (status in ('active', 'deleted')),
+  add column trip_kind text not null default 'holiday'
+    check (trip_kind in ('holiday', 'work', 'event', 'family', 'other'));
+
 -- ── save_trip: validate member_ids, keep-on-absent, default to the creator ───
 
 -- `create or replace` cannot change a function's argument list; the 2-arg
@@ -47,6 +69,8 @@ declare
   v_in_category boolean := fulla.json_bool(p, 'in_category_budgets', false);
   v_archived boolean := fulla.json_bool(p, 'archived', false);
   v_member_ids uuid[];
+  v_status text;
+  v_trip_kind text;
   v_existing fulla.trips;
 begin
   if char_length(v_name) not between 1 and 40 then
@@ -82,19 +106,68 @@ begin
     end if;
   end if;
 
+  -- Same keep-on-absent rule as member_ids: only an explicit key changes
+  -- these. `fulla_trip_delete` is the normal way to set status to 'deleted';
+  -- accepting it here too (validated the same way) lets a phone-only
+  -- household's upload (fulla_household_create_from_local) carry over a
+  -- trip it had already deleted before ever connecting.
+  if p ? 'status' then
+    v_status := p ->> 'status';
+    if v_status not in ('active', 'deleted') then
+      perform fulla.invalid('`status` must be `active` or `deleted`.');
+    end if;
+  end if;
+  if p ? 'trip_kind' then
+    v_trip_kind := p ->> 'trip_kind';
+    if v_trip_kind not in ('holiday', 'work', 'event', 'family', 'other') then
+      perform fulla.invalid('`trip_kind` must be one of holiday, work, event, family, other.');
+    end if;
+  end if;
+
   select * into v_existing from fulla.trips t where t.id = v_id;
   if v_existing.id is not null then
     update fulla.trips t
        set name = v_name, start_date = v_start, end_date = v_end, budget_minor = v_budget,
            in_category_budgets = v_in_category, archived = v_archived,
-           member_ids = coalesce(v_member_ids, t.member_ids)
+           member_ids = coalesce(v_member_ids, t.member_ids),
+           status = coalesce(v_status, t.status),
+           trip_kind = coalesce(v_trip_kind, t.trip_kind)
      where t.id = v_id;
     return v_id;
   end if;
-  insert into fulla.trips (id, household_id, name, start_date, end_date, budget_minor, in_category_budgets, archived, member_ids)
+  insert into fulla.trips (id, household_id, name, start_date, end_date, budget_minor, in_category_budgets, archived,
+                           member_ids, status, trip_kind)
   values (v_id, p_household_id, v_name, v_start, v_end, v_budget, v_in_category, v_archived,
-          coalesce(v_member_ids, case when p_creator_member_id is null then '{}'::uuid[] else array[p_creator_member_id] end));
+          coalesce(v_member_ids, case when p_creator_member_id is null then '{}'::uuid[] else array[p_creator_member_id] end),
+          coalesce(v_status, 'active'), coalesce(v_trip_kind, 'holiday'));
   return v_id;
+end;
+$$;
+
+-- ── fulla_trip_delete: tombstone the trip, and untrip its expenses ──────────
+--
+-- A plain `update ... set trip_id = null` on fulla.transactions, not a
+-- special path: fulla.assign_server_seq (0001_schema.sql) fires on every
+-- update to that table regardless of caller, so this takes a server_seq the
+-- ordinary way and every phone picks the change up on its next pull, same as
+-- any other edit. trips_forbid_delete only guards an actual DELETE; this is
+-- an UPDATE, so it is untouched.
+create function public.fulla_trip_delete(p_household_id uuid, p_trip_id uuid) returns jsonb
+language plpgsql volatile security definer
+set search_path = ''
+as $$
+declare
+  v_me fulla.members := fulla.require_member(p_household_id, 'member');
+  v_trip fulla.trips;
+begin
+  select * into v_trip from fulla.trips t
+   where t.household_id = p_household_id and t.id = p_trip_id and t.status = 'active';
+  if v_trip.id is null then
+    perform fulla.fail(404, 'not_found', 'No such active trip.');
+  end if;
+  update fulla.trips set status = 'deleted' where id = v_trip.id;
+  update fulla.transactions set trip_id = null where household_id = p_household_id and trip_id = v_trip.id;
+  return fulla.config_bundle(p_household_id);
 end;
 $$;
 
@@ -153,9 +226,15 @@ as $$
     'import_profiles', coalesce((
       select jsonb_agg(to_jsonb(p) - 'household_id' order by p.name, p.id)
         from fulla.import_profiles p where p.household_id = h.id), '[]'),
+    -- A deleted trip is a tombstone in storage only (docs/CLAUDE.md: nothing
+    -- is ever physically deleted), never in the bundle: unlike a synced row,
+    -- a trip is delivered as a full snapshot on every config change, so
+    -- there is no cursor a phone could miss it on by leaving it out, and
+    -- every screen that lists trips (Settings, Overview, the Add toggle,
+    -- Trips.defaultFor) simply never hears about it again.
     'trips', coalesce((
       select jsonb_agg(to_jsonb(t) - 'household_id' order by t.start_date desc, t.id)
-        from fulla.trips t where t.household_id = h.id), '[]')
+        from fulla.trips t where t.household_id = h.id and t.status = 'active'), '[]')
   )
   from fulla.households h
   where h.id = p_household_id;

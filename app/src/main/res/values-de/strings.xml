@@ -533,4 +533,12 @@
     <string name="trip_everyday">Alltag</string>
     <string name="trip_pick_title">Welche Reise?</string>
     <string name="saved_to_trip">Gespeichert unter %1$s</string>
+    <string name="trip_delete">Reise löschen</string>
+    <string name="trip_delete_confirm">%1$s löschen? Die Ausgaben bleiben erhalten, als Alltagsausgaben.</string>
+    <string name="trip_kind">Art</string>
+    <string name="trip_kind_holiday">Urlaub</string>
+    <string name="trip_kind_work">Arbeit</string>
+    <string name="trip_kind_event">Anlass</string>
+    <string name="trip_kind_family">Familienbesuch</string>
+    <string name="trip_kind_other">Sonstiges</string>
 </resources>

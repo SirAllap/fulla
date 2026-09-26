@@ -136,6 +136,10 @@ class FullaApi(private val supabase: Supabase) : SyncBackend {
     suspend fun budgetCopy(householdId: String, fromPeriod: String, toPeriod: String): JsonObject =
         obj("fulla_budget_copy", "p_household_id" to householdId, "p_from_period" to fromPeriod, "p_to_period" to toPeriod)
 
+    /** Tombstones a trip; its expenses stay, as everyday expenses (docs: nothing is ever physically deleted). */
+    suspend fun tripDelete(householdId: String, tripId: String): JsonObject =
+        obj("fulla_trip_delete", "p_household_id" to householdId, "p_trip_id" to tripId)
+
     // ── sync ─────────────────────────────────────────────────────────────────
 
     override suspend fun push(householdId: String, mutations: List<Mutation>): List<PushResult> {

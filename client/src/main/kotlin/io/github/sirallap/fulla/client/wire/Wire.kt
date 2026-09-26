@@ -28,6 +28,7 @@ import io.github.sirallap.fulla.core.sync.FieldChange
 import io.github.sirallap.fulla.core.sync.Mutation
 import io.github.sirallap.fulla.core.sync.PushResult
 import io.github.sirallap.fulla.core.trips.Trip
+import io.github.sirallap.fulla.core.trips.TripKind
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -231,6 +232,10 @@ object Wire {
         // known members, same as a legacy row: Trips.defaultFor already
         // treats that as "never auto-select", never as "everyone".
         memberIds = o.arr("member_ids").mapNotNull { it.jsonPrimitive.contentOrNull },
+        // An unrecognised or absent kind (a bundle from before this field
+        // existed, or one written by a newer app) falls back to OTHER/HOLIDAY
+        // through TripKind.of, never a crash.
+        kind = TripKind.of(o.str("trip_kind")),
     )
 
     fun trip(t: Trip): JsonObject = buildJsonObject {
@@ -239,6 +244,7 @@ object Wire {
         put("budget_minor", t.budgetMinor)
         put("in_category_budgets", t.inCategoryBudgets); put("archived", t.archived)
         put("member_ids", JsonArray(t.memberIds.map { JsonPrimitive(it) }))
+        put("trip_kind", t.kind.wire)
     }
 
     fun recurring(o: JsonObject): RecurringRule? {
