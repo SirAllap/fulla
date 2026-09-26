@@ -513,7 +513,10 @@
     <string name="trip_in_budgets">In den Monatsbudgets zählen</string>
     <string name="trip_in_budgets_help">Aus: Die Reise hat ihr eigenes Budget, und Kategorie-Budgets ignorieren es. Sie zählt aber immer zu den Monatsausgaben.</string>
     <string name="trip_left">Noch %1$s von %2$s</string>
-    <string name="trip_per_day">%1$s pro Tag für %2$d Tage</string>
+    <plurals name="trip_per_day">
+        <item quantity="one">%1$s pro Tag für %2$d Tag</item>
+        <item quantity="other">%1$s pro Tag für %2$d Tage</item>
+    </plurals>
     <string name="trip_over">%1$s über dem Budget</string>
     <string name="trip_upcoming">Bevorstehend</string>
     <string name="trip_active">Jetzt</string>
@@ -524,4 +527,6 @@
     <string name="trip_overlaps">Überschneidet sich mit %1$s. Neue Ausgaben gehen zu der Reise, die zuletzt begonnen hat.</string>
     <string name="on_trips">%1$s auf Reisen</string>
     <string name="trip_needs_connection">Etwas ist schiefgelaufen. Versuch es erneut.</string>
+    <string name="trip_span_too_long">Eine Reise kann höchstens ein Jahr dauern.</string>
+    <string name="trip_budget_invalid">Gib ein gültiges Budget ein, oder lass es leer.</string>
 </resources>

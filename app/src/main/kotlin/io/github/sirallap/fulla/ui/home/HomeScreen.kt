@@ -31,7 +31,6 @@ import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.core.analytics.Budgets
 import io.github.sirallap.fulla.core.guide.TourStop
 import io.github.sirallap.fulla.core.model.TransactionKind
-import io.github.sirallap.fulla.core.trips.TripPhase
 import io.github.sirallap.fulla.core.trips.Trips
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
@@ -86,8 +85,12 @@ fun HomeScreen(
     }
     val today = remember { LocalDate.now() }
     val homeTrip = remember(view, today) {
-        view.config.trips.filter { !it.archived }.firstOrNull { it.startDate <= today.plusDays(7) && today <= it.endDate }
-            ?.takeIf { Trips.phase(it, today) != TripPhase.FINISHED }
+        // The active trip always wins; only when none is active do we look ahead
+        // for the soonest one starting within a week (bundle order is start_date
+        // desc, so a plain firstOrNull would show an upcoming trip over an
+        // active one that started earlier).
+        Trips.activeOn(view.config.trips, today)
+            ?: view.config.trips.filter { !it.archived && it.startDate in today..today.plusDays(7) }.minByOrNull { it.startDate }
     }
     val homeTripTotals = remember(view, homeTrip) { homeTrip?.let { Trips.totals(it, view.active) } }
     val lastBackup by remember(view.id) { container.settings.lastBackup(view.id) }.collectAsStateWithLifecycle(initialValue = -1L)

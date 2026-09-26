@@ -126,11 +126,26 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
     var pickingEnd by remember { mutableStateOf(false) }
     val overlap = view.config.trips.firstOrNull { it.id != existing?.id && !it.archived && start <= it.endDate && end >= it.startDate }
 
+    // Mirrors fulla.save_trip's checks (0012_trips.sql), so a trip made in a
+    // phone-only household is caught here instead of at upload time, when
+    // `validation_failed` would abort the whole household upload (M3).
+    val (from, to) = if (end < start) end to start else start to end
+    val spanProblem = (to.toEpochDay() - from.toEpochDay() >= 366).let { if (it) stringResource(R.string.trip_span_too_long) else null }
+    val budgetParsed = budgetText.takeIf { it.isNotBlank() }?.let { MoneyParser.parse(it, f.currency, f.decimalStyle) }
+    val budgetProblem = when {
+        budgetText.isBlank() -> null
+        budgetParsed == null -> stringResource(R.string.trip_budget_invalid)
+        budgetParsed <= 0 -> stringResource(R.string.trip_budget_invalid)
+        else -> null
+    }
+    val problem = spanProblem ?: budgetProblem
+
     EditDialog(
         title = existing?.name ?: stringResource(R.string.trip_new),
         initial = existing?.name ?: "",
         label = stringResource(R.string.trip_name),
         onDismiss = onDismiss,
+        enabledFor = { name -> name.length <= 40 && problem == null },
         extra = {
             Section(stringResource(R.string.trip_dates), top = 8.dp)
             Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -144,16 +159,15 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
             )
             SwitchRow(stringResource(R.string.trip_in_budgets), stringResource(R.string.trip_in_budgets_help), inBudgets) { inBudgets = it }
             overlap?.let { Text(stringResource(R.string.trip_overlaps, it.name), color = c.warning) }
+            problem?.let { Text(it, color = c.danger) }
         },
     ) { name ->
-        val budget = budgetText.takeIf { it.isNotBlank() }?.let { MoneyParser.parse(it, f.currency, f.decimalStyle) }
-        val (from, to) = if (end < start) end to start else start to end
         val item = buildJsonObject {
             put("id", existing?.id ?: UUID.randomUUID().toString())
             put("name", name)
             put("start_date", from.toString())
             put("end_date", to.toString())
-            put("budget_minor", budget)
+            put("budget_minor", budgetParsed)
             put("in_category_budgets", inBudgets)
             put("archived", existing?.archived ?: false)
         }

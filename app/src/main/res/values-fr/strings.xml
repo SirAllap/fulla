@@ -513,7 +513,10 @@
     <string name="trip_in_budgets">Compter dans les budgets mensuels</string>
     <string name="trip_in_budgets_help">Désactivé : le voyage a son propre budget, et les budgets par catégorie l\'ignorent. Il compte toujours dans les dépenses du mois.</string>
     <string name="trip_left">Reste %1$s sur %2$s</string>
-    <string name="trip_per_day">%1$s par jour pendant %2$d jours</string>
+    <plurals name="trip_per_day">
+        <item quantity="one">%1$s par jour pendant %2$d jour</item>
+        <item quantity="other">%1$s par jour pendant %2$d jours</item>
+    </plurals>
     <string name="trip_over">%1$s au-dessus du budget</string>
     <string name="trip_upcoming">À venir</string>
     <string name="trip_active">En cours</string>
@@ -524,4 +527,6 @@
     <string name="trip_overlaps">Chevauche %1$s. Les nouvelles dépenses vont à celui qui a commencé le plus tard.</string>
     <string name="on_trips">%1$s en voyage</string>
     <string name="trip_needs_connection">Un problème est survenu. Réessayez.</string>
+    <string name="trip_span_too_long">Un voyage peut durer un an au plus.</string>
+    <string name="trip_budget_invalid">Entrez un budget valide, ou laissez ce champ vide.</string>
 </resources>

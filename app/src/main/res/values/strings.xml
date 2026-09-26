@@ -543,7 +543,10 @@
     <!-- %1 is the amount left, %2 is the trip's whole budget -->
     <string name="trip_left">%1$s left of %2$s</string>
     <!-- %1 is a daily amount, %2 the days left in the trip -->
-    <string name="trip_per_day">%1$s a day for %2$d days</string>
+    <plurals name="trip_per_day">
+        <item quantity="one">%1$s a day for %2$d day</item>
+        <item quantity="other">%1$s a day for %2$d days</item>
+    </plurals>
     <string name="trip_over">%1$s over budget</string>
     <string name="trip_upcoming">Upcoming</string>
     <!-- A trip that is happening today -->
@@ -560,4 +563,8 @@
     <string name="on_trips">%1$s on trips</string>
     <!-- Shown when saving a trip needs a connection this phone does not have right now; same wording as any other offline structure change -->
     <string name="trip_needs_connection">Something went wrong. Try again.</string>
+    <!-- The trip's start and end date are more than a year apart -->
+    <string name="trip_span_too_long">A trip can span at most a year.</string>
+    <!-- The budget field has text that is not a valid amount, or zero -->
+    <string name="trip_budget_invalid">Enter a valid budget, or leave it empty.</string>
 </resources>

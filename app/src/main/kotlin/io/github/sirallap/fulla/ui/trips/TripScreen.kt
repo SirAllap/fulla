@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
@@ -90,7 +91,6 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
         val totals = remember(trip, rows) { Trips.totals(trip, rows) }
         val perDay = remember(trip, totals, today) { Trips.perDay(trip, totals, today) }
         val left = totals.leftMinor ?: 0
-        val days = maxOf(1, java.time.temporal.ChronoUnit.DAYS.between(trip.startDate, trip.endDate).toInt() + 1)
         val byMember = remember(rows) {
             val paid = LinkedHashMap<String, Long>()
             for (t in rows) {
@@ -124,7 +124,10 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
                         )
                     }
                     perDay?.let { p ->
-                        Figure(stringResource(R.string.trip_per_day, f.money(p.amountMinor), days), "", FullaTheme.colors.ink, Modifier)
+                        Figure(
+                            pluralStringResource(R.plurals.trip_per_day, p.days, f.money(p.amountMinor), p.days),
+                            "", FullaTheme.colors.ink, Modifier,
+                        )
                     }
                 }
             }

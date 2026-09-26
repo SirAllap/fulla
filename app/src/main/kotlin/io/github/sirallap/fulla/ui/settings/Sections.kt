@@ -104,6 +104,8 @@ internal fun EditDialog(
     onDismiss: () -> Unit,
     number: Boolean = false,
     extra: (@Composable () -> Unit)? = null,
+    /** Beyond the plain not-blank check, e.g. a length limit or fields in [extra]. */
+    enabledFor: (String) -> Boolean = { true },
     onSave: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initial) }
@@ -117,7 +119,11 @@ internal fun EditDialog(
                 extra?.invoke()
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(text.trim()); onDismiss() }, enabled = text.isNotBlank()) { Text(stringResource(R.string.save)) } },
+        confirmButton = {
+            TextButton(onClick = { onSave(text.trim()); onDismiss() }, enabled = text.isNotBlank() && enabledFor(text.trim())) {
+                Text(stringResource(R.string.save))
+            }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }

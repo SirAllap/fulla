@@ -102,10 +102,12 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
     var categoryId by mutableStateOf(existing?.categoryId)
     var date by mutableStateOf(existing?.date ?: LocalDate.now())
         private set
-    /** The trip active on [date] when this is a new expense or refund; an edit keeps the row's own trip. */
-    var tripId by mutableStateOf(existing?.tripId ?: Trips.activeOn(config.trips, date)?.id)
+    /** The trip active on [date] when this is a new expense or refund; an edit keeps the row's own trip, even if none. */
+    var tripId by mutableStateOf(Trips.initialTripId(isNew = existing == null, existingTripId = existing?.tripId, trips = config.trips, date = date))
     /** Once the person has touched the trip chip themselves, a date change never re-runs the pick. */
     var tripTouched by mutableStateOf(existing != null)
+    /** Whether the person picked a trip chip in this edit, as opposed to [tripTouched]'s default-true for edits. */
+    var tripChipTouched by mutableStateOf(false)
     fun pickDate(next: LocalDate) {
         date = next
         if (!tripTouched) tripId = Trips.activeOn(config.trips, next)?.id
@@ -123,6 +125,8 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
     fun build(): Transaction {
         val splits = kind == TransactionKind.EXPENSE || kind == TransactionKind.REFUND
         val members = everyone.filter { it in splitWith }
+        val nextTripId = if (splits) tripId else null
+        val nextTripKnown = Trips.tripKnownForEdit(template?.tripKnown, tripChipTouched, nextTripId)
         return (template ?: Transaction(id = id, kind = kind, date = date, amountMinor = 0, createdAt = "", clientUpdatedAt = "")).copy(
             kind = kind,
             date = date,
@@ -133,8 +137,8 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
             paidByMemberId = paidBy,
             toMemberId = if (kind == TransactionKind.SETTLEMENT) toMember else null,
             split = if (splits && everyone.size >= 2) Split.Equal(members) else null,
-            tripId = if (splits) tripId else null,
-            tripKnown = true,
+            tripId = nextTripId,
+            tripKnown = nextTripKnown,
             recurrence = if (fixed) Recurrence.FIXED else Recurrence.VARIABLE,
             note = note.trim(),
             extras = extras,
@@ -368,11 +372,19 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
             }
             if (draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND) {
                 val onTrip = view.config.trips.filter { !it.archived && it.startDate <= draft.date && draft.date <= it.endDate }
-                if (onTrip.isNotEmpty()) {
+                // A row's current trip stays choosable even once its date no longer falls
+                // inside it (an out-of-range or archived trip), so it can still be cleared.
+                val current = draft.tripId?.let { id -> view.config.trips.firstOrNull { it.id == id } }
+                val chips = if (current != null && current.id !in onTrip.map { it.id }) onTrip + current else onTrip
+                if (chips.isNotEmpty()) {
                     Section(stringResource(R.string.settings_trips))
                     FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Chip(stringResource(R.string.trip_none), draft.tripId == null, { draft.tripId = null; draft.tripTouched = true })
-                        for (t in onTrip) Chip(t.name, draft.tripId == t.id, { draft.tripId = t.id; draft.tripTouched = true })
+                        Chip(stringResource(R.string.trip_none), draft.tripId == null, {
+                            draft.tripId = null; draft.tripTouched = true; draft.tripChipTouched = true
+                        })
+                        for (t in chips) Chip(t.name, draft.tripId == t.id, {
+                            draft.tripId = t.id; draft.tripTouched = true; draft.tripChipTouched = true
+                        })
                     }
                 }
             }
