@@ -29,8 +29,7 @@ abstract class FullaDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // The default must match the entity's (1), or Room's schema check fails on open.
                 // Existing households then get 0, so each one re-pulls once.
-                db.execSQL("alter table households add column trips_repulled integer not null default 1")
-                db.execSQL("update households set trips_repulled = 0")
+                db.execSQL("alter table households add column trips_repulled integer not null default 0")
             }
         }
 
