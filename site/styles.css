@@ -148,6 +148,12 @@ h1, h2, p, ol, ul, dl, dd, figure { margin: 0; }
 .stage { position: relative; min-height: 100svh; }
 .moves .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 
+/* Phones feel the pin as lost scroll far more than a wide desktop viewport does:
+   the same scene, over a much shorter scroll distance. */
+@media (max-width: 720px) {
+  .moves .intro { height: 260svh; }
+}
+
 .hero {
   position: relative; z-index: 3;
   min-height: 100svh;
@@ -228,6 +234,21 @@ h1, h2, p, ol, ul, dl, dd, figure { margin: 0; }
   border: 1px solid var(--line); background: var(--paper); color: var(--ink);
   font: inherit; font-weight: 500; font-size: 0.9375rem;
 }
+
+/* A small cue while the hero is pinned: more is coming, keep going.
+   JS fades it out once the pinned scene starts moving; reduced motion omits it. */
+.scroll-cue { display: none; }
+.moves .scroll-cue {
+  display: flex; position: absolute; z-index: 6; left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  flex-direction: column; align-items: center; gap: 6px;
+  pointer-events: none;
+  color: var(--gold-text);
+  opacity: 1;
+}
+.scroll-cue-chevron { width: 22px; height: 22px; animation: cue-bounce 1.6s ease-in-out infinite; }
+.scroll-cue-line { width: 2px; height: 16px; border-radius: 1px; background: var(--gold); opacity: 0.6; }
+@keyframes cue-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 
 /* hero words arrive out of a blur, staggered */
 .moves .hero-name, .moves .hero-tagline, .moves .hero-sub, .moves .hero-actions {

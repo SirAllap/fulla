@@ -93,6 +93,7 @@ const monthLayer = $('monthLayer');
 const monthCanvas = $('monthCanvas');
 const copy = $('monthCopy');
 const els = { day: $('monthDay'), line: $('monthLine'), stay: $('monthStay'), row: $('monthRow'), inL: $('monthIn'), outL: $('monthOut'), inF: $('monthInFig'), outF: $('monthOutFig') };
+const scrollCue = $('scrollCue');
 const ringCanvas = document.createElement('canvas');
 ringCanvas.className = 'ring-canvas';
 ringCanvas.setAttribute('aria-hidden', 'true');
@@ -173,6 +174,13 @@ function updateScene(ts) {
     bar.classList.toggle('dock-on', dock > 0.02);
     bar.classList.toggle('solid', p >= 1);
     if (!falling) bar.classList.remove('over-gold');
+
+    // the scroll cue: gone as soon as the pinned scene starts moving
+    if (scrollCue) {
+      const cueGone = smooth(0.01, 0.09, p);
+      scrollCue.style.opacity = String(1 - cueGone);
+      scrollCue.style.visibility = cueGone >= 1 ? 'hidden' : 'visible';
+    }
   }
 
   // 2. the month, scrubbed by the scroll
@@ -394,7 +402,8 @@ function setupRail() {
 function setupName() {
   const el = document.getElementById('name');
   if (!el || !MOVES) return;
-  const io = new IntersectionObserver(([en]) => { if (en.isIntersecting) { el.classList.add('seen'); io.disconnect(); } }, { threshold: 0.35 });
+  // fires as soon as the section is ~15% into the viewport, not once it is well inside it
+  const io = new IntersectionObserver(([en]) => { if (en.isIntersecting) { el.classList.add('seen'); io.disconnect(); } }, { rootMargin: '0px 0px -15% 0px', threshold: 0 });
   io.observe(el);
 }
 setupName();
@@ -402,9 +411,11 @@ setupName();
 function setupSteps() {
   const steps = [...document.querySelectorAll('.step')];
   let tops = [];
-  const measure = () => { tops = steps.map((s) => s.getBoundingClientRect().top + window.scrollY + s.offsetHeight / 2); check(); };
+  // a step is "done" once its top has crossed ~15% into the viewport, not once
+  // it has travelled well past the middle of the screen
+  const measure = () => { tops = steps.map((s) => s.getBoundingClientRect().top + window.scrollY); check(); };
   const check = () => {
-    const line = window.scrollY + window.innerHeight * 0.62;
+    const line = window.scrollY + window.innerHeight * 0.85;
     steps.forEach((s, i) => s.classList.toggle('done', !MOVES || tops[i] < line));
   };
   return { measure, check };
