@@ -137,6 +137,9 @@ class AppContainer(private val context: Context) {
         shared.forEach { ledger.generateRecurring(it.id, LocalDate.now()) }
         if (shared.isEmpty()) return@withLock SyncOutcome.NOTHING_TO_DO
         val api = api() ?: return@withLock SyncOutcome.NOTHING_TO_DO
+        // Trips' one-time re-pull, before this pass's sync: a household still
+        // owing it must not pull with a stale cursor even once more.
+        shared.filterNot { it.tripsRepulled }.forEach { db.households().resetForTripsRepull(it.id) }
         if (supabase()?.currentSession() == null) {
             _syncStatus.update { it.copy(needsSignIn = true) }
             return@withLock SyncOutcome.NEEDS_SIGN_IN

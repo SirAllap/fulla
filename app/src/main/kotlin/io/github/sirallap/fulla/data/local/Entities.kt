@@ -22,6 +22,16 @@ data class HouseholdEntity(
     val cursor: Long = 0,
     @ColumnInfo(name = "last_sync_at") val lastSyncAt: Long? = null,
     @ColumnInfo(name = "last_error") val lastError: String? = null,
+    /**
+     * Whether this household's one-time forced re-pull, added with trips, has
+     * already run. A household stored before this column existed is migrated
+     * in with this false (see Migration(1, 2)), so its stale rows — pulled by
+     * a client that never heard of trip_id — get one full re-pull (cursor and
+     * config_version back to 0) the next time it syncs. A household adopted
+     * or connected by the current client never needs it and is created with
+     * this already true.
+     */
+    @ColumnInfo(name = "trips_repulled", defaultValue = "1") val tripsRepulled: Boolean = true,
 )
 
 /**

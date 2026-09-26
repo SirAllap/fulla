@@ -79,4 +79,26 @@ class RoomSyncStoreTest {
         store.applyPull(household, null, 1, emptyList(), emptyList(), cursor = 12)
         assertEquals(40, store.cursor(household))
     }
+
+    @Test
+    fun `trips' one-time re-pull fires once, for a household still owing it`() = runTest {
+        // A household stored before this column existed, migrated in as still owing it (H3).
+        val stale = "00000000-0000-4000-8000-000000000002"
+        db.households().upsert(HouseholdEntity(stale, "connected", "{}", 3, cursor = 40, tripsRepulled = false))
+        db.households().resetForTripsRepull(stale)
+        val once = db.households().get(stale)!!
+        assertEquals(0, once.cursor)
+        assertEquals(0, once.configVersion)
+        assertEquals(true, once.tripsRepulled)
+
+        // A later pull moves the cursor again; a second call must not reset it.
+        db.households().advanceCursor(stale, 99)
+        db.households().resetForTripsRepull(stale)
+        assertEquals(99, db.households().get(stale)!!.cursor)
+
+        // A household created by the current client never owed it in the first place.
+        assertEquals(true, db.households().get(household)!!.tripsRepulled)
+        db.households().resetForTripsRepull(household)
+        assertEquals(1, db.households().get(household)!!.configVersion)
+    }
 }

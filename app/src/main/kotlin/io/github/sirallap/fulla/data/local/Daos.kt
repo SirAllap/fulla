@@ -41,6 +41,16 @@ abstract class HouseholdDao {
 
     @Query("update households set mode = :mode where id = :id")
     abstract suspend fun setMode(id: String, mode: String)
+
+    /**
+     * Trips' one-time forced re-pull (H3, docs/CLAUDE.md "the cursor moves on
+     * a pull"): a household still owing it (migrated in with the column
+     * false) gets cursor and config_version back to 0, so the next sync pulls
+     * everything again and every row comes back with its trip_id. The where
+     * clause makes this idempotent: a second call is a no-op.
+     */
+    @Query("update households set cursor = 0, config_version = 0, trips_repulled = 1 where id = :id and trips_repulled = 0")
+    abstract suspend fun resetForTripsRepull(id: String)
 }
 
 @Dao
