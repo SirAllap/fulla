@@ -174,9 +174,12 @@ android.sourceSets.getByName("main").assets.srcDir(setupSqlDir)
 tasks.named("preBuild") { dependsOn(bundleSetupSql) }
 
 // Room's exported schema JSON (ksp's room.schemaLocation, above) is what
-// MigrationTestHelper validates a migration against; the test source set
-// needs it as an asset to read it.
-android.sourceSets.getByName("test").assets.srcDir("$projectDir/schemas")
+// MigrationTestHelper validates a migration against. Robolectric's unit
+// tests read assets from the debug variant's merged assets (there is no
+// separate merge for the "test" source set), so the schemas go in there,
+// the same way setupSqlDir does above; the debug-only build is the one
+// this ships in, never release.
+android.sourceSets.getByName("debug").assets.srcDir("$projectDir/schemas")
 
 tasks.withType<Test>().configureEach {
     systemProperty("roborazzi.test.record", System.getenv("FULLA_SCREENSHOTS") ?: "false")
