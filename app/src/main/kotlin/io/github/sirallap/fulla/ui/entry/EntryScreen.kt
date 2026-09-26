@@ -106,7 +106,7 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
     var tripId by mutableStateOf(existing?.tripId ?: Trips.activeOn(config.trips, date)?.id)
     /** Once the person has touched the trip chip themselves, a date change never re-runs the pick. */
     var tripTouched by mutableStateOf(existing != null)
-    fun setDate(next: LocalDate) {
+    fun pickDate(next: LocalDate) {
         date = next
         if (!tripTouched) tripId = Trips.activeOn(config.trips, next)?.id
     }
@@ -339,8 +339,8 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
             Section(stringResource(R.string.date), top = 0.dp)
             FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val today = LocalDate.now()
-                Chip(stringResource(R.string.today), draft.date == today, { draft.setDate(today) })
-                Chip(stringResource(R.string.yesterday), draft.date == today.minusDays(1), { draft.setDate(today.minusDays(1)) })
+                Chip(stringResource(R.string.today), draft.date == today, { draft.pickDate(today) })
+                Chip(stringResource(R.string.yesterday), draft.date == today.minusDays(1), { draft.pickDate(today.minusDays(1)) })
                 Chip(if (draft.date < today.minusDays(1) || draft.date > today) view.formats.day(draft.date) else stringResource(R.string.other_day),
                     draft.date < today.minusDays(1) || draft.date > today, { pickingDate = true })
             }
@@ -394,7 +394,7 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
             onDismissRequest = { pickingDate = false },
             confirmButton = {
                 TextButton(onClick = {
-                    state.selectedDateMillis?.let { draft.setDate(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
+                    state.selectedDateMillis?.let { draft.pickDate(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
                     pickingDate = false
                 }) { Text(stringResource(R.string.done)) }
             },
