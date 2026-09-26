@@ -1522,6 +1522,32 @@ test('fulla_trip_delete tombstones the trip, untrips its transactions, and moves
   expectError(ctx.db, ctx.alice, 'fulla_trip_delete', { p_household_id: ctx.hh, p_trip_id: uuid() }, 'not_found', 404);
 });
 
+test('a pending edit naming a since-deleted trip is not rejected and does not put it back (review HIGH 1)', (ctx) => {
+  const t = trip();
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+  const tx = expense(ctx, { trip_id: t.id });
+  push(ctx, ctx.alice, [upsert(tx)]);
+  rpc(ctx.db, ctx.alice, 'fulla_trip_delete', { p_household_id: ctx.hh, p_trip_id: t.id });
+  assert.equal(stored(ctx, tx.id).trip_id, null);
+
+  // Phone A was offline when the delete happened and only now pushes its own
+  // edit, still naming the deleted trip explicitly (a 0.1.6/0.1.7 phone that
+  // never heard of `status` would do exactly this too). It must apply, not
+  // get stuck rejected forever resending the same stale trip_id, and it must
+  // not put the row back on a trip nobody can see any more.
+  const edited = Object.assign({}, tx, { note: 'renamed while offline', trip_id: t.id });
+  const [res] = push(ctx, ctx.alice, [upsert(edited, iso(9))]);
+  assert.equal(res.applied, true, JSON.stringify(res));
+  assert.equal(stored(ctx, tx.id).trip_id, null, 'a deleted trip must never be put back on a row');
+  assert.equal(stored(ctx, tx.id).note, 'renamed while offline');
+
+  // A trip id that never existed at all is still refused (unchanged behaviour).
+  const badTrip = expense(ctx, { trip_id: uuid() });
+  const [refused] = push(ctx, ctx.alice, [upsert(badTrip)]);
+  assert.equal(refused.ok, false);
+  assert.equal(refused.error.code, 'validation_failed');
+});
+
 // ═════════════════════════════════════════════════════════════════════════════
 // Concurrency
 // ═════════════════════════════════════════════════════════════════════════════

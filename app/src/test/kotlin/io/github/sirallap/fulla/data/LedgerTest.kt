@@ -13,9 +13,18 @@ import io.github.sirallap.fulla.core.sync.SyncState
 import io.github.sirallap.fulla.data.local.FullaDatabase
 import io.github.sirallap.fulla.data.prefs.SettingsStore
 import io.github.sirallap.fulla.data.repo.Ledger
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -124,5 +133,42 @@ class LedgerTest {
         val after = ledger.household(h)!!.config
         assertEquals("Home", after.household.name)
         assertEquals(before + 1, after.version)
+    }
+
+    private suspend fun tripJson(h: String): kotlinx.serialization.json.JsonObject {
+        val trip = buildJsonObject {
+            put("id", UUID.randomUUID().toString()); put("name", "Porto")
+            put("start_date", "2030-01-01"); put("end_date", "2030-01-20"); put("budget_minor", 30000)
+            put("in_category_budgets", false); put("archived", false)
+        }
+        ledger.upsert(h, Structure.TRIP, trip, api = null)
+        return trip
+    }
+
+    @Test
+    fun `a delete launched on an app-level scope survives its caller's scope being cancelled (review HIGH 2)`() = runTest {
+        // TripScreen used to run `ledger.deleteTrip` on its own
+        // rememberCoroutineScope, then call onBack() immediately — which
+        // cancels that scope the moment the screen leaves the composition,
+        // sometimes mid-RPC. The fix runs it on AppContainer.scope instead,
+        // built the same way here: a SupervisorJob a screen closing can
+        // never reach.
+        val h = household()
+        val trip = tripJson(h)
+        val tripId = trip["id"]!!.jsonPrimitive.content
+
+        val screenScope = CoroutineScope(Job())
+        val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val started = CompletableDeferred<Unit>()
+        val job = appScope.launch {
+            started.complete(Unit)
+            delay(50) // stands in for the network RPC a connected delete would make
+            ledger.deleteTrip(h, tripId, api = null)
+        }
+        started.await()
+        screenScope.cancel() // the screen popping right after the person confirms
+        job.join()
+
+        assertTrue(ledger.household(h)!!.config.trips.isEmpty())
     }
 }

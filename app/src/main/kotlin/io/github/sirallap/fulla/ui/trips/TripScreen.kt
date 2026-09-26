@@ -44,6 +44,7 @@ import io.github.sirallap.fulla.ui.components.rememberChange
 import io.github.sirallap.fulla.ui.settings.TripEditDialog
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.LocalDate
@@ -95,7 +96,17 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
                 confirmButton = {
                     TextButton(onClick = {
                         confirmingDelete = false
-                        change { api -> ledger.deleteTrip(view.id, trip.id, api) }
+                        // Deliberately not `change {}` (Pieces.kt's
+                        // rememberChange): that launches on the screen's own
+                        // rememberCoroutineScope, and onBack() below pops
+                        // this screen right away, which would cancel a
+                        // connected delete mid-RPC (review: HIGH 2). The
+                        // container's scope outlives the screen.
+                        val connected = view.state.connected
+                        container.scope.launch {
+                            val api = if (connected) container.api() else null
+                            runCatching { ledger.deleteTrip(view.id, trip.id, api) }
+                        }
                         onBack()
                     }) { Text(stringResource(R.string.trip_delete), color = FullaTheme.colors.danger) }
                 },

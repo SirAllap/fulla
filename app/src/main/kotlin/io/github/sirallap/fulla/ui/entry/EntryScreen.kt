@@ -118,9 +118,19 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
         date = next
         if (!tripTouched) tripId = Trips.defaultFor(config.trips, next, config.meMemberId)?.id
     }
-    /** Every trip active on [date] for anyone, not just this person: the Add-screen toggle offers all of them. */
-    fun tripsOnDate(): List<io.github.sirallap.fulla.core.trips.Trip> =
-        config.trips.filter { !it.archived && it.startDate <= date && date <= it.endDate }
+    /**
+     * Every trip active on [date] for anyone, not just this person: the
+     * Add-screen toggle offers all of them. The row's own trip stays in the
+     * list even once it no longer matches (the date moved outside it, or it
+     * got archived), the same way the details sheet's chips do just below —
+     * otherwise the toggle would fall back to showing "Everyday" while the
+     * row is still actually saved onto that trip (review: MEDIUM).
+     */
+    fun tripsOnDate(): List<io.github.sirallap.fulla.core.trips.Trip> {
+        val onDate = config.trips.filter { !it.archived && it.startDate <= date && date <= it.endDate }
+        val current = tripId?.let { id -> config.trips.firstOrNull { it.id == id } }
+        return if (current != null && current.id !in onDate.map { it.id }) onDate + current else onDate
+    }
     fun pickTrip(id: String?) {
         tripId = id; tripTouched = true; tripChipTouched = true
     }

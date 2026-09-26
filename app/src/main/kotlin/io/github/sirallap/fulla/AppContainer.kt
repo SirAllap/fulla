@@ -19,6 +19,9 @@ import io.github.sirallap.fulla.data.sync.SyncOutcome
 import io.github.sirallap.fulla.data.sync.SyncScheduler
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,6 +44,16 @@ data class SyncStatus(
  * graph is small enough to read in one screen, and this is it.
  */
 class AppContainer(private val context: Context) {
+    /**
+     * Outlives any single screen: for work that must finish even if the
+     * screen that started it closes right after, such as deleting a trip
+     * (TripScreen calls `onBack()` the moment the person confirms). A
+     * screen's own `rememberCoroutineScope` (via `rememberChange`) is
+     * cancelled as soon as it leaves the composition, which on a slow
+     * connection can land mid-RPC.
+     */
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     val db: FullaDatabase = FullaDatabase.open(context)
     val settings = SettingsStore(context)
     val sessions = KeystoreSessionStore(context)

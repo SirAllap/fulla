@@ -171,6 +171,54 @@ begin
 end;
 $$;
 
+-- ── trip_for: a deleted trip is silently dropped, not put back on a row ─────
+--
+-- 0012's version only checked that the trip existed, not that it was still
+-- active. A trip is never physically deleted (its row just gets
+-- status='deleted'), so that check kept succeeding for one, and an explicit
+-- trip_id naming it (a pending edit made before the delete, on a phone that
+-- was offline or whose last sync failed, including a 0.1.6/0.1.7 phone that
+-- has never heard of `status` at all) would put the row right back on a
+-- trip nobody can see any more: `config_bundle` never lists it, so nothing
+-- in the app can clear it again, and TransactionValidator refuses every
+-- further save of that row ("That trip does not exist in this household.").
+--
+-- The fix distinguishes the two cases explicit trip_id can fail on: a trip
+-- that never existed here at all still fails loudly (a real bug, or a
+-- stale/foreign id, exactly as before this migration); a trip that existed
+-- but was deleted since the edit's clock is silently dropped to null instead
+-- of rejected, so the row stays editable, the same "keep flowing" rule as
+-- an absent key keeping the prior trip.
+create or replace function fulla.trip_for(p_household_id uuid, p_tx jsonb, p_kind text, p_prior_trip uuid) returns uuid
+language plpgsql stable
+as $$
+declare
+  v_trip uuid;
+begin
+  if p_kind not in ('expense', 'refund') then
+    if p_tx ? 'trip_id' and (p_tx ->> 'trip_id') is not null then
+      perform fulla.invalid(format('A %s has no trip.', p_kind));
+    end if;
+    return null;
+  end if;
+  if not (p_tx ? 'trip_id') then
+    return p_prior_trip;
+  end if;
+  v_trip := fulla.json_uuid(p_tx, 'trip_id');
+  if v_trip is null then
+    return null;
+  end if;
+  if exists (select 1 from fulla.trips t where t.household_id = p_household_id and t.id = v_trip and t.status = 'active') then
+    return v_trip;
+  end if;
+  if exists (select 1 from fulla.trips t where t.household_id = p_household_id and t.id = v_trip) then
+    return null;
+  end if;
+  perform fulla.invalid('That trip does not exist in this household.');
+  return null;
+end;
+$$;
+
 -- `fulla_trip_upsert` passes the caller's own member id, so a brand new trip
 -- with no `member_ids` key defaults to "just me", not to nobody.
 create or replace function public.fulla_trip_upsert(p_household_id uuid, p_trip jsonb) returns jsonb
