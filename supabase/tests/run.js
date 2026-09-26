@@ -1302,6 +1302,47 @@ test('a member creates a trip; the stranger and anon security tests already cove
   assert.equal(cfg.trips[0].archived, false);
 });
 
+test('a brand new trip defaults member_ids to the creator alone', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  const cfg = rpc(ctx.db, bob.user, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip() });
+  assert.deepEqual(cfg.trips[0].member_ids, [bob.member]);
+});
+
+test('member_ids rejects an id that is not a member of this household (M1)', (ctx) => {
+  const carol = newUser(ctx.db, 'carol@example.com');
+  const other = rpc(ctx.db, carol, 'fulla_household_create', {
+    p_name: 'Other household', p_currency: 'EUR', p_locale: 'en-GB', p_display_name: 'Carol', p_initials: 'C', p_color_index: 2,
+  });
+  expectError(ctx.db, ctx.alice, 'fulla_trip_upsert',
+    { p_household_id: ctx.hh, p_trip: trip({ member_ids: [other.member_id] }) }, 'validation_failed');
+  expectError(ctx.db, ctx.alice, 'fulla_trip_upsert',
+    { p_household_id: ctx.hh, p_trip: trip({ member_ids: ['not-a-uuid'] }) }, 'validation_failed');
+});
+
+test('an absent member_ids on upsert keeps the stored value; an explicit array replaces it', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  const t = trip({ member_ids: [ctx.aliceMember, bob.member] });
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+
+  // An old app version's upsert never learned member_ids: the key is absent
+  // entirely, not an explicit empty array, and must not wipe who is on the trip.
+  const stale = Object.assign({}, t, { name: 'Porto (renamed)' });
+  delete stale.member_ids;
+  const kept = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: stale });
+  assert.deepEqual(kept.trips[0].member_ids.slice().sort(), [ctx.aliceMember, bob.member].sort());
+  assert.equal(kept.trips[0].name, 'Porto (renamed)');
+
+  // An explicit array, even one member, replaces it.
+  const narrowed = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert',
+    { p_household_id: ctx.hh, p_trip: Object.assign({}, t, { member_ids: [bob.member] }) });
+  assert.deepEqual(narrowed.trips[0].member_ids, [bob.member]);
+
+  // An explicit empty array clears it (nobody, not "keep the old value").
+  const cleared = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert',
+    { p_household_id: ctx.hh, p_trip: Object.assign({}, t, { member_ids: [] }) });
+  assert.deepEqual(cleared.trips[0].member_ids, []);
+});
+
 test('a trip id already used by another household is refused', (ctx) => {
   const carol = newUser(ctx.db, 'carol@example.com');
   const other = rpc(ctx.db, carol, 'fulla_household_create', {

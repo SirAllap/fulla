@@ -41,9 +41,11 @@ import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.Chip
 import io.github.sirallap.fulla.ui.components.EmptyState
 import io.github.sirallap.fulla.ui.components.ListRow
+import io.github.sirallap.fulla.ui.components.MemberBadge
 import io.github.sirallap.fulla.ui.components.PrimaryButton
 import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.SwitchRow
+import androidx.compose.foundation.layout.FlowRow
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -122,6 +124,11 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
     var end by remember { mutableStateOf(existing?.endDate ?: existing?.startDate ?: LocalDate.now()) }
     var budgetText by remember { mutableStateOf(existing?.budgetMinor?.let { f.plain(it) } ?: "") }
     var inBudgets by remember { mutableStateOf(existing?.inCategoryBudgets ?: false) }
+    // A brand new trip starts with just its creator on it, never "everyone":
+    // who else is going is an explicit choice, the same way the trip itself
+    // being assigned to an expense now is (owner feedback: a household
+    // member who isn't actually on a trip must never end up on it by default).
+    var members by remember { mutableStateOf(existing?.memberIds?.toSet() ?: setOfNotNull(view.config.meMemberId)) }
     var pickingStart by remember { mutableStateOf(false) }
     var pickingEnd by remember { mutableStateOf(false) }
     val overlap = view.config.trips.firstOrNull { it.id != existing?.id && !it.archived && start <= it.endDate && end >= it.startDate }
@@ -158,6 +165,15 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), suffix = { Text(f.currency.code) },
             )
             SwitchRow(stringResource(R.string.trip_in_budgets), stringResource(R.string.trip_in_budgets_help), inBudgets) { inBudgets = it }
+            Section(stringResource(R.string.trip_who_is_going))
+            FlowRow(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (m in view.config.activeMembers) {
+                    val on = m.id in members
+                    Chip(m.displayName, on, {
+                        members = if (on) members - m.id else members + m.id
+                    }, leading = { MemberBadge(m.initials, m.colorIndex, size = 20.dp) })
+                }
+            }
             overlap?.let { Text(stringResource(R.string.trip_overlaps, it.name), color = c.warning) }
             problem?.let { Text(it, color = c.danger) }
         },
@@ -170,6 +186,7 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
             put("budget_minor", budgetParsed)
             put("in_category_budgets", inBudgets)
             put("archived", existing?.archived ?: false)
+            put("member_ids", kotlinx.serialization.json.JsonArray(members.map { kotlinx.serialization.json.JsonPrimitive(it) }))
         }
         onSave(item)
     }

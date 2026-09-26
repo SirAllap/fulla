@@ -109,13 +109,46 @@ class TripsTest {
 
     @Test
     fun `an edited row with no trip does not gain the active one`() {
+        val alice = "00000000-0000-4000-8000-0000000000a1"
+        val onTrip = porto.copy(memberIds = listOf(alice))
         // Groceries at home, "No trip", dated inside Porto: re-saving the
         // edit must not silently add Porto (H2).
-        assertNull(Trips.initialTripId(isNew = false, existingTripId = null, trips = listOf(porto), date = LocalDate.of(2030, 8, 14)))
-        // A new row still picks up whatever trip is active on its date.
-        assertEquals(porto.id, Trips.initialTripId(isNew = true, existingTripId = null, trips = listOf(porto), date = LocalDate.of(2030, 8, 14)))
+        assertNull(Trips.initialTripId(isNew = false, existingTripId = null, trips = listOf(onTrip), date = LocalDate.of(2030, 8, 14), me = alice))
+        // A new row picks up whatever trip is active on its date, for a
+        // person who is actually on it.
+        assertEquals(onTrip.id, Trips.initialTripId(isNew = true, existingTripId = null, trips = listOf(onTrip), date = LocalDate.of(2030, 8, 14), me = alice))
         // An edit keeps its own trip even outside every trip's dates.
-        assertEquals(porto.id, Trips.initialTripId(isNew = false, existingTripId = porto.id, trips = listOf(porto), date = LocalDate.of(2030, 7, 1)))
+        assertEquals(onTrip.id, Trips.initialTripId(isNew = false, existingTripId = onTrip.id, trips = listOf(onTrip), date = LocalDate.of(2030, 7, 1), me = alice))
+    }
+
+    @Test
+    fun `defaultFor only auto-selects a trip the person is actually on`() {
+        val alice = "00000000-0000-4000-8000-0000000000a1"
+        val bob = "00000000-0000-4000-8000-0000000000b2"
+        val day = LocalDate.of(2030, 8, 14)
+        // Bob's spouse Alice is a household member but never on his work
+        // trip: a new expense of hers dated inside it must not default onto
+        // it (the owner-feedback bug this whole thing exists to fix).
+        val bobsTrip = porto.copy(memberIds = listOf(bob))
+        assertNull(Trips.defaultFor(listOf(bobsTrip), day, alice))
+        assertEquals(bobsTrip, Trips.defaultFor(listOf(bobsTrip), day, bob))
+        // A trip saved before member_ids existed (empty list): nobody
+        // auto-selects it, not even whoever actually created it.
+        val legacy = porto.copy(memberIds = emptyList())
+        assertNull(Trips.defaultFor(listOf(legacy), day, alice))
+        assertNull(Trips.defaultFor(listOf(legacy), day, bob))
+        // Nobody entering it at all: never a default.
+        assertNull(Trips.defaultFor(listOf(bobsTrip), day, null))
+        // Two trips active on the same day, only one includes this person.
+        val shared = porto.copy(
+            id = "00000000-0000-4000-8000-000000000603",
+            startDate = LocalDate.of(2030, 8, 10), endDate = LocalDate.of(2030, 8, 20),
+            memberIds = listOf(alice, bob),
+        )
+        assertEquals(bobsTrip, Trips.defaultFor(listOf(bobsTrip, shared), day, bob))
+        assertEquals(shared, Trips.defaultFor(listOf(shared), day, alice))
+        // An archived trip never auto-selects, even if the person is on it.
+        assertNull(Trips.defaultFor(listOf(bobsTrip.copy(archived = true)), day, bob))
     }
 
     @Test

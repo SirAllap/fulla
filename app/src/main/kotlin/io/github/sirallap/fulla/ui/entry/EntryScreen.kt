@@ -102,15 +102,27 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
     var categoryId by mutableStateOf(existing?.categoryId)
     var date by mutableStateOf(existing?.date ?: LocalDate.now())
         private set
-    /** The trip active on [date] when this is a new expense or refund; an edit keeps the row's own trip, even if none. */
-    var tripId by mutableStateOf(Trips.initialTripId(isNew = existing == null, existingTripId = existing?.tripId, trips = config.trips, date = date))
-    /** Once the person has touched the trip chip themselves, a date change never re-runs the pick. */
+    /**
+     * The trip active on [date] when this is a new expense or refund, but
+     * only when [Config.meMemberId] is actually on it ([Trips.defaultFor]):
+     * an edit keeps the row's own trip, even if none, and a trip nobody
+     * assigned to this person never becomes the default just because its
+     * dates cover today.
+     */
+    var tripId by mutableStateOf(Trips.initialTripId(isNew = existing == null, existingTripId = existing?.tripId, trips = config.trips, date = date, me = config.meMemberId))
+    /** Once the person has touched the trip chip or toggle themselves, a date change never re-runs the pick. */
     var tripTouched by mutableStateOf(existing != null)
     /** Whether the person picked a trip chip in this edit, as opposed to [tripTouched]'s default-true for edits. */
     var tripChipTouched by mutableStateOf(false)
     fun pickDate(next: LocalDate) {
         date = next
-        if (!tripTouched) tripId = Trips.activeOn(config.trips, next)?.id
+        if (!tripTouched) tripId = Trips.defaultFor(config.trips, next, config.meMemberId)?.id
+    }
+    /** Every trip active on [date] for anyone, not just this person: the Add-screen toggle offers all of them. */
+    fun tripsOnDate(): List<io.github.sirallap.fulla.core.trips.Trip> =
+        config.trips.filter { !it.archived && it.startDate <= date && date <= it.endDate }
+    fun pickTrip(id: String?) {
+        tripId = id; tripTouched = true; tripChipTouched = true
     }
     var accountId by mutableStateOf(existing?.accountId ?: firstAccount)
     var toAccountId by mutableStateOf(existing?.toAccountId)
@@ -152,7 +164,7 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
  * details line, so the common case is three taps.
  */
 @Composable
-fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit) {
+fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit, onSaved: (String?) -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val existing = remember(editingId) { editingId?.let { id -> view.rows.firstOrNull { it.id == id }?.transaction } }
@@ -182,11 +194,13 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         // A cleared field travels as an explicit null: an absent key would keep the stored value.
         val cleared = draft.extras.filterValues { it == null }.keys.associateWith { null }
         val t = built.copy(extras = merged.extras + cleared)
+        val savedTripName = view.config.trip(t.tripId)?.name
         scope.launch {
             container.ledger.save(view.id, t)
             // The save key gathers into a ✓ before the screen moves on.
             saved = true
             if (!reducedMotion) kotlinx.coroutines.delay(460)
+            onSaved(savedTripName)
             onDone()
             saved = false
         }
@@ -207,6 +221,19 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         }
 
         KindRow(draft.kind) { draft.kind = it; draft.categoryId = null; problem = null }
+
+        if (draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND) {
+            val onDate = draft.tripsOnDate()
+            if (onDate.isNotEmpty()) {
+                io.github.sirallap.fulla.ui.components.TripToggle(
+                    everydayLabel = stringResource(R.string.trip_everyday),
+                    trips = onDate,
+                    tripPickerTitle = stringResource(R.string.trip_pick_title),
+                    selectedTripId = draft.tripId,
+                    onSelect = { draft.pickTrip(it) },
+                )
+            }
+        }
 
         // The amount, as large as the screen allows.
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.End) {
@@ -379,12 +406,8 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
                 if (chips.isNotEmpty()) {
                     Section(stringResource(R.string.settings_trips))
                     FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Chip(stringResource(R.string.trip_none), draft.tripId == null, {
-                            draft.tripId = null; draft.tripTouched = true; draft.tripChipTouched = true
-                        })
-                        for (t in chips) Chip(t.name, draft.tripId == t.id, {
-                            draft.tripId = t.id; draft.tripTouched = true; draft.tripChipTouched = true
-                        })
+                        Chip(stringResource(R.string.trip_none), draft.tripId == null, { draft.pickTrip(null) })
+                        for (t in chips) Chip(t.name, draft.tripId == t.id, { draft.pickTrip(t.id) })
                     }
                 }
             }

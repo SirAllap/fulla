@@ -226,6 +226,11 @@ object Wire {
         startDate = LocalDate.parse(o.str("start_date")), endDate = LocalDate.parse(o.str("end_date")),
         budgetMinor = o.long("budget_minor"), inCategoryBudgets = o.bool("in_category_budgets") ?: false,
         archived = o.bool("archived") ?: false,
+        // Absent entirely (a bundle from before this field existed, or a
+        // decode with ignoreUnknownKeys tolerance in reverse) reads as no
+        // known members, same as a legacy row: Trips.defaultFor already
+        // treats that as "never auto-select", never as "everyone".
+        memberIds = o.arr("member_ids").mapNotNull { it.jsonPrimitive.contentOrNull },
     )
 
     fun trip(t: Trip): JsonObject = buildJsonObject {
@@ -233,6 +238,7 @@ object Wire {
         put("start_date", t.startDate.toString()); put("end_date", t.endDate.toString())
         put("budget_minor", t.budgetMinor)
         put("in_category_budgets", t.inCategoryBudgets); put("archived", t.archived)
+        put("member_ids", JsonArray(t.memberIds.map { JsonPrimitive(it) }))
     }
 
     fun recurring(o: JsonObject): RecurringRule? {

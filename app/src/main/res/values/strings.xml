@@ -567,4 +567,12 @@
     <string name="trip_span_too_long">A trip can span at most a year.</string>
     <!-- The budget field has text that is not a valid amount, or zero -->
     <string name="trip_budget_invalid">Enter a valid budget, or leave it empty.</string>
+    <!-- Section header in the trip create/edit dialog, above member chips: who this trip is for -->
+    <string name="trip_who_is_going">Who\'s going</string>
+    <!-- Left side of the new Add-screen trip toggle: the everyday, no-trip option -->
+    <string name="trip_everyday">Everyday</string>
+    <!-- Title of the bottom sheet that opens when several trips are active on the entry's date, letting the person pick one -->
+    <string name="trip_pick_title">Which trip?</string>
+    <!-- Confirmation shown after saving an expense or refund onto a trip; %1 is the trip's name (e.g. "Saved to Porto") -->
+    <string name="saved_to_trip">Saved to %1$s</string>
 </resources>

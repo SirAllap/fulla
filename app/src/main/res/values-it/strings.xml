@@ -529,4 +529,8 @@
     <string name="trip_needs_connection">Qualcosa è andato storto. Riprova.</string>
     <string name="trip_span_too_long">Un viaggio può durare al massimo un anno.</string>
     <string name="trip_budget_invalid">Inserisci un budget valido, oppure lascia vuoto.</string>
+    <string name="trip_who_is_going">Chi parte</string>
+    <string name="trip_everyday">Tutti i giorni</string>
+    <string name="trip_pick_title">Quale viaggio?</string>
+    <string name="saved_to_trip">Salvato su %1$s</string>
 </resources>

@@ -24,6 +24,17 @@ data class Trip(
     val budgetMinor: Long? = null,
     val inCategoryBudgets: Boolean = false,
     val archived: Boolean = false,
+    /**
+     * Household members this trip is for, chosen when it was created or
+     * edited. Empty means a trip saved before this field existed: the
+     * creator is unknown, so [defaultFor] never auto-selects it (guessing
+     * "everyone" or "just me" would be a worse wrong answer than none).
+     * Anyone can still assign any trip explicitly; this only narrows the
+     * *default* on a new entry, which is the whole point (an owner's spouse,
+     * a household member but not on his work trip, must not have a personal
+     * grocery run silently land on it).
+     */
+    val memberIds: List<String> = emptyList(),
 )
 
 enum class TripPhase { UPCOMING, ACTIVE, FINISHED }
@@ -47,18 +58,42 @@ object Trips {
 
     /**
      * The trip a row starts with: a brand new expense or refund picks up
-     * whatever is [activeOn] its date, but an edit always keeps the row's own
-     * trip, even none, so re-saving a row dated inside a trip never adds one
-     * behind the person's back.
+     * whatever [defaultFor] gives [me] on its date (only a trip [me] is
+     * actually on, never "whichever trip happens to cover the date"), but an
+     * edit always keeps the row's own trip, even none, so re-saving a row
+     * dated inside a trip never adds one behind the person's back.
      */
-    fun initialTripId(isNew: Boolean, existingTripId: String?, trips: List<Trip>, date: LocalDate): String? =
-        if (!isNew) existingTripId else activeOn(trips, date)?.id
+    fun initialTripId(isNew: Boolean, existingTripId: String?, trips: List<Trip>, date: LocalDate, me: String?): String? =
+        if (!isNew) existingTripId else defaultFor(trips, date, me)?.id
 
     /** The trip [date] falls in, or null. Overlaps are allowed: the latest start wins, ties go to the lowest id. */
     fun activeOn(trips: List<Trip>, date: LocalDate): Trip? = trips
         .filter { !it.archived && it.startDate <= date && date <= it.endDate }
         .sortedWith(compareByDescending<Trip> { it.startDate }.thenBy { it.id })
         .firstOrNull()
+
+    /**
+     * The trip a brand new expense or refund on [date] should be
+     * pre-selected with, for the person entering it ([me], a member id) —
+     * or null when nothing should be auto-picked and it starts as
+     * "Everyday". Unlike [activeOn], a trip only counts here when [me] is
+     * one of its [Trip.memberIds]: a household member who isn't on a trip
+     * must never have a new row silently default onto it. A trip with no
+     * recorded members (saved before that field existed) never auto-selects,
+     * even for the person who actually created it — the alternative,
+     * guessing "everyone" or "whoever asks", is exactly the accidental
+     * misassignment this exists to prevent. Among several trips that do
+     * include [me] on this date, the same tie-break as [activeOn] applies.
+     * This must only ever run for a NEW row; an edit keeps its own trip
+     * (see [initialTripId], which already enforces that).
+     */
+    fun defaultFor(trips: List<Trip>, date: LocalDate, me: String?): Trip? {
+        if (me == null) return null
+        return trips
+            .filter { !it.archived && it.startDate <= date && date <= it.endDate && me in it.memberIds }
+            .sortedWith(compareByDescending<Trip> { it.startDate }.thenBy { it.id })
+            .firstOrNull()
+    }
 
     /**
      * Whether an edited row should carry an explicit trip_id key on its next

@@ -21,6 +21,9 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -132,6 +135,15 @@ private fun Household(state: HouseholdState) {
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     val pendingUpdate = settings?.pendingUpdate
     val guideTargets = io.github.sirallap.fulla.ui.guide.rememberGuideTargets()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackScope = rememberCoroutineScope()
+    val savedTripLabel = stringResource(R.string.saved_to_trip)
+    // Saved as Everyday keeps its existing (silent) behaviour: only naming a
+    // trip is new information worth a confirmation.
+    fun announceSaved(tripName: String?) {
+        if (tripName == null) return
+        snackScope.launch { snackbarHostState.showSnackbar(savedTripLabel.format(tripName)) }
+    }
 
     CompositionLocalProvider(io.github.sirallap.fulla.ui.guide.LocalGuideTargets provides guideTargets) {
         val headerActions: @Composable () -> Unit = {
@@ -165,7 +177,7 @@ private fun Household(state: HouseholdState) {
                         (fadeIn(fade) + slideInHorizontally(enterSpec) { if (toRight) it / 20 else -it / 20 }) togetherWith fadeOut(fade)
                     }) { shown ->
                         when (shown) {
-                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW })
+                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW }, onSaved = ::announceSaved)
                             Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
                             Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") })
@@ -175,7 +187,7 @@ private fun Household(state: HouseholdState) {
                 }
             }
             composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() })
+                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() }, onSaved = ::announceSaved)
             }
             composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }) }
             composable("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
@@ -199,6 +211,10 @@ private fun Household(state: HouseholdState) {
         }
 
         GuideHost(view, tab, setTab = { tab = it })
+
+        Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
+            SnackbarHost(snackbarHostState) { data -> Snackbar(data) }
+        }
     }
 }
 

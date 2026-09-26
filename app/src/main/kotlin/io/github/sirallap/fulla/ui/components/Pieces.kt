@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Luggage
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,8 +44,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import io.github.sirallap.fulla.core.trips.Trip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -295,6 +298,79 @@ fun <T> ChipRow(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Un
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         for ((value, label) in options) Chip(label, value == selected, { onSelect(value) })
+    }
+}
+
+/**
+ * The prominent, always-visible "Everyday / ✈ trip" choice on the Add
+ * screen, above the amount and keypad rather than one tap deep in the
+ * details sheet: assigning a trip is an explicit, reversible step before
+ * saving, never something a person only discovers after the fact (owner
+ * feedback: a household member who wasn't on a trip could otherwise have a
+ * personal expense land on it by accident). [trips] is every trip active on
+ * the entry's date, for anyone in the household, not filtered to who is on
+ * it — everyone can still explicitly choose any of them. When there is more
+ * than one, tapping the trip side opens a picker instead of guessing;
+ * otherwise it toggles straight to the one trip.
+ */
+@Composable
+fun TripToggle(
+    everydayLabel: String,
+    trips: List<Trip>,
+    tripPickerTitle: String,
+    selectedTripId: String?,
+    onSelect: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (trips.isEmpty()) return
+    val c = FullaTheme.colors
+    var pickerOpen by remember { mutableStateOf(false) }
+    val selected = trips.firstOrNull { it.id == selectedTripId }
+    val onTrip = selected != null
+    val tripLabel = selected?.name ?: trips.first().name
+
+    Row(
+        modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(14.dp)).background(c.paperHigh).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        ToggleOption(everydayLabel, icon = null, selected = !onTrip, modifier = Modifier.weight(1f)) { onSelect(null) }
+        ToggleOption(tripLabel, icon = Icons.Outlined.Luggage, selected = onTrip, modifier = Modifier.weight(1f)) {
+            if (trips.size > 1) pickerOpen = true else onSelect(trips.first().id)
+        }
+    }
+
+    if (pickerOpen) {
+        ModalBottomSheet(onDismissRequest = { pickerOpen = false }, containerColor = c.paper) {
+            Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+                Section(tripPickerTitle, top = 0.dp)
+                for (t in trips) {
+                    ListRow(t.name, icon = Icons.Outlined.Luggage, onClick = { onSelect(t.id); pickerOpen = false })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.ToggleOption(label: String, icon: ImageVector?, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val c = FullaTheme.colors
+    val reduced = FullaMotion.reduced()
+    val container by animateColorAsState(if (selected) c.highlight else c.paper, FullaMotion.functional(reduced), label = "tripToggleBg")
+    val content by animateColorAsState(if (selected) c.onHighlight else c.ink, FullaMotion.functional(reduced), label = "tripToggleFg")
+    val source = remember { MutableInteractionSource() }
+    Row(
+        modifier.clip(RoundedCornerShape(10.dp)).background(container)
+            .clickable(source, LocalIndication.current, onClickLabel = label, onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon != null) {
+            Icon(icon, null, tint = content, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+        }
+        Text(label, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }
 
