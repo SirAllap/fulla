@@ -108,6 +108,33 @@ class TripsTest {
     }
 
     @Test
+    fun `an edited row with no trip does not gain the active one`() {
+        // Groceries at home, "No trip", dated inside Porto: re-saving the
+        // edit must not silently add Porto (H2).
+        assertNull(Trips.initialTripId(isNew = false, existingTripId = null, trips = listOf(porto), date = LocalDate.of(2030, 8, 14)))
+        // A new row still picks up whatever trip is active on its date.
+        assertEquals(porto.id, Trips.initialTripId(isNew = true, existingTripId = null, trips = listOf(porto), date = LocalDate.of(2030, 8, 14)))
+        // An edit keeps its own trip even outside every trip's dates.
+        assertEquals(porto.id, Trips.initialTripId(isNew = false, existingTripId = porto.id, trips = listOf(porto), date = LocalDate.of(2030, 7, 1)))
+    }
+
+    @Test
+    fun `editing a row that never learned a trip keeps it unknown unless the chip was touched`() {
+        // An old app version's own row: tripKnown false, no trip. Fixing the
+        // amount must not push an explicit "trip_id": null and wipe a trip
+        // another phone set (H1).
+        assertEquals(false, Trips.tripKnownForEdit(templateTripKnown = false, chipTouched = false, tripId = null))
+        // The person picked a trip, or explicitly chose "No trip": tripKnown
+        // must be sent from now on.
+        assertEquals(true, Trips.tripKnownForEdit(templateTripKnown = false, chipTouched = true, tripId = null))
+        assertEquals(true, Trips.tripKnownForEdit(templateTripKnown = false, chipTouched = true, tripId = porto.id))
+        // A row that already knew its trip always sends the key.
+        assertEquals(true, Trips.tripKnownForEdit(templateTripKnown = true, chipTouched = false, tripId = null))
+        // A brand new row (no template) always knows.
+        assertEquals(true, Trips.tripKnownForEdit(templateTripKnown = null, chipTouched = false, tripId = null))
+    }
+
+    @Test
     fun `on overlap the latest start wins, ties go to the lowest id`() {
         val early = porto.copy(id = "00000000-0000-4000-8000-000000000601", startDate = LocalDate.of(2030, 8, 10), endDate = LocalDate.of(2030, 8, 20))
         val late = porto.copy(id = "00000000-0000-4000-8000-000000000602", startDate = LocalDate.of(2030, 8, 14), endDate = LocalDate.of(2030, 8, 18))

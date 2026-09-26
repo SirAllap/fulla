@@ -71,6 +71,8 @@ class FakeBackend : SyncBackend {
                     PushResult(m.mutationId, m.transaction.id, false, false, errorCode = "validation_failed", errorMessage = "Amount must be positive.")
                 prior == null && SharedPot.refusesNew(m.transaction, household) ->
                     PushResult(m.mutationId, m.transaction.id, false, false, errorCode = "validation_failed", errorMessage = SharedPot.NOTHING_TO_SETTLE)
+                prior == null && rejectsTrip(m.transaction) ->
+                    PushResult(m.mutationId, m.transaction.id, false, false, errorCode = "validation_failed", errorMessage = "A ${m.transaction.kind} has no trip.")
                 prior == null -> {
                     val kept = tripped(SharedPot.forNew(m.transaction, household), null)
                     val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
@@ -79,6 +81,8 @@ class FakeBackend : SyncBackend {
                 }
                 m.clientUpdatedAt < prior.clientUpdatedAt -> PushResult(m.mutationId, prior.id, true, false,
                     conflict = Conflict(Conflict.Winner.SERVER, SyncEngine.diff(m.transaction, prior)), serverTransaction = prior)
+                rejectsTrip(m.transaction) ->
+                    PushResult(m.mutationId, prior.id, false, false, errorCode = "validation_failed", errorMessage = "A ${m.transaction.kind} has no trip.")
                 else -> {
                     val kept = tripped(if (m.baseClientUpdatedAt == null) SharedPot.forNew(m.transaction, household) else m.transaction, prior.tripId)
                     val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
@@ -91,10 +95,23 @@ class FakeBackend : SyncBackend {
         return results
     }
 
-    /** As fulla.trip_for: absent keeps the stored trip, and a kind that is no longer expense/refund drops it silently. */
+    /**
+     * As fulla.trip_for's own guard: an explicit, non-null trip_id on any
+     * kind other than expense or refund is refused, not silently dropped.
+     */
+    private fun rejectsTrip(tx: Transaction): Boolean =
+        tx.kind != TransactionKind.EXPENSE && tx.kind != TransactionKind.REFUND &&
+            (tx.tripKnown || tx.tripId != null) && tx.tripId != null
+
+    /**
+     * As fulla.trip_for: absent (neither tripKnown nor an explicit tripId —
+     * what Wire would have left out) keeps the stored trip; a kind that is no
+     * longer expense/refund drops it silently once [rejectsTrip] has cleared it.
+     */
     private fun tripped(tx: Transaction, priorTripId: String?): Transaction {
         if (tx.kind != TransactionKind.EXPENSE && tx.kind != TransactionKind.REFUND) return tx.copy(tripId = null)
-        return if (tx.tripKnown) tx else tx.copy(tripId = priorTripId)
+        val sent = tx.tripKnown || tx.tripId != null
+        return if (sent) tx else tx.copy(tripId = priorTripId)
     }
 
     override suspend fun pull(householdId: String, since: Long, configVersion: Int, limit: Int): Wire.PullPage {

@@ -36,7 +36,7 @@ data class TripTotals(
     val overMinor: Long,
 )
 
-data class TripPerDay(val amountMinor: Long, val over: Boolean)
+data class TripPerDay(val amountMinor: Long, val over: Boolean, val days: Int)
 
 /**
  * Everything a trip's own screen needs, computed from the phone's rows. No
@@ -45,11 +45,33 @@ data class TripPerDay(val amountMinor: Long, val over: Boolean)
  */
 object Trips {
 
+    /**
+     * The trip a row starts with: a brand new expense or refund picks up
+     * whatever is [activeOn] its date, but an edit always keeps the row's own
+     * trip, even none, so re-saving a row dated inside a trip never adds one
+     * behind the person's back.
+     */
+    fun initialTripId(isNew: Boolean, existingTripId: String?, trips: List<Trip>, date: LocalDate): String? =
+        if (!isNew) existingTripId else activeOn(trips, date)?.id
+
     /** The trip [date] falls in, or null. Overlaps are allowed: the latest start wins, ties go to the lowest id. */
     fun activeOn(trips: List<Trip>, date: LocalDate): Trip? = trips
         .filter { !it.archived && it.startDate <= date && date <= it.endDate }
         .sortedWith(compareByDescending<Trip> { it.startDate }.thenBy { it.id })
         .firstOrNull()
+
+    /**
+     * Whether an edited row should carry an explicit trip_id key on its next
+     * push. A row this phone never learned a trip for ([templateTripKnown]
+     * false: an old app version's own row, re-encoded without ever having
+     * heard of the column) must keep that unknown state unless the person
+     * touched the trip chip in this very edit ([chipTouched]): otherwise the
+     * edit would push an explicit "trip_id": null and clear a trip another
+     * phone set, the same trap `fulla.merge_extras` avoids for custom fields.
+     * [templateTripKnown] is null for a brand new row, which always knows.
+     */
+    fun tripKnownForEdit(templateTripKnown: Boolean?, chipTouched: Boolean, tripId: String?): Boolean =
+        !(templateTripKnown == false && !chipTouched && tripId == null)
 
     fun phase(trip: Trip, today: LocalDate): TripPhase = when {
         today < trip.startDate -> TripPhase.UPCOMING
@@ -81,10 +103,10 @@ object Trips {
     fun perDay(trip: Trip, totals: TripTotals, today: LocalDate): TripPerDay? {
         val budget = trip.budgetMinor ?: return null
         if (today > trip.endDate) return null
-        val totalDays = ChronoUnit.DAYS.between(trip.startDate, trip.endDate) + 1
-        if (today < trip.startDate) return TripPerDay(budget / totalDays, false)
-        if (totals.overMinor > 0) return TripPerDay(0, true)
-        val daysRemaining = ChronoUnit.DAYS.between(today, trip.endDate) + 1
-        return TripPerDay((totals.leftMinor ?: 0) / daysRemaining, false)
+        val totalDays = (ChronoUnit.DAYS.between(trip.startDate, trip.endDate) + 1).toInt()
+        if (today < trip.startDate) return TripPerDay(budget / totalDays, false, totalDays)
+        val daysRemaining = (ChronoUnit.DAYS.between(today, trip.endDate) + 1).toInt()
+        if ((totals.leftMinor ?: 0) <= 0) return TripPerDay(0, true, daysRemaining)
+        return TripPerDay((totals.leftMinor ?: 0) / daysRemaining, false, daysRemaining)
     }
 }

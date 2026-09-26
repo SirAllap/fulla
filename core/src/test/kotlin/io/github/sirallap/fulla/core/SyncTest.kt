@@ -58,6 +58,9 @@ class FakeServer {
                 prior == null && SharedPot.refusesNew(m.transaction, household) ->
                     PushResult(m.mutationId, m.transaction.id, ok = false, applied = false,
                         errorCode = "validation_failed", errorMessage = SharedPot.NOTHING_TO_SETTLE)
+                prior == null && rejectsTrip(m.transaction) ->
+                    PushResult(m.mutationId, m.transaction.id, ok = false, applied = false,
+                        errorCode = "validation_failed", errorMessage = "A ${m.transaction.kind} has no trip.")
                 prior == null -> {
                     val kept = tripped(SharedPot.forNew(m.transaction, household), null)
                     val stored = kept.copy(clientUpdatedAt = m.clientUpdatedAt, serverSeq = ++seq)
@@ -69,6 +72,9 @@ class FakeServer {
                     PushResult(m.mutationId, prior.id, ok = true, applied = false,
                         conflict = Conflict(Conflict.Winner.SERVER, SyncEngine.diff(m.transaction, prior)),
                         serverTransaction = prior)
+                rejectsTrip(m.transaction) ->
+                    PushResult(m.mutationId, prior.id, ok = false, applied = false,
+                        errorCode = "validation_failed", errorMessage = "A ${m.transaction.kind} has no trip.")
                 else -> {
                     // A phone that never saw the stored row wrote it as new (same recurring occurrence, same import line).
                     val kept = tripped(if (m.baseClientUpdatedAt == null) SharedPot.forNew(m.transaction, household) else m.transaction, prior.tripId)
@@ -84,15 +90,28 @@ class FakeServer {
     }
 
     /**
+     * As fulla.trip_for's own guard (0012_trips.sql:148-152): an explicit,
+     * non-null trip_id sent on any kind other than expense or refund is
+     * refused outright, rather than silently dropped. Wire only ever writes
+     * the key when [Transaction.tripKnown] or `tripId` itself is non-null, so
+     * that condition stands in for "the key was present".
+     */
+    private fun rejectsTrip(tx: Transaction): Boolean =
+        tx.kind != TransactionKind.EXPENSE && tx.kind != TransactionKind.REFUND &&
+            (tx.tripKnown || tx.tripId != null) && tx.tripId != null
+
+    /**
      * As fulla.trip_for in fulla_sync_push (0012_trips.sql): a trip only
-     * survives on an expense or a refund, an absent `trip_id` keeps whatever
-     * was stored (the same "absent keeps its value" rule as extras), and any
-     * other kind drops it silently rather than failing, so a phone that
-     * changed the kind of a tripped row is never rejected for it.
+     * survives on an expense or a refund (an explicit one on any other kind
+     * is refused by [rejectsTrip] before this ever runs); an absent `trip_id`
+     * key keeps whatever was stored (the same "absent keeps its value" rule
+     * as extras) — and "absent" means neither tripKnown nor an explicit
+     * tripId, exactly what Wire would have left out.
      */
     private fun tripped(tx: Transaction, priorTripId: String?): Transaction {
         if (tx.kind != TransactionKind.EXPENSE && tx.kind != TransactionKind.REFUND) return tx.copy(tripId = null)
-        return if (tx.tripKnown) tx else tx.copy(tripId = priorTripId)
+        val sent = tx.tripKnown || tx.tripId != null
+        return if (sent) tx else tx.copy(tripId = priorTripId)
     }
 
     data class Page(val rows: List<Transaction>, val cursor: Long, val hasMore: Boolean)
@@ -439,6 +458,11 @@ class SyncTest {
      */
     @Test
     fun `ten phones converge whatever the order`() {
+        // Two trips every phone might use, so the simulation covers trip_id
+        // the way it covers everything else: created with one, cleared,
+        // moved to the other, or edited the way an old app version would
+        // (tripKnown false), which must never clear a trip another phone set.
+        val trips = listOf("00000000-0000-4000-8000-000000000501", "00000000-0000-4000-8000-000000000502")
         for (seed in 1..300) {
             val random = Random(seed)
             val server = FakeServer()
@@ -454,11 +478,22 @@ class SyncTest {
                         val id = if (random.nextBoolean()) DeterministicId.occurrence(RULE, LocalDate.of(2030, 1, 1).plusDays(random.nextLong(0, 30)))
                         else Fixtures.newId()
                         if (id !in phone.rows) {
-                            phone.create(Fixtures.expense(id = id, payer = if (random.nextBoolean()) Fixtures.ALICE else Fixtures.BOB), at(minute))
+                            val tx = Fixtures.expense(id = id, payer = if (random.nextBoolean()) Fixtures.ALICE else Fixtures.BOB)
+                            val tripped = if (random.nextBoolean()) tx.copy(tripId = trips.random(random), tripKnown = true) else tx
+                            phone.create(tripped, at(minute))
                         }
                     }
                     3, 4, 5 -> phone.rows.values.filter { it.transaction.isActive }.randomOrNull(random)?.let {
-                        phone.write(it.transaction.copy(note = "edit $seed/$minute by ${phone.name}"), at(minute))
+                        val note = "edit $seed/$minute by ${phone.name}"
+                        val edited = when (random.nextInt(4)) {
+                            // The person touched the trip chip: a real change, always sent.
+                            0 -> it.transaction.copy(note = note, tripId = trips.random(random), tripKnown = true)
+                            1 -> it.transaction.copy(note = note, tripId = null, tripKnown = true)
+                            // An old app version's own edit: never learned about trip_id, so it must not clear one.
+                            2 -> it.transaction.copy(note = note, tripId = null, tripKnown = false)
+                            else -> it.transaction.copy(note = note)
+                        }
+                        phone.write(edited, at(minute))
                     }
                     6 -> phone.rows.values.filter { it.transaction.isActive }.randomOrNull(random)?.let {
                         phone.write(it.transaction.copy(status = Status.DELETED), at(minute))
