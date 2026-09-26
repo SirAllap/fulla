@@ -1367,6 +1367,38 @@ test('an absent trip_id keeps the trip, an explicit null clears it, an old-shape
   assert.equal(stored(ctx, tripped.id).trip_id, null);
 });
 
+test('conflict notes report the real trip change, not a false one either way (M1)', (ctx) => {
+  const t = trip();
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+
+  // Server wins, the phone kept the row's own trip: no false "trip removed".
+  const kept = expense(ctx, { trip_id: t.id });
+  push(ctx, ctx.alice, [upsert(kept, iso(10))]);
+  const [serverWinsSameTrip] = push(ctx, ctx.alice, [upsert({ ...kept, note: 'older', trip_id: t.id }, iso(5))]);
+  assert.equal(serverWinsSameTrip.conflict.winner, 'server');
+  assert.equal(serverWinsSameTrip.conflict.overwritten.some((d) => d.field === 'trip_id'), false,
+    'the trip did not change, so it must not be reported as changed');
+
+  // Server wins, the phone sent a different trip than what's stored: a real change, reported.
+  const other = trip({ name: 'Lisbon' });
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: other });
+  const [serverWinsOtherTrip] = push(ctx, ctx.alice, [upsert({ ...kept, note: 'older still', trip_id: other.id }, iso(6))]);
+  const tripChange = serverWinsOtherTrip.conflict.overwritten.find((d) => d.field === 'trip_id');
+  assert.ok(tripChange, 'a real trip change must be reported');
+  assert.equal(tripChange.before, other.id);
+  assert.equal(tripChange.after, t.id);
+
+  // Client wins, and it read the row before either of the pushes above
+  // (base_client_updated_at is stale), so the note fires: the trip it
+  // actually keeps is what gets reported.
+  const [clientWins] = push(ctx, ctx.alice, [upsert({ ...kept, amount_minor: 999, trip_id: other.id }, iso(20), iso(1))]);
+  assert.equal(clientWins.conflict.winner, 'client');
+  const clientTripChange = clientWins.conflict.overwritten.find((d) => d.field === 'trip_id');
+  assert.ok(clientTripChange, 'the client did change the trip, so it must be reported');
+  assert.equal(clientTripChange.before, t.id);
+  assert.equal(clientTripChange.after, other.id);
+});
+
 test('a uuid trip on a settlement is refused, a nonexistent trip is refused', (ctx) => {
   const settle = { id: uuid(), kind: 'settlement', date: '2030-01-15', amount_minor: 500,
                    paid_by_member_id: ctx.aliceMember, to_member_id: join(ctx, 'Bob').member, trip_id: uuid() };

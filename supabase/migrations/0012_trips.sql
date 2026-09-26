@@ -489,7 +489,15 @@ begin
               'winner', 'server',
               'server_updated_at', fulla.iso(v_prior.client_updated_at),
               'client_updated_at', fulla.iso(v_stamp),
-              'overwritten', fulla.tx_diff(v_new, v_prior_json)));
+              -- validate_transaction's output never carries a trip_id key (0003:640-661), so
+              -- v_new is given the trip this mutation would have stored it with (absent key
+              -- keeps the prior trip, same as trip_for, without trip_for's own validation:
+              -- nothing here is actually being applied) so the diff doesn't report a false
+              -- "trip removed" or "trip added" on every collision on a tripped row.
+              'overwritten', fulla.tx_diff(
+                v_new || jsonb_build_object('trip_id',
+                  case when v_tx ? 'trip_id' then v_tx -> 'trip_id' else to_jsonb(v_prior.trip_id) end),
+                v_prior_json)));
         else
           -- Written by a phone that never saw the stored row: new to that phone.
           v_stored := v_new;
@@ -528,7 +536,9 @@ begin
               'winner', 'client',
               'server_updated_at', fulla.iso(v_prior.client_updated_at),
               'client_updated_at', fulla.iso(v_stamp),
-              'overwritten', fulla.tx_diff(v_prior_json, v_stored)));
+              -- v_stored never carries trip_id either (it's built from v_new); v_trip, computed
+              -- above, is what actually won, so the diff reports it instead of a false note.
+              'overwritten', fulla.tx_diff(v_prior_json, v_stored || jsonb_build_object('trip_id', to_jsonb(v_trip)))));
           end if;
         end if;
       end if;
