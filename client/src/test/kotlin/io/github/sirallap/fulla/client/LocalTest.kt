@@ -6,6 +6,7 @@ import io.github.sirallap.fulla.client.local.RecurringPlanner
 import io.github.sirallap.fulla.client.remote.Structure
 import io.github.sirallap.fulla.client.sync.Edits
 import io.github.sirallap.fulla.client.wire.Wire
+import io.github.sirallap.fulla.core.guide.MonthStart
 import io.github.sirallap.fulla.core.model.MoneyMode
 import io.github.sirallap.fulla.core.model.Role
 import io.github.sirallap.fulla.core.model.Split
@@ -21,6 +22,7 @@ import java.time.Instant
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -68,6 +70,36 @@ class LocalTest {
 
         bundle = LocalHousehold.upsertMember(bundle, buildJsonObject { put("id", Fixtures.BOB); put("display_name", "Bob"); put("initials", "B") })
         assertEquals(Role.MEMBER, Wire.config(bundle).member(Fixtures.BOB)!!.role)
+    }
+
+    @Test
+    fun `updateHousehold refuses the exclusive pair`() {
+        var bundle = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        // A patch that would leave both a mid-month start and shifted income set is refused,
+        // and refusing it leaves the stored household untouched.
+        val before = Wire.config(bundle).household
+        bundle = LocalHousehold.updateHousehold(bundle, buildJsonObject { put("period_start_day", 20) })
+        assertFailsWith<IllegalArgumentException> {
+            LocalHousehold.updateHousehold(bundle, buildJsonObject { put("income_shift_day", 25) })
+        }
+        assertEquals(20, Wire.config(bundle).household.periodStartDay)
+        assertNull(Wire.config(bundle).household.incomeShiftDay)
+        assertEquals(before.periodStartDay, 1)
+
+        // MonthStart.toPatch always sends both keys, one explicitly null, so going through
+        // it can set one and clear the other in a single, always-valid patch.
+        for (day in listOf(2, 28)) {
+            val payday = LocalHousehold.updateHousehold(bundle,
+                JsonObject(MonthStart.Payday(day).toPatch().mapValues { (_, v) -> if (v == null) JsonNull else JsonPrimitive(v as Int) }))
+            assertEquals(day, Wire.config(payday).household.periodStartDay)
+            assertNull(Wire.config(payday).household.incomeShiftDay)
+        }
+        for (day in listOf(2, 31)) {
+            val salary = LocalHousehold.updateHousehold(bundle,
+                JsonObject(MonthStart.SalaryNextMonth(day).toPatch().mapValues { (_, v) -> if (v == null) JsonNull else JsonPrimitive(v as Int) }))
+            assertEquals(1, Wire.config(salary).household.periodStartDay)
+            assertEquals(day, Wire.config(salary).household.incomeShiftDay)
+        }
     }
 
     @Test

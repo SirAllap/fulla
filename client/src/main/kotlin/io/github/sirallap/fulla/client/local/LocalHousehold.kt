@@ -107,11 +107,26 @@ object LocalHousehold {
         return bump(JsonObject(bundle + (kind.bundleKey to JsonArray(next))))
     }
 
-    /** Household settings: the same fields fulla_household_update accepts. */
+    /**
+     * Household settings: the same fields fulla_household_update accepts.
+     *
+     * Mirrors that function's own check: a period that starts mid-month
+     * (`period_start_day` > 1) and shifted income (`income_shift_day` set)
+     * exclude each other. `MonthStart.toPatch` always sends both keys, one
+     * explicitly null, so a caller that goes through it can never trip this;
+     * a hand-built patch that would still leave both set is refused before
+     * it reaches a household a `PeriodRule` would refuse to build.
+     */
     fun updateHousehold(bundle: JsonObject, patch: JsonObject): JsonObject {
         val allowed = setOf("name", "locale", "period_start_day", "income_shift_day", "week_start", "currency", "member_limit", "money_mode")
         val h = bundle["household"] as JsonObject
-        return bump(JsonObject(bundle + ("household" to JsonObject(h + patch.filterKeys { it in allowed }))))
+        val merged = JsonObject(h + patch.filterKeys { it in allowed })
+        val periodStartDay = (merged["period_start_day"] as? JsonPrimitive)?.intOrNull ?: 1
+        val incomeShiftDay = (merged["income_shift_day"] as? JsonPrimitive)?.takeIf { it != JsonNull }?.intOrNull
+        require(periodStartDay <= 1 || incomeShiftDay == null) {
+            "A period that starts mid-month and shifted income cannot both be on."
+        }
+        return bump(JsonObject(bundle + ("household" to merged)))
     }
 
     fun upsertMember(bundle: JsonObject, member: JsonObject): JsonObject {
