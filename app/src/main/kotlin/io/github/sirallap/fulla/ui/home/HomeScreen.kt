@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.SaveAlt
@@ -65,6 +66,7 @@ fun HomeScreen(
     onInsights: () -> Unit,
     onBackup: () -> Unit,
     onTrip: (String) -> Unit = {},
+    onAccounts: () -> Unit = {},
 ) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
@@ -131,6 +133,15 @@ fun HomeScreen(
                 if (backupDue) item {
                     ListRow(stringResource(R.string.backup_due), context = stringResource(R.string.backup_due_text),
                         icon = Icons.Outlined.SaveAlt, iconTint = c.warning, onClick = onBackup)
+                }
+                // What the accounts hold today, once someone has told Fulla their starting balances:
+                // the month's figures above never include money that was already there.
+                val accounts = view.config.accounts.filter { !it.archived }
+                if (accounts.any { it.openingBalanceMinor != 0L }) item {
+                    val total = view.analytics.accountBalances(view.active, accounts, java.time.LocalDate.now()).values.sum()
+                    ListRow(stringResource(R.string.accounts_total), detail = f.money(total),
+                        context = stringResource(R.string.accounts_total_help),
+                        icon = Icons.Outlined.AccountBalance, onClick = onAccounts)
                 }
                 item {
                     Figures(view, summary.incomeMinor, summary.expenseMinor, summary.savingsRate)

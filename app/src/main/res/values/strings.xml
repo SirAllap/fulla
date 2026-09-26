@@ -593,4 +593,7 @@
     <string name="trip_kind_family">Visiting family</string>
     <!-- Trip-type chip: anything that does not fit the other kinds -->
     <string name="trip_kind_other">Other</string>
+    <!-- Overview row: the total money in all accounts today (opening balance + movements). -->
+    <string name="accounts_total">In your accounts</string>
+    <string name="accounts_total_help">What they hold today. Tap for each account.</string>
 </resources>

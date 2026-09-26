@@ -543,4 +543,7 @@
     <string name="trip_kind_event">Evento</string>
     <string name="trip_kind_family">Visita à família</string>
     <string name="trip_kind_other">Outro</string>
+    <!-- Overview row: the total money in all accounts today (opening balance + movements). -->
+    <string name="accounts_total">Nas tuas contas</string>
+    <string name="accounts_total_help">O que têm hoje. Toca para ver cada conta.</string>
 </resources>
