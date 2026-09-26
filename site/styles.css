@@ -234,6 +234,8 @@ h1, h2, p, ol, ul, dl, dd, figure { margin: 0; }
   border: 1px solid var(--line); background: var(--paper); color: var(--ink);
   font: inherit; font-weight: 500; font-size: 0.9375rem;
 }
+/* The scroll cue owns the bottom centre while the hero is pinned; the tilt button moves to the corner. */
+.moves .tilt { left: auto; right: var(--gutter); transform: none; bottom: max(16px, env(safe-area-inset-bottom)); }
 
 /* A small cue while the hero is pinned: more is coming, keep going.
    JS fades it out once the pinned scene starts moving; reduced motion omits it. */
