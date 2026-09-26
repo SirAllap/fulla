@@ -192,3 +192,5 @@ from a hex value in a screen.
 
 The APK is built by CI only (no Android SDK is assumed locally). A debug
 build of every push to `main` is published to the `latest-debug` prerelease.
+
+Every Room version bump ships a migration test.
