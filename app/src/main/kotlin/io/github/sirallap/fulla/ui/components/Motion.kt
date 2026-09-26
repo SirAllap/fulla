@@ -34,6 +34,9 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.sirallap.fulla.core.guide.TourStop
+import io.github.sirallap.fulla.ui.Tab
+import io.github.sirallap.fulla.ui.guide.guideTarget
 import io.github.sirallap.fulla.ui.theme.FullaMotion
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
@@ -82,8 +85,17 @@ fun LiquidTabBar(items: List<TabItem>, selected: Int, onSelect: (Int) -> Unit) {
                     val covered = (minOf(right, i + 1f) - maxOf(left, i.toFloat())).coerceIn(0f, 1f) > 0.5f
                     val tint = if (covered) c.onHighlight else c.inkMuted
                     val source = remember { MutableInteractionSource() }
+                    // The Add tab has no tour stop of its own: once there, the tour
+                    // points at the keypad instead (ADD_AND_KEYPAD), so it is not tagged here.
+                    val stop = when (Tab.entries.getOrNull(i)) {
+                        Tab.OVERVIEW -> TourStop.OVERVIEW_TAB
+                        Tab.HISTORY -> TourStop.HISTORY_TAB
+                        Tab.BALANCES -> TourStop.BALANCES_TAB
+                        else -> null
+                    }
                     Column(
                         Modifier.weight(1f).fillMaxHeight().yields(source)
+                            .then(if (stop != null) Modifier.guideTarget(stop) else Modifier)
                             .semantics { this.selected = i == selected }
                             .clickable(source, indication = null, role = Role.Tab) { onSelect(i) },
                         horizontalAlignment = Alignment.CenterHorizontally,

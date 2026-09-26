@@ -478,4 +478,30 @@
     <string name="shared_pot_started_note">Inizia la cassa comune</string>
     <string name="split_again_text">Le nuove spese verranno di nuovo divise tra voi. Quello che avete aggiunto con la cassa comune resta di tutti.</string>
     <string name="added_by">Aggiunto da %1$s</string>
+
+    <string name="guide_setup_title">Prima di iniziare</string>
+    <string name="guide_skip">Salta</string>
+    <string name="guide_next">Avanti</string>
+    <string name="guide_done">Fatto</string>
+    <string name="guide_step_of">%1$d di %2$d</string>
+    <string name="guide_month_title">Quando inizia il tuo mese?</string>
+    <string name="guide_month_first">Il giorno 1</string>
+    <string name="guide_month_payday">Il giorno di paga</string>
+    <string name="guide_month_salary_next">Il giorno 1, ma lo stipendio conta per il mese successivo</string>
+    <string name="guide_month_salary_help">Scegli il giorno più presto in cui arriva lo stipendio e segnalo come Fisso.</string>
+    <string name="guide_month_preview">Questo mese è %1$s: %2$s</string>
+    <string name="guide_month_pay_example">Lo stipendio del %1$s va in %2$s.</string>
+    <string name="guide_accounts_title">Cosa c\'è oggi nei tuoi conti?</string>
+    <string name="guide_lock_title">Bloccare Fulla?</string>
+    <string name="guide_save_later">Non è stato possibile salvare ora. Potrai cambiarlo più tardi in Impostazioni › Famiglia.</string>
+    <string name="settings_show_guide">Rivedi la guida</string>
+    <string name="opening_balance">Saldo iniziale</string>
+
+    <string name="tour_jar">Questo è il tuo mese. Il barattolo si riempie con quanto risparmi; entrate e uscite sono sotto.</string>
+    <string name="tour_overview">Riepilogo: il mese in breve. Torna ai mesi precedenti con le frecce.</string>
+    <string name="tour_add">Aggiungi: scrivi un importo, scegli una categoria, salva. + somma più importi in una volta.</string>
+    <string name="tour_history">Cronologia: ogni movimento. Toccane uno per modificarlo o eliminarlo.</string>
+    <string name="tour_balances">Saldi: i tuoi conti, e chi deve cosa a chi se condividete le spese.</string>
+    <string name="tour_sync">Mostra se tutto è salvato e condiviso. Toccalo per i dettagli.</string>
+    <string name="tour_gear">Categorie, budget, membri e questa guida stanno qui.</string>
 </resources>

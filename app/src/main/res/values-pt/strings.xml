@@ -478,4 +478,30 @@
     <string name="shared_pot_started_note">Começa o caixa comum</string>
     <string name="split_again_text">As novas despesas voltarão a ser divididas entre vocês. O que vocês adicionaram com o caixa comum continua sendo de todos.</string>
     <string name="added_by">Adicionado por %1$s</string>
+
+    <string name="guide_setup_title">Antes de começar</string>
+    <string name="guide_skip">Saltar</string>
+    <string name="guide_next">Seguinte</string>
+    <string name="guide_done">Concluído</string>
+    <string name="guide_step_of">%1$d de %2$d</string>
+    <string name="guide_month_title">Quando começa o seu mês?</string>
+    <string name="guide_month_first">No dia 1</string>
+    <string name="guide_month_payday">No dia do pagamento</string>
+    <string name="guide_month_salary_next">No dia 1, mas o meu salário conta para o mês seguinte</string>
+    <string name="guide_month_salary_help">Escolha o dia mais cedo em que o seu salário costuma chegar e marque-o como Fixo.</string>
+    <string name="guide_month_preview">Este mês é %1$s: %2$s</string>
+    <string name="guide_month_pay_example">O pagamento de %1$s entra em %2$s.</string>
+    <string name="guide_accounts_title">O que há hoje nas suas contas?</string>
+    <string name="guide_lock_title">Bloquear a Fulla?</string>
+    <string name="guide_save_later">Não foi possível guardar agora. Pode alterar isto mais tarde em Definições › Casa.</string>
+    <string name="settings_show_guide">Ver o guia outra vez</string>
+    <string name="opening_balance">Saldo inicial</string>
+
+    <string name="tour_jar">Este é o seu mês. O frasco enche-se com o que poupa; as receitas e despesas estão por baixo.</string>
+    <string name="tour_overview">Resumo: este mês num relance. Volte a meses anteriores com as setas.</string>
+    <string name="tour_add">Adicionar: escreva um valor, escolha uma categoria, guarde. + soma vários valores de uma vez.</string>
+    <string name="tour_history">Histórico: todos os movimentos. Toque num para o alterar ou eliminar.</string>
+    <string name="tour_balances">Saldos: as suas contas, e quem deve a quem se partilharem despesas.</string>
+    <string name="tour_sync">Mostra se está tudo guardado e partilhado. Toque para ver os detalhes.</string>
+    <string name="tour_gear">Categorias, orçamentos, membros e este guia estão aqui.</string>
 </resources>

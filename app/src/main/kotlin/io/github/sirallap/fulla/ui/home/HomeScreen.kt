@@ -28,9 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.core.guide.TourStop
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
+import io.github.sirallap.fulla.ui.guide.guideTarget
 import io.github.sirallap.fulla.ui.components.AmountText
 import io.github.sirallap.fulla.ui.components.EmptyState
 import io.github.sirallap.fulla.ui.components.HeroJar
@@ -99,7 +101,7 @@ fun HomeScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onOpe
                         figure = f.money(hero.savingsMinor),
                         countUp = { fraction -> f.money((hero.savingsMinor * fraction).toLong()) },
                         description = description,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        modifier = Modifier.guideTarget(TourStop.JAR).padding(horizontal = 8.dp, vertical = 8.dp),
                     )
                 }
                 if (backupDue) item {

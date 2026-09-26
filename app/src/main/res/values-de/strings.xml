@@ -478,4 +478,30 @@
     <string name="shared_pot_started_note">Gemeinsame Kasse beginnt</string>
     <string name="split_again_text">Neue Ausgaben werden wieder unter euch aufgeteilt. Was ihr mit der gemeinsamen Kasse eingetragen habt, bleibt gemeinsam.</string>
     <string name="added_by">Eingetragen von %1$s</string>
+
+    <string name="guide_setup_title">Bevor es losgeht</string>
+    <string name="guide_skip">Überspringen</string>
+    <string name="guide_next">Weiter</string>
+    <string name="guide_done">Fertig</string>
+    <string name="guide_step_of">%1$d von %2$d</string>
+    <string name="guide_month_title">Wann beginnt dein Monat?</string>
+    <string name="guide_month_first">Am 1.</string>
+    <string name="guide_month_payday">Am Zahltag</string>
+    <string name="guide_month_salary_next">Am 1., aber mein Gehalt zählt für den nächsten Monat</string>
+    <string name="guide_month_salary_help">Wähle den frühesten Tag, an dem dein Gehalt jemals eintrifft, und markiere ihn als Fest.</string>
+    <string name="guide_month_preview">Dieser Monat ist %1$s: %2$s</string>
+    <string name="guide_month_pay_example">Gehalt am %1$s zählt zu %2$s.</string>
+    <string name="guide_accounts_title">Was ist heute auf deinen Konten?</string>
+    <string name="guide_lock_title">Fulla sperren?</string>
+    <string name="guide_save_later">Konnte gerade nicht gespeichert werden. Du kannst das später in Einstellungen › Haushalt ändern.</string>
+    <string name="settings_show_guide">Anleitung erneut anzeigen</string>
+    <string name="opening_balance">Anfangssaldo</string>
+
+    <string name="tour_jar">Das ist dein Monat. Das Glas füllt sich mit dem, was du behältst; Einnahmen und Ausgaben stehen darunter.</string>
+    <string name="tour_overview">Übersicht: dieser Monat auf einen Blick. Mit den Pfeilen zu früheren Monaten zurückgehen.</string>
+    <string name="tour_add">Hinzufügen: Betrag eingeben, Kategorie wählen, speichern. + addiert mehrere Beträge auf einmal.</string>
+    <string name="tour_history">Verlauf: jeder Eintrag. Tippe einen an, um ihn zu ändern oder zu löschen.</string>
+    <string name="tour_balances">Salden: deine Konten, und wer wem etwas schuldet, wenn ihr Kosten teilt.</string>
+    <string name="tour_sync">Zeigt, ob alles gespeichert und geteilt ist. Zum Ansehen der Details antippen.</string>
+    <string name="tour_gear">Kategorien, Budgets, Mitglieder und diese Anleitung sind hier.</string>
 </resources>

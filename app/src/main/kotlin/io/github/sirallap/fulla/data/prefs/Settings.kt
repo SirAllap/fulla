@@ -13,6 +13,7 @@ import io.github.sirallap.fulla.client.remote.Endpoint
 import io.github.sirallap.fulla.client.remote.Update
 import io.github.sirallap.fulla.core.design.Accent
 import io.github.sirallap.fulla.core.design.MoneyPalette
+import io.github.sirallap.fulla.core.guide.GuideOrigin
 import io.github.sirallap.fulla.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -35,6 +36,14 @@ data class Settings(
     val checkForUpdates: Boolean = true,
     /** Found by AppContainer.checkForUpdates, cleared once installed. */
     val pendingUpdate: Update? = null,
+    /** The household the guide is currently running for, or null when it is not showing. */
+    val guideHousehold: String? = null,
+    /** Why the guide started (see GuideOrigin), or null before the first run. */
+    val guideOrigin: String? = null,
+    /** GuideCursor.encode's format, e.g. "setup:MONTH_START" or "tour:2". */
+    val guideStep: String? = null,
+    /** Set once the tour has been finished (or skipped) at least once. */
+    val tourDone: Boolean = false,
 )
 
 class SettingsStore(context: Context) {
@@ -58,6 +67,10 @@ class SettingsStore(context: Context) {
         val updateApkUrl = stringPreferencesKey("update_apk_url")
         val updateSizeBytes = longPreferencesKey("update_size_bytes")
         val updateSha256 = stringPreferencesKey("update_sha256")
+        val guideHousehold = stringPreferencesKey("guide_household")
+        val guideOrigin = stringPreferencesKey("guide_origin")
+        val guideStep = stringPreferencesKey("guide_step")
+        val tourDone = booleanPreferencesKey("tour_done")
     }
 
     val settings: Flow<Settings> = store.data.map { p ->
@@ -76,6 +89,10 @@ class SettingsStore(context: Context) {
                     Update(version, p[Keys.updateNotes] ?: "", url, p[Keys.updateSizeBytes] ?: 0L, p[Keys.updateSha256])
                 }
             },
+            guideHousehold = p[Keys.guideHousehold],
+            guideOrigin = p[Keys.guideOrigin],
+            guideStep = p[Keys.guideStep],
+            tourDone = p[Keys.tourDone] ?: false,
         )
     }
 
@@ -97,6 +114,21 @@ class SettingsStore(context: Context) {
     suspend fun setOnboarded(done: Boolean) { store.edit { it[Keys.onboarded] = done } }
     suspend fun setLanguageChosen(done: Boolean) { store.edit { it[Keys.languageChosen] = done } }
     suspend fun setCheckForUpdates(on: Boolean) { store.edit { it[Keys.checkForUpdates] = on } }
+
+    /** Starts the guide for [id], from [origin]. Overwrites whatever guide was running before. */
+    suspend fun startGuide(id: String, origin: GuideOrigin) {
+        store.edit { it[Keys.guideHousehold] = id; it[Keys.guideOrigin] = origin.name.lowercase() }
+    }
+
+    suspend fun setGuideStep(s: String) { store.edit { it[Keys.guideStep] = s } }
+
+    /** Ends the guide: nothing left to show, and the tour will not be offered again by itself. */
+    suspend fun finishGuide() {
+        store.edit {
+            it.remove(Keys.guideHousehold); it.remove(Keys.guideOrigin); it.remove(Keys.guideStep)
+            it[Keys.tourDone] = true
+        }
+    }
 
     suspend fun lastUpdateCheckAt(): Long = store.data.first()[Keys.lastUpdateCheckAt] ?: 0L
     suspend fun setLastUpdateCheckAt(at: Long) { store.edit { it[Keys.lastUpdateCheckAt] = at } }

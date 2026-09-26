@@ -69,10 +69,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.client.remote.FullaApi
+import io.github.sirallap.fulla.client.remote.FullaError
 import io.github.sirallap.fulla.core.model.MoneyMode
+import io.github.sirallap.fulla.ui.HouseholdView
+import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 /*
  * The pieces every screen is made of. One component per idea, so the same
@@ -488,6 +494,64 @@ fun MoneyModeSheet(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
             androidx.compose.material3.TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp)) {
                 Text(dismissLabel)
+            }
+        }
+    }
+}
+
+/**
+ * A structure change, on the phone or through the server for a shared
+ * household, with [onError] told of the result. The one place a screen's
+ * "runs a change against `change: Change`" plumbing is written; Settings and
+ * the guide's setup steps both call this instead of writing their own copy.
+ */
+@Composable
+fun rememberChange(view: HouseholdView, onError: (String?) -> Unit = {}): (suspend (FullaApi?) -> Unit) -> Unit {
+    val container = LocalContainer.current
+    val scope = rememberCoroutineScope()
+    val failed = stringResource(R.string.something_failed)
+    return { block ->
+        scope.launch {
+            onError(null)
+            val api = if (view.state.connected) container.api() else null
+            if (view.state.connected && api == null) { onError(failed); return@launch }
+            runCatching { block(api) }.onFailure { onError((it as? FullaError)?.message ?: failed) }
+        }
+    }
+}
+
+/**
+ * One screen of the getting-started guide: a bottom sheet on [FullaTheme]'s
+ * paper, a step indicator, the screen's own [content], and one primary action
+ * in the bottom third next to a quieter "Skip". Modelled on [MoneyModeSheet].
+ */
+@Composable
+fun GuideSheet(
+    title: String,
+    onSkip: () -> Unit,
+    primaryLabel: String,
+    onPrimary: () -> Unit,
+    modifier: Modifier = Modifier,
+    body: String? = null,
+    stepOf: Pair<Int, Int>? = null,
+    primaryEnabled: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit = {},
+) {
+    val c = FullaTheme.colors
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onSkip, containerColor = c.paper, modifier = modifier) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(title, style = FullaType.title, color = c.ink, modifier = Modifier.weight(1f).semantics { heading() })
+                stepOf?.let { (i, n) -> Text(stringResource(R.string.guide_step_of, i, n), style = FullaType.secondary, color = c.inkMuted) }
+            }
+            body?.let { Text(it, style = FullaType.body, color = c.inkMuted, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) }
+            Column(Modifier.padding(horizontal = 20.dp), content = content)
+            Spacer(Modifier.height(12.dp))
+            Column(Modifier.padding(horizontal = 20.dp)) {
+                PrimaryButton(primaryLabel, onPrimary, enabled = primaryEnabled)
+            }
+            androidx.compose.material3.TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp)) {
+                Text(stringResource(R.string.guide_skip))
             }
         }
     }

@@ -478,4 +478,30 @@
     <string name="shared_pot_started_note">Début de la cagnotte commune</string>
     <string name="split_again_text">Les nouvelles dépenses seront de nouveau partagées entre vous. Ce que vous avez ajouté pendant la cagnotte commune reste commun.</string>
     <string name="added_by">Ajouté par %1$s</string>
+
+    <string name="guide_setup_title">Avant de commencer</string>
+    <string name="guide_skip">Passer</string>
+    <string name="guide_next">Suivant</string>
+    <string name="guide_done">Terminé</string>
+    <string name="guide_step_of">%1$d sur %2$d</string>
+    <string name="guide_month_title">Quand commence votre mois ?</string>
+    <string name="guide_month_first">Le 1er</string>
+    <string name="guide_month_payday">Le jour de paie</string>
+    <string name="guide_month_salary_next">Le 1er, mais mon salaire compte pour le mois suivant</string>
+    <string name="guide_month_salary_help">Choisissez le jour le plus tôt où votre salaire arrive, et marquez-le comme Fixe.</string>
+    <string name="guide_month_preview">Ce mois-ci est %1$s : %2$s</string>
+    <string name="guide_month_pay_example">Le salaire du %1$s entre dans %2$s.</string>
+    <string name="guide_accounts_title">Qu\'y a-t-il aujourd\'hui sur vos comptes ?</string>
+    <string name="guide_lock_title">Verrouiller Fulla ?</string>
+    <string name="guide_save_later">Impossible d\'enregistrer pour l\'instant. Vous pourrez le changer plus tard dans Réglages › Foyer.</string>
+    <string name="settings_show_guide">Revoir le guide</string>
+    <string name="opening_balance">Solde de départ</string>
+
+    <string name="tour_jar">Voici votre mois. Le bocal se remplit de ce que vous gardez ; les revenus et les dépenses sont en dessous.</string>
+    <string name="tour_overview">Aperçu : ce mois-ci en un coup d\'œil. Revenez aux mois précédents avec les flèches.</string>
+    <string name="tour_add">Ajouter : tapez un montant, choisissez une catégorie, enregistrez. + additionne plusieurs montants d\'un coup.</string>
+    <string name="tour_history">Historique : chaque mouvement. Touchez-en un pour le modifier ou le supprimer.</string>
+    <string name="tour_balances">Balances : vos comptes, et qui doit quoi si vous partagez des dépenses.</string>
+    <string name="tour_sync">Indique si tout est enregistré et partagé. Touchez pour voir les détails.</string>
+    <string name="tour_gear">Les catégories, les budgets, les membres et ce guide sont ici.</string>
 </resources>

@@ -313,27 +313,41 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         })
     }
     editing?.let { item ->
-        StructureDialog(item, onDismiss = { editing = null }, iconPicker = false) { updated ->
+        StructureDialog(item, onDismiss = { editing = null }, iconPicker = false, formats = view.formats) { updated ->
             change { api -> ledger.upsert(view.id, Structure.ACCOUNT, updated, api) }
         }
     }
 }
 
-private fun bundleItem(view: HouseholdView, kind: Structure, id: String): JsonObject? =
+internal fun bundleItem(view: HouseholdView, kind: Structure, id: String): JsonObject? =
     Wire.list(view.state.bundle[kind.bundleKey]).firstOrNull { (it["id"] as? JsonPrimitive)?.content == id }
 
-/** Name, archive and (for categories) icon. Nothing is ever deleted: archived things keep their history. */
+/**
+ * An account's opening balance from what somebody typed: blank keeps it at 0,
+ * anything else parses in the household's currency. Shared between
+ * [StructureDialog]'s balance field and the guide's opening-balances step.
+ */
+internal fun parseOpeningBalance(text: String, formats: io.github.sirallap.fulla.ui.Formats): Long? =
+    if (text.isBlank()) 0L else io.github.sirallap.fulla.core.money.MoneyParser.parse(text, formats.currency, formats.decimalStyle)
+
+/** Name, archive, (for categories) icon, and (for accounts) an opening balance. Nothing is ever deleted: archived things keep their history. */
 @Composable
-private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker: Boolean, onSave: (JsonObject) -> Unit) {
+private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker: Boolean, formats: io.github.sirallap.fulla.ui.Formats? = null, onSave: (JsonObject) -> Unit) {
     var name by remember { mutableStateOf((item["name"] as? JsonPrimitive)?.content ?: "") }
     var archived by remember { mutableStateOf((item["archived"] as? JsonPrimitive)?.content == "true") }
     var icon by remember { mutableStateOf((item["icon"] as? JsonPrimitive)?.content ?: "label") }
+    val openingBalanceMinor = (item["opening_balance_minor"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L
+    var balanceText by remember { mutableStateOf(formats?.plain(openingBalanceMinor) ?: "") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(name, { name = it.take(40) }, label = { Text(stringResource(R.string.name)) }, singleLine = true)
+                if (formats != null) {
+                    OutlinedTextField(balanceText, { balanceText = it }, label = { Text(stringResource(R.string.opening_balance)) },
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                }
                 if (iconPicker) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         for ((key, vector) in CategoryIcons.all) {
@@ -353,8 +367,10 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
         },
         confirmButton = {
             TextButton(enabled = name.isNotBlank(), onClick = {
+                val balance = formats?.let { parseOpeningBalance(balanceText, it) ?: openingBalanceMinor }
                 onSave(JsonObject(item + mapOf("name" to JsonPrimitive(name.trim()), "archived" to JsonPrimitive(archived)) +
-                    (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap())))
+                    (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap()) +
+                    (if (balance != null) mapOf("opening_balance_minor" to JsonPrimitive(balance)) else emptyMap())))
                 onDismiss()
             }) { Text(stringResource(R.string.save)) }
         },

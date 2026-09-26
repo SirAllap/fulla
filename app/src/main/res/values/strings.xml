@@ -479,4 +479,54 @@
     <string name="shared_pot_started_note">Shared pot started</string>
     <string name="split_again_text">New expenses will be split between members again. What you added while sharing stays shared.</string>
     <string name="added_by">Added by %1$s</string>
+
+    <!-- Warm, short sheet title -->
+    <string name="guide_setup_title">Before you start</string>
+    <!-- Button; means leave it as is -->
+    <string name="guide_skip">Skip</string>
+    <!-- Button -->
+    <string name="guide_next">Next</string>
+    <!-- Button -->
+    <string name="guide_done">Done</string>
+    <!-- Progress indicator, e.g. "1 of 3" -->
+    <string name="guide_step_of">%1$d of %2$d</string>
+    <!-- Plain question; "month" is the budgeting month, not the calendar month -->
+    <string name="guide_month_title">When does your month start?</string>
+    <!-- Calendar month start -->
+    <string name="guide_month_first">On the 1st</string>
+    <!-- Month runs payday to payday -->
+    <string name="guide_month_payday">On payday</string>
+    <!-- For pay that arrives at the end of a month -->
+    <string name="guide_month_salary_next">On the 1st, but my salary counts for the next month</string>
+    <!-- Explains "last business day" without naming it -->
+    <string name="guide_month_salary_help">Pick the earliest day your pay ever arrives, and mark it as Fixed.</string>
+    <!-- %1 is the period name, %2 is the date range -->
+    <string name="guide_month_preview">This month is %1$s: %2$s</string>
+    <!-- %1 is a date, %2 is a period name -->
+    <string name="guide_month_pay_example">Pay on %1$s goes into %2$s.</string>
+    <!-- About starting balances; can be left empty -->
+    <string name="guide_accounts_title">What\'s in your accounts today?</string>
+    <!-- Per phone; no data leaves the phone -->
+    <string name="guide_lock_title">Lock Fulla?</string>
+    <!-- Calm tone, not an error -->
+    <string name="guide_save_later">Couldn\'t save now. You can change this later in Settings › Household.</string>
+    <!-- Settings row label -->
+    <string name="settings_show_guide">Show the guide again</string>
+    <!-- A text field's label: the amount an account holds on the day it was added to Fulla -->
+    <string name="opening_balance">Opening balance</string>
+
+    <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
+    <string name="tour_jar">This is your month. The jar fills with what you keep; income and spending are below it.</string>
+    <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
+    <string name="tour_overview">Overview: this month at a glance. Swipe back through earlier months with the arrows.</string>
+    <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
+    <string name="tour_add">Add: type an amount, pick a category, save. + adds up a few amounts at once.</string>
+    <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
+    <string name="tour_history">History: every entry. Tap one to change or delete it.</string>
+    <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
+    <string name="tour_balances">Balances: your accounts, and who owes whom if you share costs.</string>
+    <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
+    <string name="tour_sync">Shows whether everything is saved and shared. Tap it for details.</string>
+    <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
+    <string name="tour_gear">Categories, budgets, members and this guide live here.</string>
 </resources>

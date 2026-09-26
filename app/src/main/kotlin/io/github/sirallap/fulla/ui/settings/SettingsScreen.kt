@@ -39,13 +39,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sirallap.fulla.R
-import io.github.sirallap.fulla.client.remote.FullaApi
 import io.github.sirallap.fulla.client.remote.Update
 import io.github.sirallap.fulla.core.roles.Permissions
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.BackHeader
 import io.github.sirallap.fulla.ui.components.ListRow
+import io.github.sirallap.fulla.ui.components.rememberChange
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.launch
@@ -76,30 +76,20 @@ enum class SettingsSection(val route: String, val title: Int, val icon: ImageVec
 @Composable
 fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> Unit, onOpen: (SettingsSection) -> Unit, onUpdate: () -> Unit = {}) {
     val container = LocalContainer.current
-    val scope = rememberCoroutineScope()
     var error by remember { mutableStateOf<String?>(null) }
-    val failed = stringResource(R.string.something_failed)
     val me = view.me
     val canEdit = me != null && Permissions.canEditStructure(me)
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     val pendingUpdate = settings?.pendingUpdate
 
-    /** Runs a structure change: on the phone, or through the server for a shared household. */
-    val change: (suspend (FullaApi?) -> Unit) -> Unit = { block ->
-        scope.launch {
-            error = null
-            val api = if (view.state.connected) container.api() else null
-            if (view.state.connected && api == null) { error = failed; return@launch }
-            runCatching { block(api) }.onFailure { error = (it as? io.github.sirallap.fulla.client.remote.FullaError)?.message ?: failed }
-        }
-    }
+    val change = rememberChange(view) { error = it }
 
     Column(Modifier.fillMaxSize()) {
         BackHeader(stringResource(section.title), onBack)
         error?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             when (section) {
-                SettingsSection.INDEX -> index(onOpen, pendingUpdate, onUpdate)
+                SettingsSection.INDEX -> index(view, onBack, onOpen, pendingUpdate, onUpdate)
                 SettingsSection.HOUSEHOLDS -> item { HouseholdsSettings(view, onBack) }
                 SettingsSection.HOUSEHOLD -> item { HouseholdSettings(view, canEdit, change) }
                 SettingsSection.MEMBERS -> item { MembersSettings(view, change, onShare = { onOpen(SettingsSection.SYNC) }) }
@@ -119,7 +109,7 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
     }
 }
 
-private fun LazyListScope.index(onOpen: (SettingsSection) -> Unit, pendingUpdate: Update?, onUpdate: () -> Unit) {
+private fun LazyListScope.index(view: HouseholdView, onBack: () -> Unit, onOpen: (SettingsSection) -> Unit, pendingUpdate: Update?, onUpdate: () -> Unit) {
     if (pendingUpdate != null) {
         item {
             ListRow(
@@ -135,5 +125,15 @@ private fun LazyListScope.index(onOpen: (SettingsSection) -> Unit, pendingUpdate
     items(SettingsSection.entries.filter { it != SettingsSection.INDEX }, key = { it.route }) { s ->
         ListRow(stringResource(s.title), icon = s.icon, onClick = { onOpen(s) },
             end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.inkMuted) })
+    }
+    item {
+        val container = LocalContainer.current
+        val scope = rememberCoroutineScope()
+        ListRow(stringResource(R.string.settings_show_guide), icon = Icons.Outlined.Info, onClick = {
+            scope.launch {
+                container.settings.startGuide(view.id, io.github.sirallap.fulla.core.guide.GuideOrigin.REPLAY)
+                onBack()
+            }
+        })
     }
 }

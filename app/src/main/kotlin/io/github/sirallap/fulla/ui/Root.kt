@@ -29,6 +29,8 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import io.github.sirallap.fulla.ui.components.LiquidTabBar
 import io.github.sirallap.fulla.ui.components.TabItem
+import io.github.sirallap.fulla.ui.guide.GuideHost
+import io.github.sirallap.fulla.ui.guide.guideTarget
 import io.github.sirallap.fulla.ui.theme.FullaMotion
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -129,65 +131,70 @@ private fun Household(state: HouseholdState) {
     var updateOpen by remember { mutableStateOf(false) }
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     val pendingUpdate = settings?.pendingUpdate
+    val guideTargets = io.github.sirallap.fulla.ui.guide.rememberGuideTargets()
 
-    val headerActions: @Composable () -> Unit = {
-        SyncCloud(view, onClick = { syncOpen = true })
-        IconButton(onClick = { nav.navigate("settings") }) {
-            if (pendingUpdate != null) {
-                BadgedBox(badge = { Badge(containerColor = FullaTheme.colors.accent) }) {
+    CompositionLocalProvider(io.github.sirallap.fulla.ui.guide.LocalGuideTargets provides guideTargets) {
+        val headerActions: @Composable () -> Unit = {
+            SyncCloud(view, onClick = { syncOpen = true })
+            IconButton(onClick = { nav.navigate("settings") }, modifier = Modifier.guideTarget(io.github.sirallap.fulla.core.guide.TourStop.GEAR)) {
+                if (pendingUpdate != null) {
+                    BadgedBox(badge = { Badge(containerColor = FullaTheme.colors.accent) }) {
+                        Icon(Icons.Outlined.Settings, stringResource(R.string.settings), tint = FullaTheme.colors.inkMuted)
+                    }
+                } else {
                     Icon(Icons.Outlined.Settings, stringResource(R.string.settings), tint = FullaTheme.colors.inkMuted)
                 }
-            } else {
-                Icon(Icons.Outlined.Settings, stringResource(R.string.settings), tint = FullaTheme.colors.inkMuted)
             }
         }
-    }
 
-    // Opening something slides it in a little from the side while what was
-    // there steps back and dims; going back is the same, reversed.
-    val reduced = FullaMotion.reduced()
-    val enterSpec = FullaMotion.settle<androidx.compose.ui.unit.IntOffset>(reduced)
-    val fade = FullaMotion.functional<Float>(reduced)
-    NavHost(nav, startDestination = "tabs", modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        enterTransition = { slideInHorizontally(enterSpec) { it / 14 } + fadeIn(fade) },
-        exitTransition = { slideOutHorizontally(enterSpec) { -it / 28 } + fadeOut(fade) },
-        popEnterTransition = { slideInHorizontally(enterSpec) { -it / 28 } + fadeIn(fade) },
-        popExitTransition = { slideOutHorizontally(enterSpec) { it / 14 } + fadeOut(fade) },
-    ) {
-        composable("tabs") {
-            Column(Modifier.fillMaxSize()) {
-                AnimatedContent(tab, Modifier.weight(1f), label = "tab", transitionSpec = {
-                    val toRight = targetState.ordinal > initialState.ordinal
-                    (fadeIn(fade) + slideInHorizontally(enterSpec) { if (toRight) it / 20 else -it / 20 }) togetherWith fadeOut(fade)
-                }) { shown ->
-                    when (shown) {
-                        Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW })
-                        Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") })
-                        Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
-                        Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") })
+        // Opening something slides it in a little from the side while what was
+        // there steps back and dims; going back is the same, reversed.
+        val reduced = FullaMotion.reduced()
+        val enterSpec = FullaMotion.settle<androidx.compose.ui.unit.IntOffset>(reduced)
+        val fade = FullaMotion.functional<Float>(reduced)
+        NavHost(nav, startDestination = "tabs", modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            enterTransition = { slideInHorizontally(enterSpec) { it / 14 } + fadeIn(fade) },
+            exitTransition = { slideOutHorizontally(enterSpec) { -it / 28 } + fadeOut(fade) },
+            popEnterTransition = { slideInHorizontally(enterSpec) { -it / 28 } + fadeIn(fade) },
+            popExitTransition = { slideOutHorizontally(enterSpec) { it / 14 } + fadeOut(fade) },
+        ) {
+            composable("tabs") {
+                Column(Modifier.fillMaxSize()) {
+                    AnimatedContent(tab, Modifier.weight(1f), label = "tab", transitionSpec = {
+                        val toRight = targetState.ordinal > initialState.ordinal
+                        (fadeIn(fade) + slideInHorizontally(enterSpec) { if (toRight) it / 20 else -it / 20 }) togetherWith fadeOut(fade)
+                    }) { shown ->
+                        when (shown) {
+                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW })
+                            Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") })
+                            Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
+                            Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") })
+                        }
                     }
+                    LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal) { tab = Tab.entries[it] }
                 }
-                LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal) { tab = Tab.entries[it] }
+            }
+            composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() })
+            }
+            composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }) }
+            composable("settings") {
+                SettingsScreen(view, SettingsSection.INDEX, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("settings/${it.route}") },
+                    onUpdate = { updateOpen = true })
+            }
+            composable("settings/{section}", arguments = listOf(navArgument("section") { type = NavType.StringType })) { entry ->
+                val section = SettingsSection.entries.firstOrNull { it.route == entry.arguments?.getString("section") } ?: SettingsSection.INDEX
+                SettingsScreen(view, section, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("settings/${it.route}") },
+                    onUpdate = { updateOpen = true })
             }
         }
-        composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-            EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() })
-        }
-        composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }) }
-        composable("settings") {
-            SettingsScreen(view, SettingsSection.INDEX, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("settings/${it.route}") },
-                onUpdate = { updateOpen = true })
-        }
-        composable("settings/{section}", arguments = listOf(navArgument("section") { type = NavType.StringType })) { entry ->
-            val section = SettingsSection.entries.firstOrNull { it.route == entry.arguments?.getString("section") } ?: SettingsSection.INDEX
-            SettingsScreen(view, section, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("settings/${it.route}") },
-                onUpdate = { updateOpen = true })
-        }
-    }
 
-    if (syncOpen) SyncSheet(view, onDismiss = { syncOpen = false }, onSettings = { syncOpen = false; nav.navigate("settings/sync") })
-    if (updateOpen) pendingUpdate?.let {
-        io.github.sirallap.fulla.ui.settings.UpdateSheet(it, onDismiss = { updateOpen = false })
+        if (syncOpen) SyncSheet(view, onDismiss = { syncOpen = false }, onSettings = { syncOpen = false; nav.navigate("settings/sync") })
+        if (updateOpen) pendingUpdate?.let {
+            io.github.sirallap.fulla.ui.settings.UpdateSheet(it, onDismiss = { updateOpen = false })
+        }
+
+        GuideHost(view, tab, setTab = { tab = it })
     }
 }
 
@@ -214,7 +221,7 @@ private fun SyncCloud(view: HouseholdView, onClick: () -> Unit) {
         pending > 0 -> stringResource(R.string.sync_pending, pending)
         else -> stringResource(R.string.sync_up_to_date)
     }
-    IconButton(onClick = onClick) {
+    IconButton(onClick = onClick, modifier = Modifier.guideTarget(io.github.sirallap.fulla.core.guide.TourStop.SYNC_CLOUD)) {
         BadgedBox(badge = {
             when {
                 attention -> Badge(containerColor = c.warning)

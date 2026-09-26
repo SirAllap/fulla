@@ -69,8 +69,10 @@ import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.model.TransactionValidator
 import io.github.sirallap.fulla.core.schema.SchemaEngine
+import io.github.sirallap.fulla.core.guide.TourStop
 import io.github.sirallap.fulla.core.split.SharedPot
 import io.github.sirallap.fulla.ui.HouseholdView
+import io.github.sirallap.fulla.ui.guide.guideTarget
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.BackHeader
 import io.github.sirallap.fulla.ui.components.Chip
@@ -390,7 +392,8 @@ private fun ChoiceFlow(options: List<Pair<String, String>>, selected: String?, o
 private fun KeypadPad(keypad: Keypad, decimal: Char, onChange: (Keypad) -> Unit, onSave: () -> Unit, saveLabel: String, saved: Boolean = false) {
     val c = FullaTheme.colors
     val keyModifier = Modifier.height(56.dp)
-    Row(Modifier.fillMaxWidth().background(c.paperHigh).navigationBarsPadding().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.fillMaxWidth().guideTarget(TourStop.ADD_AND_KEYPAD).background(c.paperHigh).navigationBarsPadding().padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for (row in listOf("123", "456", "789")) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

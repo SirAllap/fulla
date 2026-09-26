@@ -63,6 +63,7 @@ import io.github.sirallap.fulla.client.remote.FullaError
 import io.github.sirallap.fulla.client.remote.InviteProblem
 import io.github.sirallap.fulla.client.remote.InviteRefused
 import io.github.sirallap.fulla.client.remote.ProjectSetup
+import io.github.sirallap.fulla.core.guide.GuideOrigin
 import io.github.sirallap.fulla.core.money.Currency
 import io.github.sirallap.fulla.ui.Formats
 import io.github.sirallap.fulla.ui.LocalContainer
@@ -196,8 +197,9 @@ fun Onboarding(onCancel: (() -> Unit)?) {
                     onScanned = { container.pendingInvite.value = it })
             }
             Step.LOCAL -> HouseholdForm(title = stringResource(R.string.on_this_phone), onBack = { step = Step.WELCOME }) { name, me, currency ->
-                container.ledger.createLocal(name, currency, appLocale.toLanguageTag(), me, initials(me), 0)
+                val id = container.ledger.createLocal(name, currency, appLocale.toLanguageTag(), me, initials(me), 0)
                 container.settings.setOnboarded(true)
+                container.settings.startGuide(id, GuideOrigin.CREATED)
                 null
             }
             Step.AUTO -> AutoSetup(onBack = { step = Step.WELCOME }, onManual = { step = Step.PROJECT }) { endpoint ->
@@ -215,12 +217,14 @@ fun Onboarding(onCancel: (() -> Unit)?) {
             Step.CREATE -> HouseholdForm(title = stringResource(R.string.new_shared_household), onBack = { step = Step.CHOOSE }, initialName = myName) { name, me, currency ->
                 val api = container.api() ?: return@HouseholdForm FullaError(FullaError.NOT_AUTHENTICATED, "")
                 runCatching { api.householdCreate(name, currency, appLocale.toLanguageTag(), me, initials(me), 0) }
-                    .fold({ container.ledger.adopt(it); container.settings.setOnboarded(true); null }, { it })
+                    .fold({ container.ledger.adopt(it); container.settings.setOnboarded(true)
+                        container.settings.startGuide(it.householdId, GuideOrigin.CREATED); null }, { it })
             }
             Step.JOIN -> JoinForm(code, { code = it }, onBack = { step = Step.CHOOSE }, initialName = myName) { me ->
                 val api = container.api() ?: return@JoinForm FullaError(FullaError.NOT_AUTHENTICATED, "")
                 runCatching { api.inviteAccept(code.trim(), me, initials(me), 1) }
-                    .fold({ container.ledger.adopt(it); container.pendingInvite.value = null; container.settings.setOnboarded(true); null }, { it })
+                    .fold({ container.ledger.adopt(it); container.pendingInvite.value = null; container.settings.setOnboarded(true)
+                        container.settings.startGuide(it.householdId, GuideOrigin.JOINED); null }, { it })
             }
         }
     }
@@ -318,7 +322,10 @@ private fun Welcome(hosted: Boolean, google: (() -> Unit)?, error: String?, onLo
                         icon = Icons.Outlined.Restore, onClick = { restore.launch(arrayOf("*/*")) })
                     ListRow(stringResource(R.string.look_around), detail = stringResource(R.string.look_around_text),
                         icon = Icons.Outlined.Visibility, divider = false,
-                        onClick = { scope.launch { container.ledger.createDemo(appLocale.language) } })
+                        onClick = { scope.launch {
+                            val id = container.ledger.createDemo(appLocale.language)
+                            container.settings.startGuide(id, GuideOrigin.DEMO)
+                        } })
                 }
             }
             Spacer(Modifier.height(16.dp))
