@@ -27,7 +27,10 @@ abstract class FullaDatabase : RoomDatabase() {
          */
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("alter table households add column trips_repulled integer not null default 0")
+                // The default must match the entity's (1), or Room's schema check fails on open.
+                // Existing households then get 0, so each one re-pulls once.
+                db.execSQL("alter table households add column trips_repulled integer not null default 1")
+                db.execSQL("update households set trips_repulled = 0")
             }
         }
 
