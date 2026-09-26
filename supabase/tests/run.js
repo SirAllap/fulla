@@ -1482,8 +1482,12 @@ test('the bundle carries trips ordered by start date, and config_version moves w
 });
 
 test('a brand new trip defaults to holiday, and trip_kind is validated and kept-on-absent', (ctx) => {
-  const created = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip() });
-  assert.equal(created.trips[0].trip_kind, 'holiday');
+  // trip() mints its own uuid each call and both land in the same household
+  // with identical dates, so look each one up by id rather than assume an
+  // array position (the bundle's tie-break on equal start_date is by id).
+  const first = trip();
+  const created = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: first });
+  assert.equal(created.trips.find((x) => x.id === first.id).trip_kind, 'holiday');
 
   const t = trip({ trip_kind: 'work' });
   rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
@@ -1494,7 +1498,7 @@ test('a brand new trip defaults to holiday, and trip_kind is validated and kept-
   const stale = Object.assign({}, t, { name: 'Porto (renamed)' });
   delete stale.trip_kind;
   const kept = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: stale });
-  assert.equal(kept.trips[0].trip_kind, 'work');
+  assert.equal(kept.trips.find((x) => x.id === t.id).trip_kind, 'work');
 });
 
 test('fulla_trip_delete tombstones the trip, untrips its transactions, and moves server_seq', (ctx) => {
