@@ -103,12 +103,12 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
     var date by mutableStateOf(existing?.date ?: LocalDate.now())
         private set
     /** The trip active on [date] when this is a new expense or refund; an edit keeps the row's own trip. */
-    var tripId by mutableStateOf(existing?.tripId ?: Trips.activeOn(view.config.trips, date)?.id)
+    var tripId by mutableStateOf(existing?.tripId ?: Trips.activeOn(config.trips, date)?.id)
     /** Once the person has touched the trip chip themselves, a date change never re-runs the pick. */
     var tripTouched by mutableStateOf(existing != null)
     fun setDate(next: LocalDate) {
         date = next
-        if (!tripTouched) tripId = Trips.activeOn(view.config.trips, next)?.id
+        if (!tripTouched) tripId = Trips.activeOn(config.trips, next)?.id
     }
     var accountId by mutableStateOf(existing?.accountId ?: firstAccount)
     var toAccountId by mutableStateOf(existing?.toAccountId)

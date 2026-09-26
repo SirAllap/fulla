@@ -338,9 +338,14 @@ as $$
       'occurrence_date', 'import_fingerprint', 'original_amount_minor', 'original_currency', 'trip_id']) k
   ),
   core as (
+    -- A missing key (trip_id absent from a candidate that never touched it)
+    -- and an explicit JSON null must compare equal here: fulla_sync_push
+    -- itself does treat them differently (absent keeps the stored value),
+    -- but reporting a "changed" trip_id when nothing about it actually
+    -- changed would be a false conflict note.
     select k as field, p_before -> k as before, p_after -> k as after
       from fields
-     where (p_before -> k) is distinct from (p_after -> k)
+     where coalesce(p_before -> k, 'null'::jsonb) is distinct from coalesce(p_after -> k, 'null'::jsonb)
   ),
   extra_keys as (
     select jsonb_object_keys(coalesce(p_before -> 'extras', '{}')) as k

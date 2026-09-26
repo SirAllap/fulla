@@ -91,6 +91,14 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
         val perDay = remember(trip, totals, today) { Trips.perDay(trip, totals, today) }
         val left = totals.leftMinor ?: 0
         val days = maxOf(1, java.time.temporal.ChronoUnit.DAYS.between(trip.startDate, trip.endDate).toInt() + 1)
+        val byMember = remember(rows) {
+            val paid = LinkedHashMap<String, Long>()
+            for (t in rows) {
+                val sign = if (t.kind == TransactionKind.REFUND) -1 else 1
+                t.paidByMemberId?.let { paid[it] = (paid[it] ?: 0) + sign * t.amountMinor }
+            }
+            paid
+        }
 
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             if (budget != null) {
@@ -122,14 +130,6 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
             }
             if (!SharedPot.isShared(view.config.household) && view.config.activeMembers.size >= 2) {
                 item { io.github.sirallap.fulla.ui.components.Section(stringResource(R.string.settings_members)) }
-                val byMember = remember(rows) {
-                    val paid = LinkedHashMap<String, Long>()
-                    for (t in rows) {
-                        val sign = if (t.kind == TransactionKind.REFUND) -1 else 1
-                        t.paidByMemberId?.let { paid[it] = (paid[it] ?: 0) + sign * t.amountMinor }
-                    }
-                    paid
-                }
                 items(byMember.entries.toList(), key = { it.key }) { (memberId, amount) ->
                     ListRow(view.config.member(memberId)?.displayName ?: "", end = { AmountText(f.money(amount)) })
                 }

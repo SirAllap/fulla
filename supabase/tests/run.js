@@ -235,6 +235,7 @@ test('a stranger gets not_member from every function that takes a household', (c
     ['fulla_recurring_upsert', { p_household_id: hh, p_rule: {} }],
     ['fulla_rule_upsert', { p_household_id: hh, p_rule: {} }],
     ['fulla_import_profile_upsert', { p_household_id: hh, p_profile: {} }],
+    ['fulla_trip_upsert', { p_household_id: hh, p_trip: {} }],
     ['fulla_sync_push', { p_household_id: hh, p_mutations: [] }],
     ['fulla_sync_pull', { p_household_id: hh }],
     ['fulla_period_summary', { p_household_id: hh, p_from: '2030-01', p_to: '2030-12' }],
@@ -1393,7 +1394,7 @@ rawTest('fulla_household_create_from_local saves trips before the rows are pushe
   const r = rpc(db, alice, 'fulla_household_create_from_local', { p_payload: payload });
   assert.deepEqual(r.config.trips.map((t) => t.id), [tripId]);
   const tx = { id: uuid(), kind: 'expense', date: '2030-08-13', amount_minor: 4500, category_id: ids.food,
-               paid_by_member_id: ids.me, trip_id: tripId };
+               paid_by_member_id: ids.me, split: { mode: 'equal', members: [ids.me, ids.kid] }, trip_id: tripId };
   const [res] = rpc(db, alice, 'fulla_sync_push', { p_household_id: ids.household, p_mutations: [upsert(tx)] }).results;
   assert.equal(res.applied, true, JSON.stringify(res));
 });
