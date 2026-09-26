@@ -193,6 +193,10 @@ object Wire {
             },
             accounts = o.arr("accounts").map { it.jsonObject }.map {
                 Account(it.str("id")!!, it.str("name") ?: "", AccountType.of(it.str("type")), it.long("opening_balance_minor") ?: 0,
+                    // Absent (an older bundle, before this field existed) and an
+                    // explicit null both read as "no date": a legacy account,
+                    // every movement counts, same as before this field existed.
+                    it.str("opening_balance_date")?.let(LocalDate::parse),
                     it.int("sort") ?: 0, it.bool("archived") ?: false)
             },
             categories = o.arr("categories").map { it.jsonObject }.map {
@@ -312,7 +316,9 @@ object Wire {
 
     fun account(a: Account): JsonObject = buildJsonObject {
         put("id", a.id); put("name", a.name); put("type", a.type.key)
-        put("opening_balance_minor", a.openingBalanceMinor); put("sort", a.sort); put("archived", a.archived)
+        put("opening_balance_minor", a.openingBalanceMinor)
+        put("opening_balance_date", a.openingBalanceDate?.toString())
+        put("sort", a.sort); put("archived", a.archived)
     }
 
     fun category(k: Category): JsonObject = buildJsonObject {

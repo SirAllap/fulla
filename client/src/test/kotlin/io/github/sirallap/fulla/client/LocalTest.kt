@@ -42,6 +42,26 @@ class LocalTest {
     }
 
     @Test
+    fun `an account's opening balance date round-trips absent, explicit null and a real value`() {
+        var bundle = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        val account = Wire.config(bundle).accounts.first()
+
+        // A real date value: encodes and decodes back unchanged.
+        bundle = LocalHousehold.upsert(bundle, Structure.ACCOUNT,
+            Wire.account(account.copy(openingBalanceDate = LocalDate.of(2030, 3, 1))))
+        assertEquals(LocalDate.of(2030, 3, 1), Wire.config(bundle).account(account.id)!!.openingBalanceDate)
+
+        // Absent key: same "extras" merge rule, the stored value survives a patch that never mentions it.
+        bundle = LocalHousehold.upsert(bundle, Structure.ACCOUNT, buildJsonObject { put("id", account.id); put("name", "Wallet") })
+        assertEquals(LocalDate.of(2030, 3, 1), Wire.config(bundle).account(account.id)!!.openingBalanceDate)
+
+        // Explicit JSON null: clears it back to a legacy account, every movement counts.
+        bundle = LocalHousehold.upsert(bundle, Structure.ACCOUNT,
+            buildJsonObject { put("id", account.id); put("opening_balance_date", JsonNull) })
+        assertNull(Wire.config(bundle).account(account.id)!!.openingBalanceDate)
+    }
+
+    @Test
     fun `saving structure replaces by id, never removes, and bumps the version`() {
         var bundle = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
         val account = Wire.config(bundle).accounts.first()

@@ -495,9 +495,9 @@
     <string name="guide_lock_title">Bloquear a Fulla?</string>
     <string name="guide_save_later">Não foi possível guardar agora. Pode alterar isto mais tarde em Definições › Casa.</string>
     <string name="settings_show_guide">Ver o guia outra vez</string>
-    <string name="opening_balance">Saldo inicial</string>
+    <string name="opening_balance">Saldo no início do dia</string>
     <!-- Under the opening balance field: it is money already there, not income this month. -->
-    <string name="opening_balance_help">O dinheiro que já estava na conta ao começar. Não é uma entrada: vais vê-lo em Saldos, em Contas.</string>
+    <string name="opening_balance_help">O que a conta tinha quando esse dia começou. Os movimentos a partir desse dia são somados ou subtraídos; os anteriores já estão incluídos.</string>
 
     <string name="tour_jar">Este é o seu mês. O frasco enche-se com o que poupa; as receitas e despesas estão por baixo.</string>
     <string name="tour_overview">Resumo: este mês num relance. Volte a meses anteriores com as setas.</string>

@@ -63,6 +63,36 @@ class AnalyticsTest {
     }
 
     @Test
+    fun `opening balance date excludes movements dated before it`() {
+        val backdated = config.copy(accounts = config.accounts.map {
+            if (it.id == Fixtures.MAIN) it.copy(openingBalanceDate = d(6)) else it
+        })
+        val b = Analytics(backdated, PeriodRule()).accountBalances(rows, backdated.accounts, d(31))
+        // The income on d(1) and the expenses on d(3) and d(5) predate the
+        // opening date and are already folded into it, so only the refund on
+        // d(7) and the transfer out on d(8) still count.
+        assertEquals(700L - 10_000, b[Fixtures.MAIN])
+    }
+
+    @Test
+    fun `a movement dated exactly on the opening date counts`() {
+        val onDate = config.copy(accounts = config.accounts.map {
+            if (it.id == Fixtures.MAIN) it.copy(openingBalanceDate = d(3)) else it
+        })
+        val b = Analytics(onDate, PeriodRule()).accountBalances(rows, onDate.accounts, d(31))
+        assertEquals(-50_000L - 1_000 + 700 - 10_000, b[Fixtures.MAIN])
+    }
+
+    @Test
+    fun `a legacy account with no opening balance date still counts every movement`() {
+        val legacy = config.copy(accounts = config.accounts.map {
+            if (it.id == Fixtures.MAIN) it.copy(openingBalanceDate = null) else it
+        })
+        val b = Analytics(legacy, PeriodRule()).accountBalances(rows, legacy.accounts, d(31))
+        assertEquals(200_000L - 50_000 - 1_000 + 700 - 10_000, b[Fixtures.MAIN])
+    }
+
+    @Test
     fun `per member spending splits shares`() {
         val m = Analytics(config, PeriodRule()).byMember(rows, jan).associateBy { it.memberId }
         assertEquals(50_300L, m.getValue(Fixtures.ALICE).paidMinor)

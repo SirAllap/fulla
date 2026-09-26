@@ -495,9 +495,9 @@
     <string name="guide_lock_title">Bloccare Fulla?</string>
     <string name="guide_save_later">Non è stato possibile salvare ora. Potrai cambiarlo più tardi in Impostazioni › Famiglia.</string>
     <string name="settings_show_guide">Rivedi la guida</string>
-    <string name="opening_balance">Saldo iniziale</string>
+    <string name="opening_balance">Saldo all\'inizio della giornata</string>
     <!-- Under the opening balance field: it is money already there, not income this month. -->
-    <string name="opening_balance_help">Il denaro già sul conto all\'inizio. Non è un\'entrata: lo vedrai in Saldi, sotto Conti.</string>
+    <string name="opening_balance_help">Quello che il conto aveva quando quel giorno è iniziato. I movimenti da quel giorno in poi si sommano o si sottraggono; quelli precedenti sono già inclusi.</string>
 
     <string name="tour_jar">Questo è il tuo mese. Il barattolo si riempie con quanto risparmi; entrate e uscite sono sotto.</string>
     <string name="tour_overview">Riepilogo: il mese in breve. Torna ai mesi precedenti con le frecce.</string>

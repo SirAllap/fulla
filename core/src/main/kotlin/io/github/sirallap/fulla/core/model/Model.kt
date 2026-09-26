@@ -124,6 +124,12 @@ data class Account(
     val name: String,
     val type: AccountType = AccountType.OTHER,
     val openingBalanceMinor: Long = 0,
+    /**
+     * The day [openingBalanceMinor] was measured, as of its start. Null on a
+     * legacy account: every movement counts, exactly as before this field
+     * existed.
+     */
+    val openingBalanceDate: LocalDate? = null,
     val sort: Int = 0,
     val archived: Boolean = false,
 )

@@ -159,7 +159,14 @@ fun OpeningBalancesStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () 
                     val item = bundleItem(view, Structure.ACCOUNT, a.id) ?: continue
                     val ok = runCatching {
                         container.ledger.upsert(view.id, Structure.ACCOUNT,
-                            JsonObject(item + mapOf("opening_balance_minor" to JsonPrimitive(minor))), api)
+                            JsonObject(item + mapOf(
+                                "opening_balance_minor" to JsonPrimitive(minor),
+                                // Typing a balance here means "this is what the
+                                // account holds today": the date it was measured
+                                // is today, same as a brand new account in the
+                                // settings dialog.
+                                "opening_balance_date" to JsonPrimitive(java.time.LocalDate.now().toString()),
+                            )), api)
                     }.isSuccess
                     if (!ok) failed = true
                 }
@@ -182,6 +189,7 @@ fun OpeningBalancesStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () 
                 onValueChange = { texts[a.id] = it },
                 label = { Text(a.name) },
                 placeholder = { Text(f.plain(0L)) },
+                supportingText = { Text(stringResource(R.string.opening_balance_help)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),

@@ -371,6 +371,13 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
     var icon by remember { mutableStateOf((item["icon"] as? JsonPrimitive)?.content ?: "label") }
     val openingBalanceMinor = (item["opening_balance_minor"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L
     var balanceText by remember { mutableStateOf(formats?.plain(openingBalanceMinor) ?: "") }
+    // The stored date, if this account already has one. An account being
+    // edited that has never had one (existing account, null date) defaults to
+    // today too: editing it here means the person is now setting it
+    // explicitly, so it must never silently stay null.
+    val storedDate = (item["opening_balance_date"] as? JsonPrimitive)?.takeIf { it != JsonNull }?.content?.let(LocalDate::parse)
+    var balanceDate by remember { mutableStateOf(storedDate ?: LocalDate.now()) }
+    var pickingBalanceDate by remember { mutableStateOf(false) }
     AlertDialog(
         modifier = Modifier.fillMaxWidth(0.94f),
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -380,9 +387,14 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(name, { name = it.take(40) }, label = { Text(stringResource(R.string.name)) }, singleLine = true)
                 if (formats != null) {
-                    OutlinedTextField(balanceText, { balanceText = it }, label = { Text(stringResource(R.string.opening_balance)) },
-                        supportingText = { Text(stringResource(R.string.opening_balance_help)) },
-                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(balanceText, { balanceText = it }, modifier = Modifier.weight(1f),
+                            label = { Text(stringResource(R.string.opening_balance)) },
+                            singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                        Chip(formats.day(balanceDate), false, { pickingBalanceDate = true })
+                    }
+                    Text(stringResource(R.string.opening_balance_help),
+                        style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
                 }
                 if (iconPicker) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -406,12 +418,27 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
                 val balance = formats?.let { parseOpeningBalance(balanceText, it) ?: openingBalanceMinor }
                 onSave(JsonObject(item + mapOf("name" to JsonPrimitive(name.trim()), "archived" to JsonPrimitive(archived)) +
                     (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap()) +
-                    (if (balance != null) mapOf("opening_balance_minor" to JsonPrimitive(balance)) else emptyMap())))
+                    (if (balance != null) mapOf(
+                        "opening_balance_minor" to JsonPrimitive(balance),
+                        "opening_balance_date" to JsonPrimitive(balanceDate.toString()),
+                    ) else emptyMap())))
                 onDismiss()
             }) { Text(stringResource(R.string.save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+    if (pickingBalanceDate) {
+        val state = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = balanceDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli())
+        androidx.compose.material3.DatePickerDialog(onDismissRequest = { pickingBalanceDate = false }, confirmButton = {
+            TextButton(onClick = {
+                state.selectedDateMillis?.let { millis ->
+                    balanceDate = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                }
+                pickingBalanceDate = false
+            }) { Text(stringResource(R.string.done)) }
+        }) { androidx.compose.material3.DatePicker(state) }
+    }
 }
 
 // ── budgets ──────────────────────────────────────────────────────────────────

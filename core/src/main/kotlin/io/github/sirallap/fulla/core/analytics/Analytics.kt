@@ -150,15 +150,19 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
     /** Balance of each account on [asOf]: opening balance plus everything through it, transfers included, settlements not. */
     fun accountBalances(txs: Iterable<Transaction>, accounts: List<Account>, asOf: LocalDate): Map<String, Long> {
         val balance = accounts.associate { it.id to it.openingBalanceMinor }.toMutableMap()
-        fun add(id: String?, amount: Long) {
-            if (id != null && id in balance) balance[id] = balance.getValue(id) + amount
+        val openingDates = accounts.associate { it.id to it.openingBalanceDate }
+        fun add(id: String?, amount: Long, date: LocalDate) {
+            if (id == null || id !in balance) return
+            val openingDate = openingDates[id]
+            if (openingDate != null && date < openingDate) return
+            balance[id] = balance.getValue(id) + amount
         }
         for (t in txs) {
             if (!t.isActive || t.date > asOf) continue
             when (t.kind) {
-                TransactionKind.INCOME, TransactionKind.REFUND -> add(t.accountId, t.amountMinor)
-                TransactionKind.EXPENSE -> add(t.accountId, -t.amountMinor)
-                TransactionKind.TRANSFER -> { add(t.accountId, -t.amountMinor); add(t.toAccountId, t.amountMinor) }
+                TransactionKind.INCOME, TransactionKind.REFUND -> add(t.accountId, t.amountMinor, t.date)
+                TransactionKind.EXPENSE -> add(t.accountId, -t.amountMinor, t.date)
+                TransactionKind.TRANSFER -> { add(t.accountId, -t.amountMinor, t.date); add(t.toAccountId, t.amountMinor, t.date) }
                 // Money between two members of the household: it moves between
                 // people, and the household's accounts do not see it.
                 TransactionKind.SETTLEMENT -> Unit
