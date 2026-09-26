@@ -50,6 +50,11 @@ behind every other phone's cursor and never be seen.
   and the result carries `conflict: {winner: "client", ...}`.
 - Custom fields in `extras` are merged: an absent key keeps its stored value,
   `null` clears it. Unknown keys are dropped with a warning.
+- `trip_id` follows the same rule: absent keeps the stored trip, `null`
+  clears it, a uuid is checked and set. It only ever survives on an `expense`
+  or a `refund`; a kind that can't have one drops it in silence rather than
+  refusing the row, so a phone that never learned about trips can still edit
+  a tripped row without losing the push.
 
 Result, one per mutation:
 

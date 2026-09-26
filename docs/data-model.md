@@ -36,6 +36,23 @@ this page explains them.
 | `categorization_rules` | "Note contains X → category / transfer / tags", used on import |
 | `import_profiles` | How to read a particular CSV layout |
 | `transactions` | Everything that happened |
+| `trips` | A trip or event with its own optional budget: name, date range, `in_category_budgets` |
+
+## Trips
+
+`transactions.trip_id` points at a trip, only ever on an `expense` or a
+`refund`. It follows the same "absent keeps its value" rule as
+`extras` (`fulla.merge_extras`): a push that leaves the key out of a
+transaction keeps whatever trip is already stored, an explicit `null`
+clears it, and a uuid is checked against the household's trips. This
+matters because a phone stores rows re-encoded, not the server's raw JSON, so
+a phone that never learned about `trip_id` must not silently wipe a trip
+another phone set just by editing the row.
+
+Overlapping trips are allowed: a row simply names the one it belongs to.
+Spending on a trip always counts in the month's totals; whether it also
+counts in category budgets is the trip's own `in_category_budgets` switch
+(off by default, since the trip already has its own budget).
 
 ## Transaction kinds
 

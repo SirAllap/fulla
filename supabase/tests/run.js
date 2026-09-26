@@ -258,7 +258,8 @@ test('a request without a signed-in user is refused', (ctx) => {
 
 test('rows are never deleted, not even by the database owner', (ctx) => {
   push(ctx, ctx.alice, [upsert(expense(ctx))]);
-  for (const table of ['transactions', 'categories', 'accounts', 'members', 'households']) {
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip() });
+  for (const table of ['transactions', 'categories', 'accounts', 'members', 'households', 'trips']) {
     const r = ctx.db.admin(`delete from fulla.${table};`, { expectFailure: true });
     assert.ok(!r.ok, `${table} allowed a delete`);
     assert.equal(r.err.detail, 'delete_forbidden');
@@ -1279,6 +1280,131 @@ for (const v of vectors('shared_pot.json')) {
     }
   });
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Trips
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Porto: 2030-08-12 to 2030-08-19, invented, like every household in this file. */
+function trip(over = {}) {
+  return Object.assign({ id: uuid(), name: 'Porto', start_date: '2030-08-12', end_date: '2030-08-19', budget_minor: 30000 }, over);
+}
+
+test('a member creates a trip; the stranger and anon security tests already cover it', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  const before = ctx.config();
+  const t = trip();
+  const cfg = rpc(ctx.db, bob.user, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+  assert.ok(cfg.config_version > before.config_version);
+  assert.deepEqual(cfg.trips.map((x) => x.name), ['Porto']);
+  assert.equal(cfg.trips[0].in_category_budgets, false);
+  assert.equal(cfg.trips[0].archived, false);
+});
+
+test('a trip id already used by another household is refused', (ctx) => {
+  const carol = newUser(ctx.db, 'carol@example.com');
+  const other = rpc(ctx.db, carol, 'fulla_household_create', {
+    p_name: 'Other household', p_currency: 'EUR', p_locale: 'en-GB', p_display_name: 'Carol', p_initials: 'C', p_color_index: 2,
+  }).household_id;
+  const t = trip();
+  rpc(ctx.db, carol, 'fulla_trip_upsert', { p_household_id: other, p_trip: t });
+  expectError(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t }, 'already_exists', 409);
+});
+
+test('a trip needs a name, real dates within a year, and a positive budget or none', (ctx) => {
+  expectError(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ name: '' }) }, 'validation_failed');
+  expectError(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ end_date: '2030-08-11' }) }, 'validation_failed');
+  expectError(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ end_date: '2032-08-11' }) }, 'validation_failed');
+  expectError(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ budget_minor: 0 }) }, 'validation_failed');
+  const noBudget = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ budget_minor: null }) });
+  assert.equal(noBudget.trips[0].budget_minor, null);
+});
+
+test('overlapping trips are allowed', (ctx) => {
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip() });
+  const cfg = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ name: 'Long weekend', start_date: '2030-08-14', end_date: '2030-08-16' }) });
+  assert.equal(cfg.trips.length, 2);
+});
+
+test('an absent trip_id keeps the trip, an explicit null clears it, an old-shape kind change drops it silently', (ctx) => {
+  const t = trip();
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+  const tx = expense(ctx, { trip_id: t.id });
+  push(ctx, ctx.alice, [upsert(tx, iso(0))]);
+  assert.equal(stored(ctx, tx.id).trip_id, t.id);
+
+  // An old-shape push (no trip_id key at all) keeps the stored trip.
+  const stale = Object.assign({}, tx, { note: 'edited by an old phone' });
+  delete stale.trip_id;
+  const [r] = push(ctx, ctx.alice, [upsert(stale, iso(1), iso(0))]);
+  assert.equal(r.applied, true);
+  assert.equal(stored(ctx, tx.id).trip_id, t.id, 'an absent trip_id must not clear a trip');
+
+  // An explicit null does clear it.
+  const [cleared] = push(ctx, ctx.alice, [upsert(Object.assign({}, stale, { trip_id: null }), iso(2), iso(1))]);
+  assert.equal(cleared.applied, true);
+  assert.equal(stored(ctx, tx.id).trip_id, null);
+
+  // A settlement can never carry a trip.
+  const settle = { id: uuid(), kind: 'settlement', date: '2030-01-15', amount_minor: 500,
+                   paid_by_member_id: ctx.aliceMember, to_member_id: join(ctx, 'Carol').member, trip_id: t.id };
+  const [refused] = push(ctx, ctx.alice, [upsert(settle, iso(3))]);
+  assert.equal(refused.ok, false);
+  assert.equal(refused.error.code, 'validation_failed');
+
+  // An old phone that changes a tripped row's kind away from expense/refund
+  // (no trip_id key at all) is not rejected; the trip is silently dropped.
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+  const tripped = expense(ctx, { trip_id: t.id });
+  push(ctx, ctx.alice, [upsert(tripped, iso(4))]);
+  const kindChanged = Object.assign({}, tripped, { kind: 'transfer', category_id: undefined, split: undefined, paid_by_member_id: undefined,
+    account_id: ctx.account('Main account'), to_account_id: ctx.account('Cash') });
+  delete kindChanged.trip_id;
+  delete kindChanged.category_id;
+  const [ok] = push(ctx, ctx.alice, [upsert(kindChanged, iso(5), iso(4))]);
+  assert.equal(ok.applied, true, JSON.stringify(ok));
+  assert.equal(stored(ctx, tripped.id).trip_id, null);
+});
+
+test('a uuid trip on a settlement is refused, a nonexistent trip is refused', (ctx) => {
+  const settle = { id: uuid(), kind: 'settlement', date: '2030-01-15', amount_minor: 500,
+                   paid_by_member_id: ctx.aliceMember, to_member_id: join(ctx, 'Bob').member, trip_id: uuid() };
+  const [refused] = push(ctx, ctx.alice, [upsert(settle)]);
+  assert.equal(refused.ok, false);
+  assert.equal(refused.error.code, 'validation_failed');
+  const badTrip = expense(ctx, { trip_id: uuid() });
+  const [r] = push(ctx, ctx.alice, [upsert(badTrip)]);
+  assert.equal(r.ok, false);
+  assert.equal(r.error.code, 'validation_failed');
+});
+
+test('erasing a household removes its trips too', (ctx) => {
+  const t = trip();
+  rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: t });
+  ctx.db.admin(`select fulla.erase_household(${h.literal(ctx.hh)});`);
+  assert.equal(ctx.db.admin(`select count(*) from fulla.trips where household_id = ${h.literal(ctx.hh)};`).out, '0');
+});
+
+rawTest('fulla_household_create_from_local saves trips before the rows are pushed', ({ db }) => {
+  const alice = newUser(db, 'alice@example.com');
+  const { ids, payload } = localPayload();
+  const tripId = uuid();
+  payload.trips = [{ id: tripId, name: 'Porto', start_date: '2030-08-12', end_date: '2030-08-19', budget_minor: 30000 }];
+  const r = rpc(db, alice, 'fulla_household_create_from_local', { p_payload: payload });
+  assert.deepEqual(r.config.trips.map((t) => t.id), [tripId]);
+  const tx = { id: uuid(), kind: 'expense', date: '2030-08-13', amount_minor: 4500, category_id: ids.food,
+               paid_by_member_id: ids.me, trip_id: tripId };
+  const [res] = rpc(db, alice, 'fulla_sync_push', { p_household_id: ids.household, p_mutations: [upsert(tx)] }).results;
+  assert.equal(res.applied, true, JSON.stringify(res));
+});
+
+test('the bundle carries trips ordered by start date, and config_version moves when one is saved', (ctx) => {
+  const before = ctx.config();
+  const early = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ name: 'Early', start_date: '2030-01-01', end_date: '2030-01-02' }) });
+  const late = rpc(ctx.db, ctx.alice, 'fulla_trip_upsert', { p_household_id: ctx.hh, p_trip: trip({ name: 'Late', start_date: '2030-09-01', end_date: '2030-09-02' }) });
+  assert.deepEqual(late.trips.map((t) => t.name), ['Late', 'Early']);
+  assert.ok(late.config_version > before.config_version);
+});
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Concurrency

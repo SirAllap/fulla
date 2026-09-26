@@ -95,6 +95,7 @@ All return the full config (below). Nothing is deleted: set `archived: true`
 | `fulla_recurring_upsert(p_household_id, p_rule)` | admin |
 | `fulla_rule_upsert(p_household_id, p_rule)` | admin |
 | `fulla_import_profile_upsert(p_household_id, p_profile)` | member |
+| `fulla_trip_upsert(p_household_id, p_trip)` | member |
 
 The config bundle:
 
