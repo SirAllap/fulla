@@ -26,10 +26,12 @@ class MonthStartTest {
     fun `Payday and SalaryNextMonth validate their range like PeriodRule does`() {
         assertFailsWith<IllegalArgumentException> { MonthStart.Payday(1) }
         assertFailsWith<IllegalArgumentException> { MonthStart.Payday(29) }
-        assertFailsWith<IllegalArgumentException> { MonthStart.SalaryNextMonth(1) }
+        assertFailsWith<IllegalArgumentException> { MonthStart.SalaryNextMonth(0) }
         assertFailsWith<IllegalArgumentException> { MonthStart.SalaryNextMonth(32) }
         MonthStart.Payday(2); MonthStart.Payday(28)
-        MonthStart.SalaryNextMonth(2); MonthStart.SalaryNextMonth(31)
+        // 1 is a real SalaryNextMonth state (every fixed income shifts), matching PeriodRule
+        // and the database's own `income_shift_day between 1 and 31`.
+        MonthStart.SalaryNextMonth(1); MonthStart.SalaryNextMonth(2); MonthStart.SalaryNextMonth(31)
     }
 
     @Test
@@ -41,6 +43,16 @@ class MonthStartTest {
         // A shift day set wins even if period_start_day were somehow also non-default,
         // matching PeriodRule's own precedence (the two are mutually exclusive in practice).
         assertEquals(MonthStart.SalaryNextMonth(25), MonthStart.of(base.copy(periodStartDay = 1, incomeShiftDay = 25)))
+    }
+
+    @Test
+    fun `income_shift_day of 1 is a real household state and does not crash of`() {
+        // The database allows income_shift_day down to 1 (0001_schema.sql); a
+        // household in that state must still read back cleanly instead of
+        // MonthStart.of crashing on an invalid SalaryNextMonth(1).
+        val household = Fixtures.config().household.copy(incomeShiftDay = 1)
+        assertEquals(MonthStart.SalaryNextMonth(1), MonthStart.of(household))
+        assertEquals(PeriodRule(incomeShiftDay = 1), MonthStart.of(household).toRule())
     }
 
     // ── toPatch ───────────────────────────────────────────────────────────
@@ -60,7 +72,7 @@ class MonthStartTest {
             assertNull(patch["income_shift_day"])
             assertEquals(PeriodRule(periodStartDay = day), MonthStart.Payday(day).toRule())
         }
-        for (day in 2..31) {
+        for (day in 1..31) {
             val patch = MonthStart.SalaryNextMonth(day).toPatch()
             assertEquals(setOf("period_start_day", "income_shift_day"), patch.keys)
             assertEquals(1, patch["period_start_day"])

@@ -13,6 +13,7 @@ import io.github.sirallap.fulla.client.remote.Endpoint
 import io.github.sirallap.fulla.client.remote.Update
 import io.github.sirallap.fulla.core.design.Accent
 import io.github.sirallap.fulla.core.design.MoneyPalette
+import io.github.sirallap.fulla.core.guide.GuideCursor
 import io.github.sirallap.fulla.core.guide.GuideOrigin
 import io.github.sirallap.fulla.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -115,9 +116,19 @@ class SettingsStore(context: Context) {
     suspend fun setLanguageChosen(done: Boolean) { store.edit { it[Keys.languageChosen] = done } }
     suspend fun setCheckForUpdates(on: Boolean) { store.edit { it[Keys.checkForUpdates] = on } }
 
-    /** Starts the guide for [id], from [origin]. Overwrites whatever guide was running before. */
+    /**
+     * Starts the guide for [id], from [origin]. Overwrites whatever guide was
+     * running before, and always leaves `guide_step` set to
+     * [GuideCursor.START] (never null and never a step left over from a
+     * previous household's guide), so GuideHost's `guide_step != null` gate
+     * shows it right away instead of nothing happening.
+     */
     suspend fun startGuide(id: String, origin: GuideOrigin) {
-        store.edit { it[Keys.guideHousehold] = id; it[Keys.guideOrigin] = origin.name.lowercase() }
+        store.edit {
+            it[Keys.guideHousehold] = id
+            it[Keys.guideOrigin] = origin.name.lowercase()
+            it[Keys.guideStep] = GuideCursor.START
+        }
     }
 
     suspend fun setGuideStep(s: String) { store.edit { it[Keys.guideStep] = s } }

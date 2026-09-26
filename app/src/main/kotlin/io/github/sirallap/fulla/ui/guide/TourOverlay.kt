@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.guide
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -52,7 +53,6 @@ import io.github.sirallap.fulla.ui.components.SecondaryButton
 import io.github.sirallap.fulla.ui.theme.FullaMotion
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
-import kotlinx.coroutines.delay
 
 /** The tab that must be showing for [stop]'s element to exist at all, or null when it is reachable from any tab. */
 private fun tabFor(stop: TourStop): Tab? = when (stop) {
@@ -96,18 +96,28 @@ fun TourOverlay(
     val targets = LocalGuideTargets.current
     val needed = tabFor(stop)
 
-    LaunchedEffect(stop) { needed?.let { if (tab != it) setTab(it) } }
+    BackHandler { onBack() }
 
-    var rect by remember(stop) { mutableStateOf<Rect?>(null) }
-    LaunchedEffect(stop, tab) {
-        rect = null
-        var waited = 0
-        while (waited < 500) {
-            val found = targets?.get(stop)
-            if (found != null) { rect = found; break }
-            delay(32); waited += 32
-        }
-    }
+    // Keyed on (stop, tab), not just (stop): GuideHost moves the app to
+    // Overview once, on its own effect, the moment the guide becomes visible
+    // for a household — which can run *after* this one if the guide resumes
+    // straight into a stop that needs a different tab (app killed or
+    // household switched mid-tour). Keying on tab too makes this effect
+    // re-fire once GuideHost's later change lands, instead of never
+    // switching to the tab this stop actually needs.
+    LaunchedEffect(stop, tab) { needed?.let { if (tab != it) setTab(it) } }
+
+    // targets is a SnapshotStateMap: reading it here directly (not copying it
+    // into a separate mutableStateOf the first time it's found, then never
+    // looking again) means this recomposes on every later write too, so a
+    // target that keeps moving while a tab's slide-in animation runs is
+    // tracked for the whole stop, not just wherever it happened to be on the
+    // first successful read. Nothing here waits: if the target never
+    // reports a position, rect simply stays null and hasHole (below) stays
+    // false, which already shows the card centred with no hole rather than
+    // waiting forever — the same outcome the old 500ms timeout produced,
+    // without a separate timer to keep in sync with it.
+    val rect = targets?.get(stop)
 
     var windowOffset by remember { mutableStateOf(Offset.Zero) }
     val left by animateFloatAsState((rect?.left ?: 0f) - windowOffset.x, FullaMotion.settle(reduced), label = "holeL")
@@ -163,6 +173,9 @@ fun TourOverlay(
                             onNext,
                             modifier = Modifier.weight(1f),
                         )
+                    }
+                    androidx.compose.material3.TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.End).padding(top = 4.dp)) {
+                        Text(stringResource(R.string.guide_skip))
                     }
                 }
             }

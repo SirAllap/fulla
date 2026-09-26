@@ -535,10 +535,18 @@ fun GuideSheet(
     body: String? = null,
     stepOf: Pair<Int, Int>? = null,
     primaryEnabled: Boolean = true,
+    /**
+     * False for a step that holds typed input a person could lose: an
+     * accidental scrim tap or system Back then does nothing, rather than
+     * silently discarding it the way an explicit Skip would. The step is
+     * still left the moment Skip or the primary button is pressed.
+     */
+    dismissOnOutsideTap: Boolean = true,
     content: @Composable ColumnScope.() -> Unit = {},
 ) {
     val c = FullaTheme.colors
-    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onSkip, containerColor = c.paper, modifier = modifier) {
+    val onOutsideTap: () -> Unit = if (dismissOnOutsideTap) onSkip else ({})
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onOutsideTap, containerColor = c.paper, modifier = modifier) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(title, style = FullaType.title, color = c.ink, modifier = Modifier.weight(1f).semantics { heading() })

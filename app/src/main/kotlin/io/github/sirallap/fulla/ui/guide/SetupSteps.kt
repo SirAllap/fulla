@@ -43,8 +43,12 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.LocalDate
 
-/** [patch] as `updateHousehold` wants it: only ints and explicit nulls, per [MonthStart.toPatch]. */
-private fun Map<String, Any?>.toJsonObject(): JsonObject = buildJsonObject {
+/**
+ * [patch] as `updateHousehold` wants it: only ints and explicit nulls, per
+ * [MonthStart.toPatch]. Shared with [io.github.sirallap.fulla.ui.settings]'s
+ * own month-start editing so both build the same kind of patch.
+ */
+internal fun Map<String, Any?>.toJsonObject(): JsonObject = buildJsonObject {
     for ((k, v) in this@toJsonObject) when (v) {
         null -> put(k, JsonNull)
         is Int -> put(k, v)
@@ -54,9 +58,12 @@ private fun Map<String, Any?>.toJsonObject(): JsonObject = buildJsonObject {
 
 /**
  * Setup step 1: when the household's month starts. Saved through
- * [io.github.sirallap.fulla.data.repo.Ledger.updateHousehold]; offline in a
- * shared household it cannot reach yet, the choice is simply not sent (the
- * household keeps whatever it had), and the step still moves on.
+ * [io.github.sirallap.fulla.data.repo.Ledger.updateHousehold]. When the
+ * household is shared and this can't be sent right now — offline, or the
+ * write itself fails — the choice is not silently dropped: the person sees
+ * [R.string.guide_save_later] and stays on the step until they press Next
+ * again, which then just moves on (there is nothing more to retry from here;
+ * they can change it later in Settings, as the note says).
  */
 @Composable
 fun MonthStartStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () -> Unit, onSkip: () -> Unit) {
@@ -68,15 +75,13 @@ fun MonthStartStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () -> Un
     val preview = remember(choice) { choice.preview(LocalDate.now()) }
     val f = view.formats
 
-    fun save(andThen: () -> Unit) {
+    fun save() {
+        if (savedLater) { onNext(); return }
         scope.launch {
             val api = if (view.state.connected) container.api() else null
-            if (view.state.connected && api == null) {
-                savedLater = true
-            } else {
-                runCatching { container.ledger.updateHousehold(view.id, choice.toPatch().toJsonObject(), api) }
-            }
-            andThen()
+            val ok = if (view.state.connected && api == null) false
+                else runCatching { container.ledger.updateHousehold(view.id, choice.toPatch().toJsonObject(), api) }.isSuccess
+            if (ok) onNext() else savedLater = true
         }
     }
 
@@ -84,8 +89,11 @@ fun MonthStartStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () -> Un
         title = stringResource(R.string.guide_month_title),
         stepOf = stepOf,
         primaryLabel = stringResource(R.string.guide_next),
-        onPrimary = { save(onNext) },
+        onPrimary = { save() },
         onSkip = onSkip,
+        // Holds a choice the person just made; an accidental scrim tap or
+        // Back must not throw it away as if they had pressed Skip.
+        dismissOnOutsideTap = false,
     ) {
         ListRow(stringResource(R.string.guide_month_first), onClick = { choice = MonthStart.Calendar },
             end = { if (choice is MonthStart.Calendar) Icon(Icons.Outlined.Check, null, tint = c.accent) })
@@ -123,37 +131,50 @@ fun MonthStartStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () -> Un
 /**
  * Setup step 2: what each account holds today. Blank keeps it at 0; only the
  * accounts somebody actually typed a number for are saved, one
- * [io.github.sirallap.fulla.client.remote.Structure.ACCOUNT] upsert each.
+ * [io.github.sirallap.fulla.client.remote.Structure.ACCOUNT] upsert each. As
+ * with [MonthStartStep], a shared household this can't reach right now shows
+ * [R.string.guide_save_later] instead of silently dropping what was typed,
+ * and stays on the step until Next is pressed again.
  */
 @Composable
 fun OpeningBalancesStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () -> Unit, onSkip: () -> Unit) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
+    val c = FullaTheme.colors
     val f = view.formats
     val accounts = remember(view) { view.config.accounts.filter { !it.archived }.sortedBy { it.sort } }
     val texts = remember { mutableStateMapOf<String, String>() }
+    var savedLater by remember { mutableStateOf(false) }
 
-    GuideSheet(
-        title = stringResource(R.string.guide_accounts_title),
-        stepOf = stepOf,
-        primaryLabel = stringResource(R.string.guide_next),
-        onPrimary = {
-            scope.launch {
-                val api = if (view.state.connected) container.api() else null
+    fun save() {
+        if (savedLater) { onNext(); return }
+        scope.launch {
+            val api = if (view.state.connected) container.api() else null
+            var failed = view.state.connected && api == null
+            if (!failed) {
                 for (a in accounts) {
                     val text = texts[a.id].orEmpty()
                     if (text.isBlank()) continue
                     val minor = parseOpeningBalance(text, f) ?: continue
                     val item = bundleItem(view, Structure.ACCOUNT, a.id) ?: continue
-                    runCatching {
+                    val ok = runCatching {
                         container.ledger.upsert(view.id, Structure.ACCOUNT,
                             JsonObject(item + mapOf("opening_balance_minor" to JsonPrimitive(minor))), api)
-                    }
+                    }.isSuccess
+                    if (!ok) failed = true
                 }
-                onNext()
             }
-        },
+            if (failed) savedLater = true else onNext()
+        }
+    }
+
+    GuideSheet(
+        title = stringResource(R.string.guide_accounts_title),
+        stepOf = stepOf,
+        primaryLabel = stringResource(R.string.guide_next),
+        onPrimary = { save() },
         onSkip = onSkip,
+        dismissOnOutsideTap = false,
     ) {
         for (a in accounts) {
             OutlinedTextField(
@@ -166,6 +187,8 @@ fun OpeningBalancesStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () 
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             )
         }
+        if (savedLater) Text(stringResource(R.string.guide_save_later), style = FullaType.secondary, color = c.inkMuted,
+            modifier = Modifier.padding(top = 8.dp))
     }
 }
 

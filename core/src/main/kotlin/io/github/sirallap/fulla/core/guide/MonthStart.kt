@@ -30,10 +30,16 @@ sealed class MonthStart {
         }
     }
 
-    /** Calendar months, but fixed income on or after [day] counts for the next one. */
+    /**
+     * Calendar months, but fixed income on or after [day] counts for the next
+     * one. Unlike [Payday], 1 is a real, if unusual, choice here: it means
+     * every fixed income shifts forward, and `PeriodRule`/the database allow
+     * it (`income_shift_day between 1 and 31`), so it is never rejected — the
+     * setup guide's own stepper just never offers it (it starts at 2).
+     */
     data class SalaryNextMonth(val day: Int) : MonthStart() {
         init {
-            require(day in 2..31) { "day must be 2..31" }
+            require(day in 1..31) { "day must be 1..31" }
         }
     }
 

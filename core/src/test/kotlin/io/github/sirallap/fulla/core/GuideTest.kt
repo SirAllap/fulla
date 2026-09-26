@@ -116,6 +116,17 @@ class GuideTest {
     }
 
     @Test
+    fun `decoding GuideCursor START always lands on the plan's first remaining step`() {
+        val withSetup = GuidePlan(listOf(SetupStep.OPENING_BALANCES), listOf(TourStop.JAR, TourStop.GEAR))
+        assertEquals(GuideStepState.Setup(SetupStep.OPENING_BALANCES), GuideCursor.decode(GuideCursor.START, withSetup))
+
+        val tourOnly = GuidePlan(emptyList(), listOf(TourStop.JAR, TourStop.GEAR))
+        assertEquals(GuideStepState.Tour(0), GuideCursor.decode(GuideCursor.START, tourOnly))
+
+        assertEquals(GuideStepState.Done, GuideCursor.decode(GuideCursor.START, GuidePlan.NONE))
+    }
+
+    @Test
     fun `a step no longer present in an updated plan falls back too`() {
         // A phone stored "setup:LOCK" before an app update dropped LOCK from this household's plan.
         val plan = GuidePlan(listOf(SetupStep.MONTH_START), listOf(TourStop.JAR))

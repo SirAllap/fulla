@@ -84,6 +84,14 @@ sealed class GuideStepState {
  * version of the guide can never strand a phone mid-guide.
  */
 object GuideCursor {
+    /**
+     * What a phone should write to start (or restart) the guide, instead of
+     * leaving `guide_step` null: any string with no recognised `kind:` prefix
+     * decodes to the plan's first remaining step anyway, so this is just a
+     * named, self-documenting way to spell that, not new decoding logic.
+     */
+    const val START = "start"
+
     fun encode(step: GuideStepState): String = when (step) {
         is GuideStepState.Setup -> "setup:${step.step.name}"
         is GuideStepState.Tour -> "tour:${step.index}"

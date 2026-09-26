@@ -55,6 +55,7 @@ import io.github.sirallap.fulla.core.balance.Balances
 import io.github.sirallap.fulla.core.balance.MemberBalance
 import io.github.sirallap.fulla.core.balance.SettlementPlanner
 import io.github.sirallap.fulla.core.design.MoneyPalette
+import io.github.sirallap.fulla.core.guide.MonthStart
 import io.github.sirallap.fulla.core.model.AppliesTo
 import io.github.sirallap.fulla.core.model.MoneyMode
 import io.github.sirallap.fulla.core.model.Role
@@ -79,6 +80,7 @@ import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.SecondaryButton
 import io.github.sirallap.fulla.ui.components.SwitchRow
 import io.github.sirallap.fulla.ui.entry.CategoryIcons
+import io.github.sirallap.fulla.ui.guide.toJsonObject
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import io.github.sirallap.fulla.ui.theme.ThemeMode
@@ -245,11 +247,22 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             "period_start_day" -> R.string.period_start_day
             else -> R.string.income_shift_day
         }), onDismiss = { editing = null }, number = field.endsWith("day")) { value ->
+            // Built through MonthStart.toPatch() so both period_start_day and
+            // income_shift_day are always sent together, one of them
+            // explicitly null, the same as the guide's own month-start step:
+            // editing one field here must clear the other, not leave it at
+            // whatever the household had before.
             val patch = when (field) {
                 "name" -> buildJsonObject { put("name", value) }
                 "currency" -> buildJsonObject { put("currency", value.uppercase()) }
-                "period_start_day" -> buildJsonObject { put("period_start_day", value.toIntOrNull()?.coerceIn(1, 28) ?: 1) }
-                else -> buildJsonObject { put("income_shift_day", value.toIntOrNull()?.takeIf { it in 2..28 }) }
+                "period_start_day" -> {
+                    val day = value.toIntOrNull()?.coerceIn(1, 28) ?: 1
+                    (if (day <= 1) MonthStart.Calendar else MonthStart.Payday(day)).toPatch().toJsonObject()
+                }
+                else -> {
+                    val day = value.toIntOrNull()?.coerceIn(2, 31)
+                    (if (day == null) MonthStart.Calendar else MonthStart.SalaryNextMonth(day)).toPatch().toJsonObject()
+                }
             }
             change { api -> ledger.updateHousehold(view.id, patch, api) }
         }
@@ -324,11 +337,16 @@ internal fun bundleItem(view: HouseholdView, kind: Structure, id: String): JsonO
 
 /**
  * An account's opening balance from what somebody typed: blank keeps it at 0,
- * anything else parses in the household's currency. Shared between
- * [StructureDialog]'s balance field and the guide's opening-balances step.
+ * anything else parses in the household's currency. A negative amount is
+ * treated as invalid input, the same as text that does not parse at all —
+ * [io.github.sirallap.fulla.core.guide.OpeningBalances.patch]'s own rule
+ * (never negative), enforced here at the one place both writers of an
+ * opening balance ([StructureDialog]'s balance field and the guide's
+ * opening-balances step) parse what was typed.
  */
 internal fun parseOpeningBalance(text: String, formats: io.github.sirallap.fulla.ui.Formats): Long? =
-    if (text.isBlank()) 0L else io.github.sirallap.fulla.core.money.MoneyParser.parse(text, formats.currency, formats.decimalStyle)
+    if (text.isBlank()) 0L
+    else io.github.sirallap.fulla.core.money.MoneyParser.parse(text, formats.currency, formats.decimalStyle)?.takeIf { it >= 0 }
 
 /** Name, archive, (for categories) icon, and (for accounts) an opening balance. Nothing is ever deleted: archived things keep their history. */
 @Composable
