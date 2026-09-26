@@ -166,7 +166,7 @@ private fun Household(state: HouseholdState) {
                     }) { shown ->
                         when (shown) {
                             Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW })
-                            Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") })
+                            Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
                             Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") })
                         }
@@ -178,6 +178,10 @@ private fun Household(state: HouseholdState) {
                 EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() })
             }
             composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }) }
+            composable("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                io.github.sirallap.fulla.ui.trips.TripScreen(view, tripId = entry.arguments?.getString("id") ?: "",
+                    onBack = { nav.popBackStack() }, onOpenTransaction = { nav.navigate("edit/$it") })
+            }
             composable("settings") {
                 SettingsScreen(view, SettingsSection.INDEX, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("settings/${it.route}") },
                     onUpdate = { updateOpen = true })

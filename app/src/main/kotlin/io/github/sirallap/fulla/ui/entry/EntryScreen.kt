@@ -71,6 +71,7 @@ import io.github.sirallap.fulla.core.model.TransactionValidator
 import io.github.sirallap.fulla.core.schema.SchemaEngine
 import io.github.sirallap.fulla.core.guide.TourStop
 import io.github.sirallap.fulla.core.split.SharedPot
+import io.github.sirallap.fulla.core.trips.Trips
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.guide.guideTarget
 import io.github.sirallap.fulla.ui.LocalContainer
@@ -100,6 +101,15 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
     var keypad by mutableStateOf(Keypad(view.formats.currency).let { k -> existing?.let { k.withAmount(it.amountMinor) } ?: k })
     var categoryId by mutableStateOf(existing?.categoryId)
     var date by mutableStateOf(existing?.date ?: LocalDate.now())
+        private set
+    /** The trip active on [date] when this is a new expense or refund; an edit keeps the row's own trip. */
+    var tripId by mutableStateOf(existing?.tripId ?: Trips.activeOn(view.config.trips, date)?.id)
+    /** Once the person has touched the trip chip themselves, a date change never re-runs the pick. */
+    var tripTouched by mutableStateOf(existing != null)
+    fun setDate(next: LocalDate) {
+        date = next
+        if (!tripTouched) tripId = Trips.activeOn(view.config.trips, next)?.id
+    }
     var accountId by mutableStateOf(existing?.accountId ?: firstAccount)
     var toAccountId by mutableStateOf(existing?.toAccountId)
     var paidBy by mutableStateOf(existing?.paidByMemberId ?: config.meMemberId ?: everyone.firstOrNull())
@@ -123,6 +133,8 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
             paidByMemberId = paidBy,
             toMemberId = if (kind == TransactionKind.SETTLEMENT) toMember else null,
             split = if (splits && everyone.size >= 2) Split.Equal(members) else null,
+            tripId = if (splits) tripId else null,
+            tripKnown = true,
             recurrence = if (fixed) Recurrence.FIXED else Recurrence.VARIABLE,
             note = note.trim(),
             extras = extras,
@@ -302,6 +314,7 @@ private fun DetailsLine(view: HouseholdView, draft: Draft, onClick: () -> Unit) 
                     else stringResource(R.string.split_between, draft.splitWith.size))
             }
         }
+        view.config.trip(draft.tripId)?.let { add(it.name) }
         if (draft.note.isNotBlank()) add("“${draft.note}”")
     }
     Row(
@@ -326,8 +339,8 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
             Section(stringResource(R.string.date), top = 0.dp)
             FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val today = LocalDate.now()
-                Chip(stringResource(R.string.today), draft.date == today, { draft.date = today })
-                Chip(stringResource(R.string.yesterday), draft.date == today.minusDays(1), { draft.date = today.minusDays(1) })
+                Chip(stringResource(R.string.today), draft.date == today, { draft.setDate(today) })
+                Chip(stringResource(R.string.yesterday), draft.date == today.minusDays(1), { draft.setDate(today.minusDays(1)) })
                 Chip(if (draft.date < today.minusDays(1) || draft.date > today) view.formats.day(draft.date) else stringResource(R.string.other_day),
                     draft.date < today.minusDays(1) || draft.date > today, { pickingDate = true })
             }
@@ -353,6 +366,16 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
                     }
                 }
             }
+            if (draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND) {
+                val onTrip = view.config.trips.filter { !it.archived && it.startDate <= draft.date && draft.date <= it.endDate }
+                if (onTrip.isNotEmpty()) {
+                    Section(stringResource(R.string.settings_trips))
+                    FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Chip(stringResource(R.string.trip_none), draft.tripId == null, { draft.tripId = null; draft.tripTouched = true })
+                        for (t in onTrip) Chip(t.name, draft.tripId == t.id, { draft.tripId = t.id; draft.tripTouched = true })
+                    }
+                }
+            }
             for (field in SchemaEngine.fieldsForForm(view.config.fields, draft.kind)) {
                 FieldControl(view, field, draft.extras[field.key]) { v -> draft.extras = draft.extras + (field.key to v) }
             }
@@ -371,7 +394,7 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
             onDismissRequest = { pickingDate = false },
             confirmButton = {
                 TextButton(onClick = {
-                    state.selectedDateMillis?.let { draft.date = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+                    state.selectedDateMillis?.let { draft.setDate(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
                     pickingDate = false
                 }) { Text(stringResource(R.string.done)) }
             },

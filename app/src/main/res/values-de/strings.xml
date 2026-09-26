@@ -504,4 +504,24 @@
     <string name="tour_balances">Salden: deine Konten, und wer wem etwas schuldet, wenn ihr Kosten teilt.</string>
     <string name="tour_sync">Zeigt, ob alles gespeichert und geteilt ist. Zum Ansehen der Details antippen.</string>
     <string name="tour_gear">Kategorien, Budgets, Mitglieder und diese Anleitung sind hier.</string>
+
+    <string name="settings_trips">Reisen</string>
+    <string name="trip_new">Neue Reise</string>
+    <string name="trip_name">Name</string>
+    <string name="trip_dates">Zeitraum</string>
+    <string name="trip_budget">Budget (optional)</string>
+    <string name="trip_in_budgets">In den Monatsbudgets zählen</string>
+    <string name="trip_in_budgets_help">Aus: Die Reise hat ihr eigenes Budget, und Kategorie-Budgets ignorieren es. Sie zählt aber immer zu den Monatsausgaben.</string>
+    <string name="trip_left">Noch %1$s von %2$s</string>
+    <string name="trip_per_day">%1$s pro Tag für %2$d Tage</string>
+    <string name="trip_over">%1$s über dem Budget</string>
+    <string name="trip_upcoming">Bevorstehend</string>
+    <string name="trip_active">Jetzt</string>
+    <string name="trip_finished">Beendet</string>
+    <string name="trip_archive">Archivieren</string>
+    <string name="trip_unarchive">Archivierung aufheben</string>
+    <string name="trip_none">Keine Reise</string>
+    <string name="trip_overlaps">Überschneidet sich mit %1$s. Neue Ausgaben gehen zu der Reise, die zuletzt begonnen hat.</string>
+    <string name="on_trips">%1$s auf Reisen</string>
+    <string name="trip_needs_connection">Etwas ist schiefgelaufen. Versuch es erneut.</string>
 </resources>

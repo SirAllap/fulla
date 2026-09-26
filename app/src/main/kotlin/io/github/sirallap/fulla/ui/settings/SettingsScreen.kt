@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Luggage
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.SwapHoriz
@@ -59,6 +60,7 @@ enum class SettingsSection(val route: String, val title: Int, val icon: ImageVec
     FIELDS("fields", R.string.settings_fields, Icons.Outlined.Tune),
     ACCOUNTS("accounts", R.string.settings_accounts, Icons.Outlined.AccountBalance),
     BUDGETS("budgets", R.string.settings_budgets, Icons.Outlined.PieChart),
+    TRIPS("trips", R.string.settings_trips, Icons.Outlined.Luggage),
     RECURRING("recurring", R.string.settings_recurring, Icons.Outlined.Event),
     IMPORT("import", R.string.import_statement, Icons.Outlined.FileUpload),
     RULES("rules", R.string.settings_rules, Icons.Outlined.Rule),
@@ -97,6 +99,7 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
                 SettingsSection.FIELDS -> item { FieldsSettings(view, canEdit, change) }
                 SettingsSection.ACCOUNTS -> item { AccountsSettings(view, canEdit, change) }
                 SettingsSection.BUDGETS -> item { BudgetsSettings(view, canEdit, change) }
+                SettingsSection.TRIPS -> item { TripsSettings(view, change) }
                 SettingsSection.RECURRING -> item { RecurringSettings(view, canEdit, change) }
                 SettingsSection.IMPORT -> item { ImportSettings(view, change) }
                 SettingsSection.RULES -> item { RulesSettings(view, canEdit, change) }

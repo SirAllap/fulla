@@ -504,4 +504,24 @@
     <string name="tour_balances">Saldos: as suas contas, e quem deve a quem se partilharem despesas.</string>
     <string name="tour_sync">Mostra se está tudo guardado e partilhado. Toque para ver os detalhes.</string>
     <string name="tour_gear">Categorias, orçamentos, membros e este guia estão aqui.</string>
+
+    <string name="settings_trips">Viagens</string>
+    <string name="trip_new">Nova viagem</string>
+    <string name="trip_name">Nome</string>
+    <string name="trip_dates">Datas</string>
+    <string name="trip_budget">Orçamento (opcional)</string>
+    <string name="trip_in_budgets">Contar nos orçamentos mensais</string>
+    <string name="trip_in_budgets_help">Desligado: a viagem tem o seu próprio orçamento, e os orçamentos por categoria ignoram-no. Conta sempre nos gastos do mês.</string>
+    <string name="trip_left">Faltam %1$s de %2$s</string>
+    <string name="trip_per_day">%1$s por dia durante %2$d dias</string>
+    <string name="trip_over">%1$s acima do orçamento</string>
+    <string name="trip_upcoming">Próximas</string>
+    <string name="trip_active">Agora</string>
+    <string name="trip_finished">Terminadas</string>
+    <string name="trip_archive">Arquivar</string>
+    <string name="trip_unarchive">Desarquivar</string>
+    <string name="trip_none">Sem viagem</string>
+    <string name="trip_overlaps">Sobrepõe-se a %1$s. As novas despesas vão para a que começou mais tarde.</string>
+    <string name="on_trips">%1$s em viagens</string>
+    <string name="trip_needs_connection">Algo deu errado. Tente de novo.</string>
 </resources>

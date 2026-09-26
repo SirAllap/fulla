@@ -28,8 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.core.analytics.Budgets
 import io.github.sirallap.fulla.core.guide.TourStop
 import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.trips.TripPhase
+import io.github.sirallap.fulla.core.trips.Trips
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.guide.guideTarget
@@ -54,7 +57,15 @@ import java.time.YearMonth
  * loud; everything under it is plain rows.
  */
 @Composable
-fun HomeScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onOpen: (String) -> Unit, onBudgets: () -> Unit, onInsights: () -> Unit, onBackup: () -> Unit) {
+fun HomeScreen(
+    view: HouseholdView,
+    headerActions: @Composable () -> Unit,
+    onOpen: (String) -> Unit,
+    onBudgets: () -> Unit,
+    onInsights: () -> Unit,
+    onBackup: () -> Unit,
+    onTrip: (String) -> Unit = {},
+) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
@@ -70,6 +81,15 @@ fun HomeScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onOpe
     val categories = remember(view, period) { view.analytics.byCategory(view.active, period) }
     val projection = remember(view, period) { if (period == current) view.analytics.projection(view.active, period, LocalDate.now()) else null }
     val budgets = remember(view, period) { Budgets.forPeriod(view.config, period) }
+    val budgetSpend = remember(view, period) {
+        view.analytics.budgetSpend(view.active, period, view.config.trips).associate { it.categoryId to it.amountMinor }
+    }
+    val today = remember { LocalDate.now() }
+    val homeTrip = remember(view, today) {
+        view.config.trips.filter { !it.archived }.firstOrNull { it.startDate <= today.plusDays(7) && today <= it.endDate }
+            ?.takeIf { Trips.phase(it, today) != TripPhase.FINISHED }
+    }
+    val homeTripTotals = remember(view, homeTrip) { homeTrip?.let { Trips.totals(it, view.active) } }
     val lastBackup by remember(view.id) { container.settings.lastBackup(view.id) }.collectAsStateWithLifecycle(initialValue = -1L)
     // Only a phone-only household with something to lose, and not more than once a month.
     val backupDue = !view.state.connected && lastBackup != -1L && view.rows.size >= 20 &&
@@ -115,12 +135,27 @@ fun HomeScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onOpe
                             end = { AmountText(f.money(p.projectedMinor), color = c.inkMuted) })
                     }
                     if (budgets.isNotEmpty()) {
-                        val spent = categories.filter { it.categoryId in budgets }.sumOf { it.amountMinor }
+                        val spent = budgetSpend.filterKeys { it in budgets }.values.sum()
                         val total = budgets.values.sum()
                         ListRow(stringResource(R.string.budget_of_period), onClick = onBudgets,
                             context = stringResource(R.string.budget_left, f.money(total - spent)),
                             below = { ProgressLine(if (total > 0) spent.toFloat() / total else 0f, c.moneyOut, over = spent > total) },
                             end = { Icon(Icons.Outlined.ChevronRight, null, tint = c.inkMuted) })
+                    }
+                    if (homeTrip != null && homeTripTotals != null) {
+                        val left = homeTripTotals.leftMinor
+                        val budget = homeTrip.budgetMinor
+                        ListRow(
+                            title = homeTrip.name,
+                            context = if (budget != null && left != null) {
+                                stringResource(R.string.trip_left, f.money(left), f.money(budget))
+                            } else f.money(homeTripTotals.spentMinor),
+                            below = if (budget != null) ({
+                                ProgressLine(homeTripTotals.spentMinor.toFloat() / budget, c.moneyOut, over = homeTripTotals.overMinor > 0)
+                            }) else null,
+                            onClick = { onTrip(homeTrip.id) },
+                            end = { Icon(Icons.Outlined.ChevronRight, null, tint = c.inkMuted) },
+                        )
                     }
                 }
                 if (categories.isEmpty()) {
@@ -132,16 +167,20 @@ fun HomeScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onOpe
                     items(categories, key = { it.categoryId }) { row ->
                         val cat = view.config.category(row.categoryId)
                         val budget = budgets[row.categoryId]
+                        val forBudget = budgetSpend[row.categoryId] ?: 0L
+                        val onTrips = row.amountMinor - forBudget
                         ListRow(
                             title = cat?.name ?: stringResource(R.string.uncategorized),
                             icon = CategoryIcons.of(cat?.icon ?: "label"),
                             iconTint = c.category(cat?.colorIndex ?: 0),
                             context = when {
+                                budget != null && onTrips > 0 ->
+                                    stringResource(R.string.of_budget, f.money(budget)) + " · " + stringResource(R.string.on_trips, f.money(onTrips))
                                 budget != null -> stringResource(R.string.of_budget, f.money(budget))
                                 row.previousAverageMinor > 0 -> stringResource(R.string.usually, f.money(row.previousAverageMinor))
                                 else -> null
                             },
-                            below = if (budget != null) ({ ProgressLine(row.amountMinor.toFloat() / budget, c.moneyOut, over = row.amountMinor > budget) }) else null,
+                            below = if (budget != null) ({ ProgressLine(forBudget.toFloat() / budget, c.moneyOut, over = forBudget > budget) }) else null,
                             onClick = { expanded = if (expanded == row.categoryId) null else row.categoryId },
                             end = { AmountText(f.money(row.amountMinor)) },
                         )

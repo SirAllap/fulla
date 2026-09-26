@@ -529,4 +529,35 @@
     <string name="tour_sync">Shows whether everything is saved and shared. Tap it for details.</string>
     <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
     <string name="tour_gear">Categories, budgets, members and this guide live here.</string>
+
+    <!-- Settings section: trips and events with their own budget -->
+    <string name="settings_trips">Trips</string>
+    <string name="trip_new">New trip</string>
+    <!-- A text field's label: the trip's own name, e.g. a city or an event -->
+    <string name="trip_name">Name</string>
+    <string name="trip_dates">Dates</string>
+    <string name="trip_budget">Budget (optional)</string>
+    <string name="trip_in_budgets">Count in monthly budgets</string>
+    <!-- Explains the switch above it -->
+    <string name="trip_in_budgets_help">Off: the trip has its own budget, and category budgets ignore it. It always counts in the month\'s spending.</string>
+    <!-- %1 is the amount left, %2 is the trip's whole budget -->
+    <string name="trip_left">%1$s left of %2$s</string>
+    <!-- %1 is a daily amount, %2 the days left in the trip -->
+    <string name="trip_per_day">%1$s a day for %2$d days</string>
+    <string name="trip_over">%1$s over budget</string>
+    <string name="trip_upcoming">Upcoming</string>
+    <!-- A trip that is happening today -->
+    <string name="trip_active">Now</string>
+    <string name="trip_finished">Finished</string>
+    <!-- Menu action: archive this trip -->
+    <string name="trip_archive">Archive</string>
+    <!-- Menu action: bring an archived trip back -->
+    <string name="trip_unarchive">Unarchive</string>
+    <string name="trip_none">No trip</string>
+    <!-- %1 is the name of the other trip it overlaps with -->
+    <string name="trip_overlaps">Overlaps with %1$s. New expenses go to the one that started last.</string>
+    <!-- %1 is an amount already spent on a trip, shown next to a category's own total -->
+    <string name="on_trips">%1$s on trips</string>
+    <!-- Shown when saving a trip needs a connection this phone does not have right now; same wording as any other offline structure change -->
+    <string name="trip_needs_connection">Something went wrong. Try again.</string>
 </resources>
