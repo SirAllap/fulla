@@ -496,6 +496,8 @@
     <string name="guide_save_later">Impossible d\'enregistrer pour l\'instant. Vous pourrez le changer plus tard dans Réglages › Foyer.</string>
     <string name="settings_show_guide">Revoir le guide</string>
     <string name="opening_balance">Solde de départ</string>
+    <!-- Under the opening balance field: it is money already there, not income this month. -->
+    <string name="opening_balance_help">L\'argent déjà sur le compte au départ. Ce n\'est pas un revenu : vous le verrez dans Soldes, sous Comptes.</string>
 
     <string name="tour_jar">Voici votre mois. Le bocal se remplit de ce que vous gardez ; les revenus et les dépenses sont en dessous.</string>
     <string name="tour_overview">Aperçu : ce mois-ci en un coup d\'œil. Revenez aux mois précédents avec les flèches.</string>

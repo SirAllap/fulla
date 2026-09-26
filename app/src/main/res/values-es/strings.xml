@@ -496,6 +496,8 @@
     <string name="guide_save_later">No se pudo guardar ahora. Puedes cambiarlo más tarde en Ajustes › Hogar.</string>
     <string name="settings_show_guide">Ver la guía de nuevo</string>
     <string name="opening_balance">Saldo inicial</string>
+    <!-- Under the opening balance field: it is money already there, not income this month. -->
+    <string name="opening_balance_help">Lo que ya había en la cuenta al empezar. No es un ingreso: lo verás en Saldos, en Cuentas.</string>
 
     <string name="tour_jar">Este es tu mes. El bote se llena con lo que ahorras; los ingresos y gastos están debajo.</string>
     <string name="tour_overview">Resumen: este mes de un vistazo. Vuelve a meses anteriores con las flechas.</string>

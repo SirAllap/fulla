@@ -381,6 +381,7 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
                 OutlinedTextField(name, { name = it.take(40) }, label = { Text(stringResource(R.string.name)) }, singleLine = true)
                 if (formats != null) {
                     OutlinedTextField(balanceText, { balanceText = it }, label = { Text(stringResource(R.string.opening_balance)) },
+                        supportingText = { Text(stringResource(R.string.opening_balance_help)) },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 }
                 if (iconPicker) {
