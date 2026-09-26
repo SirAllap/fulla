@@ -107,7 +107,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/release/app-release.apk "fulla-$FULLA_VERSION_NAME.apk"
+          # Same file under a fixed name: the website links to releases/latest/download/fulla.apk.
+          cp app/build/outputs/apk/release/app-release.apk fulla.apk
           notes="docs/releases/$FULLA_VERSION_NAME.md"
           [ -f "$notes" ] || { echo "Fulla $FULLA_VERSION_NAME." > "$RUNNER_TEMP/notes.md"; notes="$RUNNER_TEMP/notes.md"; }
-          gh release create "$GITHUB_REF_NAME" "fulla-$FULLA_VERSION_NAME.apk" dist/setup.sql \
+          gh release create "$GITHUB_REF_NAME" "fulla-$FULLA_VERSION_NAME.apk" fulla.apk dist/setup.sql \
             --title "Fulla $FULLA_VERSION_NAME" --notes-file "$notes"
