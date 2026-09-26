@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.window.DialogProperties
 import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -271,6 +273,8 @@ private fun MemberSheet(view: HouseholdView, target: Member, change: Change, onI
     }
     confirming?.let { (text, action) ->
         AlertDialog(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             onDismissRequest = { confirming = null },
             text = { Text(text) },
             confirmButton = { TextButton(onClick = { confirming = null; onDismiss(); action() }) { Text(stringResource(R.string.confirm), color = c.danger) } },

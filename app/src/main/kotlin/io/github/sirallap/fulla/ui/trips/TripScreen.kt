@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.trips
 
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -91,6 +92,8 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
         )
         if (confirmingDelete) {
             AlertDialog(
+                modifier = Modifier.fillMaxWidth(0.94f),
+                properties = DialogProperties(usePlatformDefaultWidth = false),
                 onDismissRequest = { confirmingDelete = false },
                 text = { Text(stringResource(R.string.trip_delete_confirm, trip.name)) },
                 confirmButton = {

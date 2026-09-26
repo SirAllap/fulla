@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -96,6 +97,8 @@ private fun FieldDialog(view: HouseholdView, existing: CustomField?, language: S
     val optionList = options.split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
     val valid = label.isNotBlank() && kinds.isNotEmpty() && (!needsOptions || optionList.isNotEmpty())
     AlertDialog(
+        modifier = Modifier.fillMaxWidth(0.94f),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (existing == null) R.string.add_field else R.string.edit)) },
         text = {

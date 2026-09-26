@@ -169,11 +169,14 @@ fun Hairline(modifier: Modifier = Modifier) {
 }
 
 /** The name of a group of rows. Rows draw their own line underneath. */
+/** Side inset of rows and section titles: 20 dp on a screen, 0 inside a dialog that already pads its content. */
+val LocalRowInset = androidx.compose.runtime.staticCompositionLocalOf { 20.dp }
+
 @Composable
 fun Section(text: String, modifier: Modifier = Modifier, top: Dp = 24.dp, trailing: (@Composable RowScope.() -> Unit)? = null) {
     Column(modifier.fillMaxWidth()) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = top, bottom = 6.dp),
+            Modifier.fillMaxWidth().padding(start = LocalRowInset.current, end = LocalRowInset.current, top = top, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text.uppercase(), style = FullaType.section, color = FullaTheme.colors.inkMuted,
@@ -254,7 +257,7 @@ fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boo
     Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth().toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
-                .heightIn(min = 56.dp).padding(horizontal = 20.dp, vertical = 10.dp),
+                .heightIn(min = 56.dp).padding(horizontal = LocalRowInset.current, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -123,6 +124,8 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     val valid = name.isNotBlank() && minor != null && minor > 0 && category != null && schedule != null
 
     AlertDialog(
+        modifier = Modifier.fillMaxWidth(0.94f),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (existing == null) R.string.add_recurring else R.string.edit)) },
         text = {

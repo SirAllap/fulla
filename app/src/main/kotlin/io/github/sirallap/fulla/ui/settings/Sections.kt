@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.contentDescription
@@ -110,13 +111,17 @@ internal fun EditDialog(
 ) {
     var text by remember { mutableStateOf(initial) }
     AlertDialog(
+        modifier = Modifier.fillMaxWidth(0.94f),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(text, { text = it }, label = { Text(label) }, singleLine = true,
+              androidx.compose.runtime.CompositionLocalProvider(io.github.sirallap.fulla.ui.components.LocalRowInset provides 0.dp) {
+                OutlinedTextField(text, { text = it }, label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = if (number) KeyboardType.Decimal else KeyboardType.Text))
                 extra?.invoke()
+              }
             }
         },
         confirmButton = {
@@ -224,6 +229,8 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     }
     owedFromBefore?.let { owed ->
         AlertDialog(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             onDismissRequest = { owedFromBefore = null },
             title = { Text(stringResource(R.string.shared_pot_existing_title)) },
             text = { Text(stringResource(R.string.shared_pot_existing_text, view.memberName(owed.memberId), view.formats.money(owed.balanceMinor))) },
@@ -233,6 +240,8 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     }
     if (splittingAgain) {
         AlertDialog(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             onDismissRequest = { splittingAgain = false },
             title = { Text(stringResource(R.string.money_between_members)) },
             text = { Text(stringResource(R.string.split_again_text)) },
@@ -363,6 +372,8 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
     val openingBalanceMinor = (item["opening_balance_minor"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L
     var balanceText by remember { mutableStateOf(formats?.plain(openingBalanceMinor) ?: "") }
     AlertDialog(
+        modifier = Modifier.fillMaxWidth(0.94f),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit)) },
         text = {
@@ -596,6 +607,8 @@ fun AboutSettings() {
     }
     notices?.let { text ->
         AlertDialog(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             onDismissRequest = { notices = null },
             title = { Text(stringResource(R.string.third_party_licences)) },
             text = {

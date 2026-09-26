@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.window.DialogProperties
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -378,6 +380,8 @@ private fun CategoryChooser(view: HouseholdView, p: ProposedTransaction, onDismi
     var keep by remember { mutableStateOf(true) }
     var chosen by remember { mutableStateOf(p.transaction.categoryId) }
     androidx.compose.material3.AlertDialog(
+        modifier = Modifier.fillMaxWidth(0.94f),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = { Text(p.transaction.note, maxLines = 2) },
         text = {

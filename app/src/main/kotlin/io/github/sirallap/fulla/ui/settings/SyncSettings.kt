@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -165,6 +166,8 @@ fun SyncSettings(view: HouseholdView, onBack: () -> Unit, onInvite: () -> Unit) 
 
     if (deleting) {
         AlertDialog(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             onDismissRequest = { deleting = false },
             title = { Text(stringResource(R.string.delete_account)) },
             text = { Text(stringResource(R.string.delete_account_confirm)) },
@@ -189,6 +192,8 @@ fun SyncSettings(view: HouseholdView, onBack: () -> Unit, onInvite: () -> Unit) 
     }
     if (forgetting) {
         AlertDialog(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
             onDismissRequest = { forgetting = false },
             title = { Text(stringResource(R.string.forget_household)) },
             text = { Text(stringResource(if (view.state.connected) R.string.forget_shared_confirm else R.string.forget_local_confirm)) },
