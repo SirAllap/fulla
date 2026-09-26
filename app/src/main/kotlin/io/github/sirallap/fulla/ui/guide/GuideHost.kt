@@ -61,6 +61,12 @@ fun GuideHost(view: HouseholdView, tab: Tab, setTab: (Tab) -> Unit) {
         }
     }
 
+    fun firstTourState(): GuideStepState {
+        var i = 0
+        while (i < plan.tour.size && plan.tour[i] !in effectiveTour) i++
+        return if (i < plan.tour.size) GuideStepState.Tour(i) else GuideStepState.Done
+    }
+
     /** The next state after [from], skipping tour stops [effectiveTour] leaves out. */
     fun forward(from: GuideStepState): GuideStepState = when (from) {
         is GuideStepState.Setup -> {
@@ -84,12 +90,6 @@ fun GuideHost(view: HouseholdView, tab: Tab, setTab: (Tab) -> Unit) {
         var i = index - 1
         while (i >= 0 && plan.tour[i] !in effectiveTour) i--
         return if (i >= 0) GuideStepState.Tour(i) else GuideStepState.Done
-    }
-
-    fun firstTourState(): GuideStepState {
-        var i = 0
-        while (i < plan.tour.size && plan.tour[i] !in effectiveTour) i++
-        return if (i < plan.tour.size) GuideStepState.Tour(i) else GuideStepState.Done
     }
 
     // The guide opens on Overview, once, the moment it becomes visible for this household.
