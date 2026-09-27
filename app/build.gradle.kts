@@ -161,7 +161,12 @@ dependencies {
 // when FULLA_SCREENSHOTS=true, by the Screenshots workflow; ordinary test runs
 // render them without writing anything.
 // The database setup script, bundled from the migrations, goes inside the app:
-// setting up a household's own Supabase project from the phone installs it.
+// setting up a household's own Supabase project from the phone installs it,
+// and Settings' "database needs an update" row (AppContainer.setupSql) reuses
+// the very same asset to paste the current build's exact schema -- offline,
+// and always the version this build actually expects, unlike fetching the
+// script from a GitHub release, which needs network and can race a release
+// whose asset has not finished uploading.
 val setupSqlDir = layout.buildDirectory.dir("generated/setupSql")
 val bundleSetupSql by tasks.registering(Exec::class) {
     val script = rootProject.file("supabase/scripts/bundle.js")

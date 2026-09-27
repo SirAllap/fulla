@@ -147,5 +147,8 @@ your project without an invite sees nothing. But it is tidier.
 - **Backups.** Supabase keeps its own backups on paid plans. On any plan you
   can take one yourself with `pg_dump` and the connection string. Keep backups
   somewhere private: they contain the whole household's finances.
-- **Upgrades.** A new version of Fulla may come with a new `setup.sql`. Run it
-  the same way as the first time; it applies only what is new.
+- **Upgrades.** A new version of Fulla may come with a new `setup.sql`. Fulla
+  will ask you in Settings when your database needs an update, with a button
+  that copies the exact script for your installed version and opens your
+  project's SQL editor to paste it into. Nothing to remember between
+  releases.

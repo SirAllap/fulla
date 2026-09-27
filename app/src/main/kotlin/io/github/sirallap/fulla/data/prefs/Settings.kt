@@ -37,6 +37,10 @@ data class Settings(
     val checkForUpdates: Boolean = true,
     /** Found by AppContainer.checkForUpdates, cleared once installed. */
     val pendingUpdate: Update? = null,
+    /** Set by AppContainer.checkDbSchema when the backend's `fulla_schema_version` is confirmed
+     *  below EXPECTED_SCHEMA_VERSION or missing; cleared once it answers current. Never set on an
+     *  ambiguous transport error (offline, 5xx), so a phone with no signal keeps whatever it last knew. */
+    val dbNeedsUpdate: Boolean = false,
     /** The household the guide is currently running for, or null when it is not showing. */
     val guideHousehold: String? = null,
     /** Why the guide started (see GuideOrigin), or null before the first run. */
@@ -62,6 +66,7 @@ class SettingsStore(context: Context) {
         val languageChosen = booleanPreferencesKey("language_chosen")
         val deviceId = stringPreferencesKey("device_id")
         val checkForUpdates = booleanPreferencesKey("check_for_updates")
+        val dbNeedsUpdate = booleanPreferencesKey("db_needs_update")
         val lastUpdateCheckAt = longPreferencesKey("last_update_check_at")
         val updateVersion = stringPreferencesKey("update_version")
         val updateNotes = stringPreferencesKey("update_notes")
@@ -85,6 +90,7 @@ class SettingsStore(context: Context) {
             onboarded = p[Keys.onboarded] ?: false,
             languageChosen = p[Keys.languageChosen] ?: false,
             checkForUpdates = p[Keys.checkForUpdates] ?: true,
+            dbNeedsUpdate = p[Keys.dbNeedsUpdate] ?: false,
             pendingUpdate = p[Keys.updateVersion]?.let { version ->
                 p[Keys.updateApkUrl]?.let { url ->
                     Update(version, p[Keys.updateNotes] ?: "", url, p[Keys.updateSizeBytes] ?: 0L, p[Keys.updateSha256])
@@ -115,6 +121,9 @@ class SettingsStore(context: Context) {
     suspend fun setOnboarded(done: Boolean) { store.edit { it[Keys.onboarded] = done } }
     suspend fun setLanguageChosen(done: Boolean) { store.edit { it[Keys.languageChosen] = done } }
     suspend fun setCheckForUpdates(on: Boolean) { store.edit { it[Keys.checkForUpdates] = on } }
+
+    /** Set by AppContainer.checkDbSchema; see [Settings.dbNeedsUpdate]. */
+    suspend fun setDbNeedsUpdate(needed: Boolean) { store.edit { it[Keys.dbNeedsUpdate] = needed } }
 
     /**
      * Starts the guide for [id], from [origin]. Overwrites whatever guide was

@@ -441,6 +441,9 @@
     <string name="backup_is_csv">This is a CSV file, not a Fulla backup. To bring in its movements, open your household, then Settings › Import a statement.</string>
     <string name="import_not_readable">That file could not be read. If it is in a cloud folder, download it to the phone first, then choose it again.</string>
     <string name="update_available">Update available · %1$s</string>
+    <string name="db_update_needed">Database needs an update</string>
+    <string name="db_update_action">Update database</string>
+    <string name="db_update_instruction">Paste and press Run</string>
     <string name="update_check">Check for updates</string>
     <string name="update_check_text">Ask GitHub for the latest release, and offer to install it here.</string>
     <string name="update_now">Update now</string>

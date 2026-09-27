@@ -2,12 +2,14 @@
 package io.github.sirallap.fulla
 
 import android.content.Context
+import io.github.sirallap.fulla.client.remote.DbUpdateStatus
 import io.github.sirallap.fulla.client.remote.Endpoint
 import io.github.sirallap.fulla.client.remote.FullaApi
 import io.github.sirallap.fulla.client.remote.FullaError
 import io.github.sirallap.fulla.client.remote.InviteLink
 import io.github.sirallap.fulla.client.remote.Supabase
 import io.github.sirallap.fulla.client.remote.UpdateCheck
+import io.github.sirallap.fulla.client.remote.checkSchemaVersion
 import io.github.sirallap.fulla.client.sync.Syncer
 import io.github.sirallap.fulla.core.version.Versions
 import io.github.sirallap.fulla.data.local.FullaDatabase
@@ -184,6 +186,26 @@ class AppContainer(private val context: Context) {
     }
 
     fun requestSync() = SyncScheduler.requestSoon(context)
+
+    /**
+     * Asks the connected backend's `fulla_schema_version` and stores whether
+     * it is behind this build (`Settings.dbNeedsUpdate`), so Settings can
+     * show the "database needs an update" row. Silent no-op with nothing
+     * connected or nobody signed in yet, and an ambiguous failure (offline,
+     * the server down) leaves the stored flag untouched rather than guessing
+     * -- see [DbUpdateStatus.Unknown] and `checkSchemaVersion`'s own comment.
+     * Called on app start and once an in-app update finishes installing
+     * (MainActivity.onStart, UpdateSheet's InstallOutcome.Success).
+     */
+    suspend fun checkDbSchema() {
+        val supabase = supabase() ?: return
+        if (supabase.currentSession() == null) return
+        when (checkSchemaVersion(supabase)) {
+            DbUpdateStatus.NeedsUpdate -> settings.setDbNeedsUpdate(true)
+            DbUpdateStatus.UpToDate -> settings.setDbNeedsUpdate(false)
+            DbUpdateStatus.Unknown -> {}
+        }
+    }
 
     companion object {
         const val UPDATE_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000L

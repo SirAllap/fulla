@@ -54,6 +54,9 @@ class MainActivity : FragmentActivity() {
         // AppContainer.checkForUpdates keeps its own 12-hour throttle in
         // DataStore, so calling it on every foreground is cheap and correct.
         lifecycleScope.launch { container.checkForUpdates() }
+        // One RPC, only when signed in to a connected household; cheap enough
+        // to run on every foreground too, no throttle needed.
+        lifecycleScope.launch { container.checkDbSchema() }
     }
 
     private fun readInvite(intent: Intent?) {

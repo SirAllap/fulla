@@ -440,6 +440,9 @@
     <string name="backup_is_csv">Isto é um ficheiro CSV, não uma cópia do Fulla. Para trazer os movimentos, entra na tua casa e vai a Definições › Importar um extrato.</string>
     <string name="import_not_readable">Não foi possível ler esse ficheiro. Se estiver numa pasta na nuvem, descarrega-o primeiro para o telemóvel e escolhe-o de novo.</string>
     <string name="update_available">Atualização disponível · %1$s</string>
+    <string name="db_update_needed">Seu banco de dados precisa ser atualizado</string>
+    <string name="db_update_action">Atualizar banco de dados</string>
+    <string name="db_update_instruction">Cole e toque em Run</string>
     <string name="update_check">Procurar atualizações</string>
     <string name="update_check_text">Pergunta ao GitHub qual é a última versão e propõe instalá-la aqui.</string>
     <string name="update_now">Atualizar agora</string>

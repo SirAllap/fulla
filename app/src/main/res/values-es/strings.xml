@@ -440,6 +440,9 @@
     <string name="backup_is_csv">Esto es un archivo CSV, no una copia de Fulla. Para traer sus movimientos, entra en tu hogar y ve a Ajustes › Importar un extracto.</string>
     <string name="import_not_readable">No se pudo leer ese archivo. Si está en una carpeta en la nube, descárgalo primero al teléfono y vuelve a elegirlo.</string>
     <string name="update_available">Actualización disponible · %1$s</string>
+    <string name="db_update_needed">Tu base de datos necesita actualizarse</string>
+    <string name="db_update_action">Actualizar base de datos</string>
+    <string name="db_update_instruction">Pega y pulsa Run</string>
     <string name="update_check">Buscar actualizaciones</string>
     <string name="update_check_text">Pregunta a GitHub por la última versión y ofrece instalarla aquí.</string>
     <string name="update_now">Actualizar ahora</string>

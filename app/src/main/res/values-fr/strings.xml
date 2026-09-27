@@ -440,6 +440,9 @@
     <string name="backup_is_csv">C’est un fichier CSV, pas une sauvegarde Fulla. Pour importer ses mouvements, ouvrez votre foyer, puis Réglages › Importer un relevé.</string>
     <string name="import_not_readable">Impossible de lire ce fichier. S’il est dans un dossier cloud, téléchargez-le d’abord sur le téléphone, puis choisissez-le à nouveau.</string>
     <string name="update_available">Mise à jour disponible · %1$s</string>
+    <string name="db_update_needed">Ta base de données doit être mise à jour</string>
+    <string name="db_update_action">Mettre à jour la base de données</string>
+    <string name="db_update_instruction">Colle et appuie sur Run</string>
     <string name="update_check">Rechercher des mises à jour</string>
     <string name="update_check_text">Demande à GitHub la dernière version et propose de l’installer ici.</string>
     <string name="update_now">Mettre à jour maintenant</string>

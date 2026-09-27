@@ -59,7 +59,7 @@ fun UpdateSheet(update: Update, onDismiss: () -> Unit) {
     LaunchedEffect(Unit) {
         InstallStatus.events.collect { outcome ->
             when (outcome) {
-                InstallOutcome.Success -> { progress = null; onDismiss() }
+                InstallOutcome.Success -> { progress = null; scope.launch { container.checkDbSchema() }; onDismiss() }
                 is InstallOutcome.Failure -> { progress = null; error = outcome.message ?: context.getString(R.string.something_failed) }
             }
         }

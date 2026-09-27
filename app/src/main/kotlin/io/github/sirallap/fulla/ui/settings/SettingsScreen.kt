@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +25,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Rule
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.SaveAlt
@@ -36,11 +39,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.sirallap.fulla.AppContainer
 import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.client.remote.Update
+import io.github.sirallap.fulla.client.remote.supabaseProjectRef
 import io.github.sirallap.fulla.core.roles.Permissions
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
@@ -83,6 +91,8 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
     val canEdit = me != null && Permissions.canEditStructure(me)
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     val pendingUpdate = settings?.pendingUpdate
+    val dbNeedsUpdate = settings?.dbNeedsUpdate == true
+    val projectUrl = settings?.endpoint?.url
 
     val change = rememberChange(view) { error = it }
 
@@ -91,7 +101,7 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
         error?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
             when (section) {
-                SettingsSection.INDEX -> index(view, onBack, onOpen, pendingUpdate, onUpdate)
+                SettingsSection.INDEX -> index(view, onBack, onOpen, pendingUpdate, onUpdate, dbNeedsUpdate, projectUrl)
                 SettingsSection.HOUSEHOLDS -> item { HouseholdsSettings(view, onBack) }
                 SettingsSection.HOUSEHOLD -> item { HouseholdSettings(view, canEdit, change) }
                 SettingsSection.MEMBERS -> item { MembersSettings(view, change, onShare = { onOpen(SettingsSection.SYNC) }) }
@@ -112,7 +122,11 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
     }
 }
 
-private fun LazyListScope.index(view: HouseholdView, onBack: () -> Unit, onOpen: (SettingsSection) -> Unit, pendingUpdate: Update?, onUpdate: () -> Unit) {
+private fun LazyListScope.index(
+    view: HouseholdView, onBack: () -> Unit, onOpen: (SettingsSection) -> Unit,
+    pendingUpdate: Update?, onUpdate: () -> Unit,
+    dbNeedsUpdate: Boolean, projectUrl: String?,
+) {
     if (pendingUpdate != null) {
         item {
             ListRow(
@@ -121,6 +135,23 @@ private fun LazyListScope.index(view: HouseholdView, onBack: () -> Unit, onOpen:
                 iconTint = FullaTheme.colors.accent,
                 titleColor = FullaTheme.colors.accent,
                 onClick = onUpdate,
+                end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.accent) },
+            )
+        }
+    }
+    if (dbNeedsUpdate) {
+        item {
+            val container = LocalContainer.current
+            val context = LocalContext.current
+            val clipboard = LocalClipboardManager.current
+            ListRow(
+                stringResource(R.string.db_update_needed),
+                context = stringResource(R.string.db_update_action),
+                detail = stringResource(R.string.db_update_instruction),
+                icon = Icons.Outlined.Storage,
+                iconTint = FullaTheme.colors.accent,
+                titleColor = FullaTheme.colors.accent,
+                onClick = { updateDatabase(container, context, clipboard, projectUrl) },
                 end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.accent) },
             )
         }
@@ -139,4 +170,19 @@ private fun LazyListScope.index(view: HouseholdView, onBack: () -> Unit, onOpen:
             }
         })
     }
+}
+
+/**
+ * The simplest version of "update the database", per the brief: copy this
+ * build's exact `setup.sql` (bundled as an asset, see app/build.gradle.kts)
+ * to the clipboard and open the project's own SQL editor, ready to paste.
+ * Silently does nothing to the browser step when the configured URL's ref
+ * cannot be parsed (a local-only household with no project yet) -- the
+ * clipboard copy still happens, so a person who navigates there by hand is
+ * not left empty-handed.
+ */
+private fun updateDatabase(container: AppContainer, context: android.content.Context, clipboard: androidx.compose.ui.platform.ClipboardManager, projectUrl: String?) {
+    clipboard.setText(AnnotatedString(container.setupSql()))
+    val ref = projectUrl?.let(::supabaseProjectRef) ?: return
+    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://supabase.com/dashboard/project/$ref/sql/new")))
 }

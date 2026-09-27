@@ -440,6 +440,9 @@
     <string name="backup_is_csv">Questo è un file CSV, non un backup di Fulla. Per importarne i movimenti, apri la tua casa e poi Impostazioni › Importa un estratto conto.</string>
     <string name="import_not_readable">Impossibile leggere questo file. Se è in una cartella cloud, scaricalo prima sul telefono e poi sceglilo di nuovo.</string>
     <string name="update_available">Aggiornamento disponibile · %1$s</string>
+    <string name="db_update_needed">Il tuo database deve essere aggiornato</string>
+    <string name="db_update_action">Aggiorna il database</string>
+    <string name="db_update_instruction">Incolla e tocca Run</string>
     <string name="update_check">Cerca aggiornamenti</string>
     <string name="update_check_text">Chiede a GitHub l’ultima versione e propone di installarla qui.</string>
     <string name="update_now">Aggiorna ora</string>
