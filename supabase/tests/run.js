@@ -544,6 +544,22 @@ test('account names are unique per household, accents and case aside, among acti
   expectError(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: { id: uuid(), name: 'X', type: 'piggy' } }, 'validation_failed');
 });
 
+test('editing an account without opening_balance_minor or opening_balance_date keeps both', (ctx) => {
+  const save = (a) => rpc(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: a });
+  const id = uuid();
+  let cfg = save({ id, name: 'Checking', type: 'checking', opening_balance_minor: 50000, opening_balance_date: '2030-01-15' });
+  let account = cfg.accounts.find((a) => a.id === id);
+  assert.equal(account.opening_balance_minor, 50000);
+  assert.equal(account.opening_balance_date, '2030-01-15');
+
+  // The edit dialog's "rename only" payload: no balance, no date at all.
+  cfg = save({ id, name: 'Checking Account', type: 'checking' });
+  account = cfg.accounts.find((a) => a.id === id);
+  assert.equal(account.name, 'Checking Account');
+  assert.equal(account.opening_balance_minor, 50000);
+  assert.equal(account.opening_balance_date, '2030-01-15');
+});
+
 test('categories nest one level deep', (ctx) => {
   const save = (c) => rpc(ctx.db, ctx.alice, 'fulla_category_upsert', { p_household_id: ctx.hh, p_category: c });
   const pets = uuid();

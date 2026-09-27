@@ -341,7 +341,12 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         })
     }
     editing?.let { item ->
-        StructureDialog(item, onDismiss = { editing = null }, iconPicker = false, formats = view.formats) { updated ->
+        // A new account has no `opening_balance_date` key at all (built just
+        // above); an existing one always does, since every account upsert on
+        // the wire writes both balance fields (Wire.kt). That is what tells
+        // the dialog whether it is creating or editing.
+        val isNew = "opening_balance_date" !in item
+        StructureDialog(item, onDismiss = { editing = null }, iconPicker = false, formats = view.formats, isNewAccount = isNew) { updated ->
             change { api -> ledger.upsert(view.id, Structure.ACCOUNT, updated, api) }
         }
     }
@@ -365,7 +370,14 @@ internal fun parseOpeningBalance(text: String, formats: io.github.sirallap.fulla
 
 /** Name, archive, (for categories) icon, and (for accounts) an opening balance. Nothing is ever deleted: archived things keep their history. */
 @Composable
-private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker: Boolean, formats: io.github.sirallap.fulla.ui.Formats? = null, onSave: (JsonObject) -> Unit) {
+private fun StructureDialog(
+    item: JsonObject,
+    onDismiss: () -> Unit,
+    iconPicker: Boolean,
+    formats: io.github.sirallap.fulla.ui.Formats? = null,
+    isNewAccount: Boolean = false,
+    onSave: (JsonObject) -> Unit,
+) {
     var name by remember { mutableStateOf((item["name"] as? JsonPrimitive)?.content ?: "") }
     var archived by remember { mutableStateOf((item["archived"] as? JsonPrimitive)?.content == "true") }
     var icon by remember { mutableStateOf((item["icon"] as? JsonPrimitive)?.content ?: "label") }
@@ -373,11 +385,20 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
     var balanceText by remember { mutableStateOf(formats?.plain(openingBalanceMinor) ?: "") }
     // The stored date, if this account already has one. An account being
     // edited that has never had one (existing account, null date) defaults to
-    // today too: editing it here means the person is now setting it
-    // explicitly, so it must never silently stay null.
+    // today only for display; it is not sent unless the person actually
+    // touches the balance or the date (see `balanceTouched` below), so
+    // editing just the name never turns a legacy "count everything" account
+    // into one dated today.
     val storedDate = (item["opening_balance_date"] as? JsonPrimitive)?.takeIf { it != JsonNull }?.content?.let(LocalDate::parse)
     var balanceDate by remember { mutableStateOf(storedDate ?: LocalDate.now()) }
     var pickingBalanceDate by remember { mutableStateOf(false) }
+    // Whether this edit should touch balance/date at all: always for a new
+    // account, and for an existing one only once the person actually changes
+    // the amount or picks a date -- otherwise the payload omits both keys,
+    // and fulla.save_account (and LocalHousehold.upsert) leave the stored
+    // values exactly as they were, the same "absent keeps its value" rule as
+    // opening_balance_date already had.
+    var balanceTouched by remember { mutableStateOf(isNewAccount) }
     AlertDialog(
         modifier = Modifier.fillMaxWidth(0.94f),
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -388,7 +409,7 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
                 OutlinedTextField(name, { name = it.take(40) }, label = { Text(stringResource(R.string.name)) }, singleLine = true)
                 if (formats != null) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(balanceText, { balanceText = it }, modifier = Modifier.weight(1f),
+                        OutlinedTextField(balanceText, { balanceText = it; balanceTouched = true }, modifier = Modifier.weight(1f),
                             label = { Text(stringResource(R.string.opening_balance)) },
                             singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                         Chip(formats.day(balanceDate), false, { pickingBalanceDate = true })
@@ -418,7 +439,7 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
                 val balance = formats?.let { parseOpeningBalance(balanceText, it) ?: openingBalanceMinor }
                 onSave(JsonObject(item + mapOf("name" to JsonPrimitive(name.trim()), "archived" to JsonPrimitive(archived)) +
                     (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap()) +
-                    (if (balance != null) mapOf(
+                    (if (balance != null && balanceTouched) mapOf(
                         "opening_balance_minor" to JsonPrimitive(balance),
                         "opening_balance_date" to JsonPrimitive(balanceDate.toString()),
                     ) else emptyMap())))
@@ -434,6 +455,7 @@ private fun StructureDialog(item: JsonObject, onDismiss: () -> Unit, iconPicker:
             TextButton(onClick = {
                 state.selectedDateMillis?.let { millis ->
                     balanceDate = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                    balanceTouched = true
                 }
                 pickingBalanceDate = false
             }) { Text(stringResource(R.string.done)) }
