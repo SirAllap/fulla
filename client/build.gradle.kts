@@ -38,6 +38,10 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
     testLogging { events("failed") }
+    // For SchemaVersionTest, which reads the migration SQL straight off disk
+    // to check it against EXPECTED_SCHEMA_VERSION -- the two must never drift
+    // apart silently. Same property and default as core/build.gradle.kts.
+    systemProperty("fulla.root", rootProject.projectDir.absolutePath)
 }
 
 kover {
