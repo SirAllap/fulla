@@ -21,7 +21,7 @@
     <string name="back">Voltar</string>
     <string name="between_you">Entre vocês</string>
     <string name="budget_left">Faltam %1$s</string>
-    <string name="budget_left_of">Faltam %1$s de %2$s</string>
+    <string name="budget_left_of">Restam %1$s de %2$s</string>
     <string name="budget_of_period">Orçamento do período</string>
     <string name="budgets_text">Um valor mensal por categoria. O resumo mostra quanto já foi usado.</string>
     <string name="cancel">Cancelar</string>
@@ -515,7 +515,7 @@
     <string name="trip_budget">Orçamento (opcional)</string>
     <string name="trip_in_budgets">Contar nos orçamentos mensais</string>
     <string name="trip_in_budgets_help">Desligado: a viagem tem o seu próprio orçamento, e os orçamentos por categoria ignoram-no. Conta sempre nos gastos do mês.</string>
-    <string name="trip_left">Faltam %1$s de %2$s</string>
+    <string name="trip_left">Restam %1$s de %2$s</string>
     <plurals name="trip_per_day">
         <item quantity="one">%1$s por dia durante %2$d dia</item>
         <item quantity="other">%1$s por dia durante %2$d dias</item>
