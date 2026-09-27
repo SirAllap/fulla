@@ -167,6 +167,14 @@ Applied in filename order, each once, recorded in `fulla.schema_migrations`.
 After the first release, a released migration is never edited: add a new
 file. Before the first release they may still be rewritten.
 
+Every migration that changes the schema bumps the constant returned by
+`public.fulla_schema_version()` (`0016_schema_version.sql`), in the same
+statement that changes the schema. Self-hosted Supabase has no release
+channel to notice a stale database on its own; the app compares this number
+against `EXPECTED_SCHEMA_VERSION` (`client`) and nudges the owner in Settings
+when the backend is behind. A migration that does not bump it is a migration
+the nudge cannot see.
+
 ## Keeping the repository clean
 
 This repository is public: tests, fixtures and docs use invented data only
