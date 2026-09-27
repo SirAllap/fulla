@@ -54,6 +54,29 @@ suspend fun checkSchemaVersion(supabase: Supabase, expected: Int = EXPECTED_SCHE
     if (e.status == 404) DbUpdateStatus.NeedsUpdate else DbUpdateStatus.Unknown
 }
 
+/**
+ * The last migration number `fulla_schema_version` did not exist for --
+ * self-hosted backends still on the 0.1.12 release. A missing function
+ * ([backendVersion] null in [dbUpdateDelta]) is assumed to be exactly this
+ * schema, documented in `AGENTS.md` under "## Migrations".
+ */
+const val PRE_VERSION_FUNCTION_BASELINE = 15
+
+/**
+ * Pure: only the migrations that bring a backend at [backendVersion] up to
+ * this build's schema, not the whole multi-hundred-KB `setup.sql` -- pasting
+ * that into Supabase's SQL Editor in a phone browser is what froze it.
+ * [backendVersion] null means the backend predates
+ * [PRE_VERSION_FUNCTION_BASELINE]. [migrations] is (migration number, its
+ * SQL) pairs; each migration is idempotent (`CREATE OR REPLACE` /
+ * `IF NOT EXISTS`), so concatenating every one above the baseline, in order,
+ * is safe to paste even against a backend ahead of what the baseline assumes.
+ */
+fun dbUpdateDelta(migrations: List<Pair<Int, String>>, backendVersion: Int?): String {
+    val baseline = backendVersion ?: PRE_VERSION_FUNCTION_BASELINE
+    return migrations.filter { it.first > baseline }.sortedBy { it.first }.joinToString("\n\n") { it.second }
+}
+
 private val PROJECT_REF = Regex("^[a-z0-9]+$")
 
 /**

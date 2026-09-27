@@ -10,6 +10,9 @@ import io.github.sirallap.fulla.client.remote.InviteLink
 import io.github.sirallap.fulla.client.remote.Supabase
 import io.github.sirallap.fulla.client.remote.UpdateCheck
 import io.github.sirallap.fulla.client.remote.checkSchemaVersion
+import io.github.sirallap.fulla.client.remote.dbUpdateDelta
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.intOrNull
 import io.github.sirallap.fulla.client.sync.Syncer
 import io.github.sirallap.fulla.core.version.Versions
 import io.github.sirallap.fulla.data.local.FullaDatabase
@@ -115,6 +118,29 @@ class AppContainer(private val context: Context) {
     fun setupSql(): String = context.assets.open("setup.sql").bufferedReader().use { it.readText() }
 
     /**
+     * Only the migrations a stale backend is missing (see `DbUpdate.kt`'s
+     * `dbUpdateDelta`), not the whole `setup.sql` -- pasting the whole
+     * history into the Supabase SQL Editor in a phone browser is what froze
+     * it. Re-asks `fulla_schema_version` rather than trusting the flag
+     * `checkDbSchema` stored, since the row that calls this already implies
+     * a live connection is worth spending. A version that fails to fetch is
+     * treated the same as a missing function -- the row was only shown
+     * because `checkDbSchema` already saw `NeedsUpdate` once.
+     */
+    suspend fun dbUpdateSql(): String {
+        val supabase = supabase()
+        val version = supabase?.let {
+            runCatching { (it.rpc("fulla_schema_version") as? JsonPrimitive)?.intOrNull }.getOrNull()
+        }
+        val migrations = context.assets.list("migrations").orEmpty().mapNotNull { name ->
+            MIGRATION_FILENAME.find(name)?.groupValues?.get(1)?.toInt()?.let { n ->
+                n to context.assets.open("migrations/$name").bufferedReader().use { it.readText() }
+            }
+        }
+        return dbUpdateDelta(migrations, version)
+    }
+
+    /**
      * The household server this build ships with, or null in a build where
      * people bring their own Supabase project.
      */
@@ -209,5 +235,6 @@ class AppContainer(private val context: Context) {
 
     companion object {
         const val UPDATE_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000L
+        private val MIGRATION_FILENAME = Regex("""^(\d{4})_.+\.sql$""")
     }
 }

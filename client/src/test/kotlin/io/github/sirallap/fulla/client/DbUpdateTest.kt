@@ -8,6 +8,7 @@ import io.github.sirallap.fulla.client.remote.MemorySessionStore
 import io.github.sirallap.fulla.client.remote.Session
 import io.github.sirallap.fulla.client.remote.Supabase
 import io.github.sirallap.fulla.client.remote.checkSchemaVersion
+import io.github.sirallap.fulla.client.remote.dbUpdateDelta
 import io.github.sirallap.fulla.client.remote.dbUpdateStatus
 import io.github.sirallap.fulla.client.remote.supabaseProjectRef
 import io.ktor.client.HttpClient
@@ -48,6 +49,20 @@ class DbUpdateTest {
         // 0 is a real (if absurd) answer, not "no answer": still below expected, still NeedsUpdate,
         // but through the same branch as any other low number, not treated as missing.
         assertEquals(DbUpdateStatus.NeedsUpdate, dbUpdateStatus(0, 16))
+    }
+
+    // ── dbUpdateDelta: pure, no I/O ──────────────────────────────────────────
+
+    @Test
+    fun `a missing version function pastes only what came after the pre-0_1_13 baseline`() {
+        val migrations = listOf(14 to "-- 0014\n", 15 to "-- 0015\n", 16 to "-- 0016\n")
+        assertEquals("-- 0016\n", dbUpdateDelta(migrations, backendVersion = null))
+    }
+
+    @Test
+    fun `a known version pastes only what is strictly above it, in order`() {
+        val migrations = listOf(16 to "-- 0016\n", 12 to "-- 0012\n", 13 to "-- 0013\n")
+        assertEquals("-- 0013\n\n\n-- 0016\n", dbUpdateDelta(migrations, backendVersion = 12))
     }
 
     // ── checkSchemaVersion: the I/O wrapper ─────────────────────────────────

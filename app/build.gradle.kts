@@ -178,6 +178,18 @@ val bundleSetupSql by tasks.registering(Exec::class) {
 android.sourceSets.getByName("main").assets.srcDir(setupSqlDir)
 tasks.named("preBuild") { dependsOn(bundleSetupSql) }
 
+// The individual migration files, bundled alongside setup.sql: Settings'
+// "Update database" row (AppContainer.dbUpdateSql) pastes only the ones a
+// stale backend is missing, not the whole setup.sql -- see DbUpdate.kt's
+// `dbUpdateDelta`.
+val migrationsAssetsDir = layout.buildDirectory.dir("generated/migrationsAssets")
+val bundleMigrations by tasks.registering(Copy::class) {
+    from(rootProject.file("supabase/migrations")) { include("*.sql") }
+    into(migrationsAssetsDir.map { it.dir("migrations") })
+}
+android.sourceSets.getByName("main").assets.srcDir(migrationsAssetsDir)
+tasks.named("preBuild") { dependsOn(bundleMigrations) }
+
 // Room's exported schema JSON (ksp's room.schemaLocation, above) is what
 // MigrationTestHelper validates a migration against. Robolectric's unit
 // tests read assets from the debug variant's merged assets (there is no

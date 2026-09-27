@@ -144,6 +144,7 @@ private fun LazyListScope.index(
             val container = LocalContainer.current
             val context = LocalContext.current
             val clipboard = LocalClipboardManager.current
+            val scope = rememberCoroutineScope()
             ListRow(
                 stringResource(R.string.db_update_needed),
                 context = stringResource(R.string.db_update_action),
@@ -151,7 +152,7 @@ private fun LazyListScope.index(
                 icon = Icons.Outlined.Storage,
                 iconTint = FullaTheme.colors.accent,
                 titleColor = FullaTheme.colors.accent,
-                onClick = { updateDatabase(container, context, clipboard, projectUrl) },
+                onClick = { scope.launch { updateDatabase(container, context, clipboard, projectUrl) } },
                 end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.accent) },
             )
         }
@@ -173,16 +174,16 @@ private fun LazyListScope.index(
 }
 
 /**
- * The simplest version of "update the database", per the brief: copy this
- * build's exact `setup.sql` (bundled as an asset, see app/build.gradle.kts)
- * to the clipboard and open the project's own SQL editor, ready to paste.
- * Silently does nothing to the browser step when the configured URL's ref
- * cannot be parsed (a local-only household with no project yet) -- the
- * clipboard copy still happens, so a person who navigates there by hand is
- * not left empty-handed.
+ * Copies only the migrations the backend is missing (`AppContainer.dbUpdateSql`,
+ * a few KB) rather than the whole `setup.sql` (227 KB) -- pasting that much
+ * into Supabase's SQL Editor in a phone browser froze it. Opens the
+ * project's own SQL editor, ready to paste. Silently does nothing to the
+ * browser step when the configured URL's ref cannot be parsed (a local-only
+ * household with no project yet) -- the clipboard copy still happens, so a
+ * person who navigates there by hand is not left empty-handed.
  */
-private fun updateDatabase(container: AppContainer, context: android.content.Context, clipboard: androidx.compose.ui.platform.ClipboardManager, projectUrl: String?) {
-    clipboard.setText(AnnotatedString(container.setupSql()))
+private suspend fun updateDatabase(container: AppContainer, context: android.content.Context, clipboard: androidx.compose.ui.platform.ClipboardManager, projectUrl: String?) {
+    clipboard.setText(AnnotatedString(container.dbUpdateSql()))
     val ref = projectUrl?.let(::supabaseProjectRef) ?: return
     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://supabase.com/dashboard/project/$ref/sql/new")))
 }
