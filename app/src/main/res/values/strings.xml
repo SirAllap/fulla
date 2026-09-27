@@ -22,6 +22,7 @@
     <string name="back">Back</string>
     <string name="between_you">Between you</string>
     <string name="budget_left">%1$s left</string>
+    <string name="budget_left_of">%1$s left of %2$s</string>
     <string name="budget_of_period">Budget for the period</string>
     <string name="budgets_text">A monthly amount per category. The overview shows how much of it is used.</string>
     <string name="cancel">Cancel</string>

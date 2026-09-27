@@ -21,6 +21,7 @@
     <string name="back">Zurück</string>
     <string name="between_you">Unter euch</string>
     <string name="budget_left">Noch %1$s</string>
+    <string name="budget_left_of">Noch %1$s von %2$s</string>
     <string name="budget_of_period">Budget des Zeitraums</string>
     <string name="budgets_text">Ein Monatsbetrag pro Kategorie. Die Übersicht zeigt, wie viel davon verbraucht ist.</string>
     <string name="cancel">Abbrechen</string>

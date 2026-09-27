@@ -153,7 +153,7 @@ fun HomeScreen(
                         val spent = budgetSpend.filterKeys { it in budgets }.values.sum()
                         val total = budgets.values.sum()
                         ListRow(stringResource(R.string.budget_of_period), onClick = onBudgets,
-                            context = stringResource(R.string.budget_left, f.money(total - spent)),
+                            context = stringResource(R.string.budget_left_of, f.money(total - spent), f.money(total)),
                             below = { ProgressLine(if (total > 0) spent.toFloat() / total else 0f, c.moneyOut, over = spent > total) },
                             end = { Icon(Icons.Outlined.ChevronRight, null, tint = c.inkMuted) })
                     }
