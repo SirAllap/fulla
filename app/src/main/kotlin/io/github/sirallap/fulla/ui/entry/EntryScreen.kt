@@ -144,13 +144,20 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
     var fixed by mutableStateOf(existing?.recurrence == Recurrence.FIXED)
     var extras by mutableStateOf<Map<String, Any?>>(existing?.extras ?: emptyMap())
     val template: Transaction? = existing
+    private val active = view.active
     /** The salary that started the last period: an income like it is proposed as the next one. */
-    private val latestSalary = PeriodAnchors.latest(view.active)
+    private val latestSalary = PeriodAnchors.latest(active)
+    /** This row as the rules see it, for the switch's default and its notes. */
+    private val probe: Transaction get() = Transaction(id = id, kind = kind, date = date, amountMinor = 0, categoryId = categoryId,
+        accountId = accountId, tags = template?.tags.orEmpty(), createdAt = "", clientUpdatedAt = "")
+    /** Shown in plain sight, or kept in the details (PeriodAnchors.worthOffering). */
+    val offersStartsMonth: Boolean get() = kind == TransactionKind.INCOME && (startsMonthChoice != null || PeriodAnchors.worthOffering(probe, active))
+    /** Another income already starting this month, near this one's date. */
+    val otherSalary: Transaction? get() = if (kind == TransactionKind.INCOME) PeriodAnchors.otherSalaryNear(probe, active) else null
     /** Set once the person flips "starts the month"; until then it follows the row, or the proposal. */
     var startsMonthChoice by mutableStateOf<Boolean?>(null)
     val startsMonth: Boolean get() = startsMonthChoice ?: template?.let(PeriodAnchors::marked)
-        ?: PeriodAnchors.looksLikeSalary(Transaction(id = id, kind = kind, date = date, amountMinor = 0, categoryId = categoryId,
-            accountId = accountId, createdAt = "", clientUpdatedAt = ""), latestSalary)
+        ?: (PeriodAnchors.looksLikeSalary(probe, latestSalary) && PeriodAnchors.otherSalaryNear(probe, active) == null)
 
     fun build(): Transaction {
         val splits = kind == TransactionKind.EXPENSE || kind == TransactionKind.REFUND
@@ -213,8 +220,10 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         val cleared = draft.extras.filterValues { it == null }.keys.associateWith { null }
         val t = built.copy(extras = merged.extras + cleared)
         val savedTripName = view.config.trip(t.tripId)?.name
+        // One salary per month: marking this one takes the mark off the one it replaces.
+        val replaced = if (PeriodAnchors.marked(t)) draft.otherSalary?.let { PeriodAnchors.mark(it, false) } else null
         scope.launch {
-            container.ledger.save(view.id, t)
+            if (replaced == null) container.ledger.save(view.id, t) else container.ledger.saveAll(view.id, listOf(t, replaced))
             // The save key gathers into a ✓ before the screen moves on.
             saved = true
             if (!reducedMotion) kotlinx.coroutines.delay(460)
@@ -276,10 +285,8 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
                     onPick = { draft.categoryId = it; problem = null }, onMore = { allCategories = !allCategories })
             }
             DetailsLine(view, draft) { detailsOpen = true }
+            if (draft.offersStartsMonth) StartsMonthSwitch(view, draft)
             if (draft.kind == TransactionKind.INCOME) {
-                SwitchRow(stringResource(R.string.starts_month), stringResource(R.string.starts_month_help), draft.startsMonth) {
-                    draft.startsMonthChoice = it
-                }
                 // A salary a recurring item wrote on its own starts no period until somebody saves it.
                 if (existing != null && PeriodAnchors.marked(existing) && !PeriodAnchors.confirmed(existing)) {
                     Text(stringResource(R.string.salary_generated_note), style = FullaType.secondary, color = c.inkMuted,
@@ -301,6 +308,19 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
     }
 
     if (detailsOpen) DetailsSheet(view, draft, onDismiss = { detailsOpen = false })
+}
+
+/** "Starts the month", with what it does to the income already starting this month, if any. */
+@Composable
+private fun StartsMonthSwitch(view: HouseholdView, draft: Draft) {
+    val other = draft.otherSalary
+    val note = other?.let {
+        val name = it.note.ifBlank { view.categoryName(it.categoryId) ?: "" }
+        stringResource(if (draft.startsMonth) R.string.starts_month_replaces else R.string.starts_month_taken, name, view.formats.day(it.date))
+    }
+    SwitchRow(stringResource(R.string.starts_month), note ?: stringResource(R.string.starts_month_help), draft.startsMonth) {
+        draft.startsMonthChoice = it
+    }
 }
 
 @Composable
@@ -403,6 +423,7 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
                 Chip(if (draft.date < today.minusDays(1) || draft.date > today) view.formats.day(draft.date) else stringResource(R.string.other_day),
                     draft.date < today.minusDays(1) || draft.date > today, { pickingDate = true })
             }
+            if (draft.kind == TransactionKind.INCOME && !draft.offersStartsMonth) StartsMonthSwitch(view, draft)
             Section(stringResource(if (draft.kind == TransactionKind.TRANSFER) R.string.from_account else R.string.account))
             ChoiceFlow(accounts.map { it.id to it.name }, draft.accountId) { draft.accountId = it }
             if (draft.kind == TransactionKind.TRANSFER) {

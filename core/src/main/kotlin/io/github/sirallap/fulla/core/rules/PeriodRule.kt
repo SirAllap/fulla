@@ -8,6 +8,7 @@ import io.github.sirallap.fulla.core.model.TransactionKind
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 
 /**
  * The period (YYYY-MM) a transaction counts in.
@@ -192,6 +193,25 @@ object PeriodAnchors {
             it.isActive && !marked(it) && it.id !in dismissed && it.date > latest.date.plusDays(MIN_DAYS_BETWEEN) &&
                 looksLikeSalary(it, latest)
         }.minByOrNull { it.date }
+    }
+
+    /**
+     * Another income already starting the month within [MIN_DAYS_BETWEEN]
+     * days of [t]: marking [t] too would make two salaries for one month, so
+     * marking it replaces that one.
+     */
+    fun otherSalaryNear(t: Transaction, transactions: Iterable<Transaction>): Transaction? =
+        transactions.filter { it.id != t.id && counts(it) && kotlin.math.abs(ChronoUnit.DAYS.between(it.date, t.date)) <= MIN_DAYS_BETWEEN }
+            .minByOrNull { kotlin.math.abs(ChronoUnit.DAYS.between(it.date, t.date)) }
+
+    /**
+     * Whether the entry screen shows the switch in plain sight: on a row
+     * already marked, on one like the last salary, or while no salary has
+     * been marked yet. Any other income keeps it in its details.
+     */
+    fun worthOffering(t: Transaction, transactions: Iterable<Transaction>): Boolean {
+        val latest = latest(transactions)
+        return marked(t) || latest == null || looksLikeSalary(t, latest)
     }
 
     /** Two salaries closer than this are not two months: a bonus, a refund of payroll, a correction. */

@@ -91,6 +91,8 @@
     <string name="income_shift_day_value">A partir do dia %1$d</string>
     <string name="starts_month">Começa o mês</string>
     <string name="starts_month_help">Esta receita abre um novo período no dia em que entra. Ative para o seu salário.</string>
+    <string name="starts_month_taken">Este mês já é começado por “%1$s”, em %2$s.</string>
+    <string name="starts_month_replaces">Substitui “%1$s”, de %2$s, que deixará de começar o mês.</string>
     <string name="salary_question">É o seu salário?</string>
     <string name="salary_question_yes">Sim, começa o mês</string>
     <string name="salary_question_no">Não</string>

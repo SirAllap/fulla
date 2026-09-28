@@ -91,6 +91,8 @@
     <string name="income_shift_day_value">À partir du %1$d</string>
     <string name="starts_month">Commence le mois</string>
     <string name="starts_month_help">Ce revenu ouvre une nouvelle période le jour où il arrive. Activez-le pour votre salaire.</string>
+    <string name="starts_month_taken">Ce mois est déjà commencé par « %1$s », le %2$s.</string>
+    <string name="starts_month_replaces">Remplace « %1$s », du %2$s, qui ne commencera plus le mois.</string>
     <string name="salary_question">Est-ce votre salaire ?</string>
     <string name="salary_question_yes">Oui, il commence le mois</string>
     <string name="salary_question_no">Non</string>

@@ -67,6 +67,20 @@ class PeriodAnchorsTest {
     }
 
     @Test
+    fun `a second salary near the first is shown, and replaces it when marked`() {
+        val mine = salary(d(8, 28))
+        val theirs = Fixtures.income(100_000, d(8, 28)).copy(accountId = Fixtures.CASH)
+        val all = listOf(mine, theirs)
+        assertEquals(mine.id, PeriodAnchors.otherSalaryNear(theirs, all)?.id)
+        assertEquals(null, PeriodAnchors.otherSalaryNear(mine, all), "not itself")
+        assertEquals(null, PeriodAnchors.otherSalaryNear(theirs.copy(date = d(9, 20)), all), "far enough: another month")
+        assertFalse(PeriodAnchors.worthOffering(theirs, all), "another account: kept in the details")
+        assertTrue(PeriodAnchors.worthOffering(mine, all))
+        assertTrue(PeriodAnchors.worthOffering(Fixtures.income(1, d(9, 28)), all), "like the last salary")
+        assertTrue(PeriodAnchors.worthOffering(theirs, listOf(theirs)), "nothing marked yet")
+    }
+
+    @Test
     fun `the days of a period follow the salaries`() {
         val rule = PeriodRule(28, anchors = listOf(d(8, 28), d(9, 26), d(11, 1)))
         assertEquals(d(8, 28)..d(9, 25), rule.daysOf(YearMonth.of(2030, 9)))
