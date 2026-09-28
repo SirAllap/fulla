@@ -639,4 +639,7 @@
     <string name="biggest_expenses">The largest expenses</string>
     <string name="repeated_most">What you buy again and again</string>
     <string name="times">%1$d times</string>
+    <string name="savings">Kept</string>
+    <string name="of_income">Of %1$s that came in</string>
+    <string name="of_days">Of %1$d days</string>
 </resources>

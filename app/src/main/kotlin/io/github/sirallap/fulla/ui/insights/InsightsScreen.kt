@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.insights
 
+import androidx.compose.ui.graphics.Color
+import io.github.sirallap.fulla.ui.components.TileRow
+import io.github.sirallap.fulla.ui.components.LiquidTone
+import io.github.sirallap.fulla.ui.components.LiquidTile
+import io.github.sirallap.fulla.ui.components.LiquidBarRow
 import io.github.sirallap.fulla.ui.components.Vial
 import io.github.sirallap.fulla.ui.components.SpendingVials
 import io.github.sirallap.fulla.ui.components.listEndPadding
@@ -89,10 +94,14 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
         io.github.sirallap.fulla.ui.components.PeriodSelector(f.period(period), { periodText = period.minusMonths(1).toString() },
             { periodText = period.plusMonths(1).toString() }, canGoNext = period < current)
         LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding()) {
+            item(key = "figures") {
+                Section(stringResource(R.string.period_summary), top = 8.dp())
+                FigureTiles(view, period, report, projection, noSpend)
+            }
             if (top.isNotEmpty()) item(key = "vials") {
                 val total = top.sumOf { it.amountMinor }.toFloat()
                 val max = top.maxOf { it.amountMinor }.toFloat()
-                Section(stringResource(R.string.where_it_went), top = 8.dp())
+                Section(stringResource(R.string.where_it_went))
                 SpendingVials(top.map { s ->
                     val cat = s.key?.let { view.config.category(it) }
                     val name = if (s.key == null) others else cat?.name ?: uncategorized
@@ -100,108 +109,87 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
                         level = s.amountMinor / max, share = s.amountMinor / total, description = "$name, ${f.money(s.amountMinor)}")
                 })
             }
-            item(key = "summary") {
-                Section(stringResource(R.string.period_summary), top = if (top.isEmpty()) 8.dp() else 24.dp())
-                val previous = report.previousSpentMinor
-                ListRow(stringResource(R.string.spent), context = when {
-                    previous == null || previous <= 0 -> null
-                    report.spentMinor == previous -> stringResource(R.string.vs_previous_same)
-                    else -> {
-                        val change = abs((report.spentMinor - previous) * 100.0 / previous).roundToInt()
-                        stringResource(if (report.spentMinor > previous) R.string.vs_previous_more else R.string.vs_previous_less, change)
-                    }
-                }, end = { AmountText(f.money(report.spentMinor)) })
-                report.savingsRate?.let { rate ->
-                    val pct = abs(rate * 100).roundToInt()
-                    ListRow(stringResource(R.string.money_in), context = stringResource(if (rate >= 0) R.string.saving_rate else R.string.overspending_rate, pct),
-                        end = { AmountText(f.money(report.incomeMinor), color = c.moneyIn) })
-                }
-                if (report.days > 0) {
-                    ListRow(stringResource(R.string.daily_average), context = stringResource(R.string.daily_average_text, report.days),
-                        end = { AmountText(f.money(report.dailyMinor)) })
-                }
-                projection?.let { p ->
-                    ListRow(stringResource(R.string.forecast), context = stringResource(R.string.forecast_text),
-                        end = { AmountText(f.money(p.projectedMinor)) })
-                }
-                if (report.count > 0) {
-                    ListRow(stringResource(R.string.movements), context = stringResource(R.string.movements_text, f.money(report.averageMinor)),
-                        end = { AmountText("${report.count}", color = c.inkMuted) })
-                }
-                val both = report.fixedMinor + report.variableMinor
-                if (both > 0) {
-                    ListRow(stringResource(R.string.fixed_variable),
-                        context = stringResource(R.string.fixed_variable_text, f.money(report.fixedMinor), f.money(report.variableMinor)),
-                        below = { ProgressLine(report.fixedMinor.toFloat() / both, c.ink) },
-                        end = { AmountText("${(report.fixedMinor * 100.0 / both).roundToInt()} %", color = c.inkMuted) })
-                }
-                if (report.budgets > 0) {
-                    ListRow(stringResource(R.string.budgets_over),
-                        end = { AmountText(stringResource(R.string.budgets_over_value, report.budgetsOver, report.budgets),
-                            color = if (report.budgetsOver > 0) c.moneyOut else c.inkMuted) })
-                }
-                if (report.days > 0) {
-                    ListRow(stringResource(R.string.no_spend_days), context = stringResource(R.string.no_spend_days_text),
-                        end = { AmountText("$noSpend", color = c.inkMuted) })
-                }
-            }
             if (report.weekdays.any { it > 0 }) item(key = "weekdays") {
                 val total = report.weekdays.filter { it > 0 }.sum().toFloat()
                 val max = report.weekdays.max().toFloat()
                 Section(stringResource(R.string.by_weekday))
                 SpendingVials(report.weekdays.mapIndexed { i, amount ->
                     val day = java.time.DayOfWeek.of(i + 1).getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault())
-                        .replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                        .replaceFirstChar { it.titlecase(Locale.getDefault()) }.trimEnd('.')
                     val positive = amount.coerceAtLeast(0)
                     Vial(day, null, level = positive / max, share = positive / total, description = "$day, ${f.money(amount)}")
                 })
             }
             if (report.biggest.isNotEmpty()) {
                 item { Section(stringResource(R.string.biggest_expenses)) }
+                val largest = report.biggest.first().amountMinor.toFloat()
                 items(report.biggest, key = { "b-" + it.id }) { t ->
                     val category = view.categoryName(t.categoryId)
-                    ListRow(t.note.ifBlank { category ?: uncategorized },
+                    LiquidBarRow(t.note.ifBlank { category ?: uncategorized }, f.money(t.amountMinor), t.amountMinor / largest,
                         context = listOfNotNull(category.takeIf { t.note.isNotBlank() }, f.day(t.date)).joinToString(" · "),
-                        end = { AmountText(f.money(t.amountMinor)) })
+                        phase = t.amountMinor % 7 * 0.9f)
                 }
             }
             if (report.places.isNotEmpty()) {
                 item { Section(stringResource(R.string.repeated_most)) }
+                val largest = report.places.first().totalMinor.toFloat()
                 items(report.places, key = { "p-" + it.name }) { p ->
-                    ListRow(p.name, context = stringResource(R.string.times, p.count), end = { AmountText(f.money(p.totalMinor)) })
+                    LiquidBarRow(p.name, f.money(p.totalMinor), p.totalMinor / largest, context = stringResource(R.string.times, p.count),
+                        phase = p.count * 1.3f)
                 }
             }
             if (trends.isNotEmpty()) {
                 item { Section(stringResource(R.string.against_usual)) }
+                val largest = trends.maxOf { maxOf(it.currentMinor, it.averageMinor) }.toFloat()
                 items(trends, key = { "t-" + it.categoryId }) { t ->
                     val up = t.currentMinor > t.averageMinor
-                    ListRow(view.categoryName(t.categoryId) ?: stringResource(R.string.uncategorized),
-                        context = stringResource(R.string.usually, f.money(t.averageMinor)),
-                        detail = stringResource(if (up) R.string.percent_more else R.string.percent_less, abs(t.change * 100).roundToInt()),
-                        detailColor = if (up) c.moneyOut else c.moneyIn,
-                        end = { AmountText(f.money(t.currentMinor)) })
+                    LiquidBarRow(view.categoryName(t.categoryId) ?: uncategorized, f.money(t.currentMinor), t.currentMinor / largest,
+                        context = stringResource(R.string.usually, f.money(t.averageMinor)) + " · " +
+                            stringResource(if (up) R.string.percent_more else R.string.percent_less, abs(t.change * 100).roundToInt()),
+                        phase = t.currentMinor % 5 * 1.1f)
                 }
             }
             // In one shared pot who paid what is nobody's business but the pot's.
             if (byMember.size > 1 && !io.github.sirallap.fulla.core.split.SharedPot.isShared(view.config.household)) {
                 item { Section(stringResource(R.string.who_paid_period)) }
+                val largest = byMember.maxOf { it.paidMinor }.coerceAtLeast(1).toFloat()
                 items(byMember, key = { "m-" + it.memberId }) { m ->
                     val member = view.config.member(m.memberId)
-                    ListRow(member?.displayName ?: "?", start = { MemberBadge(member?.initials ?: "?", member?.colorIndex ?: 0) },
-                        context = stringResource(R.string.their_share, f.money(m.shareMinor)),
-                        end = { AmountText(f.money(m.paidMinor)) })
+                    LiquidBarRow(member?.displayName ?: "?", f.money(m.paidMinor), m.paidMinor / largest,
+                        context = stringResource(R.string.their_share, f.money(m.shareMinor)))
                 }
             }
             for (field in dimensions) {
-                val totals = a.groupBy(view.active, period, field.key).filterKeys { it.isNotEmpty() }.filterValues { it != 0L }
+                val totals = a.groupBy(view.active, period, field.key).filterKeys { it.isNotEmpty() }.filterValues { it > 0L }
                 if (totals.isEmpty()) continue
                 item(key = "d-" + field.key) {
                     Section(field.label(language))
+                    val largest = totals.values.max().toFloat()
                     for ((value, amount) in totals.entries.sortedByDescending { it.value }) {
-                        ListRow(fieldText(view, field, if (field.type == io.github.sirallap.fulla.core.schema.FieldType.BOOLEAN) value.toBooleanStrictOrNull() else value) ?: value,
-                            end = { AmountText(f.money(amount)) })
+                        LiquidBarRow(fieldText(view, field, if (field.type == io.github.sirallap.fulla.core.schema.FieldType.BOOLEAN) value.toBooleanStrictOrNull() else value) ?: value,
+                            f.money(amount), amount / largest)
                     }
                 }
+            }
+            if (series.size > 1) item(key = "series") {
+                val shown = series.take(6).reversed()
+                val max = shown.maxOf { it.expenseMinor }.coerceAtLeast(1).toFloat()
+                Section(stringResource(R.string.period_by_period))
+                SpendingVials(shown.map { s ->
+                    Vial(f.shortPeriod(s.period), null, level = s.expenseMinor.coerceAtLeast(0) / max, share = 0f,
+                        description = f.period(s.period) + ", " + stringResource(R.string.in_out, f.money(s.incomeMinor), f.money(s.expenseMinor)),
+                        top = f.whole(s.expenseMinor))
+                })
+                for (s in series.take(6)) {
+                    ListRow(f.period(s.period),
+                        context = stringResource(R.string.in_out, f.money(s.incomeMinor), f.money(s.expenseMinor)),
+                        end = { AmountText(f.money(s.savingsMinor, signed = true), color = if (s.savingsMinor < 0) c.moneyOut else c.moneyIn) })
+                }
+            } else if (series.size == 1) item(key = "series") {
+                val s = series.first()
+                Section(stringResource(R.string.period_by_period))
+                ListRow(f.period(s.period), context = stringResource(R.string.in_out, f.money(s.incomeMinor), f.money(s.expenseMinor)),
+                    end = { AmountText(f.money(s.savingsMinor, signed = true), color = if (s.savingsMinor < 0) c.moneyOut else c.moneyIn) })
             }
             if (repeating.isNotEmpty()) {
                 item { Section(stringResource(R.string.looks_recurring)) }
@@ -215,20 +203,76 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
                         end = { AmountText(f.money(r.typicalMinor)) })
                 }
             }
-            if (series.isNotEmpty()) {
-                item { Section(stringResource(R.string.period_by_period)) }
-                items(series, key = { "s-" + it.period }) { s ->
-                    ListRow(f.period(s.period),
-                        context = stringResource(R.string.in_out, f.money(s.incomeMinor), f.money(s.expenseMinor)),
-                        below = if (s.incomeMinor > 0) ({
-                            ProgressLine(s.expenseMinor.toFloat() / s.incomeMinor, c.moneyOut, over = s.expenseMinor > s.incomeMinor)
-                        }) else null,
-                        end = { AmountText(f.money(s.savingsMinor, signed = true), color = if (s.savingsMinor < 0) c.moneyOut else c.moneyIn) })
-                }
-            }
         }
     }
 }
 
 private fun Int.dp() = androidx.compose.ui.unit.Dp(toFloat())
 
+/**
+ * The period in figures, two glass tiles to a row, each filled with the jar's
+ * liquid to what it measures: spent out of what came in, the part kept, how
+ * far through the period, where it is heading, the fixed share, the days
+ * without spending, the budgets over. A tile with nothing to say is left out.
+ */
+@Composable
+private fun FigureTiles(
+    view: HouseholdView,
+    period: java.time.YearMonth,
+    report: io.github.sirallap.fulla.core.analytics.PeriodReport,
+    projection: io.github.sirallap.fulla.core.analytics.Projection?,
+    noSpend: Int,
+) {
+    val c = FullaTheme.colors
+    val f = view.formats
+    val range = f.periodRule.daysOf(period)
+    val length = (java.time.temporal.ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt().coerceAtLeast(1)
+    val tiles = mutableListOf<@Composable (Modifier) -> Unit>()
+
+    val previous = report.previousSpentMinor
+    val vsPrevious = when {
+        previous == null || previous <= 0 -> null
+        report.spentMinor == previous -> stringResource(R.string.vs_previous_same)
+        else -> stringResource(if (report.spentMinor > previous) R.string.vs_previous_more else R.string.vs_previous_less,
+            abs((report.spentMinor - previous) * 100.0 / previous).roundToInt())
+    }
+    tiles.add { m -> LiquidTile(stringResource(R.string.spent), f.money(report.spentMinor), m, context = vsPrevious,
+        level = if (report.incomeMinor > 0) report.spentMinor.toFloat() / report.incomeMinor else null, phase = 0.2f) }
+    report.savingsRate?.let { rate ->
+        tiles.add { m -> LiquidTile(stringResource(R.string.savings), "${(rate * 100).roundToInt()} %", m,
+            context = stringResource(R.string.of_income, f.money(report.incomeMinor)), level = rate.toFloat().coerceIn(0f, 1f),
+            tone = LiquidTone.IN, valueColor = if (rate < 0) c.moneyOut else c.moneyIn, phase = 1.4f) }
+    }
+    if (report.days > 0) {
+        tiles.add { m -> LiquidTile(stringResource(R.string.daily_average), f.money(report.dailyMinor), m,
+            context = stringResource(R.string.day_of, report.days, length), level = report.days.toFloat() / length, phase = 2.1f) }
+    }
+    projection?.let { p ->
+        tiles.add { m -> LiquidTile(stringResource(R.string.forecast), f.money(p.projectedMinor), m, context = stringResource(R.string.forecast_text),
+            level = if (p.projectedMinor > 0) p.spentSoFarMinor.toFloat() / p.projectedMinor else null, phase = 2.9f) }
+    }
+    if (report.count > 0) {
+        tiles.add { m -> LiquidTile(stringResource(R.string.movements), "${report.count}", m,
+            context = stringResource(R.string.movements_text, f.money(report.averageMinor))) }
+    }
+    val both = report.fixedMinor + report.variableMinor
+    if (both > 0) {
+        tiles.add { m -> LiquidTile(stringResource(R.string.fixed_variable), "${(report.fixedMinor * 100.0 / both).roundToInt()} %", m,
+            context = stringResource(R.string.fixed_variable_text, f.money(report.fixedMinor), f.money(report.variableMinor)),
+            level = report.fixedMinor.toFloat() / both, phase = 3.6f) }
+    }
+    if (report.days > 0) {
+        tiles.add { m -> LiquidTile(stringResource(R.string.no_spend_days), "$noSpend", m,
+            context = stringResource(R.string.of_days, report.days), level = noSpend.toFloat() / report.days, tone = LiquidTone.IN, phase = 4.4f) }
+    }
+    if (report.budgets > 0) {
+        tiles.add { m -> LiquidTile(stringResource(R.string.budgets_over), stringResource(R.string.budgets_over_value, report.budgetsOver, report.budgets), m,
+            level = report.budgetsOver.toFloat() / report.budgets, valueColor = if (report.budgetsOver > 0) c.moneyOut else Color.Unspecified, phase = 5.2f) }
+    }
+    for (pair in tiles.chunked(2)) {
+        TileRow {
+            for (tile in pair) tile(Modifier.weight(1f))
+            if (pair.size == 1) androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+        }
+    }
+}

@@ -39,7 +39,17 @@ import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlin.math.roundToInt
 
 /** One vial: what it is, how full (0..1 of the fullest), its share of the whole, and what a screen reader says. */
-data class Vial(val label: String, val icon: ImageVector?, val level: Float, val share: Float, val description: String)
+data class Vial(
+    val label: String,
+    val icon: ImageVector?,
+    val level: Float,
+    val share: Float,
+    val description: String,
+    /** What is written above the vial; its share by default. */
+    val top: String? = null,
+    /** Drawn in the income liquid rather than the spending one. */
+    val income: Boolean = false,
+)
 
 /**
  * Where the spending went, as a row of vials filled with the jar's spending
@@ -61,7 +71,7 @@ fun SpendingVials(vials: List<Vial>, modifier: Modifier = Modifier) {
         vials.forEachIndexed { index, v ->
             Column(Modifier.weight(1f).clearAndSetSemantics { contentDescription = v.description },
                 horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("${(v.share * 100).roundToInt()} %", style = FullaType.label, color = c.ink, maxLines = 1)
+                Text(v.top ?: "${(v.share * 100).roundToInt()} %", style = FullaType.label, color = c.ink, maxLines = 1)
                 Spacer(Modifier.height(6.dp))
                 Canvas(Modifier.fillMaxWidth().height(132.dp)) {
                     val w = minOf(size.width * 0.72f, 44.dp.toPx())
@@ -82,7 +92,8 @@ fun SpendingVials(vials: List<Vial>, modifier: Modifier = Modifier) {
                             lineTo(left + w, bottom)
                             close()
                         }
-                        drawPath(liquid, Brush.verticalGradient(listOf(c.outSurface, c.outBody), startY = minOf(level, bottom - 1f), endY = bottom))
+                        val colors = if (v.income) listOf(c.inSurface, c.inBody) else listOf(c.outSurface, c.outBody)
+                        drawPath(liquid, Brush.verticalGradient(colors, startY = minOf(level, bottom - 1f), endY = bottom))
                     }
                     drawPath(outline, c.inkMuted.copy(alpha = 0.35f), style = Stroke(1.5.dp.toPx()))
                 }

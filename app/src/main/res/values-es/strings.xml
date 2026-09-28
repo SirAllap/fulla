@@ -589,4 +589,7 @@
     <string name="biggest_expenses">Los gastos más grandes</string>
     <string name="repeated_most">Lo que más repites</string>
     <string name="times">%1$d veces</string>
+    <string name="savings">Ahorro</string>
+    <string name="of_income">De %1$s que entraron</string>
+    <string name="of_days">De %1$d días</string>
 </resources>

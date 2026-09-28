@@ -29,6 +29,20 @@ class Formats(
     private val longDate = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale)
 
     fun money(minor: Long, signed: Boolean = false): String = money.format(minor, signed)
+
+    /** An amount rounded to whole units, for a label with little room ("3.469 €"). */
+    fun whole(minor: Long): String {
+        val format = java.text.NumberFormat.getCurrencyInstance(locale)
+        runCatching { format.currency = java.util.Currency.getInstance(currency.code) }
+        format.maximumFractionDigits = 0
+        format.minimumFractionDigits = 0
+        val divisor = (0 until currency.minorUnits).fold(1.0) { acc, _ -> acc * 10 }
+        return format.format(kotlin.math.round(minor / divisor))
+    }
+
+    /** A period's short name, for a label with little room ("Sept"). */
+    fun shortPeriod(p: YearMonth): String =
+        p.month.getDisplayName(TextStyle.SHORT_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }.trimEnd('.')
     fun plain(minor: Long): String = money.formatPlain(minor)
 
     fun period(p: YearMonth): String {
