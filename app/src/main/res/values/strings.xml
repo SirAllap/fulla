@@ -90,9 +90,12 @@
     <string name="income_shift_day">Early pay counts next period</string>
     <string name="income_shift_day_help">Fixed income from this day on counts in the next period.</string>
     <string name="income_shift_day_value">From day %1$d</string>
-    <string name="salary_period">Periods start with the salary</string>
-    <string name="salary_period_help">Each income in this category starts a period, whatever day it comes in. Until the next one, the period stays open.</string>
-    <string name="salary_period_choose">Which income starts a period?</string>
+    <string name="starts_month">Starts the month</string>
+    <string name="starts_month_help">This income opens a new period on its day. Turn it on for your salary.</string>
+    <string name="salary_question">Is this your salary?</string>
+    <string name="salary_question_yes">Yes, it starts the month</string>
+    <string name="salary_question_no">No</string>
+    <string name="period_open_from">From %1$s · open</string>
     <string name="salary_overdue">Paid yet?</string>
     <string name="salary_overdue_text">%1$d days since the last salary. The period stays open until you add the next one.</string>
     <string name="salary_generated_note">Added automatically. Save it when it comes in, with its real date, and the period starts that day.</string>
@@ -163,7 +166,7 @@
     <string name="paused">Paused</string>
     <string name="pays">%1$s pays %2$s</string>
     <string name="period_start_day">Periods start on</string>
-    <string name="period_start_day_help">Payday, if you count months from it.</string>
+    <string name="period_start_day_help">Payday, if you count months from it. An income marked “Starts the month” moves it.</string>
     <string name="period_start_day_value">Day %1$d</string>
     <string name="previous_period">Previous period</string>
     <string name="privacy">Privacy</string>

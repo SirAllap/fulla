@@ -42,7 +42,7 @@ object CsvExport {
                 t.date.toString(), t.kind.key, amount(t.amountMinor), currency.code,
                 config.category(t.categoryId)?.name ?: "", config.account(t.accountId)?.name ?: "",
                 config.account(t.toAccountId)?.name ?: "", member(t.paidByMemberId), member(t.toMemberId),
-                split(t.split), t.recurrence.key, t.note, t.tags.joinToString(", "), t.status.key,
+                split(t.split), t.recurrence.key, t.note, io.github.sirallap.fulla.core.rules.PeriodAnchors.visibleTags(t.tags).joinToString(", "), t.status.key,
                 if (t.extras.isEmpty()) "" else kotlinx.serialization.json.JsonObject(t.extras.mapValues { Wire.element(it.value) }).toString(),
                 t.id, t.createdAt, t.clientUpdatedAt, config.trip(t.tripId)?.name ?: "",
             )

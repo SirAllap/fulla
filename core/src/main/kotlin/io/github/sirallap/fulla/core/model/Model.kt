@@ -143,8 +143,6 @@ data class Category(
     val colorIndex: Int = 0,
     val sort: Int = 0,
     val archived: Boolean = false,
-    /** The household's salary: each income in it starts a period (rules.PeriodRule). At most one per household. */
-    val startsPeriod: Boolean = false,
 )
 
 data class Budget(

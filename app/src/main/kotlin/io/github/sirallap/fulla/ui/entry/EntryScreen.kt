@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.entry
 
+import io.github.sirallap.fulla.core.rules.PeriodAnchors
 import androidx.compose.foundation.layout.width
 import io.github.sirallap.fulla.ui.components.yields
 import androidx.compose.ui.graphics.graphicsLayer
@@ -143,6 +144,13 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
     var fixed by mutableStateOf(existing?.recurrence == Recurrence.FIXED)
     var extras by mutableStateOf<Map<String, Any?>>(existing?.extras ?: emptyMap())
     val template: Transaction? = existing
+    /** The salary that started the last period: an income like it is proposed as the next one. */
+    private val latestSalary = PeriodAnchors.latest(view.active)
+    /** Set once the person flips "starts the month"; until then it follows the row, or the proposal. */
+    var startsMonthChoice by mutableStateOf<Boolean?>(null)
+    val startsMonth: Boolean get() = startsMonthChoice ?: template?.let(PeriodAnchors::marked)
+        ?: PeriodAnchors.looksLikeSalary(Transaction(id = id, kind = kind, date = date, amountMinor = 0, categoryId = categoryId,
+            accountId = accountId, createdAt = "", clientUpdatedAt = ""), latestSalary)
 
     fun build(): Transaction {
         val splits = kind == TransactionKind.EXPENSE || kind == TransactionKind.REFUND
@@ -164,7 +172,7 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
             recurrence = if (fixed) Recurrence.FIXED else Recurrence.VARIABLE,
             note = note.trim(),
             extras = extras,
-        )
+        ).let { PeriodAnchors.mark(it, kind == TransactionKind.INCOME && startsMonth) }
     }
 }
 
@@ -268,12 +276,15 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
                     onPick = { draft.categoryId = it; problem = null }, onMore = { allCategories = !allCategories })
             }
             DetailsLine(view, draft) { detailsOpen = true }
-            // A salary a recurring item wrote on its own starts no period until somebody saves it.
-            val salaryId = view.config.categories.firstOrNull { it.startsPeriod && !it.archived }?.id
-            if (existing != null && salaryId != null && existing.kind == TransactionKind.INCOME && existing.categoryId == salaryId &&
-                !io.github.sirallap.fulla.core.rules.PeriodAnchors.confirmed(existing)) {
-                Text(stringResource(R.string.salary_generated_note), style = FullaType.secondary, color = c.inkMuted,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+            if (draft.kind == TransactionKind.INCOME) {
+                SwitchRow(stringResource(R.string.starts_month), stringResource(R.string.starts_month_help), draft.startsMonth) {
+                    draft.startsMonthChoice = it
+                }
+                // A salary a recurring item wrote on its own starts no period until somebody saves it.
+                if (existing != null && PeriodAnchors.marked(existing) && !PeriodAnchors.confirmed(existing)) {
+                    Text(stringResource(R.string.salary_generated_note), style = FullaType.secondary, color = c.inkMuted,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+                }
             }
             problem?.let { Text(it, style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) }
         }

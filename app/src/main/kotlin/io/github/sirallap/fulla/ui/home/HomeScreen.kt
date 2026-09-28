@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import io.github.sirallap.fulla.core.rules.PeriodAnchors
+import io.github.sirallap.fulla.ui.components.Chip
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Insights
@@ -97,6 +100,7 @@ fun HomeScreen(
             ?: view.config.trips.filter { !it.archived && it.startDate in today..today.plusDays(7) }.minByOrNull { it.startDate }
     }
     val homeTripTotals = remember(view, homeTrip) { homeTrip?.let { Trips.totals(it, view.active) } }
+    val notSalary by remember(view.id) { container.settings.notSalary(view.id) }.collectAsStateWithLifecycle(initialValue = emptySet())
     val lastBackup by remember(view.id) { container.settings.lastBackup(view.id) }.collectAsStateWithLifecycle(initialValue = -1L)
     // Only a phone-only household with something to lose, and not more than once a month.
     val backupDue = !view.state.connected && lastBackup != -1L && view.rows.size >= 20 &&
@@ -115,7 +119,8 @@ fun HomeScreen(
                 item {
                     PeriodSelector(f.period(period), { periodText = period.minusMonths(1).toString() },
                         { periodText = period.plusMonths(1).toString() }, canGoNext = period < current)
-                    f.periodRange(period)?.let {
+                    val openFrom = stringResource(R.string.period_open_from)
+                    f.periodRange(period) { openFrom.format(it) }?.let {
                         Text(it, style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     }
@@ -131,7 +136,25 @@ fun HomeScreen(
                         modifier = Modifier.guideTarget(TourStop.JAR).padding(horizontal = 8.dp, vertical = 8.dp),
                     )
                 }
-                val waiting = if (period == current) f.periodRule.daysWaitingForSalary(today) else null
+                // Most likely this month's salary, imported or written down without the mark.
+                val candidate = if (period == current) PeriodAnchors.unmarkedSalary(view.active, notSalary) else null
+                if (candidate != null) item {
+                    ListRow(stringResource(R.string.salary_question),
+                        context = listOf(candidate.note.ifBlank { view.categoryName(candidate.categoryId) ?: "" }, f.money(candidate.amountMinor), f.day(candidate.date))
+                            .filter { it.isNotBlank() }.joinToString(" · "),
+                        icon = Icons.Outlined.Payments, iconTint = c.moneyIn,
+                        below = {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
+                                Chip(stringResource(R.string.salary_question_yes), selected = true, onClick = {
+                                    scope.launch { container.ledger.save(view.id, PeriodAnchors.mark(candidate, true)) }
+                                })
+                                Chip(stringResource(R.string.salary_question_no), selected = false, onClick = {
+                                    scope.launch { container.settings.addNotSalary(view.id, candidate.id) }
+                                })
+                            }
+                        })
+                }
+                val waiting = if (period == current && candidate == null) f.periodRule.daysWaitingForSalary(today) else null
                 if (waiting != null) item {
                     ListRow(stringResource(R.string.salary_overdue), context = stringResource(R.string.salary_overdue_text, waiting),
                         icon = Icons.Outlined.Payments, iconTint = c.warning)

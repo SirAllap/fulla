@@ -89,9 +89,12 @@
     <string name="income_shift_day">Salário antecipado conta no período seguinte</string>
     <string name="income_shift_day_help">Receitas fixas a partir deste dia contam no período seguinte.</string>
     <string name="income_shift_day_value">A partir do dia %1$d</string>
-    <string name="salary_period">Os períodos começam com o salário</string>
-    <string name="salary_period_help">Cada receita desta categoria abre um período, seja qual for o dia em que chega. Até a próxima, o período fica aberto.</string>
-    <string name="salary_period_choose">Qual receita abre um período?</string>
+    <string name="starts_month">Começa o mês</string>
+    <string name="starts_month_help">Esta receita abre um novo período no dia em que entra. Ative para o seu salário.</string>
+    <string name="salary_question">É o seu salário?</string>
+    <string name="salary_question_yes">Sim, começa o mês</string>
+    <string name="salary_question_no">Não</string>
+    <string name="period_open_from">Desde %1$s · aberto</string>
     <string name="salary_overdue">Já recebeu?</string>
     <string name="salary_overdue_text">%1$d dias desde o último salário. O período fica aberto até você registrar o próximo.</string>
     <string name="salary_generated_note">Registrado automaticamente. Salve com a data real quando entrar, e o período começa nesse dia.</string>
@@ -162,7 +165,7 @@
     <string name="paused">Pausado</string>
     <string name="pays">%1$s paga %2$s</string>
     <string name="period_start_day">Os períodos começam no dia</string>
-    <string name="period_start_day_help">O dia do pagamento, se você conta os meses a partir dele.</string>
+    <string name="period_start_day_help">O dia do pagamento, se você conta os meses a partir dele. Uma receita marcada “Começa o mês” o move.</string>
     <string name="period_start_day_value">Dia %1$d</string>
     <string name="previous_period">Período anterior</string>
     <string name="privacy">Privacidade</string>

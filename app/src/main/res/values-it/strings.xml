@@ -89,9 +89,12 @@
     <string name="income_shift_day">Lo stipendio anticipato conta nel periodo dopo</string>
     <string name="income_shift_day_help">Le entrate fisse da questo giorno contano nel periodo successivo.</string>
     <string name="income_shift_day_value">Dal giorno %1$d</string>
-    <string name="salary_period">I periodi iniziano con lo stipendio</string>
-    <string name="salary_period_help">Ogni entrata di questa categoria apre un periodo, qualunque giorno arrivi. Fino alla successiva, il periodo resta aperto.</string>
-    <string name="salary_period_choose">Quale entrata apre un periodo?</string>
+    <string name="starts_month">Inizia il mese</string>
+    <string name="starts_month_help">Questa entrata apre un nuovo periodo il giorno in cui arriva. Attivalo per il tuo stipendio.</string>
+    <string name="salary_question">È il tuo stipendio?</string>
+    <string name="salary_question_yes">Sì, inizia il mese</string>
+    <string name="salary_question_no">No</string>
+    <string name="period_open_from">Da %1$s · aperto</string>
     <string name="salary_overdue">Stipendio arrivato?</string>
     <string name="salary_overdue_text">%1$d giorni dall’ultimo stipendio. Il periodo resta aperto finché non aggiungi il prossimo.</string>
     <string name="salary_generated_note">Aggiunto automaticamente. Salvalo con la data reale quando arriva e il periodo inizierà quel giorno.</string>
@@ -162,7 +165,7 @@
     <string name="paused">In pausa</string>
     <string name="pays">%1$s paga %2$s</string>
     <string name="period_start_day">I periodi iniziano il</string>
-    <string name="period_start_day_help">Il giorno di paga, se conti i mesi da lì.</string>
+    <string name="period_start_day_help">Il giorno di paga, se conti i mesi da lì. Un’entrata segnata «Inizia il mese» lo sposta.</string>
     <string name="period_start_day_value">Giorno %1$d</string>
     <string name="previous_period">Periodo precedente</string>
     <string name="privacy">Privacy</string>

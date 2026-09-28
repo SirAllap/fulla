@@ -259,7 +259,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
                 "paid_by" -> listOf(t.paidByMemberId ?: "")
                 "account" -> listOf(t.accountId ?: "")
                 "recurrence" -> listOf(t.recurrence.key)
-                "tag" -> t.tags.ifEmpty { listOf("") }
+                "tag" -> io.github.sirallap.fulla.core.rules.PeriodAnchors.visibleTags(t.tags).ifEmpty { listOf("") }
                 else -> when (val v = t.extras[dimension]) {
                     is List<*> -> v.map { it.toString() }.ifEmpty { listOf("") }
                     null -> listOf("")

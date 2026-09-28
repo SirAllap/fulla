@@ -89,9 +89,12 @@
     <string name="income_shift_day">Frühes Gehalt zählt im nächsten Zeitraum</string>
     <string name="income_shift_day_help">Feste Einnahmen ab diesem Tag zählen im folgenden Zeitraum.</string>
     <string name="income_shift_day_value">Ab dem %1$d.</string>
-    <string name="salary_period">Zeiträume beginnen mit dem Gehalt</string>
-    <string name="salary_period_help">Jede Einnahme dieser Kategorie beginnt einen Zeitraum, egal an welchem Tag sie kommt. Bis zur nächsten bleibt der Zeitraum offen.</string>
-    <string name="salary_period_choose">Welche Einnahme beginnt einen Zeitraum?</string>
+    <string name="starts_month">Beginnt den Monat</string>
+    <string name="starts_month_help">Diese Einnahme beginnt an ihrem Tag einen neuen Zeitraum. Schalte es für dein Gehalt ein.</string>
+    <string name="salary_question">Ist das dein Gehalt?</string>
+    <string name="salary_question_yes">Ja, beginnt den Monat</string>
+    <string name="salary_question_no">Nein</string>
+    <string name="period_open_from">Ab %1$s · offen</string>
     <string name="salary_overdue">Schon Gehalt bekommen?</string>
     <string name="salary_overdue_text">%1$d Tage seit dem letzten Gehalt. Der Zeitraum bleibt offen, bis du das nächste einträgst.</string>
     <string name="salary_generated_note">Automatisch eingetragen. Speichere es mit dem echten Datum, wenn es eingeht, dann beginnt der Zeitraum an diesem Tag.</string>
@@ -162,7 +165,7 @@
     <string name="paused">Pausiert</string>
     <string name="pays">%1$s zahlt %2$s</string>
     <string name="period_start_day">Zeiträume beginnen am</string>
-    <string name="period_start_day_help">Am Zahltag, wenn du Monate ab dann zählst.</string>
+    <string name="period_start_day_help">Zahltag, wenn du die Monate ab ihm zählst. Eine Einnahme mit „Beginnt den Monat“ verschiebt ihn.</string>
     <string name="period_start_day_value">%1$d.</string>
     <string name="previous_period">Vorheriger Zeitraum</string>
     <string name="privacy">Datenschutz</string>

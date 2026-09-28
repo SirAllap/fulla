@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.sirallap.fulla.client.remote.Endpoint
 import io.github.sirallap.fulla.client.remote.Update
@@ -175,6 +176,14 @@ class SettingsStore(context: Context) {
 
     suspend fun setLastBackup(householdId: String, at: Long) {
         store.edit { it[longPreferencesKey("backup_at_$householdId")] = at }
+    }
+
+    /** Incomes of [householdId] the person said are not the salary that starts the month. */
+    fun notSalary(householdId: String): Flow<Set<String>> =
+        store.data.map { it[stringSetPreferencesKey("not_salary_$householdId")] ?: emptySet() }
+
+    suspend fun addNotSalary(householdId: String, transactionId: String) {
+        store.edit { it[stringSetPreferencesKey("not_salary_$householdId")] = (it[stringSetPreferencesKey("not_salary_$householdId")] ?: emptySet()) + transactionId }
     }
 
     /** A random id for this installation: the push's `client_id`. Not tied to the device or the person. */

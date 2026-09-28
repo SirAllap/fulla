@@ -36,10 +36,15 @@ class Formats(
         return if (p.year == YearMonth.now().year) month else "$month ${p.year}"
     }
 
-    /** The period's dates, when it does not start on the 1st. */
-    fun periodRange(p: YearMonth): String? {
+    /**
+     * The period's dates, when it does not start on the 1st. The one still
+     * waiting for its salary has no end yet: [openFrom] writes it, given its
+     * first day (a string resource, "from %1$s · open").
+     */
+    fun periodRange(p: YearMonth, openFrom: (String) -> String = { it }): String? {
         if (config.household.periodStartDay == 1 && !periodRule.anchored) return null
         val days = periodRule.daysOf(p)
+        if (periodRule.isOpen(p)) return openFrom(dayFormat.format(days.start))
         return "${dayFormat.format(days.start)} – ${dayFormat.format(days.endInclusive)}"
     }
 

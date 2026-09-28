@@ -89,9 +89,12 @@
     <string name="income_shift_day">El cobro adelantado cuenta en el siguiente</string>
     <string name="income_shift_day_help">Los ingresos fijos desde este día cuentan en el periodo siguiente.</string>
     <string name="income_shift_day_value">Desde el día %1$d</string>
-    <string name="salary_period">El periodo empieza con la nómina</string>
-    <string name="salary_period_help">Cada ingreso de esta categoría abre un periodo, llegue el día que llegue. Hasta el siguiente, el periodo sigue abierto.</string>
-    <string name="salary_period_choose">¿Qué ingreso abre el periodo?</string>
+    <string name="starts_month">Empieza el mes</string>
+    <string name="starts_month_help">Este ingreso abre un periodo nuevo el día que entra. Actívalo en tu nómina.</string>
+    <string name="salary_question">¿Es tu nómina?</string>
+    <string name="salary_question_yes">Sí, empieza el mes</string>
+    <string name="salary_question_no">No</string>
+    <string name="period_open_from">Desde %1$s · abierto</string>
     <string name="salary_overdue">¿Ya cobraste?</string>
     <string name="salary_overdue_text">Han pasado %1$d días desde la última nómina. El periodo sigue abierto hasta que anotes la siguiente.</string>
     <string name="salary_generated_note">Anotado automáticamente. Guárdalo cuando entre, con su fecha real, y el periodo empezará ese día.</string>
@@ -162,7 +165,7 @@
     <string name="paused">En pausa</string>
     <string name="pays">%1$s paga a %2$s</string>
     <string name="period_start_day">Los periodos empiezan el</string>
-    <string name="period_start_day_help">El día de cobro, si cuentas los meses desde él.</string>
+    <string name="period_start_day_help">El día de cobro, si cuentas los meses desde él. Un ingreso marcado «Empieza el mes» lo mueve.</string>
     <string name="period_start_day_value">Día %1$d</string>
     <string name="previous_period">Periodo anterior</string>
     <string name="privacy">Privacidad</string>

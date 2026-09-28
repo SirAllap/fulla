@@ -129,28 +129,6 @@ object LocalHousehold {
         return bump(JsonObject(bundle + ("household" to merged)))
     }
 
-    /**
-     * Chooses the salary category, or none (null), as
-     * fulla_household_set_salary_category does: at most one category has
-     * `starts_period`.
-     */
-    fun setSalaryCategory(bundle: JsonObject, categoryId: String?): JsonObject {
-        val list = (bundle["categories"] as? JsonArray).orEmpty().map { it as JsonObject }
-        if (categoryId != null) {
-            val chosen = list.firstOrNull { it.text("id") == categoryId }
-            require(chosen != null && chosen.text("applies_to") != "expense" && (chosen["archived"] as? JsonPrimitive)?.contentOrNull != "true") {
-                "The salary must be an income category of this household."
-            }
-        }
-        val next = list.map { JsonObject(it + ("starts_period" to JsonPrimitive(it.text("id") == categoryId))) }
-        return bump(JsonObject(bundle + ("categories" to JsonArray(next))))
-    }
-
-    /** The salary category a bundle has chosen, if any. */
-    fun salaryCategory(bundle: JsonObject): String? =
-        (bundle["categories"] as? JsonArray).orEmpty().map { it as JsonObject }
-            .firstOrNull { (it["starts_period"] as? JsonPrimitive)?.contentOrNull == "true" }?.text("id")
-
     fun upsertMember(bundle: JsonObject, member: JsonObject): JsonObject {
         val list = (bundle["members"] as? JsonArray).orEmpty()
         val id = member.text("id")
