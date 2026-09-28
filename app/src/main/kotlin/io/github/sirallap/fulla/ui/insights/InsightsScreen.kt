@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.sirallap.fulla.R
@@ -30,9 +32,10 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * The longer view, in plain rows: how each period went, what moved against
- * the usual, what looks like it repeats, and who paid. Deliberately no
- * charts: the jar on the overview is the one picture.
+ * The longer view of one period, any period: where the money went (vials of
+ * the jar's liquid), how the period went in figures, which weekday the
+ * everyday money goes, the largest expenses, what is bought again and again,
+ * what moved against the usual, who paid, and how each period compares.
  */
 @Composable
 fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
@@ -40,14 +43,18 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
     val f = view.formats
     val a = view.analytics
     val today = LocalDate.now()
-    val period = remember(view) { f.currentPeriod(today) }
-    val series = remember(view) { a.series(view.active, period, 12).reversed().filter { it.incomeMinor != 0L || it.expenseMinor != 0L } }
+    val current = remember(view) { f.currentPeriod(today) }
+    var periodText by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(current.toString()) }
+    val period = java.time.YearMonth.parse(periodText)
+    val report = remember(view, period) { a.report(view.active, period, today, view.config.trips) }
+    val projection = remember(view, period) { if (period == current) a.projection(view.active, period, today) else null }
+    val series = remember(view, period) { a.series(view.active, period, 12).reversed().filter { it.incomeMinor != 0L || it.expenseMinor != 0L } }
     val unit = remember(view) { (0 until f.currency.minorUnits).fold(1L) { acc, _ -> acc * 10 } }
-    val trends = remember(view) { a.trends(view.active, period, minimumMinor = 10 * unit) }
+    val trends = remember(view, period) { a.trends(view.active, period, minimumMinor = 10 * unit) }
     val repeating = remember(view) { a.detectedRecurring(view.active, today) }
-    val byMember = remember(view) { a.byMember(view.active, period).filter { it.paidMinor != 0L || it.shareMinor != 0L } }
-    val noSpend = remember(view) { a.noSpendDays(view.active, period, today) }
-    val top = remember(view) { a.topCategories(view.active, period) }
+    val byMember = remember(view, period) { a.byMember(view.active, period).filter { it.paidMinor != 0L || it.shareMinor != 0L } }
+    val noSpend = remember(view, period) { a.noSpendDays(view.active, period, today) }
+    val top = remember(view, period) { a.topCategories(view.active, period) }
     val others = stringResource(R.string.other_categories)
     val uncategorized = stringResource(R.string.uncategorized)
     val dimensions = remember(view) { SchemaEngine.dimensions(view.config.fields) }
@@ -79,6 +86,8 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
 
     Column(Modifier.fillMaxSize()) {
         BackHeader(stringResource(R.string.insights), onBack)
+        io.github.sirallap.fulla.ui.components.PeriodSelector(f.period(period), { periodText = period.minusMonths(1).toString() },
+            { periodText = period.plusMonths(1).toString() }, canGoNext = period < current)
         LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding()) {
             if (top.isNotEmpty()) item(key = "vials") {
                 val total = top.sumOf { it.amountMinor }.toFloat()
@@ -91,10 +100,76 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
                         level = s.amountMinor / max, share = s.amountMinor / total, description = "$name, ${f.money(s.amountMinor)}")
                 })
             }
-            item {
-                Section(f.period(period), top = if (top.isEmpty()) 8.dp() else 24.dp())
-                ListRow(stringResource(R.string.no_spend_days), context = stringResource(R.string.no_spend_days_text),
-                    end = { AmountText("$noSpend", color = c.inkMuted) })
+            item(key = "summary") {
+                Section(stringResource(R.string.period_summary), top = if (top.isEmpty()) 8.dp() else 24.dp())
+                val previous = report.previousSpentMinor
+                ListRow(stringResource(R.string.spent), context = when {
+                    previous == null || previous <= 0 -> null
+                    report.spentMinor == previous -> stringResource(R.string.vs_previous_same)
+                    else -> {
+                        val change = abs((report.spentMinor - previous) * 100.0 / previous).roundToInt()
+                        stringResource(if (report.spentMinor > previous) R.string.vs_previous_more else R.string.vs_previous_less, change)
+                    }
+                }, end = { AmountText(f.money(report.spentMinor)) })
+                report.savingsRate?.let { rate ->
+                    val pct = abs(rate * 100).roundToInt()
+                    ListRow(stringResource(R.string.money_in), context = stringResource(if (rate >= 0) R.string.saving_rate else R.string.overspending_rate, pct),
+                        end = { AmountText(f.money(report.incomeMinor), color = c.moneyIn) })
+                }
+                if (report.days > 0) {
+                    ListRow(stringResource(R.string.daily_average), context = stringResource(R.string.daily_average_text, report.days),
+                        end = { AmountText(f.money(report.dailyMinor)) })
+                }
+                projection?.let { p ->
+                    ListRow(stringResource(R.string.forecast), context = stringResource(R.string.forecast_text),
+                        end = { AmountText(f.money(p.projectedMinor)) })
+                }
+                if (report.count > 0) {
+                    ListRow(stringResource(R.string.movements), context = stringResource(R.string.movements_text, f.money(report.averageMinor)),
+                        end = { AmountText("${report.count}", color = c.inkMuted) })
+                }
+                val both = report.fixedMinor + report.variableMinor
+                if (both > 0) {
+                    ListRow(stringResource(R.string.fixed_variable),
+                        context = stringResource(R.string.fixed_variable_text, f.money(report.fixedMinor), f.money(report.variableMinor)),
+                        below = { ProgressLine(report.fixedMinor.toFloat() / both, c.ink) },
+                        end = { AmountText("${(report.fixedMinor * 100.0 / both).roundToInt()} %", color = c.inkMuted) })
+                }
+                if (report.budgets > 0) {
+                    ListRow(stringResource(R.string.budgets_over),
+                        end = { AmountText(stringResource(R.string.budgets_over_value, report.budgetsOver, report.budgets),
+                            color = if (report.budgetsOver > 0) c.moneyOut else c.inkMuted) })
+                }
+                if (report.days > 0) {
+                    ListRow(stringResource(R.string.no_spend_days), context = stringResource(R.string.no_spend_days_text),
+                        end = { AmountText("$noSpend", color = c.inkMuted) })
+                }
+            }
+            if (report.weekdays.any { it > 0 }) item(key = "weekdays") {
+                val total = report.weekdays.filter { it > 0 }.sum().toFloat()
+                val max = report.weekdays.max().toFloat()
+                Section(stringResource(R.string.by_weekday))
+                SpendingVials(report.weekdays.mapIndexed { i, amount ->
+                    val day = java.time.DayOfWeek.of(i + 1).getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault())
+                        .replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                    val positive = amount.coerceAtLeast(0)
+                    Vial(day, null, level = positive / max, share = positive / total, description = "$day, ${f.money(amount)}")
+                })
+            }
+            if (report.biggest.isNotEmpty()) {
+                item { Section(stringResource(R.string.biggest_expenses)) }
+                items(report.biggest, key = { "b-" + it.id }) { t ->
+                    val category = view.categoryName(t.categoryId)
+                    ListRow(t.note.ifBlank { category ?: uncategorized },
+                        context = listOfNotNull(category.takeIf { t.note.isNotBlank() }, f.day(t.date)).joinToString(" · "),
+                        end = { AmountText(f.money(t.amountMinor)) })
+                }
+            }
+            if (report.places.isNotEmpty()) {
+                item { Section(stringResource(R.string.repeated_most)) }
+                items(report.places, key = { "p-" + it.name }) { p ->
+                    ListRow(p.name, context = stringResource(R.string.times, p.count), end = { AmountText(f.money(p.totalMinor)) })
+                }
             }
             if (trends.isNotEmpty()) {
                 item { Section(stringResource(R.string.against_usual)) }

@@ -618,4 +618,25 @@
     <string name="field_categories">Ask only in</string>
     <string name="field_categories_help">None chosen: asked in the details of every entry. Chosen: asked right under those categories, as one more level.</string>
     <string name="other_categories">Other</string>
+    <string name="period_summary">The period in figures</string>
+    <string name="spent">Spent</string>
+    <string name="vs_previous_more">%1$d %% more than the period before</string>
+    <string name="vs_previous_less">%1$d %% less than the period before</string>
+    <string name="vs_previous_same">The same as the period before</string>
+    <string name="saving_rate">You keep %1$d %% of it</string>
+    <string name="overspending_rate">You spent %1$d %% more than came in</string>
+    <string name="daily_average">Daily average</string>
+    <string name="daily_average_text">Over %1$d days</string>
+    <string name="forecast">By the end of the period</string>
+    <string name="forecast_text">At the pace so far, fixed costs included.</string>
+    <string name="movements">Expenses</string>
+    <string name="movements_text">%1$s on average</string>
+    <string name="fixed_variable">Fixed and variable</string>
+    <string name="fixed_variable_text">Fixed %1$s · variable %2$s</string>
+    <string name="budgets_over">Budgets over</string>
+    <string name="budgets_over_value">%1$d of %2$d</string>
+    <string name="by_weekday">Which day the everyday money goes</string>
+    <string name="biggest_expenses">The largest expenses</string>
+    <string name="repeated_most">What you buy again and again</string>
+    <string name="times">%1$d times</string>
 </resources>

@@ -54,6 +54,8 @@ fun SpendingVials(vials: List<Vial>, modifier: Modifier = Modifier) {
     val reduced = FullaMotion.reduced()
     val fill = remember(vials) { Animatable(if (reduced) 1f else 0f) }
     LaunchedEffect(vials) { fill.animateTo(1f, FullaMotion.liquid(reduced)) }
+    // A vial without an icon ("Other") keeps the icon's room, so every vial stands on the same line.
+    val icons = vials.any { it.icon != null }
     Row(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Bottom) {
         vials.forEachIndexed { index, v ->
@@ -85,7 +87,8 @@ fun SpendingVials(vials: List<Vial>, modifier: Modifier = Modifier) {
                     drawPath(outline, c.inkMuted.copy(alpha = 0.35f), style = Stroke(1.5.dp.toPx()))
                 }
                 Spacer(Modifier.height(6.dp))
-                v.icon?.let { Icon(it, null, tint = c.inkMuted, modifier = Modifier.size(18.dp)) }
+                if (v.icon != null) Icon(v.icon, null, tint = c.inkMuted, modifier = Modifier.size(18.dp))
+                else if (icons) Spacer(Modifier.size(18.dp))
                 Text(v.label, style = FullaType.label, color = c.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center)
             }

@@ -38,6 +38,40 @@ data class CategoryRow(
  */
 data class Slice(val key: String?, val amountMinor: Long)
 
+/** The same thing bought again and again, by its note: how often and how much in all. */
+data class Place(val name: String, val count: Int, val totalMinor: Long)
+
+/**
+ * Everything the insights screen says about one period. Amounts are
+ * spending (expenses less refunds) unless named otherwise.
+ */
+data class PeriodReport(
+    val spentMinor: Long,
+    /** The period before, or null when nothing was written down in it: no comparison to make. */
+    val previousSpentMinor: Long?,
+    val incomeMinor: Long,
+    /** Savings over income, null without income. */
+    val savingsRate: Double?,
+    /** Expenses written down (refunds aside). */
+    val count: Int,
+    /** Per expense, 0 without any. */
+    val averageMinor: Long,
+    /** Days of the period gone so far (all of them for a past period). */
+    val days: Int,
+    /** Spending over [days], 0 when none has gone by. */
+    val dailyMinor: Long,
+    val fixedMinor: Long,
+    val variableMinor: Long,
+    /** The largest expenses, largest first. */
+    val biggest: List<Transaction>,
+    /** Variable spending by weekday, Monday first: when the everyday money goes. */
+    val weekdays: List<Long>,
+    /** Notes seen at least twice, by total. */
+    val places: List<Place>,
+    val budgets: Int,
+    val budgetsOver: Int,
+)
+
 data class MemberSpending(val memberId: String, val paidMinor: Long, val shareMinor: Long)
 
 data class Projection(val spentSoFarMinor: Long, val projectedMinor: Long, val daysElapsed: Int, val daysInPeriod: Int)
@@ -262,6 +296,48 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val shown = rows.take(top).map { Slice(it.categoryId, it.amountMinor) }
         val rest = rows.drop(top).sumOf { it.amountMinor }
         return if (rest > 0) shown + Slice(null, rest) else shown
+    }
+
+    /** What the insights screen shows for [period], as of [today]. */
+    fun report(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate, trips: List<Trip> = emptyList(), top: Int = 5): PeriodReport {
+        val list = txs.toList()
+        val rows = counted(list, period)
+        val out = rows.filter { it.kind == TransactionKind.EXPENSE || it.kind == TransactionKind.REFUND }
+        val expenses = out.filter { it.kind == TransactionKind.EXPENSE }
+        val spent = out.sumOf { spend(it) }
+        val income = rows.filter { it.kind == TransactionKind.INCOME }.sumOf { it.amountMinor }
+        val previous = counted(list, period.minusMonths(1)).filter { it.kind != TransactionKind.INCOME }
+        val range = rule.daysOf(period)
+        val days = when {
+            today < range.start -> 0
+            today > range.endInclusive -> (ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt()
+            else -> (ChronoUnit.DAYS.between(range.start, today) + 1).toInt()
+        }
+        val weekdays = LongArray(7)
+        for (t in out) if (t.recurrence == Recurrence.VARIABLE) weekdays[t.date.dayOfWeek.value - 1] += spend(t)
+        val places = expenses.filter { it.note.isNotBlank() }.groupBy { it.note.normalizeName() }
+            .filter { (_, v) -> v.size >= 2 }
+            .map { (_, v) -> Place(v.maxBy { it.date }.note.trim(), v.size, v.sumOf { it.amountMinor }) }
+            .sortedByDescending { it.totalMinor }.take(top)
+        val limits = Budgets.forPeriod(config, period)
+        val used = budgetSpend(list, period, trips).associate { it.categoryId to it.amountMinor }
+        return PeriodReport(
+            spentMinor = spent,
+            previousSpentMinor = if (previous.isEmpty()) null else previous.sumOf { spend(it) },
+            incomeMinor = income,
+            savingsRate = if (income > 0) (income - spent).toDouble() / income else null,
+            count = expenses.size,
+            averageMinor = if (expenses.isEmpty()) 0 else expenses.sumOf { it.amountMinor } / expenses.size,
+            days = days,
+            dailyMinor = if (days > 0) spent / days else 0,
+            fixedMinor = out.filter { it.recurrence == Recurrence.FIXED }.sumOf { spend(it) },
+            variableMinor = out.filter { it.recurrence == Recurrence.VARIABLE }.sumOf { spend(it) },
+            biggest = expenses.sortedByDescending { it.amountMinor }.take(top),
+            weekdays = weekdays.toList(),
+            places = places,
+            budgets = limits.size,
+            budgetsOver = limits.count { (category, limit) -> (used[category] ?: 0) > limit },
+        )
     }
 
     /** Days in the period, up to [today], with no variable spending at all. */

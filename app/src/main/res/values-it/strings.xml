@@ -568,4 +568,25 @@
     <string name="field_categories">Chiedi solo in</string>
     <string name="field_categories_help">Nessuna: chiesto nei dettagli di ogni voce. Scelte: chiesto subito sotto quelle categorie, come un livello in più.</string>
     <string name="other_categories">Altro</string>
+    <string name="period_summary">Il periodo in cifre</string>
+    <string name="spent">Speso</string>
+    <string name="vs_previous_more">%1$d %% in più del periodo precedente</string>
+    <string name="vs_previous_less">%1$d %% in meno del periodo precedente</string>
+    <string name="vs_previous_same">Uguale al periodo precedente</string>
+    <string name="saving_rate">Ne tieni il %1$d %%</string>
+    <string name="overspending_rate">Hai speso il %1$d %% in più di quanto è entrato</string>
+    <string name="daily_average">Media giornaliera</string>
+    <string name="daily_average_text">Su %1$d giorni</string>
+    <string name="forecast">A fine periodo</string>
+    <string name="forecast_text">Al ritmo attuale, spese fisse comprese.</string>
+    <string name="movements">Spese</string>
+    <string name="movements_text">%1$s in media</string>
+    <string name="fixed_variable">Fisse e variabili</string>
+    <string name="fixed_variable_text">Fisse %1$s · variabili %2$s</string>
+    <string name="budgets_over">Budget superati</string>
+    <string name="budgets_over_value">%1$d su %2$d</string>
+    <string name="by_weekday">In che giorno se ne vanno i soldi di tutti i giorni</string>
+    <string name="biggest_expenses">Le spese più grandi</string>
+    <string name="repeated_most">Quello che compri più spesso</string>
+    <string name="times">%1$d volte</string>
 </resources>
