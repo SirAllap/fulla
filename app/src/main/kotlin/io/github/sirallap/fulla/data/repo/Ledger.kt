@@ -250,6 +250,13 @@ class Ledger(
             if (api == null) LocalHousehold.updateHousehold(bundle, patch) else api.householdUpdate(householdId, patch)
         }
 
+    /** Limits a custom field to categories (asked right under them), or lifts the limit (null or empty). */
+    suspend fun setFieldCategories(householdId: String, fieldId: String, categoryIds: Set<String>?, api: FullaApi?) =
+        updateConfig(householdId, api) { bundle ->
+            if (api == null) LocalHousehold.setFieldCategories(bundle, fieldId, categoryIds)
+            else api.setFieldCategories(householdId, fieldId, categoryIds)
+        }
+
     /**
      * Tombstones a trip; its expenses stay, as everyday expenses. A connected
      * household's expenses are untripped on the server (fulla_trip_delete),

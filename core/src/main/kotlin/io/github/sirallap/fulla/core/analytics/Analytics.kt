@@ -31,6 +31,13 @@ data class CategoryRow(
     val previousAverageMinor: Long,
 )
 
+/**
+ * One line of a category's breakdown: a subcategory (its id), the category's
+ * own rows (its own id), or one value of a field (the value, null for rows
+ * that do not say).
+ */
+data class Slice(val key: String?, val amountMinor: Long)
+
 data class MemberSpending(val memberId: String, val paidMinor: Long, val shareMinor: Long)
 
 data class Projection(val spentSoFarMinor: Long, val projectedMinor: Long, val daysElapsed: Int, val daysInPeriod: Int)
@@ -96,6 +103,43 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
     }
 
     /** Spending per category; with [rollUp], subcategories count in their parent. */
+    /**
+     * The spending in [categoryId] and its subcategories, split by
+     * subcategory; rows in the category itself come under its own id. Empty
+     * when the category has no subcategories with spending: the overview
+     * then lists the rows straight away.
+     */
+    fun bySubcategory(txs: Iterable<Transaction>, period: YearMonth, categoryId: String): List<Slice> {
+        val rows = spending(txs, period, categoryId, withSubcategories = true)
+        if (rows.none { it.categoryId != categoryId }) return emptyList()
+        return rows.groupBy { it.categoryId }.map { (id, v) -> Slice(id, v.sumOf { spend(it) }) }
+            .filter { it.amountMinor != 0L }.sortedByDescending { it.amountMinor }
+    }
+
+    /** The spending in exactly [categoryId], split by the value of the field [fieldKey]; null for rows without one. */
+    fun byFieldValue(txs: Iterable<Transaction>, period: YearMonth, categoryId: String, fieldKey: String): List<Slice> =
+        spending(txs, period, categoryId, withSubcategories = false).groupBy { it.extras[fieldKey]?.toString() }
+            .map { (value, v) -> Slice(value, v.sumOf { spend(it) }) }
+            .filter { it.amountMinor != 0L }.sortedWith(compareBy<Slice> { it.key == null }.thenByDescending { it.amountMinor })
+
+    /**
+     * The expenses and refunds of [period] in [categoryId] (and its
+     * subcategories when [withSubcategories]), newest first; only those whose
+     * [field] has the value given, when one is ([field] = key to value, null
+     * value for rows without one).
+     */
+    fun spending(
+        txs: Iterable<Transaction>,
+        period: YearMonth,
+        categoryId: String,
+        withSubcategories: Boolean,
+        field: Pair<String, String?>? = null,
+    ): List<Transaction> = counted(txs, period).filter { t ->
+        t.kind != TransactionKind.INCOME &&
+            (t.categoryId == categoryId || (withSubcategories && config.category(t.categoryId)?.parentId == categoryId)) &&
+            (field == null || t.extras[field.first]?.toString() == field.second)
+    }.sortedByDescending { it.date }
+
     fun byCategory(txs: Iterable<Transaction>, period: YearMonth, rollUp: Boolean = true): List<CategoryRow> {
         val list = txs.toList()
         fun key(t: Transaction): String? {

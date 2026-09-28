@@ -129,6 +129,17 @@ object LocalHousehold {
         return bump(JsonObject(bundle + ("household" to merged)))
     }
 
+    /** As fulla_field_set_categories: limits a field to categories, or lifts the limit (null or empty). */
+    fun setFieldCategories(bundle: JsonObject, fieldId: String, categoryIds: Set<String>?): JsonObject {
+        val list = (bundle["custom_fields"] as? JsonArray).orEmpty().map { it as JsonObject }
+        require(list.any { it.text("id") == fieldId }) { "There is no such field in this household." }
+        val known = (bundle["categories"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.text("id") }.toSet()
+        require(categoryIds.orEmpty().all { it in known }) { "Every category must be one of this household." }
+        val value = categoryIds?.takeIf { it.isNotEmpty() }?.let { ids -> JsonArray(ids.sorted().map(::JsonPrimitive)) } ?: JsonNull
+        val next = list.map { if (it.text("id") == fieldId) JsonObject(it + ("category_ids" to value)) else it }
+        return bump(JsonObject(bundle + ("custom_fields" to JsonArray(next))))
+    }
+
     fun upsertMember(bundle: JsonObject, member: JsonObject): JsonObject {
         val list = (bundle["members"] as? JsonArray).orEmpty()
         val id = member.text("id")

@@ -80,14 +80,20 @@ fun FieldsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         if (canEdit) ListRow(stringResource(R.string.add_field), icon = Icons.Outlined.Add, onClick = { creating = true })
     }
     if (creating || editing != null) {
-        FieldDialog(view, editing, language, onDismiss = { creating = false; editing = null }) { item ->
-            change { api -> ledger.upsert(view.id, Structure.FIELD, item, api) }
+        val before = editing?.categoryIds.orEmpty()
+        FieldDialog(view, editing, language, onDismiss = { creating = false; editing = null }) { item, categories ->
+            val id = (item["id"] as JsonPrimitive).content
+            change { api ->
+                ledger.upsert(view.id, Structure.FIELD, item, api)
+                if (categories != before) ledger.setFieldCategories(view.id, id, categories, api)
+            }
         }
     }
 }
 
 @Composable
-private fun FieldDialog(view: HouseholdView, existing: CustomField?, language: String, onDismiss: () -> Unit, onSave: (JsonObject) -> Unit) {
+private fun FieldDialog(view: HouseholdView, existing: CustomField?, language: String, onDismiss: () -> Unit, onSave: (JsonObject, Set<String>) -> Unit) {
+    var categories by remember { mutableStateOf(existing?.categoryIds.orEmpty()) }
     var label by remember { mutableStateOf(existing?.label(language) ?: "") }
     var type by remember { mutableStateOf(existing?.type ?: FieldType.TEXT) }
     var options by remember { mutableStateOf(existing?.options?.joinToString(", ") ?: "") }
@@ -122,6 +128,16 @@ private fun FieldDialog(view: HouseholdView, existing: CustomField?, language: S
                         Chip(stringResource(name), k in kinds, { kinds = if (k in kinds) kinds - k else kinds + k })
                     }
                 }
+                // Limited to categories, it is asked right under them when writing a row down: Pets › Vet › who for.
+                Text(stringResource(R.string.field_categories), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                Text(stringResource(R.string.field_categories_help), style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    val all = view.config.categories.filter { !it.archived }
+                    val named = all.map { cat -> cat to (all.firstOrNull { it.id == cat.parentId }?.let { "${it.name} › ${cat.name}" } ?: cat.name) }
+                    for ((cat, name) in named.sortedBy { it.second.lowercase() }) {
+                        Chip(name, cat.id in categories, { categories = if (cat.id in categories) categories - cat.id else categories + cat.id })
+                    }
+                }
                 SwitchRow(stringResource(R.string.field_in_list), stringResource(R.string.field_in_list_help), inList) { inList = it }
                 if (existing != null) SwitchRow(stringResource(R.string.archive), stringResource(R.string.archive_help), archived) { archived = it }
             }
@@ -141,7 +157,7 @@ private fun FieldDialog(view: HouseholdView, existing: CustomField?, language: S
                     "show_in_list" to JsonPrimitive(inList),
                     "sort" to JsonPrimitive(existing?.sort ?: view.config.fields.size),
                     "archived" to JsonPrimitive(archived),
-                )))
+                )), categories)
                 onDismiss()
             }) { Text(stringResource(R.string.save)) }
         },

@@ -230,6 +230,7 @@ test('a stranger gets not_member from every function that takes a household', (c
     ['fulla_account_upsert', { p_household_id: hh, p_account: {} }],
     ['fulla_category_upsert', { p_household_id: hh, p_category: {} }],
     ['fulla_field_upsert', { p_household_id: hh, p_field: {} }],
+    ['fulla_field_set_categories', { p_household_id: hh, p_field_id: uuid(), p_category_ids: null }],
     ['fulla_budget_upsert', { p_household_id: hh, p_budget: {} }],
     ['fulla_budget_copy', { p_household_id: hh, p_from_period: '2030-01', p_to_period: '2030-02' }],
     ['fulla_recurring_upsert', { p_household_id: hh, p_rule: {} }],
@@ -460,6 +461,7 @@ test('a member cannot change the structure; an admin can; neither can do what on
     ['fulla_account_upsert', { p_household_id: hh, p_account: { id: uuid(), name: 'Savings', type: 'savings' } }],
     ['fulla_category_upsert', { p_household_id: hh, p_category: { id: uuid(), name: 'Pets' } }],
     ['fulla_field_upsert', { p_household_id: hh, p_field: { id: uuid(), key: 'shop', type: 'text', labels: { en: 'Shop' }, applies_to: ['expense'] } }],
+    ['fulla_field_set_categories', { p_household_id: hh, p_field_id: uuid(), p_category_ids: null }],
     ['fulla_budget_upsert', { p_household_id: hh, p_budget: { id: uuid(), category_id: ctx.cat('Groceries'), amount_minor: 100 } }],
     ['fulla_budget_copy', { p_household_id: hh, p_from_period: '2030-01', p_to_period: '2030-02' }],
     ['fulla_recurring_upsert', { p_household_id: hh, p_rule: {} }],
@@ -1060,6 +1062,29 @@ test('periods follow the incomes marked as starting the month', (ctx) => {
   assert.deepEqual(summary(), [['2030-09', 205000, 0], ['2030-10', 200000, 2500]]);
   push(ctx, ctx.alice, [upsert(generated, '2030-10-28T09:00:00.000Z', stamp)]);
   assert.deepEqual(summary(), [['2030-09', 205000, 0], ['2030-10', 100000, 2000], ['2030-11', 100000, 500]]);
+});
+
+test('a field can be limited to categories, and editing it keeps the limit', (ctx) => {
+  const pets = uuid();
+  const vet = uuid();
+  rpc(ctx.db, ctx.alice, 'fulla_category_upsert', { p_household_id: ctx.hh, p_category: { id: pets, name: 'Pets' } });
+  rpc(ctx.db, ctx.alice, 'fulla_category_upsert', { p_household_id: ctx.hh, p_category: { id: vet, name: 'Vet', parent_id: pets } });
+  const field = { id: uuid(), key: 'for_whom', type: 'select', labels: { en: 'For whom' }, applies_to: ['expense'], options: ['Rex', 'Tom', 'All'] };
+  const before = rpc(ctx.db, ctx.alice, 'fulla_field_upsert', { p_household_id: ctx.hh, p_field: field });
+  assert.equal(before.custom_fields.find((f) => f.id === field.id).category_ids, null, 'every category by default');
+  const limited = rpc(ctx.db, ctx.alice, 'fulla_field_set_categories', { p_household_id: ctx.hh, p_field_id: field.id, p_category_ids: [vet] });
+  assert.ok(limited.config_version > before.config_version, 'other phones hear of it');
+  assert.deepEqual(limited.custom_fields.find((f) => f.id === field.id).category_ids, [vet]);
+  const edited = rpc(ctx.db, ctx.alice, 'fulla_field_upsert', { p_household_id: ctx.hh, p_field: Object.assign({}, field, { options: ['Rex', 'Tom', 'Kit', 'All'] }) });
+  assert.deepEqual(edited.custom_fields.find((f) => f.id === field.id).category_ids, [vet], 'an edit keeps the limit');
+  const lifted = rpc(ctx.db, ctx.alice, 'fulla_field_set_categories', { p_household_id: ctx.hh, p_field_id: field.id, p_category_ids: [] });
+  assert.equal(lifted.custom_fields.find((f) => f.id === field.id).category_ids, null);
+  expectError(ctx.db, ctx.alice, 'fulla_field_set_categories', { p_household_id: ctx.hh, p_field_id: field.id, p_category_ids: [uuid()] }, 'validation_failed', 400);
+  expectError(ctx.db, ctx.alice, 'fulla_field_set_categories', { p_household_id: ctx.hh, p_field_id: uuid(), p_category_ids: [vet] }, 'validation_failed', 400);
+  // A value in the field is stored like any other.
+  const tx = expense(ctx, { category_id: vet, extras: { for_whom: 'Rex' } });
+  assert.equal(push(ctx, ctx.alice, [upsert(tx)])[0].ok, true);
+  assert.deepEqual(pull(ctx, ctx.alice).transactions.find((r) => r.id === tx.id).extras, { for_whom: 'Rex' });
 });
 
 rawTest('a new household gets its defaults in its language, English for any other', ({ db }) => {

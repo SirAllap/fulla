@@ -561,4 +561,10 @@
     <!-- Overview row: the total money in all accounts today (opening balance + movements). -->
     <string name="accounts_total">Nas tuas contas</string>
     <string name="accounts_total_help">O que têm hoje. Toca para ver cada conta.</string>
+    <string name="add_subcategory">Adicionar subcategoria</string>
+    <string name="subcategory_of">Subcategoria de…</string>
+    <string name="subcategory_general">Geral</string>
+    <string name="field_value_none">Não informado</string>
+    <string name="field_categories">Perguntar só em</string>
+    <string name="field_categories_help">Nenhuma: perguntado nos detalhes de cada registro. Escolhidas: perguntado logo abaixo dessas categorias, como mais um nível.</string>
 </resources>

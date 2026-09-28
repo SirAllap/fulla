@@ -72,6 +72,11 @@ class FullaApi(private val supabase: Supabase) : SyncBackend {
     suspend fun householdUpdate(householdId: String, patch: JsonObject): JsonObject =
         obj("fulla_household_update", "p_household_id" to householdId, "p_patch" to patch)
 
+    /** Limits a custom field to categories, or lifts the limit (null or empty). Returns the config bundle. */
+    suspend fun setFieldCategories(householdId: String, fieldId: String, categoryIds: Set<String>?): JsonObject =
+        obj("fulla_field_set_categories", "p_household_id" to householdId, "p_field_id" to fieldId,
+            "p_category_ids" to categoryIds?.sorted()?.let { ids -> JsonArray(ids.map(::JsonPrimitive)) })
+
     suspend fun inviteCreate(householdId: String, role: String, claimMemberId: String?, ttlHours: Int): Invite {
         val o = obj("fulla_invite_create", "p_household_id" to householdId, "p_role" to role,
             "p_claim_member_id" to claimMemberId, "p_ttl_hours" to ttlHours)

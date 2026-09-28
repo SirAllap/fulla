@@ -41,6 +41,13 @@ data class CustomField(
     val showInList: Boolean = false,
     val sort: Int = 0,
     val archived: Boolean = false,
+    /**
+     * The categories it is asked in, or null for every one. A category here
+     * covers its subcategories too. A field limited to categories is asked
+     * right under the category when writing a row down, as one more level:
+     * Pets › Vet › who it was for.
+     */
+    val categoryIds: Set<String>? = null,
 ) {
     fun label(language: String): String = labels[language] ?: labels["en"] ?: labels.values.firstOrNull() ?: key
 }
@@ -74,8 +81,21 @@ object SchemaEngine {
     private val NUMBER = Regex("^-?[0-9]{1,15}(\\.[0-9]{1,10})?$")
     private val INTEGER = Regex("^-?[0-9]{1,18}$")
 
+    /** The fields asked in the details of a row: every field not limited to categories. */
     fun fieldsForForm(fields: List<CustomField>, kind: TransactionKind): List<CustomField> =
-        fields.filter { !it.archived && kind in it.appliesTo }.sortedWith(compareBy({ it.sort }, { it.key }))
+        fields.filter { !it.archived && kind in it.appliesTo && it.categoryIds == null }.sortedWith(compareBy({ it.sort }, { it.key }))
+
+    /**
+     * The fields limited to categories that apply to [category] (by its own
+     * id or its parent's): asked right under the category, as one more level.
+     */
+    fun fieldsForCategory(fields: List<CustomField>, kind: TransactionKind, category: io.github.sirallap.fulla.core.model.Category?): List<CustomField> {
+        if (category == null) return emptyList()
+        return fields.filter { f ->
+            !f.archived && kind in f.appliesTo && f.categoryIds != null &&
+                (category.id in f.categoryIds || (category.parentId != null && category.parentId in f.categoryIds))
+        }.sortedWith(compareBy({ it.sort }, { it.key }))
+    }
 
     fun fieldsForList(fields: List<CustomField>): List<CustomField> =
         fields.filter { !it.archived && it.showInList }.sortedWith(compareBy({ it.sort }, { it.key }))

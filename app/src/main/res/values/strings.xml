@@ -611,4 +611,10 @@
     <!-- Overview row: the total money in all accounts today (opening balance + movements). -->
     <string name="accounts_total">In your accounts</string>
     <string name="accounts_total_help">What they hold today. Tap for each account.</string>
+    <string name="add_subcategory">Add a subcategory</string>
+    <string name="subcategory_of">Subcategory of…</string>
+    <string name="subcategory_general">General</string>
+    <string name="field_value_none">Not said</string>
+    <string name="field_categories">Ask only in</string>
+    <string name="field_categories_help">None chosen: asked in the details of every entry. Chosen: asked right under those categories, as one more level.</string>
 </resources>

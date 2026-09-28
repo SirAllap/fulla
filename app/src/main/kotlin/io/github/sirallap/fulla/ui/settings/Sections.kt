@@ -287,18 +287,59 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val c = FullaTheme.colors
     var editing by remember { mutableStateOf<JsonObject?>(null) }
     var creating by remember { mutableStateOf<AppliesTo?>(null) }
+    /** The category a new subcategory goes under, once picked. */
+    var creatingUnder by remember { mutableStateOf<io.github.sirallap.fulla.core.model.Category?>(null) }
+    var pickingParent by remember { mutableStateOf<AppliesTo?>(null) }
+    val order = compareBy<io.github.sirallap.fulla.core.model.Category>({ it.archived }, { it.sort })
     Column {
         for ((title, applies) in listOf(R.string.spending to AppliesTo.EXPENSE, R.string.income to AppliesTo.INCOME)) {
             Section(stringResource(title))
             val list = view.config.categories.filter { it.appliesTo == applies || (applies == AppliesTo.EXPENSE && it.appliesTo == AppliesTo.BOTH) }
-            for (cat in list.sortedWith(compareBy({ it.archived }, { it.sort }))) {
-                ListRow(cat.name, icon = CategoryIcons.of(cat.icon), iconTint = c.category(cat.colorIndex),
-                    indent = if (cat.parentId != null) 24.dp else 0.dp,
-                    titleColor = if (cat.archived) c.inkMuted else c.ink,
-                    context = if (cat.archived) stringResource(R.string.archived) else null,
-                    onClick = if (canEdit) ({ editing = bundleItem(view, Structure.CATEGORY, cat.id) }) else null)
+            // Each category, then its subcategories just under it.
+            val tops = list.filter { cat -> cat.parentId == null || list.none { it.id == cat.parentId } }.sortedWith(order)
+            for (top in tops) {
+                for (cat in listOf(top) + list.filter { it.parentId == top.id }.sortedWith(order)) {
+                    ListRow(cat.name, icon = CategoryIcons.of(cat.icon), iconTint = c.category(cat.colorIndex),
+                        indent = if (cat.parentId != null) 24.dp else 0.dp,
+                        titleColor = if (cat.archived) c.inkMuted else c.ink,
+                        context = if (cat.archived) stringResource(R.string.archived) else null,
+                        onClick = if (canEdit) ({ editing = bundleItem(view, Structure.CATEGORY, cat.id) }) else null)
+                }
             }
-            if (canEdit) ListRow(stringResource(R.string.add_category), icon = Icons.Outlined.Add, onClick = { creating = applies })
+            if (canEdit) {
+                ListRow(stringResource(R.string.add_category), icon = Icons.Outlined.Add, onClick = { creating = applies })
+                if (tops.any { it.parentId == null && !it.archived }) {
+                    ListRow(stringResource(R.string.add_subcategory), icon = Icons.Outlined.Add, onClick = { pickingParent = applies })
+                }
+            }
+        }
+    }
+    pickingParent?.let { applies ->
+        val parents = view.config.categories.filter {
+            it.parentId == null && !it.archived && (it.appliesTo == applies || (applies == AppliesTo.EXPENSE && it.appliesTo == AppliesTo.BOTH))
+        }.sortedWith(order)
+        FullaDialog(
+            onDismissRequest = { pickingParent = null },
+            title = { Text(stringResource(R.string.subcategory_of)) },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    for (p in parents) {
+                        ListRow(p.name, icon = CategoryIcons.of(p.icon), iconTint = c.category(p.colorIndex),
+                            onClick = { pickingParent = null; creatingUnder = p })
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { pickingParent = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+    creatingUnder?.let { parent ->
+        val item = buildJsonObject {
+            put("id", UUID.randomUUID().toString()); put("name", ""); put("applies_to", parent.appliesTo.key); put("icon", parent.icon)
+            put("parent_id", parent.id)
+            put("color_index", parent.colorIndex); put("sort", view.config.categories.size); put("archived", false)
+        }
+        StructureDialog(item, onDismiss = { creatingUnder = null }, iconPicker = true) { updated ->
+            change { api -> ledger.upsert(view.id, Structure.CATEGORY, updated, api) }
         }
     }
     editing?.let { item ->

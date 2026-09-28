@@ -93,6 +93,25 @@ class LocalTest {
     }
 
     @Test
+    fun `a field limited to categories keeps the limit through edits and the bundle`() {
+        val bundle = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        val cat = Wire.config(bundle).categories.first().id
+        val field = buildJsonObject {
+            put("id", "f1"); put("key", "for_whom"); put("labels", buildJsonObject { put("en", "For whom") }); put("type", "select")
+            put("applies_to", kotlinx.serialization.json.JsonArray(listOf(JsonPrimitive("expense"))))
+            put("options", kotlinx.serialization.json.JsonArray(listOf(JsonPrimitive("Rex"))))
+        }
+        val withField = LocalHousehold.upsert(bundle, Structure.FIELD, field)
+        assertNull(Wire.config(withField).fields.single().categoryIds, "every category by default")
+        val limited = LocalHousehold.setFieldCategories(withField, "f1", setOf(cat))
+        assertEquals(setOf(cat), Wire.config(limited).fields.single().categoryIds)
+        val edited = LocalHousehold.upsert(limited, Structure.FIELD, field)
+        assertEquals(setOf(cat), Wire.config(Wire.bundle(Wire.config(edited))).fields.single().categoryIds, "an edit and the bundle keep it")
+        assertNull(Wire.config(LocalHousehold.setFieldCategories(limited, "f1", emptySet())).fields.single().categoryIds)
+        assertFailsWith<IllegalArgumentException> { LocalHousehold.setFieldCategories(limited, "f1", setOf("nope")) }
+    }
+
+    @Test
     fun `updateHousehold refuses the exclusive pair`() {
         var bundle = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
         // A patch that would leave both a mid-month start and shifted income set is refused,

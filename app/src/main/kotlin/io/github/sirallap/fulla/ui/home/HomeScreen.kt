@@ -229,18 +229,7 @@ fun HomeScreen(
                             onClick = { expanded = if (expanded == row.categoryId) null else row.categoryId },
                             end = { AmountText(f.money(row.amountMinor)) },
                         )
-                        if (expanded == row.categoryId) {
-                            val rows = view.active.filter {
-                                it.kind != TransactionKind.INCOME && it.kind.countsInTotals &&
-                                    (it.categoryId == row.categoryId || view.config.category(it.categoryId)?.parentId == row.categoryId) &&
-                                    f.periodRule.periodOf(it.date, it.kind, it.recurrence) == period
-                            }.sortedByDescending { it.date }
-                            for (t in rows) {
-                                ListRow(t.note.ifBlank { cat?.name ?: "" }, indent = 38.dp, context = f.day(t.date),
-                                    onClick = { onOpen(t.id) },
-                                    end = { AmountText(f.money(if (t.kind == TransactionKind.REFUND) -t.amountMinor else t.amountMinor), color = c.inkMuted) })
-                            }
-                        }
+                        if (expanded == row.categoryId) CategoryBreakdown(view, period, row.categoryId, onOpen)
                     }
                 }
             }
@@ -264,5 +253,64 @@ private fun Figure(label: String, value: String, color: androidx.compose.ui.grap
     Column(modifier) {
         Text(label, style = FullaType.label, color = FullaTheme.colors.inkMuted)
         Text(value, style = FullaType.amount, color = color, maxLines = 1)
+    }
+}
+
+/**
+ * What a category's spending was made of, one level at a time: its
+ * subcategories (and its own rows, as "General"), then, where a field is
+ * limited to that category, each of its values (Pets › Vet › Rex), then the
+ * rows themselves. A level with nothing to split shows the rows directly.
+ */
+@Composable
+private fun CategoryBreakdown(view: HouseholdView, period: YearMonth, categoryId: String, onOpen: (String) -> Unit) {
+    val c = FullaTheme.colors
+    val f = view.formats
+    val subs = remember(view, period, categoryId) { view.analytics.bySubcategory(view.active, period, categoryId) }
+    var open by remember(categoryId) { mutableStateOf<String?>(null) }
+    if (subs.isEmpty()) {
+        FieldBreakdown(view, period, categoryId, 38.dp, onOpen)
+        return
+    }
+    for (s in subs) {
+        val id = s.key ?: continue
+        val name = if (id == categoryId) stringResource(R.string.subcategory_general) else view.categoryName(id) ?: ""
+        ListRow(name, indent = 38.dp, onClick = { open = if (open == id) null else id },
+            end = { AmountText(f.money(s.amountMinor), color = c.inkMuted) })
+        if (open == id) FieldBreakdown(view, period, id, 56.dp, onOpen)
+    }
+}
+
+/** Exactly [categoryId]'s rows, split by the first list field limited to it when rows say a value. */
+@Composable
+private fun FieldBreakdown(view: HouseholdView, period: YearMonth, categoryId: String, indent: androidx.compose.ui.unit.Dp, onOpen: (String) -> Unit) {
+    val c = FullaTheme.colors
+    val f = view.formats
+    val field = io.github.sirallap.fulla.core.schema.SchemaEngine.fieldsForCategory(view.config.fields, TransactionKind.EXPENSE, view.config.category(categoryId))
+        .firstOrNull { it.type == io.github.sirallap.fulla.core.schema.FieldType.SELECT }
+    val values = remember(view, period, categoryId, field) { field?.let { view.analytics.byFieldValue(view.active, period, categoryId, it.key) }.orEmpty() }
+    if (field == null || values.none { it.key != null }) {
+        Rows(view, view.analytics.spending(view.active, period, categoryId, withSubcategories = false), indent, onOpen)
+        return
+    }
+    var open by remember(categoryId) { mutableStateOf<String?>(null) }
+    val none = "\u0000"
+    for (v in values) {
+        val id = v.key ?: none
+        ListRow(v.key ?: stringResource(R.string.field_value_none), indent = indent, onClick = { open = if (open == id) null else id },
+            end = { AmountText(f.money(v.amountMinor), color = c.inkMuted) })
+        if (open == id) Rows(view, view.analytics.spending(view.active, period, categoryId, withSubcategories = false, field = field.key to v.key),
+            indent + 18.dp, onOpen)
+    }
+}
+
+@Composable
+private fun Rows(view: HouseholdView, rows: List<io.github.sirallap.fulla.core.model.Transaction>, indent: androidx.compose.ui.unit.Dp, onOpen: (String) -> Unit) {
+    val c = FullaTheme.colors
+    val f = view.formats
+    for (t in rows) {
+        ListRow(t.note.ifBlank { view.categoryName(t.categoryId) ?: "" }, indent = indent, context = f.day(t.date),
+            onClick = { onOpen(t.id) },
+            end = { AmountText(f.money(if (t.kind == TransactionKind.REFUND) -t.amountMinor else t.amountMinor), color = c.inkMuted) })
     }
 }

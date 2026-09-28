@@ -216,6 +216,8 @@ object Wire {
                     showInList = f.bool("show_in_list") ?: false,
                     sort = f.int("sort") ?: 0,
                     archived = f.bool("archived") ?: false,
+                    // Absent (older bundle) and null both mean every category.
+                    categoryIds = (f["category_ids"] as? JsonArray)?.map { it.jsonPrimitive.content }?.toSet(),
                 )
             },
             budgets = o.arr("budgets").map { it.jsonObject }.map {
@@ -303,6 +305,7 @@ object Wire {
                 put("required", f.required); put("options", JsonArray(f.options.map(::JsonPrimitive)))
                 put("default_value", f.defaultValue); put("show_in_list", f.showInList); put("sort", f.sort)
                 put("archived", f.archived)
+                put("category_ids", f.categoryIds?.let { ids -> JsonArray(ids.sorted().map(::JsonPrimitive)) } ?: JsonNull)
             }
         }))
         put("budgets", JsonArray(c.budgets.map { b ->

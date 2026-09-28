@@ -205,6 +205,11 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
 
     fun save() {
         if (saved) return
+        // A field limited to categories the row is no longer in is cleared, not kept from before.
+        val asked = SchemaEngine.fieldsForCategory(view.config.fields, draft.kind, view.config.category(draft.categoryId)).map { it.key }.toSet()
+        val stale = view.config.fields.filter { it.categoryIds != null && it.key !in asked }.map { it.key }
+            .filter { it in draft.extras || existing?.extras?.containsKey(it) == true }
+        if (stale.isNotEmpty()) draft.extras = draft.extras + stale.associateWith { null }
         // A new row in one shared pot is the payer's alone; an edit keeps the split it has.
         val built = draft.build().let { if (existing == null) SharedPot.forNew(it, view.config.household) else it }
         val problems = TransactionValidator.problems(built, view.config, isNew = existing == null)
@@ -281,8 +286,11 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             if (draft.kind.isCategorised) {
-                CategoryTiles(view, draft.kind, draft.categoryId, showAll = allCategories,
+                val top = view.config.category(draft.categoryId)?.let { it.parentId ?: it.id }
+                CategoryTiles(view, draft.kind, top, showAll = allCategories,
                     onPick = { draft.categoryId = it; problem = null }, onMore = { allCategories = !allCategories })
+                SubcategoryChips(view, draft)
+                CategoryFieldChips(view, draft)
             }
             DetailsLine(view, draft) { detailsOpen = true }
             if (draft.offersStartsMonth) StartsMonthSwitch(view, draft)
@@ -339,10 +347,12 @@ private fun KindRow(kind: TransactionKind, onPick: (TransactionKind) -> Unit) {
 @Composable
 private fun CategoryTiles(view: HouseholdView, kind: TransactionKind, selected: String?, showAll: Boolean, onPick: (String) -> Unit, onMore: () -> Unit) {
     val c = FullaTheme.colors
-    val usable = view.config.categories.filter { !it.archived && it.appliesTo.allows(kind) }
-    // The categories used most in the last three months come first.
+    // Only top-level categories: a subcategory is picked on the line below, once its category is.
+    val usable = view.config.categories.filter { !it.archived && it.appliesTo.allows(kind) && it.parentId == null }
+    // The categories used most in the last three months come first, counting their subcategories.
     val since = LocalDate.now().minusMonths(3)
-    val use = view.active.filter { it.date >= since && it.kind == kind }.groupingBy { it.categoryId }.eachCount()
+    val use = view.active.filter { it.date >= since && it.kind == kind }
+        .groupingBy { view.config.category(it.categoryId)?.parentId ?: it.categoryId }.eachCount()
     val ordered = usable.sortedWith(compareByDescending<Category> { use[it.id] ?: 0 }.thenBy { it.sort })
     val shown = if (showAll || ordered.size <= 8) ordered else ordered.take(7).let { top ->
         if (selected != null && top.none { it.id == selected }) top.dropLast(1) + ordered.first { it.id == selected } else top
@@ -358,6 +368,43 @@ private fun CategoryTiles(view: HouseholdView, kind: TransactionKind, selected: 
         }
         if (ordered.size > 8) {
             Tile(stringResource(if (showAll) R.string.fewer else R.string.more), Icons.Outlined.ExpandMore, selected = false, tint = c.inkMuted, onClick = onMore)
+        }
+    }
+}
+
+/** The picked category's subcategories, with the category itself first ("General"). Nothing when it has none. */
+@Composable
+private fun SubcategoryChips(view: HouseholdView, draft: Draft) {
+    val picked = view.config.category(draft.categoryId) ?: return
+    val topId = picked.parentId ?: picked.id
+    val subs = view.config.categories.filter { it.parentId == topId && !it.archived && it.appliesTo.allows(draft.kind) }.sortedBy { it.sort }
+    if (subs.isEmpty()) return
+    FlowRow(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Chip(stringResource(R.string.subcategory_general), draft.categoryId == topId, { draft.categoryId = topId })
+        for (s in subs) Chip(s.name, draft.categoryId == s.id, { draft.categoryId = s.id })
+    }
+}
+
+/**
+ * The fields limited to the picked category, asked right under it as one
+ * more level: Pets › Vet › who it was for. A list is chips; tapping the
+ * chosen one again clears it.
+ */
+@Composable
+private fun CategoryFieldChips(view: HouseholdView, draft: Draft) {
+    val language = java.util.Locale.getDefault().language
+    for (field in SchemaEngine.fieldsForCategory(view.config.fields, draft.kind, view.config.category(draft.categoryId))) {
+        if (field.type == io.github.sirallap.fulla.core.schema.FieldType.SELECT) {
+            Text(field.label(language), style = FullaType.label, color = FullaTheme.colors.inkMuted,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp))
+            val current = draft.extras[field.key]?.toString()
+            FlowRow(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (o in field.options) Chip(o, current == o, { draft.extras = draft.extras + (field.key to if (current == o) null else o) })
+            }
+        } else {
+            FieldControl(view, field, draft.extras[field.key]) { v -> draft.extras = draft.extras + (field.key to v) }
         }
     }
 }
