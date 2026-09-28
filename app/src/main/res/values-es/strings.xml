@@ -567,4 +567,5 @@
     <string name="field_value_none">Sin indicar</string>
     <string name="field_categories">Preguntar solo en</string>
     <string name="field_categories_help">Sin ninguna: se pregunta en los detalles de cada anotación. Con alguna: se pregunta justo debajo de esas categorías, como un nivel más.</string>
+    <string name="other_categories">Otros</string>
 </resources>

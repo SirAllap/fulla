@@ -617,4 +617,5 @@
     <string name="field_value_none">Not said</string>
     <string name="field_categories">Ask only in</string>
     <string name="field_categories_help">None chosen: asked in the details of every entry. Chosen: asked right under those categories, as one more level.</string>
+    <string name="other_categories">Other</string>
 </resources>

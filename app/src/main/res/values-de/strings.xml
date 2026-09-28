@@ -567,4 +567,5 @@
     <string name="field_value_none">Nicht angegeben</string>
     <string name="field_categories">Nur fragen bei</string>
     <string name="field_categories_help">Keine gewählt: in den Details jedes Eintrags gefragt. Gewählt: direkt unter diesen Kategorien gefragt, als eine Ebene mehr.</string>
+    <string name="other_categories">Andere</string>
 </resources>

@@ -567,4 +567,5 @@
     <string name="field_value_none">Não informado</string>
     <string name="field_categories">Perguntar só em</string>
     <string name="field_categories_help">Nenhuma: perguntado nos detalhes de cada registro. Escolhidas: perguntado logo abaixo dessas categorias, como mais um nível.</string>
+    <string name="other_categories">Outros</string>
 </resources>

@@ -68,3 +68,26 @@ class CategoryLevelsTest {
         assertEquals(AppliesTo.EXPENSE, byId[vet]!!.appliesTo)
     }
 }
+
+class TopCategoriesTest {
+    private val jan = YearMonth.of(2030, 1)
+    private val config = Fixtures.config()
+    private val analytics = Analytics(config, PeriodRule())
+
+    @Test
+    fun `the top categories, then the rest together, never below zero`() {
+        val rows = listOf(
+            Fixtures.expense(5_000, category = Fixtures.GROCERIES), Fixtures.expense(1_000, category = Fixtures.SNACKS),
+            Fixtures.expense(3_000, category = Fixtures.LEISURE),
+            Fixtures.expense(700, category = Fixtures.SALARY).copy(kind = TransactionKind.REFUND),
+        )
+        assertEquals(listOf(Slice(Fixtures.GROCERIES, 6_000), Slice(Fixtures.LEISURE, 3_000)), analytics.topCategories(rows, jan))
+        assertEquals(listOf(Slice(Fixtures.GROCERIES, 6_000), Slice(null, 3_000)), analytics.topCategories(rows, jan, top = 1))
+    }
+
+    @Test
+    fun `no earlier spending is no trend`() {
+        val rows = listOf(Fixtures.expense(50_000, category = Fixtures.LEISURE))
+        assertEquals(emptyList(), analytics.trends(rows, jan, minimumMinor = 500))
+    }
+}

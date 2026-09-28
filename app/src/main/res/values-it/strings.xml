@@ -567,4 +567,5 @@
     <string name="field_value_none">Non indicato</string>
     <string name="field_categories">Chiedi solo in</string>
     <string name="field_categories_help">Nessuna: chiesto nei dettagli di ogni voce. Scelte: chiesto subito sotto quelle categorie, come un livello in più.</string>
+    <string name="other_categories">Altro</string>
 </resources>

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.insights
 
+import io.github.sirallap.fulla.ui.components.Vial
+import io.github.sirallap.fulla.ui.components.SpendingVials
 import io.github.sirallap.fulla.ui.components.listEndPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +47,9 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
     val repeating = remember(view) { a.detectedRecurring(view.active, today) }
     val byMember = remember(view) { a.byMember(view.active, period).filter { it.paidMinor != 0L || it.shareMinor != 0L } }
     val noSpend = remember(view) { a.noSpendDays(view.active, period, today) }
+    val top = remember(view) { a.topCategories(view.active, period) }
+    val others = stringResource(R.string.other_categories)
+    val uncategorized = stringResource(R.string.uncategorized)
     val dimensions = remember(view) { SchemaEngine.dimensions(view.config.fields) }
     val language = Locale.getDefault().language
     val container = io.github.sirallap.fulla.ui.LocalContainer.current
@@ -75,8 +80,19 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         BackHeader(stringResource(R.string.insights), onBack)
         LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding()) {
+            if (top.isNotEmpty()) item(key = "vials") {
+                val total = top.sumOf { it.amountMinor }.toFloat()
+                val max = top.maxOf { it.amountMinor }.toFloat()
+                Section(stringResource(R.string.where_it_went), top = 8.dp())
+                SpendingVials(top.map { s ->
+                    val cat = s.key?.let { view.config.category(it) }
+                    val name = if (s.key == null) others else cat?.name ?: uncategorized
+                    Vial(name, if (s.key == null) null else io.github.sirallap.fulla.ui.entry.CategoryIcons.of(cat?.icon ?: "label"),
+                        level = s.amountMinor / max, share = s.amountMinor / total, description = "$name, ${f.money(s.amountMinor)}")
+                })
+            }
             item {
-                Section(f.period(period), top = 8.dp())
+                Section(f.period(period), top = if (top.isEmpty()) 8.dp() else 24.dp())
                 ListRow(stringResource(R.string.no_spend_days), context = stringResource(R.string.no_spend_days_text),
                     end = { AmountText("$noSpend", color = c.inkMuted) })
             }

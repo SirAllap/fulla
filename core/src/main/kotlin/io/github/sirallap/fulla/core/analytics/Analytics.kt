@@ -247,8 +247,22 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
     fun trends(txs: Iterable<Transaction>, period: YearMonth, minimumMinor: Long): List<Trend> =
         byCategory(txs, period).mapNotNull { row ->
             val t = Trend(row.categoryId, row.amountMinor, row.previousAverageMinor)
-            if (abs(t.currentMinor - t.averageMinor) >= minimumMinor && abs(t.change) >= 0.2) t else null
+            // No earlier spending is no "usual" to compare with: "100 % more than 0" says nothing.
+            if (t.averageMinor > 0 && abs(t.currentMinor - t.averageMinor) >= minimumMinor && abs(t.change) >= 0.2) t else null
         }.sortedByDescending { abs(it.currentMinor - it.averageMinor) }
+
+    /**
+     * Where the period's spending went, for a chart: the [top] categories by
+     * spending (subcategories rolled up), then everything else together under
+     * a null key. Only positive totals: a category that was all refunds is
+     * not drawn below zero.
+     */
+    fun topCategories(txs: Iterable<Transaction>, period: YearMonth, top: Int = 5): List<Slice> {
+        val rows = byCategory(txs, period).filter { it.amountMinor > 0 }.sortedByDescending { it.amountMinor }
+        val shown = rows.take(top).map { Slice(it.categoryId, it.amountMinor) }
+        val rest = rows.drop(top).sumOf { it.amountMinor }
+        return if (rest > 0) shown + Slice(null, rest) else shown
+    }
 
     /** Days in the period, up to [today], with no variable spending at all. */
     fun noSpendDays(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate): Int {

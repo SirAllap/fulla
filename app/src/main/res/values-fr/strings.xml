@@ -567,4 +567,5 @@
     <string name="field_value_none">Non précisé</string>
     <string name="field_categories">Demander seulement dans</string>
     <string name="field_categories_help">Aucune : demandé dans les détails de chaque saisie. Choisies : demandé juste sous ces catégories, comme un niveau de plus.</string>
+    <string name="other_categories">Autres</string>
 </resources>
