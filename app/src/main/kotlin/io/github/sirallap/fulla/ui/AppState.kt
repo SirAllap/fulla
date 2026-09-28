@@ -23,9 +23,10 @@ class HouseholdView(
 ) {
     val id: String get() = state.id
     val config = io.github.sirallap.fulla.core.defaults.Defaults.localized(state.config, language)
-    val formats = Formats(config)
-    val analytics = Analytics(config, formats.periodRule)
     val active: List<Transaction> = rows.map { it.transaction }.filter { it.isActive }
+    /** The periods follow the salaries written down, when the household has chosen a salary category. */
+    val formats = Formats(config, periodRule = io.github.sirallap.fulla.core.rules.PeriodRule.of(config, active))
+    val analytics = Analytics(config, formats.periodRule)
     val me: Member? get() = config.me()
 
     fun memberName(id: String?): String = config.member(id)?.displayName ?: "?"

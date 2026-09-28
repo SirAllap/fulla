@@ -201,7 +201,8 @@ object Wire {
             },
             categories = o.arr("categories").map { it.jsonObject }.map {
                 Category(it.str("id")!!, it.str("name") ?: "", AppliesTo.of(it.str("applies_to")), it.str("parent_id"),
-                    it.str("icon") ?: "label", it.int("color_index") ?: 0, it.int("sort") ?: 0, it.bool("archived") ?: false)
+                    it.str("icon") ?: "label", it.int("color_index") ?: 0, it.int("sort") ?: 0, it.bool("archived") ?: false,
+                    it.bool("starts_period") ?: false)
             },
             fields = o.arr("custom_fields").map { it.jsonObject }.mapNotNull { f ->
                 val type = FieldType.of(f.str("type") ?: "") ?: return@mapNotNull null
@@ -295,7 +296,7 @@ object Wire {
             }
         }))
         put("accounts", JsonArray(c.accounts.map(::account)))
-        put("categories", JsonArray(c.categories.map(::category)))
+        put("categories", JsonArray(c.categories.map { JsonObject(category(it) + ("starts_period" to JsonPrimitive(it.startsPeriod))) }))
         put("custom_fields", JsonArray(c.fields.map { f ->
             buildJsonObject {
                 put("id", f.id); put("key", f.key); put("labels", JsonObject(f.labels.mapValues { JsonPrimitive(it.value) }))

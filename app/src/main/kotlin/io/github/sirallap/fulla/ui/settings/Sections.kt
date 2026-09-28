@@ -145,6 +145,7 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val me = view.me
     val shared = SharedPot.isShared(h)
     var choosingMode by remember { mutableStateOf(false) }
+    var choosingSalary by remember { mutableStateOf(false) }
     var owedFromBefore by remember { mutableStateOf<MemberBalance?>(null) }
     var splittingAgain by remember { mutableStateOf(false) }
     var switching by remember { mutableStateOf(false) }
@@ -213,6 +214,9 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             onClick = if (me != null && Permissions.canChangeCurrencyOrLimit(me)) ({ editing = "currency" }) else null)
         ListRow(stringResource(R.string.period_start_day), context = stringResource(R.string.period_start_day_value, h.periodStartDay),
             detail = stringResource(R.string.period_start_day_help), onClick = if (canEdit) ({ editing = "period_start_day" }) else null)
+        val salary = view.config.categories.firstOrNull { it.startsPeriod && !it.archived }
+        ListRow(stringResource(R.string.salary_period), context = salary?.name ?: stringResource(R.string.off),
+            detail = stringResource(R.string.salary_period_help), onClick = if (canEdit) ({ choosingSalary = true }) else null)
         ListRow(stringResource(R.string.income_shift_day), context = h.incomeShiftDay?.let { stringResource(R.string.income_shift_day_value, it) }
             ?: stringResource(R.string.off), detail = stringResource(R.string.income_shift_day_help),
             onClick = if (canEdit) ({ editing = "income_shift_day" }) else null)
@@ -220,6 +224,31 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             context = stringResource(if (shared) R.string.shared_pot_card_title else R.string.money_mode_split_value),
             onClick = if (canEdit && !switching) ({ choosingMode = true }) else null)
         modeError?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
+    }
+    if (choosingSalary) {
+        val chosen = view.config.categories.firstOrNull { it.startsPeriod && !it.archived }?.id
+        val options = listOf<Pair<String?, String>>(null to stringResource(R.string.off)) +
+            view.config.categories.filter { !it.archived && it.appliesTo != AppliesTo.EXPENSE }.sortedBy { it.sort }.map { it.id to it.name }
+        AlertDialog(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+            onDismissRequest = { choosingSalary = false },
+            title = { Text(stringResource(R.string.salary_period_choose)) },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    for ((id, name) in options) {
+                        val mark: (@Composable androidx.compose.foundation.layout.RowScope.() -> Unit)? =
+                            if (id == chosen) { { androidx.compose.material3.Icon(Icons.Outlined.Check, null) } } else null
+                        ListRow(name, end = mark,
+                            modifier = Modifier.semantics { selected = id == chosen }, onClick = {
+                                choosingSalary = false
+                                if (id != chosen) change { api -> ledger.setSalaryCategory(view.id, id, api) }
+                            })
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { choosingSalary = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
     if (choosingMode) {
         MoneyModeSheet(h.moneyMode, dismissLabel = stringResource(R.string.cancel), onDismiss = { choosingMode = false }, onChoose = { mode ->

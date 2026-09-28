@@ -200,10 +200,15 @@ class Ledger(
         if (h.mode == CONNECTED) return
         val local = Wire.json.parseToJsonElement(h.configJson).jsonObject
         val joined = api.householdCreateFromLocal(LocalHousehold.forUpload(local))
-        val config = LocalHousehold.afterUpload(local, joined.config)
+        // The upload does not carry the salary category (fulla_household_create_from_local
+        // predates it): chosen again here. A backend too old to know it keeps the fixed day.
+        val uploaded = LocalHousehold.salaryCategory(local)?.let { salary ->
+            runCatching { api.setSalaryCategory(joined.householdId, salary) }.getOrNull()
+        } ?: joined.config
+        val config = LocalHousehold.afterUpload(local, uploaded)
         db.withTransaction {
             households.upsert(h.copy(mode = CONNECTED, configJson = config.toString(),
-                configVersion = LocalHousehold.version(joined.config), cursor = 0))
+                configVersion = LocalHousehold.version(uploaded), cursor = 0))
             val rows = Edits.connect(transactions.all(householdId).map(Rows::local))
             transactions.upsert(rows.map { Rows.entity(householdId, it) })
         }
@@ -249,6 +254,11 @@ class Ledger(
         updateConfig(householdId, api, keepDeferred = "money_mode" !in patch) { bundle ->
             if (api == null) LocalHousehold.updateHousehold(bundle, patch) else api.householdUpdate(householdId, patch)
         }
+
+    /** Chooses the category whose income starts each period, or none (null): periods go back to the fixed day. */
+    suspend fun setSalaryCategory(householdId: String, categoryId: String?, api: FullaApi?) = updateConfig(householdId, api) { bundle ->
+        if (api == null) LocalHousehold.setSalaryCategory(bundle, categoryId) else api.setSalaryCategory(householdId, categoryId)
+    }
 
     /**
      * Tombstones a trip; its expenses stay, as everyday expenses. A connected

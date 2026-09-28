@@ -17,11 +17,14 @@ import java.util.Locale
  * How one household's numbers and dates are written: its currency, in the
  * phone's language. Built once per config and handed down.
  */
-class Formats(val config: Config, val locale: Locale = Locale.getDefault()) {
+class Formats(
+    val config: Config,
+    val locale: Locale = Locale.getDefault(),
+    val periodRule: PeriodRule = PeriodRule(config.household.periodStartDay, config.household.incomeShiftDay),
+) {
     val currency: Currency = Currency.of(config.household.currency) ?: Currency("XXX", 2)
     private val money = MoneyFormatter(locale, currency)
     val decimalStyle: DecimalStyle = DecimalStyle.of(locale)
-    val periodRule = PeriodRule(config.household.periodStartDay, config.household.incomeShiftDay)
     private val dayFormat = DateTimeFormatter.ofPattern("EEE d MMM", locale)
     private val longDate = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale)
 
@@ -35,7 +38,7 @@ class Formats(val config: Config, val locale: Locale = Locale.getDefault()) {
 
     /** The period's dates, when it does not start on the 1st. */
     fun periodRange(p: YearMonth): String? {
-        if (config.household.periodStartDay == 1) return null
+        if (config.household.periodStartDay == 1 && !periodRule.anchored) return null
         val days = periodRule.daysOf(p)
         return "${dayFormat.format(days.start)} – ${dayFormat.format(days.endInclusive)}"
     }

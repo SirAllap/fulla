@@ -29,7 +29,7 @@ this page explains them.
 | `members` | People in a household. `user_id` is null for members without an account. `role`: owner, admin, member. `status`: active, archived, removed |
 | `invites` | Single-use codes with expiry, optionally earmarked to claim a member without an account |
 | `accounts` | Cash, checking, savings, credit card or other, with an opening balance |
-| `categories` | One level of nesting; each applies to expenses, income or both |
+| `categories` | One level of nesting; each applies to expenses, income or both; at most one is the salary that starts periods (`starts_period`) |
 | `custom_fields` | Household-defined fields; values live in `transactions.extras` under the field's `key` |
 | `budgets` | A limit per category and period (`YYYY-MM`), or for every period when `period` is null |
 | `recurring_rules` | A transaction template and a schedule |
@@ -83,6 +83,15 @@ A period is named `YYYY-MM`. By default it is the calendar month. A household
 can instead start periods on a day from 2 to 28 (a period is named after the
 month it ends in), or keep calendar months and count fixed income dated on or
 after a given day in the next month. Not both.
+
+A household can also mark one income category as its salary
+(`categories.starts_period`). Then every income in it starts a period that
+runs until the day before the next one, named after the month it funds (its
+own month before the 15th, the next from then on); the latest period stays
+open until the next salary is written down, and what counts is each row's
+date, not when it was written. Days before the first salary follow the rules
+above. A salary a recurring item wrote on its own counts once somebody has
+saved it.
 
 ## Balances
 

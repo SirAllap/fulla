@@ -268,6 +268,13 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
                     onPick = { draft.categoryId = it; problem = null }, onMore = { allCategories = !allCategories })
             }
             DetailsLine(view, draft) { detailsOpen = true }
+            // A salary a recurring item wrote on its own starts no period until somebody saves it.
+            val salaryId = view.config.categories.firstOrNull { it.startsPeriod && !it.archived }?.id
+            if (existing != null && salaryId != null && existing.kind == TransactionKind.INCOME && existing.categoryId == salaryId &&
+                !io.github.sirallap.fulla.core.rules.PeriodAnchors.confirmed(existing)) {
+                Text(stringResource(R.string.salary_generated_note), style = FullaType.secondary, color = c.inkMuted,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+            }
             problem?.let { Text(it, style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) }
         }
         }

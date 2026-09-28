@@ -1,0 +1,250 @@
+{
+  "rule": "anchored_period_of",
+  "vectors": [
+    {
+      "why": "no salary yet: the fixed day decides",
+      "input": {
+        "date": "2030-09-28",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": []
+      },
+      "expected": "2030-10"
+    },
+    {
+      "why": "the day of a salary starts its period",
+      "input": {
+        "date": "2030-08-28",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-09"
+    },
+    {
+      "why": "a salary paid early ends the previous period the day before",
+      "input": {
+        "date": "2030-09-25",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-09"
+    },
+    {
+      "why": "paid on the 26th: the 26th is already the next period",
+      "input": {
+        "date": "2030-09-26",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-10"
+    },
+    {
+      "why": "a late salary keeps the old period open past the fixed day",
+      "input": {
+        "date": "2030-10-30",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-10"
+    },
+    {
+      "why": "a salary on the 1st funds its own month",
+      "input": {
+        "date": "2030-11-01",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-11"
+    },
+    {
+      "why": "the last period stays open until the next salary",
+      "input": {
+        "date": "2030-12-05",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-11"
+    },
+    {
+      "why": "the order rows were written in does not matter, only the dates",
+      "input": {
+        "date": "2030-09-26",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-11-01",
+          "2030-09-26",
+          "2030-08-28"
+        ]
+      },
+      "expected": "2030-10"
+    },
+    {
+      "why": "a second income of the same name does not split the period",
+      "input": {
+        "date": "2030-10-10",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01",
+          "2030-10-05"
+        ]
+      },
+      "expected": "2030-10"
+    },
+    {
+      "why": "before the first salary: the fixed day",
+      "input": {
+        "date": "2030-08-10",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-08"
+    },
+    {
+      "why": "before the first salary, capped to end the day before it",
+      "input": {
+        "date": "2030-08-27",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 1,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28"
+        ]
+      },
+      "expected": "2030-08"
+    },
+    {
+      "why": "capped: a salary on the 1st takes the days before it into the previous period",
+      "input": {
+        "date": "2030-09-29",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 28,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-10-01"
+        ]
+      },
+      "expected": "2030-09"
+    },
+    {
+      "why": "calendar fallback before the first salary",
+      "input": {
+        "date": "2030-07-31",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 1,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-07"
+    },
+    {
+      "why": "income counts like anything else once salaries decide",
+      "input": {
+        "date": "2030-09-27",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-08-28",
+          "2030-09-26",
+          "2030-11-01"
+        ]
+      },
+      "expected": "2030-10"
+    },
+    {
+      "why": "a salary on the 14th funds its own month",
+      "input": {
+        "date": "2030-03-20",
+        "kind": "expense",
+        "recurrence": "variable",
+        "period_start_day": 1,
+        "income_shift_day": null,
+        "anchors": [
+          "2030-03-14"
+        ]
+      },
+      "expected": "2030-03"
+    },
+    {
+      "why": "shifted income still applies before the first salary",
+      "input": {
+        "date": "2030-02-27",
+        "kind": "income",
+        "recurrence": "fixed",
+        "period_start_day": 1,
+        "income_shift_day": 25,
+        "anchors": [
+          "2030-04-26"
+        ]
+      },
+      "expected": "2030-03"
+    }
+  ]
+}

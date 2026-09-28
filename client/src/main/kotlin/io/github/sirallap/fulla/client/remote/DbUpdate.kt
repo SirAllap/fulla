@@ -8,10 +8,10 @@ import java.net.URI
 /**
  * The schema level this build was written against. Bumped whenever the
  * constant returned by `public.fulla_schema_version()` is bumped
- * (`supabase/migrations/0016_schema_version.sql`); a Kotlin test reads the
- * migration's SQL and fails if the two drift apart.
+ * (first in `supabase/migrations/0016_schema_version.sql`, since redefined by
+ * later migrations); a Kotlin test reads the migrations' SQL and fails if the two drift apart.
  */
-const val EXPECTED_SCHEMA_VERSION = 16
+const val EXPECTED_SCHEMA_VERSION = 17
 
 /** What Settings should tell the owner about the backend's schema. */
 sealed class DbUpdateStatus {

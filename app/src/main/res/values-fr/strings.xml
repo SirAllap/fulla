@@ -89,6 +89,12 @@
     <string name="income_shift_day">Paie anticipée comptée le mois suivant</string>
     <string name="income_shift_day_help">Les revenus fixes à partir de ce jour comptent dans la période suivante.</string>
     <string name="income_shift_day_value">À partir du %1$d</string>
+    <string name="salary_period">Les périodes commencent avec le salaire</string>
+    <string name="salary_period_help">Chaque revenu de cette catégorie ouvre une période, quel que soit le jour où il arrive. Jusqu’au suivant, la période reste ouverte.</string>
+    <string name="salary_period_choose">Quel revenu ouvre une période ?</string>
+    <string name="salary_overdue">Salaire reçu ?</string>
+    <string name="salary_overdue_text">%1$d jours depuis le dernier salaire. La période reste ouverte jusqu’à ce que vous ajoutiez le suivant.</string>
+    <string name="salary_generated_note">Ajouté automatiquement. Enregistrez-le à sa vraie date quand il arrive, et la période commencera ce jour-là.</string>
     <string name="into_account">Sur le compte</string>
     <string name="invite">Inviter</string>
     <string name="invite_already_member">Vous êtes déjà dans ce foyer.</string>

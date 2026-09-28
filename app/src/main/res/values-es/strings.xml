@@ -89,6 +89,12 @@
     <string name="income_shift_day">El cobro adelantado cuenta en el siguiente</string>
     <string name="income_shift_day_help">Los ingresos fijos desde este día cuentan en el periodo siguiente.</string>
     <string name="income_shift_day_value">Desde el día %1$d</string>
+    <string name="salary_period">El periodo empieza con la nómina</string>
+    <string name="salary_period_help">Cada ingreso de esta categoría abre un periodo, llegue el día que llegue. Hasta el siguiente, el periodo sigue abierto.</string>
+    <string name="salary_period_choose">¿Qué ingreso abre el periodo?</string>
+    <string name="salary_overdue">¿Ya cobraste?</string>
+    <string name="salary_overdue_text">Han pasado %1$d días desde la última nómina. El periodo sigue abierto hasta que anotes la siguiente.</string>
+    <string name="salary_generated_note">Anotado automáticamente. Guárdalo cuando entre, con su fecha real, y el periodo empezará ese día.</string>
     <string name="into_account">En la cuenta</string>
     <string name="invite">Invitar</string>
     <string name="invite_already_member">Ya estás en este hogar.</string>

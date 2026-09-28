@@ -20,10 +20,11 @@ class SchemaVersionTest {
 
     @Test
     fun `EXPECTED_SCHEMA_VERSION matches the constant fulla_schema_version returns`() {
-        val migration = File(root, "supabase/migrations/0016_schema_version.sql")
+        // The last migration that (re)defines it holds the constant in force.
+        val migration = File(root, "supabase/migrations").listFiles { f -> f.name.endsWith(".sql") }!!.sortedBy { it.name }
+            .last { Regex("""create (or replace )?function public\.fulla_schema_version\(""").containsMatchIn(it.readText()) }
         val sql = migration.readText()
-        val start = sql.indexOf("create function public.fulla_schema_version(")
-        check(start >= 0) { "fulla_schema_version's definition was not found in ${migration.path}" }
+        val start = Regex("""create (or replace )?function public\.fulla_schema_version\(""").find(sql)!!.range.first
         val body = sql.substring(start)
         val match = Regex("""select\s+(\d+)\s*;""").find(body)
         assertNotNull(match, "could not find fulla_schema_version's `select <n>;` body")

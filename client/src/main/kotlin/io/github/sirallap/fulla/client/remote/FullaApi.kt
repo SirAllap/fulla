@@ -72,6 +72,10 @@ class FullaApi(private val supabase: Supabase) : SyncBackend {
     suspend fun householdUpdate(householdId: String, patch: JsonObject): JsonObject =
         obj("fulla_household_update", "p_household_id" to householdId, "p_patch" to patch)
 
+    /** Chooses the salary category whose income starts each period, or none (null). Returns the config bundle. */
+    suspend fun setSalaryCategory(householdId: String, categoryId: String?): JsonObject =
+        obj("fulla_household_set_salary_category", "p_household_id" to householdId, "p_category_id" to categoryId)
+
     suspend fun inviteCreate(householdId: String, role: String, claimMemberId: String?, ttlHours: Int): Invite {
         val o = obj("fulla_invite_create", "p_household_id" to householdId, "p_role" to role,
             "p_claim_member_id" to claimMemberId, "p_ttl_hours" to ttlHours)

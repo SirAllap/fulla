@@ -121,7 +121,8 @@ migration ends by revoking it.
 
 ### Rules that exist twice agree
 
-The period rule (`fulla.period_of`), split allocation (`fulla.split_shares`),
+The period rule (`fulla.period_of`, and `fulla.anchored_period_of` when the
+salary starts each period), split allocation (`fulla.split_shares`),
 member balances and name normalisation also exist in the app. Their vectors
 are in `testdata/vectors/`; both sides must pass them. Change one side, change
 the other.

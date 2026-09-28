@@ -240,6 +240,7 @@ test('a stranger gets not_member from every function that takes a household', (c
     ['fulla_sync_push', { p_household_id: hh, p_mutations: [] }],
     ['fulla_sync_pull', { p_household_id: hh }],
     ['fulla_period_summary', { p_household_id: hh, p_from: '2030-01', p_to: '2030-12' }],
+    ['fulla_household_set_salary_category', { p_household_id: hh, p_category_id: null }],
     ['fulla_member_balances', { p_household_id: hh }],
   ];
   const covered = new Set(calls.map((c) => c[0]));
@@ -1028,6 +1029,50 @@ test('period totals follow the household period rules', (ctx) => {
   assert.deepEqual(summary().map((s) => [s.period, s.income_minor, s.expense_minor]), [['2030-02', 100000, 2000]]);
 });
 
+test('periods follow the salary once the household has chosen its salary category', (ctx) => {
+  const salary = (date, over = {}) => Object.assign({ id: uuid(), kind: 'income', date, amount_minor: 100000,
+    category_id: ctx.cat('Salary'), recurrence: 'fixed' }, over);
+  rpc(ctx.db, ctx.alice, 'fulla_household_update', { p_household_id: ctx.hh, p_patch: { period_start_day: 28 } });
+  push(ctx, ctx.alice, [
+    upsert(salary('2030-08-28')),
+    upsert(expense(ctx, { date: '2030-09-29', amount_minor: 2000 })),
+  ]);
+  const summary = () => rpc(ctx.db, ctx.alice, 'fulla_period_summary', { p_household_id: ctx.hh, p_from: '2030-01', p_to: '2030-12' })
+    .map((s) => [s.period, s.income_minor, s.expense_minor]);
+  assert.deepEqual(summary(), [['2030-09', 100000, 0], ['2030-10', 0, 2000]], 'the fixed day until a salary category is chosen');
+
+  const before = rpc(ctx.db, ctx.alice, 'fulla_config_get', { p_household_id: ctx.hh }).config_version;
+  const cfg = rpc(ctx.db, ctx.alice, 'fulla_household_set_salary_category', { p_household_id: ctx.hh, p_category_id: ctx.cat('Salary') });
+  assert.ok(cfg.config_version > before, 'other phones hear of it');
+  assert.deepEqual(cfg.categories.filter((c) => c.starts_period).map((c) => c.name), ['Salary']);
+  assert.deepEqual(summary(), [['2030-09', 100000, 2000]], 'no salary since: September stays open');
+
+  // Written down later, dated the same day as the purchase: the purchase moves.
+  push(ctx, ctx.alice, [upsert(salary('2030-09-29'))]);
+  assert.deepEqual(summary(), [['2030-09', 100000, 0], ['2030-10', 100000, 2000]]);
+
+  // An edit of a category keeps its flag; a generated occurrence counts only once saved.
+  rpc(ctx.db, ctx.alice, 'fulla_category_upsert', { p_household_id: ctx.hh,
+    p_category: cfg.categories.find((c) => c.name === 'Salary') });
+  const rule = { id: uuid(), name: 'Pay', start_date: '2030-01-01', schedule: { freq: 'monthly', by_month_day: 28 },
+                 template: { kind: 'income', amount_minor: 100000, category_id: ctx.cat('Salary'), recurrence: 'fixed' } };
+  rpc(ctx.db, ctx.alice, 'fulla_recurring_upsert', { p_household_id: ctx.hh, p_rule: rule });
+  const stamp = '2030-10-28T06:00:00.000Z';
+  const generated = salary('2030-10-28', { recurring_rule_id: rule.id, occurrence_date: '2030-10-28', created_at: stamp });
+  push(ctx, ctx.alice, [upsert(generated, stamp), upsert(expense(ctx, { date: '2030-10-29', amount_minor: 500 }))]);
+  assert.deepEqual(summary(), [['2030-09', 100000, 0], ['2030-10', 200000, 2500]]);
+  push(ctx, ctx.alice, [upsert(generated, '2030-10-28T09:00:00.000Z', stamp)]);
+  assert.deepEqual(summary(), [['2030-09', 100000, 0], ['2030-10', 100000, 2000], ['2030-11', 100000, 500]]);
+
+  const cleared = rpc(ctx.db, ctx.alice, 'fulla_household_set_salary_category', { p_household_id: ctx.hh, p_category_id: null });
+  assert.deepEqual(cleared.categories.filter((c) => c.starts_period), []);
+  expectError(ctx.db, ctx.alice, 'fulla_household_set_salary_category',
+    { p_household_id: ctx.hh, p_category_id: ctx.cat('Groceries') }, 'validation_failed', 400);
+  const bob = join(ctx, 'Bob');
+  expectError(ctx.db, bob.user, 'fulla_household_set_salary_category',
+    { p_household_id: ctx.hh, p_category_id: ctx.cat('Salary') }, 'forbidden_role', 403);
+});
+
 rawTest('a new household gets its defaults in its language, English for any other', ({ db }) => {
   const names = {};
   for (const locale of ['fr-FR', 'de-DE', 'it-IT', 'pt-BR', 'nl-NL']) {
@@ -1103,6 +1148,16 @@ rawTest('period_of agrees with testdata/vectors/period.json', ({ db }) => {
     const i = v.input;
     const got = db.admin(`select fulla.period_of(${h.literal(i.date)}::date, ${h.literal(i.kind)}, ${h.literal(i.recurrence)},
       ${i.period_start_day}, ${i.income_shift_day === null ? 'null' : i.income_shift_day});`).out;
+    assert.equal(got, v.expected, v.why);
+  }
+});
+
+rawTest('anchored_period_of agrees with testdata/vectors/period_anchors.json', ({ db }) => {
+  for (const v of vectors('period_anchors.json')) {
+    const i = v.input;
+    const anchors = `array[${i.anchors.map((d) => `${h.literal(d)}::date`).join(',')}]::date[]`;
+    const got = db.admin(`select fulla.anchored_period_of(${h.literal(i.date)}::date, ${h.literal(i.kind)}, ${h.literal(i.recurrence)},
+      ${i.period_start_day}, ${i.income_shift_day === null ? 'null' : i.income_shift_day}, ${anchors});`).out;
     assert.equal(got, v.expected, v.why);
   }
 });

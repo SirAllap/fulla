@@ -64,6 +64,21 @@ class VectorsTest {
     }
 
     @Test
+    fun `period rule with salaries agrees with period_anchors json`() {
+        for (v in vectors("period_anchors.json")) {
+            val i = v.jsonObject["input"]!!.jsonObject
+            val rule = PeriodRule(i["period_start_day"]!!.jsonPrimitive.int, i["income_shift_day"]?.jsonPrimitive?.intOrNull,
+                i["anchors"]!!.jsonArray.map { LocalDate.parse(it.jsonPrimitive.content) })
+            val got = rule.label(
+                LocalDate.parse(i["date"]!!.jsonPrimitive.content),
+                TransactionKind.of(i["kind"]!!.jsonPrimitive.content)!!,
+                Recurrence.of(i["recurrence"]!!.jsonPrimitive.content),
+            )
+            assertEquals(v.jsonObject["expected"]!!.jsonPrimitive.content, got, v.jsonObject["why"]!!.jsonPrimitive.content)
+        }
+    }
+
+    @Test
     fun `allocator agrees with allocate json`() {
         for (v in vectors("allocate.json")) {
             val i = v.jsonObject["input"]!!.jsonObject

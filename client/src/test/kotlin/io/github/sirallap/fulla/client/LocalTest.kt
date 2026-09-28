@@ -93,6 +93,23 @@ class LocalTest {
     }
 
     @Test
+    fun `a household on this phone chooses one salary category, and edits keep it`() {
+        val bundle = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        val config = Wire.config(bundle)
+        val salary = config.categories.first { it.appliesTo == io.github.sirallap.fulla.core.model.AppliesTo.INCOME }
+        val groceries = config.categories.first { it.appliesTo == io.github.sirallap.fulla.core.model.AppliesTo.EXPENSE }
+        val chosen = LocalHousehold.setSalaryCategory(bundle, salary.id)
+        assertEquals(salary.id, LocalHousehold.salaryCategory(chosen))
+        assertEquals(listOf(salary.id), Wire.config(chosen).categories.filter { it.startsPeriod }.map { it.id })
+        assertTrue(LocalHousehold.version(chosen) > LocalHousehold.version(bundle))
+        val edited = LocalHousehold.upsert(chosen, Structure.CATEGORY, Wire.category(salary.copy(name = "Pay")))
+        assertEquals(salary.id, LocalHousehold.salaryCategory(edited), "an edit that does not name the flag keeps it")
+        assertEquals(salary.id, LocalHousehold.salaryCategory(Wire.bundle(Wire.config(edited))), "it survives the bundle")
+        assertFailsWith<IllegalArgumentException> { LocalHousehold.setSalaryCategory(bundle, groceries.id) }
+        assertNull(LocalHousehold.salaryCategory(LocalHousehold.setSalaryCategory(chosen, null)))
+    }
+
+    @Test
     fun `updateHousehold refuses the exclusive pair`() {
         var bundle = LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
         // A patch that would leave both a mid-month start and shifted income set is refused,

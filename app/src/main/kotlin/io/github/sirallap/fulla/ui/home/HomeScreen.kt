@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Insights
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.outlined.Opacity
@@ -72,7 +73,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
     val f = view.formats
-    val current = remember(view.config.household) { f.currentPeriod() }
+    val current = remember(view) { f.currentPeriod() }
     var periodText by rememberSaveable { mutableStateOf(current.toString()) }
     val period = YearMonth.parse(periodText)
     var expanded by remember { mutableStateOf<String?>(null) }
@@ -129,6 +130,11 @@ fun HomeScreen(
                         description = description,
                         modifier = Modifier.guideTarget(TourStop.JAR).padding(horizontal = 8.dp, vertical = 8.dp),
                     )
+                }
+                val waiting = if (period == current) f.periodRule.daysWaitingForSalary(today) else null
+                if (waiting != null) item {
+                    ListRow(stringResource(R.string.salary_overdue), context = stringResource(R.string.salary_overdue_text, waiting),
+                        icon = Icons.Outlined.Payments, iconTint = c.warning)
                 }
                 if (backupDue) item {
                     ListRow(stringResource(R.string.backup_due), context = stringResource(R.string.backup_due_text),
