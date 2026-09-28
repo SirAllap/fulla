@@ -111,5 +111,11 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk fulla.apk
           notes="docs/releases/$FULLA_VERSION_NAME.md"
           [ -f "$notes" ] || { echo "Fulla $FULLA_VERSION_NAME." > "$RUNNER_TEMP/notes.md"; notes="$RUNNER_TEMP/notes.md"; }
-          gh release create "$GITHUB_REF_NAME" "fulla-$FULLA_VERSION_NAME.apk" fulla.apk dist/setup.sql \
-            --title "Fulla $FULLA_VERSION_NAME" --notes-file "$notes"
+          # A release published by hand (from the phone, say) already exists:
+          # its notes stay as written and only the files are attached.
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "fulla-$FULLA_VERSION_NAME.apk" fulla.apk dist/setup.sql --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "fulla-$FULLA_VERSION_NAME.apk" fulla.apk dist/setup.sql \
+              --title "Fulla $FULLA_VERSION_NAME" --notes-file "$notes"
+          fi
