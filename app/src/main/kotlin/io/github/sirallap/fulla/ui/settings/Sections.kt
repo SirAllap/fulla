@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.semantics.selected
@@ -110,9 +111,7 @@ internal fun EditDialog(
     onSave: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initial) }
-    AlertDialog(
-        modifier = Modifier.fillMaxWidth(0.94f),
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+    FullaDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -228,9 +227,7 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         })
     }
     owedFromBefore?.let { owed ->
-        AlertDialog(
-            modifier = Modifier.fillMaxWidth(0.94f),
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+        FullaDialog(
             onDismissRequest = { owedFromBefore = null },
             title = { Text(stringResource(R.string.shared_pot_existing_title)) },
             text = { Text(stringResource(R.string.shared_pot_existing_text, view.memberName(owed.memberId), view.formats.money(owed.balanceMinor))) },
@@ -239,9 +236,7 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         )
     }
     if (splittingAgain) {
-        AlertDialog(
-            modifier = Modifier.fillMaxWidth(0.94f),
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+        FullaDialog(
             onDismissRequest = { splittingAgain = false },
             title = { Text(stringResource(R.string.money_between_members)) },
             text = { Text(stringResource(R.string.split_again_text)) },
@@ -399,9 +394,7 @@ private fun StructureDialog(
     // values exactly as they were, the same "absent keeps its value" rule as
     // opening_balance_date already had.
     var balanceTouched by remember { mutableStateOf(isNewAccount) }
-    AlertDialog(
-        modifier = Modifier.fillMaxWidth(0.94f),
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+    FullaDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit)) },
         text = {
@@ -656,9 +649,7 @@ fun AboutSettings() {
         })
     }
     notices?.let { text ->
-        AlertDialog(
-            modifier = Modifier.fillMaxWidth(0.94f),
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+        FullaDialog(
             onDismissRequest = { notices = null },
             title = { Text(stringResource(R.string.third_party_licences)) },
             text = {

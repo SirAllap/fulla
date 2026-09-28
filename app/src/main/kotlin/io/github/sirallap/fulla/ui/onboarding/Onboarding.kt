@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.onboarding
 
+import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -155,9 +156,7 @@ fun Onboarding(onCancel: (() -> Unit)?) {
         }
     }
     confirmInvite?.let { pending ->
-        androidx.compose.material3.AlertDialog(
-            modifier = Modifier.fillMaxWidth(0.94f),
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+        FullaDialog(
             onDismissRequest = { confirmInvite = null },
             title = { Text(stringResource(R.string.invite_confirm_title)) },
             text = {

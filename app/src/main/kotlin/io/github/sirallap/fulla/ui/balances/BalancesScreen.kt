@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.balances
 
+import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Column
@@ -126,9 +127,7 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
     }
 
     confirming?.let { p ->
-        AlertDialog(
-            modifier = Modifier.fillMaxWidth(0.94f),
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+        FullaDialog(
             onDismissRequest = { confirming = null },
             title = { Text(stringResource(R.string.record_payment)) },
             text = { Text(stringResource(R.string.record_payment_text, view.memberName(p.fromMemberId), f.money(p.amountMinor), view.memberName(p.toMemberId))) },

@@ -24,7 +24,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -360,7 +363,7 @@ fun TripToggle(
 
     if (pickerOpen) {
         ModalBottomSheet(onDismissRequest = { pickerOpen = false }, containerColor = c.paper) {
-            Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
                 Section(tripPickerTitle, top = 0.dp)
                 for (t in trips) {
                     ListRow(t.name, icon = tripKindIcon(t.kind), onClick = { onSelect(t.id); pickerOpen = false })
@@ -574,7 +577,7 @@ fun MoneyModeSheet(
 ) {
     val c = FullaTheme.colors
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.paper) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
             Text(stringResource(R.string.money_mode_ask_title), style = FullaType.title, color = c.ink,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp).semantics { heading() })
             for ((mode, title, help) in listOf(
@@ -641,7 +644,7 @@ fun GuideSheet(
     val c = FullaTheme.colors
     val onOutsideTap: () -> Unit = if (dismissOnOutsideTap) onSkip else ({})
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onOutsideTap, containerColor = c.paper, modifier = modifier) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(title, style = FullaType.title, color = c.ink, modifier = Modifier.weight(1f).semantics { heading() })
                 stepOf?.let { (i, n) -> Text(stringResource(R.string.guide_step_of, i, n), style = FullaType.secondary, color = c.inkMuted) }
@@ -657,4 +660,35 @@ fun GuideSheet(
             }
         }
     }
+}
+
+/**
+ * Every dialog in the app. As wide as the screen allows, which makes its
+ * window full-screen and edge to edge: without the system bars' insets, a
+ * phone with three-button navigation drew Save and Cancel under its bar.
+ * The dialog keeps clear of the status bar, the navigation bar and the
+ * keyboard; when its content is taller than what is left, the text scrolls
+ * and the buttons stay in view.
+ */
+@Composable
+fun FullaDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: (@Composable () -> Unit)? = null,
+    title: (@Composable () -> Unit)? = null,
+    text: (@Composable () -> Unit)? = null,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        modifier = modifier
+            .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing)
+            .padding(vertical = 12.dp)
+            .fillMaxWidth(0.94f),
+        dismissButton = dismissButton,
+        title = title,
+        text = text,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    )
 }
