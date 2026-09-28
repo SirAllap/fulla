@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.insights
 
+import io.github.sirallap.fulla.ui.components.listEndPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -73,7 +74,7 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
 
     Column(Modifier.fillMaxSize()) {
         BackHeader(stringResource(R.string.insights), onBack)
-        LazyColumn(Modifier.weight(1f)) {
+        LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding()) {
             item {
                 Section(f.period(period), top = 8.dp())
                 ListRow(stringResource(R.string.no_spend_days), context = stringResource(R.string.no_spend_days_text),

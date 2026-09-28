@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.balances
 
+import io.github.sirallap.fulla.ui.components.listEndPadding
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.window.DialogProperties
@@ -69,7 +70,7 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
 
     Column(Modifier.fillMaxSize()) {
         TabHeader(stringResource(R.string.tab_balances), actions = { headerActions() })
-        LazyColumn(Modifier.weight(1f)) {
+        LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding(aboveTabBar = true)) {
             if (shared) {
                 item {
                     EmptyState(Icons.Outlined.Savings, stringResource(R.string.shared_pot_card_title), stringResource(R.string.shared_pot_card_text),

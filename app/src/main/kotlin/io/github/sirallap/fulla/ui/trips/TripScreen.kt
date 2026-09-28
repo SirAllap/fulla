@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.trips
 
+import io.github.sirallap.fulla.ui.components.listEndPadding
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Column
@@ -132,7 +133,7 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
             paid
         }
 
-        LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = listEndPadding()) {
             if (budget != null) {
                 item {
                     HeroJar(

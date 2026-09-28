@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import io.github.sirallap.fulla.ui.components.listEndPadding
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Column
@@ -99,7 +100,7 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
     Column(Modifier.fillMaxSize()) {
         BackHeader(stringResource(section.title), onBack)
         error?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
-        LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = listEndPadding()) {
             when (section) {
                 SettingsSection.INDEX -> index(view, onBack, onOpen, pendingUpdate, onUpdate, dbNeedsUpdate, projectUrl)
                 SettingsSection.HOUSEHOLDS -> item { HouseholdsSettings(view, onBack) }

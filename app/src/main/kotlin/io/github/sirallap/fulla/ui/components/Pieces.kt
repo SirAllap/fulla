@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -693,4 +695,17 @@ fun FullaDialog(
         text = text,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     )
+}
+
+/**
+ * Room after a list's last row. A full screen (settings, insights, a trip)
+ * ends where the navigation bar starts, so its list makes room for the bar;
+ * a tab's list sits above the tab bar, which already does ([aboveTabBar]).
+ * Either way a margin follows, so the last row never sits at the very edge.
+ */
+@Composable
+fun listEndPadding(aboveTabBar: Boolean = false): androidx.compose.foundation.layout.PaddingValues {
+    val bar = if (aboveTabBar) 0.dp
+    else androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    return androidx.compose.foundation.layout.PaddingValues(bottom = bar + 32.dp)
 }

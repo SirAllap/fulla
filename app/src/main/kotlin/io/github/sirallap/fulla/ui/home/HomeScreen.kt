@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.home
 
+import io.github.sirallap.fulla.ui.components.listEndPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -115,7 +116,7 @@ fun HomeScreen(
             onRefresh = { scope.launch { refreshing = true; container.syncAll(); refreshing = false } },
             modifier = Modifier.weight(1f),
         ) {
-            LazyColumn(Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = listEndPadding(aboveTabBar = true)) {
                 item {
                     PeriodSelector(f.period(period), { periodText = period.minusMonths(1).toString() },
                         { periodText = period.plusMonths(1).toString() }, canGoNext = period < current)

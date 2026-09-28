@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.history
 
+import io.github.sirallap.fulla.ui.components.listEndPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -116,11 +117,11 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
             modifier = Modifier.weight(1f),
         ) {
             if (shown.isEmpty()) {
-                LazyColumn(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = listEndPadding(aboveTabBar = true)) {
                     item { EmptyState(Icons.Outlined.ReceiptLong, stringResource(R.string.empty_history_title), stringResource(R.string.empty_history_text)) }
                 }
             } else {
-                LazyColumn(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = listEndPadding(aboveTabBar = true)) {
                     for ((day, rows) in days) {
                         item(key = "day-$day") { Section(f.day(day), top = 16.dp) }
                         items(rows, key = { it.id }) { row -> HistoryRow(view, row) { onOpen(row.id) } }
