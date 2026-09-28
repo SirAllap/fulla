@@ -667,8 +667,10 @@ fun GuideSheet(
  * window full-screen and edge to edge: without the system bars' insets, a
  * phone with three-button navigation drew Save and Cancel under its bar.
  * The dialog keeps clear of the status bar, the navigation bar and the
- * keyboard; when its content is taller than what is left, the text scrolls
- * and the buttons stay in view.
+ * keyboard, with a margin above and below so the buttons never sit at the
+ * very edge a thumb has to reach for (a tall dialog on a gesture phone did);
+ * when its content is taller than what is left, the text scrolls and the
+ * buttons stay in view.
  */
 @Composable
 fun FullaDialog(
@@ -684,7 +686,7 @@ fun FullaDialog(
         confirmButton = confirmButton,
         modifier = modifier
             .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing)
-            .padding(vertical = 12.dp)
+            .padding(vertical = 32.dp)
             .fillMaxWidth(0.94f),
         dismissButton = dismissButton,
         title = title,
