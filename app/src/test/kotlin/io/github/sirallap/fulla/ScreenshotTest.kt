@@ -77,7 +77,7 @@ open class ScreenshotTest {
         }
     }
 
-    @Test fun overview() = shot("1-overview") { HomeScreen(view, {}, {}, {}, {}, {}) }
+    @Test fun overview() = shot("1-overview") { HomeScreen(view, {}, {}, {}, {}, {}, {}) }
     @Test fun add() = shot("2-add") { EntryScreen(view, editingId = null, headerActions = {}, onDone = {}) }
     @Test fun history() = shot("3-history") { HistoryScreen(view, {}, {}, {}) }
     @Test fun balances() = shot("4-balances") { BalancesScreen(view, {}) }
