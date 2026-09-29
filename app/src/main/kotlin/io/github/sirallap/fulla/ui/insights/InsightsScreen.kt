@@ -52,7 +52,7 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
     var periodText by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(current.toString()) }
     val period = java.time.YearMonth.parse(periodText)
     val report = remember(view, period) { a.report(view.active, period, today, view.config.trips) }
-    val projection = remember(view, period) { if (period == current) a.projection(view.active, period, today) else null }
+    val forecast = remember(view, period) { if (period == current) a.forecast(view.active, period, today, view.deletedIds) else null }
     val series = remember(view, period) { a.series(view.active, period, 12).reversed().filter { it.incomeMinor != 0L || it.expenseMinor != 0L } }
     val unit = remember(view) { (0 until f.currency.minorUnits).fold(1L) { acc, _ -> acc * 10 } }
     val trends = remember(view, period) { a.trends(view.active, period, minimumMinor = 10 * unit) }
@@ -96,7 +96,7 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
         LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding()) {
             item(key = "figures") {
                 Section(stringResource(R.string.period_summary), top = 8.dp())
-                FigureTiles(view, period, report, projection, noSpend)
+                FigureTiles(view, period, report, forecast, noSpend)
             }
             if (top.isNotEmpty()) item(key = "vials") {
                 val total = top.sumOf { it.amountMinor }.toFloat()
@@ -220,7 +220,7 @@ private fun FigureTiles(
     view: HouseholdView,
     period: java.time.YearMonth,
     report: io.github.sirallap.fulla.core.analytics.PeriodReport,
-    projection: io.github.sirallap.fulla.core.analytics.Projection?,
+    forecast: io.github.sirallap.fulla.core.analytics.PeriodForecast?,
     noSpend: Int,
 ) {
     val c = FullaTheme.colors
@@ -247,9 +247,11 @@ private fun FigureTiles(
         tiles.add { m -> LiquidTile(stringResource(R.string.daily_average), f.money(report.dailyMinor), m,
             context = stringResource(R.string.day_of, report.days, length), level = report.days.toFloat() / length, phase = 2.1f) }
     }
-    projection?.let { p ->
-        tiles.add { m -> LiquidTile(stringResource(R.string.forecast), f.money(p.projectedMinor), m, context = stringResource(R.string.forecast_text),
-            level = if (p.projectedMinor > 0) p.spentSoFarMinor.toFloat() / p.projectedMinor else null, phase = 2.9f) }
+    forecast?.takeIf { it.known }?.let { p ->
+        val end = p.spentEndMinor!!
+        tiles.add { m -> LiquidTile(stringResource(R.string.forecast), "≈ " + f.money(end), m,
+            context = stringResource(R.string.forecast_between, f.money(p.spentEndLowMinor!!), f.money(p.spentEndHighMinor!!)),
+            level = if (end > 0) (p.spentMinor.toFloat() / end).coerceIn(0f, 1f) else null, phase = 2.9f) }
     }
     if (report.count > 0) {
         tiles.add { m -> LiquidTile(stringResource(R.string.movements), "${report.count}", m,

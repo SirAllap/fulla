@@ -110,11 +110,8 @@ class AnalyticsTest {
     }
 
     @Test
-    fun `projection, trends and days without spending`() {
+    fun `trends and days without spending`() {
         val a = Analytics(config, PeriodRule())
-        val p = a.projection(listOf(Fixtures.expense(1_000, d(1)), Fixtures.expense(1_000, d(10))), jan, d(10))!!
-        assertEquals(2_000L, p.spentSoFarMinor)
-        assertEquals(6_200L, p.projectedMinor)
         val history = (1..3).map { Fixtures.expense(1_000, LocalDate.of(2029, 12, 1).minusMonths(it - 1L)) } +
             Fixtures.expense(5_000, d(2))
         val t = a.trends(history, jan, minimumMinor = 500).single()

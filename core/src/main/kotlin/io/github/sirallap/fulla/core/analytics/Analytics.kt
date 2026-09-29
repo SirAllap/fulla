@@ -6,6 +6,8 @@ import io.github.sirallap.fulla.core.model.Config
 import io.github.sirallap.fulla.core.model.Recurrence
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.recurring.DeterministicId
+import io.github.sirallap.fulla.core.recurring.Scheduler
 import io.github.sirallap.fulla.core.rules.PeriodRule
 import io.github.sirallap.fulla.core.split.Allocator
 import io.github.sirallap.fulla.core.text.normalizeName
@@ -72,9 +74,65 @@ data class PeriodReport(
     val budgetsOver: Int,
 )
 
+enum class FixedStatus { PAID, PENDING, SKIPPED }
+
+/** One charge of a recurring expense that writes itself: [amountMinor] is what was charged once [PAID], what is expected otherwise. */
+data class FixedItem(
+    val ruleId: String,
+    val name: String,
+    val categoryId: String?,
+    val amountMinor: Long,
+    val date: LocalDate,
+    val status: FixedStatus,
+)
+
+/**
+ * How a period is likely to end (Analytics.forecast). [everydayRestMinor]
+ * and its bounds (about four in five periods land between them) are null
+ * when there is no earlier period to learn from.
+ */
+data class PeriodForecast(
+    /** Days of the period gone, today included, and its expected length. */
+    val day: Int,
+    val length: Int,
+    val incomeMinor: Long,
+    /** Income from recurring items that has not been written yet. */
+    val expectedIncomeMinor: Long,
+    val spentMinor: Long,
+    val fixed: List<FixedItem>,
+    val everydayLowMinor: Long?,
+    val everydayRestMinor: Long?,
+    val everydayHighMinor: Long?,
+) {
+    val fixedPaidMinor: Long get() = fixed.filter { it.status == FixedStatus.PAID }.sumOf { it.amountMinor }
+    val fixedToComeMinor: Long get() = fixed.filter { it.status == FixedStatus.PENDING }.sumOf { it.amountMinor }
+    /** Every fixed cost of the period that is or will be charged: skipped ones are not. */
+    val fixedTotalMinor: Long get() = fixedPaidMinor + fixedToComeMinor
+    val totalIncomeMinor: Long get() = incomeMinor + expectedIncomeMinor
+    val known: Boolean get() = everydayRestMinor != null
+
+    val spentEndMinor: Long? get() = everydayRestMinor?.let { spentMinor + fixedToComeMinor + it }
+    val spentEndLowMinor: Long? get() = everydayLowMinor?.let { spentMinor + fixedToComeMinor + it }
+    val spentEndHighMinor: Long? get() = everydayHighMinor?.let { spentMinor + fixedToComeMinor + it }
+
+    /** What would be left: null without income, or without an estimate. */
+    val keptMinor: Long? get() = spentEndMinor?.takeIf { totalIncomeMinor > 0 }?.let { totalIncomeMinor - it }
+    val keptLowMinor: Long? get() = spentEndHighMinor?.takeIf { totalIncomeMinor > 0 }?.let { totalIncomeMinor - it }
+    val keptHighMinor: Long? get() = spentEndLowMinor?.takeIf { totalIncomeMinor > 0 }?.let { totalIncomeMinor - it }
+
+    /** What the income leaves once every fixed cost is paid; null without income. */
+    val afterFixedMinor: Long? get() = totalIncomeMinor.takeIf { it > 0 }?.let { it - fixedTotalMinor }
+
+    /**
+     * What can be spent per day from tomorrow on: what income leaves after
+     * what was spent and what is still to be charged, over the days left;
+     * null without income or once the period is over.
+     */
+    val perDayMinor: Long? get() = if (totalIncomeMinor > 0 && length > day) (totalIncomeMinor - spentMinor - fixedToComeMinor) / (length - day) else null
+}
+
 data class MemberSpending(val memberId: String, val paidMinor: Long, val shareMinor: Long)
 
-data class Projection(val spentSoFarMinor: Long, val projectedMinor: Long, val daysElapsed: Int, val daysInPeriod: Int)
 
 data class Trend(val categoryId: String, val currentMinor: Long, val averageMinor: Long) {
     val change: Double get() = if (averageMinor == 0L) 1.0 else (currentMinor - averageMinor).toDouble() / averageMinor
@@ -250,28 +308,100 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
     }
 
     /**
-     * Where variable spending is heading by the end of the period: the daily
-     * pace so far times the days left, plus fixed spending so far and fixed
-     * spending the previous period had that this one has not had yet.
+     * How the period is likely to end, as of [today]; null when it has not
+     * started, or when it is open past its expected length (waiting for the
+     * salary that closes it), where there is no end to forecast to.
+     *
+     * Three parts, each the most exact it can be:
+     * - what was spent so far, which is a fact;
+     * - the fixed costs still to be charged, read off the recurring items
+     *   that write themselves (date and amount are known, so nothing is
+     *   estimated), and the income due from recurring income;
+     * - the everyday spending still to come: what the previous three periods
+     *   spent per day from this day on (their median, so one odd period
+     *   hardly moves it), adjusted by how this one is going against them,
+     *   more so as the days pass. Rows written by a recurring item, rows of a
+     *   trip and rows that look like a recurring item are not everyday
+     *   spending: the first are counted exactly, the others are one-offs.
+     *
+     * With no earlier period to learn from, the everyday part is left out
+     * (null) rather than guessed: the fixed part is still exact.
+     *
+     * [deleted] are the ids of rows written off, so a fixed cost skipped for
+     * a month is not waited for.
      */
-    fun projection(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate): Projection? {
-        val days = rule.daysOf(period)
-        if (today < days.start) return null
+    fun forecast(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate, deleted: Set<String> = emptySet()): PeriodForecast? {
+        val range = rule.daysOf(period)
+        if (today < range.start) return null
+        if (rule.isOpen(period) && today > range.endInclusive) return null
         val list = txs.toList()
-        val daysInPeriod = (ChronoUnit.DAYS.between(days.start, days.endInclusive) + 1).toInt()
-        val elapsed = (ChronoUnit.DAYS.between(days.start, minOf(today, days.endInclusive)) + 1).toInt()
-        val now = counted(list, period).filter { it.kind != TransactionKind.INCOME }
-        val variable = now.filter { it.recurrence == Recurrence.VARIABLE }.sumOf { spend(it) }
-        val fixed = now.filter { it.recurrence == Recurrence.FIXED }.sumOf { spend(it) }
-        val fixedBefore = counted(list, period.minusMonths(1))
-            .filter { it.kind != TransactionKind.INCOME && it.recurrence == Recurrence.FIXED }.sumOf { spend(it) }
-        val projectedVariable = if (elapsed > 0) variable * daysInPeriod / elapsed else variable
-        return Projection(
-            spentSoFarMinor = variable + fixed,
-            projectedMinor = projectedVariable + maxOf(fixed, fixedBefore),
-            daysElapsed = elapsed,
-            daysInPeriod = daysInPeriod,
-        )
+        val length = (ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt()
+        val day = (ChronoUnit.DAYS.between(range.start, minOf(today, range.endInclusive)) + 1).toInt()
+        val byId = list.associateBy { it.id }
+
+        val rules = config.recurringRules.filter { it.active && it.autoCreate }
+        val fixed = mutableListOf<FixedItem>()
+        var expectedIncome = 0L
+        for (r in rules) {
+            for (date in Scheduler.occurrences(r, range.start, range.endInclusive)) {
+                val id = DeterministicId.occurrence(r.id, date)
+                val written = byId[id]
+                if (r.template.kind == TransactionKind.INCOME) {
+                    if (written == null && id !in deleted) expectedIncome += r.template.amountMinor
+                    continue
+                }
+                if (r.template.kind != TransactionKind.EXPENSE) continue
+                fixed += when {
+                    written != null && written.isActive -> FixedItem(r.id, r.name, r.template.categoryId, written.amountMinor, date, FixedStatus.PAID)
+                    id in deleted || written != null -> FixedItem(r.id, r.name, r.template.categoryId, r.template.amountMinor, date, FixedStatus.SKIPPED)
+                    else -> FixedItem(r.id, r.name, r.template.categoryId, r.template.amountMinor, date, FixedStatus.PENDING)
+                }
+            }
+        }
+
+        // Everyday spending: not written by a recurring item, not a trip's, not like a recurring item.
+        fun everyday(t: Transaction) = t.recurringRuleId == null && t.tripId == null && rules.none { r ->
+            r.template.kind == TransactionKind.EXPENSE && r.template.categoryId != null && t.categoryId == r.template.categoryId &&
+                abs(t.amountMinor - r.template.amountMinor) * 100 <= r.template.amountMinor * LIKE_RULE_PERCENT
+        }
+        val now = counted(list, period)
+        val spent = now.filter { it.kind != TransactionKind.INCOME }.sumOf { spend(it) }
+        val income = now.filter { it.kind == TransactionKind.INCOME }.sumOf { it.amountMinor }
+        val everydaySoFar = now.filter { it.kind != TransactionKind.INCOME && everyday(it) }.sumOf { spend(it) }
+
+        // What earlier periods spent per day from this day on, and up to it.
+        val earlier = (1..3).map { period.minusMonths(it.toLong()) }.mapNotNull { p ->
+            val r = rule.daysOf(p)
+            val rows = counted(list, p).filter { it.kind != TransactionKind.INCOME }
+            if (rows.isEmpty()) return@mapNotNull null
+            val everydayRows = rows.filter { everyday(it) }
+            val len = (ChronoUnit.DAYS.between(r.start, r.endInclusive) + 1).toInt()
+            val cut = r.start.plusDays(day.toLong() - 1)
+            val before = everydayRows.filter { it.date <= cut }.sumOf { spend(it) }
+            val after = everydayRows.filter { it.date > cut }.sumOf { spend(it) }
+            // Per day of what is left of that period; the whole period's pace when too little is left to tell.
+            val rate = if (len - day >= MIN_DAYS_LEFT) after.toDouble() / (len - day) else (before + after).toDouble() / len
+            rate to before
+        }
+        var lowRest: Long? = null
+        var midRest: Long? = null
+        var highRest: Long? = null
+        if (earlier.isNotEmpty() && day <= length) {
+            val rate = median(earlier.map { it.first })
+            val usualSoFar = median(earlier.map { it.second.toDouble() })
+            val ratio = if (usualSoFar > 0) (everydaySoFar / usualSoFar).coerceIn(0.5, 2.0) else 1.0
+            val weight = day.toDouble() / (day + SHRINK_DAYS)
+            val rest = (rate * (length - day) * (1 + weight * (ratio - 1))).coerceAtLeast(0.0)
+            midRest = rest.toLong()
+            lowRest = (rest * LOW_FACTOR).toLong()
+            highRest = (rest * HIGH_FACTOR).toLong()
+        }
+        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest)
+    }
+
+    private fun median(values: List<Double>): Double {
+        val s = values.sorted()
+        return if (s.size % 2 == 1) s[s.size / 2] else (s[s.size / 2 - 1] + s[s.size / 2]) / 2
     }
 
     /**
@@ -405,3 +535,10 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         return out
     }
 }
+
+private const val LIKE_RULE_PERCENT = 5L
+private const val MIN_DAYS_LEFT = 3
+private const val SHRINK_DAYS = 10
+/** The everyday spending still to come lands between these times the estimate in about four periods of five. */
+private const val LOW_FACTOR = 0.6
+private const val HIGH_FACTOR = 1.6

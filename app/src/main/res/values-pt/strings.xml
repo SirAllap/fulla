@@ -77,7 +77,6 @@
     <string name="forget_shared_confirm">A casa continua no servidor e nos outros telefones. Entre de novo para recuperá-la.</string>
     <string name="from_account">De</string>
     <string name="have_account">Já tenho uma conta</string>
-    <string name="heading_for">Projeção</string>
     <string name="hero_description">%1$s: entrou %2$s, saiu %3$s, sobram %4$s.</string>
     <string name="household_name">Nome da casa</string>
     <string name="import_n">Importar %1$d</string>
@@ -578,7 +577,6 @@
     <string name="daily_average">Média diária</string>
     <string name="daily_average_text">Em %1$d dias</string>
     <string name="forecast">No fim do período</string>
-    <string name="forecast_text">No ritmo atual, fixos incluídos.</string>
     <string name="movements">Gastos</string>
     <string name="movements_text">%1$s em média</string>
     <string name="fixed_variable">Fixos e variáveis</string>
@@ -592,4 +590,29 @@
     <string name="savings">Economia</string>
     <string name="of_income">De %1$s que entraram</string>
     <string name="of_days">De %1$d dias</string>
+    <string name="forecast_spend">Você gastaria</string>
+    <string name="forecast_kept">Sobrariam</string>
+    <string name="forecast_between">Entre %1$s e %2$s</string>
+    <string name="forecast_add_income">Registre suas receitas para ver quanto sobraria</string>
+    <string name="forecast_no_history">Ainda não há histórico para estimar os gastos do dia a dia. É preciso pelo menos um período anterior.</string>
+    <string name="forecast_how">Como é calculado?</string>
+    <string name="forecast_income">Receitas</string>
+    <string name="forecast_income_context">%1$s recebidos, %2$s ainda por entrar</string>
+    <string name="forecast_spent_so_far">Gasto até hoje</string>
+    <string name="forecast_fixed_to_come">Fixos a cobrar</string>
+    <string name="forecast_everyday">Gastos do dia a dia que faltam</string>
+    <string name="forecast_note">Os gastos do dia a dia são o que os últimos três períodos gastaram por dia a partir deste dia, ajustado a como este está indo. Os fixos são exatos: vêm dos seus itens recorrentes.</string>
+    <string name="fixed_costs">Gastos fixos</string>
+    <string name="fixed_total_tile">Fixos do período</string>
+    <string name="fixed_to_come_tile">Faltam cobrar</string>
+    <string name="fixed_progress">%1$s cobrados · faltam %2$s</string>
+    <string name="fixed_after">Depois dos fixos sobram</string>
+    <string name="fixed_of_income">De %1$s de receitas</string>
+    <string name="per_day">Você pode gastar por dia</string>
+    <string name="per_day_text">O que sobra depois de cobrados os fixos que faltam, em %1$d dias</string>
+    <string name="fixed_paid_on">Cobrado em %1$s</string>
+    <string name="fixed_due_on">Previsto em %1$s</string>
+    <string name="fixed_skipped">Ignorado</string>
+    <string name="fixed_empty_title">Ainda não há gastos fixos</string>
+    <string name="fixed_empty_text">Adicione aluguel, carro, assinaturas… Eles se registram sozinhos no dia, e a previsão sabe o que vem.</string>
 </resources>

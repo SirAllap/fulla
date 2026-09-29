@@ -68,6 +68,7 @@ fun HomeScreen(
     headerActions: @Composable () -> Unit,
     onOpen: (String) -> Unit,
     onBudgets: () -> Unit,
+    onFixedCosts: () -> Unit,
     onInsights: () -> Unit,
     onBackup: () -> Unit,
     onTrip: (String) -> Unit = {},
@@ -86,7 +87,7 @@ fun HomeScreen(
     val summary = remember(view, period) { view.analytics.summary(view.active, period) }
     val hero = remember(view, period) { view.analytics.hero(view.active, period) }
     val categories = remember(view, period) { view.analytics.byCategory(view.active, period) }
-    val projection = remember(view, period) { if (period == current) view.analytics.projection(view.active, period, LocalDate.now()) else null }
+    val forecast = remember(view, period) { if (period == current) view.analytics.forecast(view.active, period, LocalDate.now(), view.deletedIds) else null }
     val budgets = remember(view, period) { Budgets.forPeriod(view.config, period) }
     val budgetSpend = remember(view, period) {
         view.analytics.budgetSpend(view.active, period, view.config.trips).associate { it.categoryId to it.amountMinor }
@@ -175,10 +176,6 @@ fun HomeScreen(
                 }
                 item {
                     Figures(view, summary.incomeMinor, summary.expenseMinor, summary.savingsRate)
-                    projection?.takeIf { it.daysElapsed < it.daysInPeriod }?.let { p ->
-                        ListRow(stringResource(R.string.heading_for), context = stringResource(R.string.day_of, p.daysElapsed, p.daysInPeriod),
-                            end = { AmountText(f.money(p.projectedMinor), color = c.inkMuted) })
-                    }
                     if (budgets.isNotEmpty()) {
                         val spent = budgetSpend.filterKeys { it in budgets }.values.sum()
                         val total = budgets.values.sum()
@@ -204,6 +201,7 @@ fun HomeScreen(
                         )
                     }
                 }
+                if (forecast != null) item(key = "forecast") { ForecastSection(view, forecast, onFixedCosts) }
                 if (categories.isEmpty()) {
                     item {
                         EmptyState(Icons.Outlined.Opacity, stringResource(R.string.empty_period_title), stringResource(R.string.empty_period_text))

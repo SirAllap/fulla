@@ -77,7 +77,6 @@
     <string name="forget_shared_confirm">Der Haushalt bleibt auf dem Server und den anderen Telefonen. Melde dich wieder an, um ihn zurückzuholen.</string>
     <string name="from_account">Von</string>
     <string name="have_account">Ich habe schon ein Konto</string>
-    <string name="heading_for">Hochgerechnet</string>
     <string name="hero_description">%1$s: %2$s rein, %3$s raus, %4$s übrig.</string>
     <string name="household_name">Name des Haushalts</string>
     <string name="import_n">%1$d importieren</string>
@@ -578,7 +577,6 @@
     <string name="daily_average">Tagesdurchschnitt</string>
     <string name="daily_average_text">Über %1$d Tage</string>
     <string name="forecast">Am Ende des Zeitraums</string>
-    <string name="forecast_text">Im bisherigen Tempo, Fixkosten eingerechnet.</string>
     <string name="movements">Ausgaben</string>
     <string name="movements_text">Im Schnitt %1$s</string>
     <string name="fixed_variable">Fix und variabel</string>
@@ -592,4 +590,29 @@
     <string name="savings">Gespart</string>
     <string name="of_income">Von %1$s Einnahmen</string>
     <string name="of_days">Von %1$d Tagen</string>
+    <string name="forecast_spend">Du würdest ausgeben</string>
+    <string name="forecast_kept">Dir blieben</string>
+    <string name="forecast_between">Zwischen %1$s und %2$s</string>
+    <string name="forecast_add_income">Trage deine Einnahmen ein, um zu sehen, was dir bliebe</string>
+    <string name="forecast_no_history">Noch nicht genug Verlauf, um die Alltagsausgaben zu schätzen. Es braucht mindestens einen früheren Zeitraum.</string>
+    <string name="forecast_how">Wie wird das berechnet?</string>
+    <string name="forecast_income">Einnahmen</string>
+    <string name="forecast_income_context">%1$s eingegangen, %2$s noch fällig</string>
+    <string name="forecast_spent_so_far">Bisher ausgegeben</string>
+    <string name="forecast_fixed_to_come">Noch fällige Fixkosten</string>
+    <string name="forecast_everyday">Noch zu erwartende Alltagsausgaben</string>
+    <string name="forecast_note">Die Alltagsausgaben sind das, was die letzten drei Zeiträume ab diesem Tag pro Tag ausgegeben haben, angepasst daran, wie dieser läuft. Fixkosten sind exakt: Sie stammen aus deinen wiederkehrenden Posten.</string>
+    <string name="fixed_costs">Fixkosten</string>
+    <string name="fixed_total_tile">Fixkosten im Zeitraum</string>
+    <string name="fixed_to_come_tile">Noch abzubuchen</string>
+    <string name="fixed_progress">%1$s abgebucht · %2$s offen</string>
+    <string name="fixed_after">Nach deinen Fixkosten bleiben</string>
+    <string name="fixed_of_income">Von %1$s Einnahmen</string>
+    <string name="per_day">Du kannst pro Tag ausgeben</string>
+    <string name="per_day_text">Was bleibt, wenn die noch fälligen Fixkosten abgebucht sind, über %1$d Tage</string>
+    <string name="fixed_paid_on">Abgebucht am %1$s</string>
+    <string name="fixed_due_on">Fällig am %1$s</string>
+    <string name="fixed_skipped">Übersprungen</string>
+    <string name="fixed_empty_title">Noch keine Fixkosten</string>
+    <string name="fixed_empty_text">Füge Miete, Auto, Abos hinzu … Sie werden am Tag selbst eingetragen, und die Vorhersage weiß, was kommt.</string>
 </resources>

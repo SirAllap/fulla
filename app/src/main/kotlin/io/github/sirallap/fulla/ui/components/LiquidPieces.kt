@@ -137,6 +137,7 @@ fun LiquidBarRow(
     modifier: Modifier = Modifier,
     context: String? = null,
     phase: Float = 0f,
+    start: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val c = FullaTheme.colors
@@ -152,6 +153,7 @@ fun LiquidBarRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        start?.invoke()
         Column(Modifier.weight(1f)) {
             Text(title, style = FullaType.body, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (context != null) Text(context, style = FullaType.label, color = c.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)

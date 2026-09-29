@@ -77,7 +77,6 @@
     <string name="forget_shared_confirm">El hogar sigue en el servidor y en los otros teléfonos. Puedes volver a iniciar sesión para recuperarlo.</string>
     <string name="from_account">Desde</string>
     <string name="have_account">Ya tengo una cuenta</string>
-    <string name="heading_for">Rumbo a</string>
     <string name="hero_description">%1$s: entran %2$s, salen %3$s, quedan %4$s.</string>
     <string name="household_name">Nombre del hogar</string>
     <string name="import_n">Importar %1$d</string>
@@ -578,7 +577,6 @@
     <string name="daily_average">Media diaria</string>
     <string name="daily_average_text">En %1$d días</string>
     <string name="forecast">Al final del periodo</string>
-    <string name="forecast_text">Al ritmo de ahora, fijos incluidos.</string>
     <string name="movements">Gastos</string>
     <string name="movements_text">%1$s de media</string>
     <string name="fixed_variable">Fijos y variables</string>
@@ -592,4 +590,29 @@
     <string name="savings">Ahorro</string>
     <string name="of_income">De %1$s que entraron</string>
     <string name="of_days">De %1$d días</string>
+    <string name="forecast_spend">Gastarías</string>
+    <string name="forecast_kept">Te quedarían</string>
+    <string name="forecast_between">Entre %1$s y %2$s</string>
+    <string name="forecast_add_income">Apunta tus ingresos para ver cuánto te quedaría</string>
+    <string name="forecast_no_history">Aún no hay historial para estimar el gasto del día a día. Hace falta al menos un periodo anterior.</string>
+    <string name="forecast_how">¿Cómo se calcula?</string>
+    <string name="forecast_income">Ingresos</string>
+    <string name="forecast_income_context">%1$s entrados, %2$s por entrar</string>
+    <string name="forecast_spent_so_far">Gastado hasta hoy</string>
+    <string name="forecast_fixed_to_come">Fijos por cobrar</string>
+    <string name="forecast_everyday">Gasto del día a día que falta</string>
+    <string name="forecast_note">El gasto del día a día es lo que gastaron los últimos tres periodos por día desde este día, ajustado a cómo va este. Los fijos son exactos: salen de tus gastos fijos.</string>
+    <string name="fixed_costs">Gastos fijos</string>
+    <string name="fixed_total_tile">Fijos del periodo</string>
+    <string name="fixed_to_come_tile">Faltan por cobrar</string>
+    <string name="fixed_progress">%1$s cobrados · faltan %2$s</string>
+    <string name="fixed_after">Tras tus fijos te quedan</string>
+    <string name="fixed_of_income">De %1$s de ingresos</string>
+    <string name="per_day">Puedes gastar al día</string>
+    <string name="per_day_text">Lo que queda una vez cobrados los fijos que faltan, en %1$d días</string>
+    <string name="fixed_paid_on">Cobrado el %1$s</string>
+    <string name="fixed_due_on">Toca el %1$s</string>
+    <string name="fixed_skipped">Omitido</string>
+    <string name="fixed_empty_title">Aún no tienes gastos fijos</string>
+    <string name="fixed_empty_text">Añade alquiler, coche, suscripciones… Se apuntan solos su día y así la previsión sabe lo que viene.</string>
 </resources>

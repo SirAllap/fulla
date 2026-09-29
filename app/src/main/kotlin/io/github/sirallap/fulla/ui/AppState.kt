@@ -27,6 +27,8 @@ class HouseholdView(
     /** The periods follow the salaries written down, when the household has chosen a salary category. */
     val formats = Formats(config, periodRule = io.github.sirallap.fulla.core.rules.PeriodRule.of(config, active))
     val analytics = Analytics(config, formats.periodRule)
+    /** Ids of rows written off: a fixed cost skipped for a month is not waited for. */
+    val deletedIds: Set<String> = rows.filter { !it.transaction.isActive }.map { it.transaction.id }.toSet()
     val me: Member? get() = config.me()
 
     fun memberName(id: String?): String = config.member(id)?.displayName ?: "?"

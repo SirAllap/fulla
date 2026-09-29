@@ -77,7 +77,6 @@
     <string name="forget_shared_confirm">La casa resta sul server e sugli altri telefoni. Accedi di nuovo per riaverla.</string>
     <string name="from_account">Da</string>
     <string name="have_account">Ho già un account</string>
-    <string name="heading_for">In proiezione</string>
     <string name="hero_description">%1$s: entrati %2$s, usciti %3$s, restano %4$s.</string>
     <string name="household_name">Nome della casa</string>
     <string name="import_n">Importa %1$d</string>
@@ -578,7 +577,6 @@
     <string name="daily_average">Media giornaliera</string>
     <string name="daily_average_text">Su %1$d giorni</string>
     <string name="forecast">A fine periodo</string>
-    <string name="forecast_text">Al ritmo attuale, spese fisse comprese.</string>
     <string name="movements">Spese</string>
     <string name="movements_text">%1$s in media</string>
     <string name="fixed_variable">Fisse e variabili</string>
@@ -592,4 +590,29 @@
     <string name="savings">Risparmio</string>
     <string name="of_income">Su %1$s entrati</string>
     <string name="of_days">Su %1$d giorni</string>
+    <string name="forecast_spend">Spenderesti</string>
+    <string name="forecast_kept">Ti resterebbero</string>
+    <string name="forecast_between">Tra %1$s e %2$s</string>
+    <string name="forecast_add_income">Aggiungi le tue entrate per vedere cosa ti resterebbe</string>
+    <string name="forecast_no_history">Non c’è ancora abbastanza storico per stimare le spese di ogni giorno. Serve almeno un periodo precedente.</string>
+    <string name="forecast_how">Come si calcola?</string>
+    <string name="forecast_income">Entrate</string>
+    <string name="forecast_income_context">%1$s entrati, %2$s ancora attesi</string>
+    <string name="forecast_spent_so_far">Speso finora</string>
+    <string name="forecast_fixed_to_come">Spese fisse ancora da addebitare</string>
+    <string name="forecast_everyday">Spese di ogni giorno ancora da fare</string>
+    <string name="forecast_note">Le spese di ogni giorno sono quanto hanno speso al giorno gli ultimi tre periodi da questo giorno in poi, adattato a come va questo. Le spese fisse sono esatte: vengono dai tuoi elementi ricorrenti.</string>
+    <string name="fixed_costs">Spese fisse</string>
+    <string name="fixed_total_tile">Fisse del periodo</string>
+    <string name="fixed_to_come_tile">Ancora da addebitare</string>
+    <string name="fixed_progress">%1$s addebitati · mancano %2$s</string>
+    <string name="fixed_after">Dopo le spese fisse</string>
+    <string name="fixed_of_income">Su %1$s di entrate</string>
+    <string name="per_day">Puoi spendere al giorno</string>
+    <string name="per_day_text">Quello che resta una volta addebitate le spese fisse in arrivo, su %1$d giorni</string>
+    <string name="fixed_paid_on">Addebitato il %1$s</string>
+    <string name="fixed_due_on">Previsto il %1$s</string>
+    <string name="fixed_skipped">Saltato</string>
+    <string name="fixed_empty_title">Ancora nessuna spesa fissa</string>
+    <string name="fixed_empty_text">Aggiungi affitto, auto, abbonamenti… Si scrivono da soli il loro giorno e la previsione sa cosa sta arrivando.</string>
 </resources>

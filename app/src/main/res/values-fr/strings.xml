@@ -77,7 +77,6 @@
     <string name="forget_shared_confirm">Le foyer reste sur le serveur et sur les autres téléphones. Reconnectez-vous pour le retrouver.</string>
     <string name="from_account">Depuis</string>
     <string name="have_account">J\'ai déjà un compte</string>
-    <string name="heading_for">En route vers</string>
     <string name="hero_description">%1$s : %2$s entrés, %3$s sortis, %4$s restants.</string>
     <string name="household_name">Nom du foyer</string>
     <string name="import_n">Importer %1$d</string>
@@ -578,7 +577,6 @@
     <string name="daily_average">Moyenne par jour</string>
     <string name="daily_average_text">Sur %1$d jours</string>
     <string name="forecast">À la fin de la période</string>
-    <string name="forecast_text">Au rythme actuel, frais fixes compris.</string>
     <string name="movements">Dépenses</string>
     <string name="movements_text">%1$s en moyenne</string>
     <string name="fixed_variable">Fixes et variables</string>
@@ -592,4 +590,29 @@
     <string name="savings">Épargne</string>
     <string name="of_income">Sur %1$s de revenus</string>
     <string name="of_days">Sur %1$d jours</string>
+    <string name="forecast_spend">Vous dépenseriez</string>
+    <string name="forecast_kept">Il vous resterait</string>
+    <string name="forecast_between">Entre %1$s et %2$s</string>
+    <string name="forecast_add_income">Ajoutez vos revenus pour voir ce qu’il vous resterait</string>
+    <string name="forecast_no_history">Pas encore assez d’historique pour estimer les dépenses courantes. Il faut au moins une période précédente.</string>
+    <string name="forecast_how">Comment est-ce calculé ?</string>
+    <string name="forecast_income">Revenus</string>
+    <string name="forecast_income_context">%1$s reçus, %2$s encore attendus</string>
+    <string name="forecast_spent_so_far">Dépensé jusqu’ici</string>
+    <string name="forecast_fixed_to_come">Frais fixes à venir</string>
+    <string name="forecast_everyday">Dépenses courantes à venir</string>
+    <string name="forecast_note">Les dépenses courantes sont ce que les trois dernières périodes ont dépensé par jour à partir de ce jour, ajusté à la marche de celle-ci. Les frais fixes sont exacts : ils viennent de vos éléments récurrents.</string>
+    <string name="fixed_costs">Frais fixes</string>
+    <string name="fixed_total_tile">Fixes de la période</string>
+    <string name="fixed_to_come_tile">Reste à prélever</string>
+    <string name="fixed_progress">%1$s prélevés · %2$s à venir</string>
+    <string name="fixed_after">Après vos frais fixes</string>
+    <string name="fixed_of_income">Sur %1$s de revenus</string>
+    <string name="per_day">Vous pouvez dépenser par jour</string>
+    <string name="per_day_text">Ce qui reste une fois les frais fixes à venir prélevés, sur %1$d jours</string>
+    <string name="fixed_paid_on">Prélevé le %1$s</string>
+    <string name="fixed_due_on">Prévu le %1$s</string>
+    <string name="fixed_skipped">Ignoré</string>
+    <string name="fixed_empty_title">Pas encore de frais fixes</string>
+    <string name="fixed_empty_text">Ajoutez loyer, voiture, abonnements… Ils s’écrivent tout seuls le jour venu, et la prévision sait ce qui arrive.</string>
 </resources>

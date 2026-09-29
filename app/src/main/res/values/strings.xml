@@ -78,7 +78,6 @@
     <string name="forget_shared_confirm">The household stays on the server and on the other phones. You can sign in again to get it back.</string>
     <string name="from_account">From</string>
     <string name="have_account">I already have an account</string>
-    <string name="heading_for">Heading for</string>
     <string name="hero_description">%1$s: %2$s in, %3$s out, %4$s left.</string>
     <string name="household_name">Household name</string>
     <string name="import_n">Import %1$d</string>
@@ -628,7 +627,6 @@
     <string name="daily_average">Daily average</string>
     <string name="daily_average_text">Over %1$d days</string>
     <string name="forecast">By the end of the period</string>
-    <string name="forecast_text">At the pace so far, fixed costs included.</string>
     <string name="movements">Expenses</string>
     <string name="movements_text">%1$s on average</string>
     <string name="fixed_variable">Fixed and variable</string>
@@ -642,4 +640,29 @@
     <string name="savings">Kept</string>
     <string name="of_income">Of %1$s that came in</string>
     <string name="of_days">Of %1$d days</string>
+    <string name="forecast_spend">You would spend</string>
+    <string name="forecast_kept">You would keep</string>
+    <string name="forecast_between">Between %1$s and %2$s</string>
+    <string name="forecast_add_income">Add your income to see what you would keep</string>
+    <string name="forecast_no_history">Not enough history yet to estimate everyday spending. It needs at least one earlier period.</string>
+    <string name="forecast_how">How is it worked out?</string>
+    <string name="forecast_income">Income</string>
+    <string name="forecast_income_context">%1$s in, %2$s still due</string>
+    <string name="forecast_spent_so_far">Spent so far</string>
+    <string name="forecast_fixed_to_come">Fixed costs still to charge</string>
+    <string name="forecast_everyday">Everyday spending still to come</string>
+    <string name="forecast_note">Everyday spending is what the last three periods spent per day from this day on, adjusted to how this period is going. Fixed costs are exact: they come from your recurring items.</string>
+    <string name="fixed_costs">Fixed costs</string>
+    <string name="fixed_total_tile">Fixed this period</string>
+    <string name="fixed_to_come_tile">Still to charge</string>
+    <string name="fixed_progress">%1$s charged · %2$s to go</string>
+    <string name="fixed_after">After your fixed costs</string>
+    <string name="fixed_of_income">Of %1$s of income</string>
+    <string name="per_day">You can spend per day</string>
+    <string name="per_day_text">What is left once the fixed costs to come are charged, over %1$d days</string>
+    <string name="fixed_paid_on">Charged on %1$s</string>
+    <string name="fixed_due_on">Due on %1$s</string>
+    <string name="fixed_skipped">Skipped</string>
+    <string name="fixed_empty_title">No fixed costs yet</string>
+    <string name="fixed_empty_text">Add rent, car, subscriptions… They write themselves on their day, and the forecast knows what is coming.</string>
 </resources>
