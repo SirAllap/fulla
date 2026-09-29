@@ -190,7 +190,9 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                             } else if (every > 1) {
                                 Text(stringResource(R.string.first_payment_in), style = FullaType.label, color = FullaTheme.colors.inkMuted)
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    for (m in 1..12) Chip(Month.of(m).getDisplayName(TextStyle.SHORT_STANDALONE, locale), m == firstMonth, { firstMonth = m })
+                                    // Every N months from the first one: the months it falls due in light up, so the calendar is seen at once.
+                                    val dueMonths = (0 until 12).map { (firstMonth - 1 + it * every) % 12 + 1 }.toSet()
+                                    for (m in 1..12) Chip(Month.of(m).getDisplayName(TextStyle.SHORT_STANDALONE, locale), m in dueMonths, { firstMonth = m })
                                 }
                             }
                         }
