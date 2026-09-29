@@ -69,6 +69,13 @@ class RecurringTest {
     }
 
     @Test
+    fun `a cycle started today charges from here on, not the days already gone`() {
+        val r = rule(Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 15), start = "2030-09-29")
+        assertEquals(listOf("2030-12-15", "2031-03-15", "2031-06-15"), dates(r, "2030-09-29", "2031-06-30"))
+        assertEquals(emptyList(), dates(r, "2030-09-01", "2030-09-28"))
+    }
+
+    @Test
     fun `nothing before the start, after the end, or while paused`() {
         val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 10), start = "2030-03-01", end = "2030-05-10")
         assertEquals(listOf("2030-03-10", "2030-04-10", "2030-05-10"), dates(r, "2030-01-01", "2030-12-31"))

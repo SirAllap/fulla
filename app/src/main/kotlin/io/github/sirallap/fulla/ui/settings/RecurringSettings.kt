@@ -110,6 +110,7 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
 private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDismiss: () -> Unit, onSave: (RecurringRule) -> Unit) {
     val f = view.formats
     val locale = Locale.getDefault()
+    val dateFormat = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale)
     val t = existing?.template
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var kind by remember { mutableStateOf(t?.kind ?: TransactionKind.EXPENSE) }
@@ -138,18 +139,26 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
             Frequency.YEARLY -> Schedule(Frequency.YEARLY, byMonthDay = dayNumber, byMonth = month)
         }
     }.getOrNull()
+    // From today on, never back: a cycle "every N months from <month>" starts at the first month, this one or later, that is on it,
+    // and a past day of this month is not charged now.
     val startDate = when {
-        frequency == Frequency.MONTHLY && every > 1 -> (existing?.startDate ?: LocalDate.now()).withDayOfMonth(1).withMonth(firstMonth)
+        frequency == Frequency.MONTHLY && every > 1 -> existing?.let { e -> e.startDate.takeIf { e.schedule.interval == every && Math.floorMod(it.monthValue - firstMonth, every) == 0 } }
+            ?: generateSequence(LocalDate.now().withDayOfMonth(1)) { it.plusMonths(1) }
+                .first { Math.floorMod(it.monthValue - firstMonth, every) == 0 }
+                .let { if (it.month == LocalDate.now().month && it.year == LocalDate.now().year) LocalDate.now() else it }
+        frequency == Frequency.MONTHLY && every == 0 -> existing?.startDate ?: LocalDate.now()
         else -> existing?.startDate ?: LocalDate.now().withDayOfMonth(1)
     }
-    // The next charges of an irregular monthly calendar, so the person sees what they are setting.
+    // The coming year of an irregular monthly calendar, so the person sees exactly what they are setting.
     val nextDue = if (frequency == Frequency.MONTHLY && every != 1 && schedule != null) {
         val today = LocalDate.now()
-        Scheduler.occurrences(
+        val ahead = Scheduler.occurrences(
             RecurringRule("00000000-0000-4000-8000-000000000000", "", Transaction(id = "", kind = kind, date = today, amountMinor = 0, createdAt = "", clientUpdatedAt = ""),
                 schedule, startDate),
-            today, today.plusMonths(24),
-        ).take(4)
+            today, today.plusMonths(36),
+        )
+        val year = ahead.filter { it <= today.plusMonths(12) }
+        if (year.size >= 3) year.take(6) else ahead.take(3)
     } else emptyList()
     val valid = name.isNotBlank() && minor != null && minor > 0 && category != null && schedule != null
 
@@ -209,7 +218,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                                     for (m in 1..12) Chip(Month.of(m).getDisplayName(TextStyle.SHORT_STANDALONE, locale), m in dueMonths, { firstMonth = m })
                                 }
                             }
-                            if (nextDue.isNotEmpty()) Text(stringResource(R.string.next_charges, nextDue.joinToString(" · ") { f.day(it) }),
+                            if (nextDue.isNotEmpty()) Text(stringResource(R.string.next_charges, nextDue.joinToString(" · ") { dateFormat.format(it) }),
                                 style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
                         }
                     }
