@@ -362,7 +362,6 @@
     <string name="day_of_month_help">Days past the end of a short month fall on its last day.</string>
     <string name="every_day">Every day</string>
     <string name="monthly">Monthly</string>
-    <string name="every_month">Every month</string>
     <string name="every_n_months">Every %1$d months</string>
     <string name="pick_months">Pick months</string>
     <string name="only_these_months">Only in these months</string>

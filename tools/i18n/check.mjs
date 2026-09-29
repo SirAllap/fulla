@@ -3,16 +3,21 @@
 //
 // Every language has every string English has, with the same placeholders.
 // A missing string would show English in the middle of another language; a
-// missing or extra placeholder crashes String.format at runtime.
+// missing or extra placeholder crashes String.format at runtime. A string
+// defined twice in one file fails the Android resource merge, in CI only.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const RES = 'app/src/main/res';
+const problems = [];
 const read = (dir) => {
   const xml = readFileSync(join(RES, dir, 'strings.xml'), 'utf8');
   const out = new Map();
+  const all = new Set();
   for (const m of xml.matchAll(/<string name="([^"]+)"( translatable="false")?>([\s\S]*?)<\/string>/g)) {
+    if (all.has(m[1])) problems.push(`${dir}: ${m[1]} is defined more than once`);
+    all.add(m[1]);
     if (!m[2]) out.set(m[1], m[3]);
   }
   return out;
@@ -20,7 +25,6 @@ const read = (dir) => {
 const placeholders = (s) => [...new Set(s.match(/%\d\$[sd]/g) || [])].sort().join(',');
 
 const en = read('values');
-const problems = [];
 for (const dir of readdirSync(RES).filter((d) => /^values-[a-z]{2}(-r[A-Z]{2})?$/.test(d))) {
   const other = read(dir);
   for (const [key, text] of en) {

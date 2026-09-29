@@ -361,7 +361,6 @@
     <string name="day_of_month_help">Se il mese è più corto, cade nel suo ultimo giorno.</string>
     <string name="every_day">Ogni giorno</string>
     <string name="monthly">Mensile</string>
-    <string name="every_month">Ogni mese</string>
     <string name="every_n_months">Ogni %1$d mesi</string>
     <string name="pick_months">Scegli i mesi</string>
     <string name="only_these_months">Solo in questi mesi</string>

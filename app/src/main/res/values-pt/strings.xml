@@ -361,7 +361,6 @@
     <string name="day_of_month_help">Se o mês for mais curto, cai no último dia.</string>
     <string name="every_day">Todo dia</string>
     <string name="monthly">Mensal</string>
-    <string name="every_month">Todo mês</string>
     <string name="every_n_months">A cada %1$d meses</string>
     <string name="pick_months">Escolher meses</string>
     <string name="only_these_months">Só nestes meses</string>

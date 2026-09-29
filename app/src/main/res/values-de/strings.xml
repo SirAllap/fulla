@@ -361,7 +361,6 @@
     <string name="day_of_month_help">In kürzeren Monaten fällt er auf den letzten Tag.</string>
     <string name="every_day">Jeden Tag</string>
     <string name="monthly">Monatlich</string>
-    <string name="every_month">Jeden Monat</string>
     <string name="every_n_months">Alle %1$d Monate</string>
     <string name="pick_months">Monate wählen</string>
     <string name="only_these_months">Nur in diesen Monaten</string>
