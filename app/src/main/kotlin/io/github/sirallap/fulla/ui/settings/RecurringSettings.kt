@@ -39,6 +39,7 @@ import io.github.sirallap.fulla.core.money.MoneyParser
 import io.github.sirallap.fulla.core.recurring.Frequency
 import io.github.sirallap.fulla.core.recurring.RecurringRule
 import io.github.sirallap.fulla.core.recurring.Schedule
+import io.github.sirallap.fulla.core.recurring.Scheduler
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AmountText
@@ -137,6 +138,19 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
             Frequency.YEARLY -> Schedule(Frequency.YEARLY, byMonthDay = dayNumber, byMonth = month)
         }
     }.getOrNull()
+    val startDate = when {
+        frequency == Frequency.MONTHLY && every > 1 -> (existing?.startDate ?: LocalDate.now()).withDayOfMonth(1).withMonth(firstMonth)
+        else -> existing?.startDate ?: LocalDate.now().withDayOfMonth(1)
+    }
+    // The next charges of an irregular monthly calendar, so the person sees what they are setting.
+    val nextDue = if (frequency == Frequency.MONTHLY && every != 1 && schedule != null) {
+        val today = LocalDate.now()
+        Scheduler.occurrences(
+            RecurringRule("00000000-0000-4000-8000-000000000000", "", Transaction(id = "", kind = kind, date = today, amountMinor = 0, createdAt = "", clientUpdatedAt = ""),
+                schedule, startDate),
+            today, today.plusMonths(24),
+        ).take(4)
+    } else emptyList()
     val valid = name.isNotBlank() && minor != null && minor > 0 && category != null && schedule != null
 
     FullaDialog(
@@ -195,6 +209,8 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                                     for (m in 1..12) Chip(Month.of(m).getDisplayName(TextStyle.SHORT_STANDALONE, locale), m in dueMonths, { firstMonth = m })
                                 }
                             }
+                            if (nextDue.isNotEmpty()) Text(stringResource(R.string.next_charges, nextDue.joinToString(" · ") { f.day(it) }),
+                                style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
                         }
                     }
                     Frequency.DAILY -> Unit
@@ -206,10 +222,6 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
         confirmButton = {
             TextButton(enabled = valid, onClick = {
                 val everyone = view.config.activeMembers.map { it.id }
-                val startDate = when {
-                    frequency == Frequency.MONTHLY && every > 1 -> (existing?.startDate ?: LocalDate.now()).withDayOfMonth(1).withMonth(firstMonth)
-                    else -> existing?.startDate ?: LocalDate.now().withDayOfMonth(1)
-                }
                 val template = (t ?: Transaction(id = "", kind = kind, date = LocalDate.now(), amountMinor = 0, createdAt = "", clientUpdatedAt = "")).copy(
                     kind = kind, amountMinor = minor!!, categoryId = category,
                     accountId = t?.accountId ?: view.config.accounts.firstOrNull { !it.archived }?.id,

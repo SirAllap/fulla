@@ -369,6 +369,7 @@
     <string name="how_often">How often</string>
     <string name="every_n_months_on_day">Every %1$d months, on day %2$d</string>
     <string name="monthly_in_months">On day %1$d of %2$s</string>
+    <string name="next_charges">Next: %1$s</string>
     <string name="repeats">Repeats</string>
     <string name="weekly">Weekly</string>
     <string name="weekly_on">Weekly, on %1$s</string>

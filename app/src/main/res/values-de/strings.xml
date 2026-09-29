@@ -368,6 +368,7 @@
     <string name="how_often">Wie oft</string>
     <string name="every_n_months_on_day">Alle %1$d Monate, am %2$d.</string>
     <string name="monthly_in_months">Am %1$d. im %2$s</string>
+    <string name="next_charges">Als Nächstes: %1$s</string>
     <string name="repeats">Wiederholt sich</string>
     <string name="weekly">Wöchentlich</string>
     <string name="weekly_on">Wöchentlich, am %1$s</string>
