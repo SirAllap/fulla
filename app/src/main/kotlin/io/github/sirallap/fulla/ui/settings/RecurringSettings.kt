@@ -61,7 +61,15 @@ private fun scheduleText(s: Schedule, start: LocalDate): String {
     return when (s.frequency) {
         Frequency.DAILY -> stringResource(R.string.every_day)
         Frequency.WEEKLY -> stringResource(R.string.weekly_on, s.byWeekday.joinToString(", ") { DayOfWeek.of(it).getDisplayName(TextStyle.SHORT, locale) })
-        Frequency.MONTHLY -> stringResource(R.string.monthly_on_day, s.byMonthDay ?: start.dayOfMonth)
+        Frequency.MONTHLY -> {
+            val day = s.byMonthDay ?: start.dayOfMonth
+            when {
+                s.byMonths.isNotEmpty() -> stringResource(R.string.monthly_in_months, day,
+                    s.byMonths.joinToString(", ") { Month.of(it).getDisplayName(TextStyle.SHORT_STANDALONE, locale) })
+                s.interval > 1 -> stringResource(R.string.every_n_months_on_day, s.interval, day)
+                else -> stringResource(R.string.monthly_on_day, day)
+            }
+        }
         Frequency.YEARLY -> stringResource(R.string.yearly_on, s.byMonthDay ?: start.dayOfMonth,
             Month.of(s.byMonth ?: start.monthValue).getDisplayName(TextStyle.FULL_STANDALONE, locale))
     }
@@ -110,6 +118,10 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     var day by remember { mutableStateOf((existing?.schedule?.byMonthDay ?: LocalDate.now().dayOfMonth).toString()) }
     var weekdays by remember { mutableStateOf(existing?.schedule?.byWeekday?.toSet() ?: setOf(LocalDate.now().dayOfWeek.value)) }
     var month by remember { mutableStateOf(existing?.schedule?.byMonth ?: LocalDate.now().monthValue) }
+    // 1 = every month, 2/3/6 = every that many, 0 = only the months picked
+    var every by remember { mutableStateOf(existing?.schedule?.let { if (it.byMonths.isNotEmpty()) 0 else it.interval } ?: 1) }
+    var months by remember { mutableStateOf(existing?.schedule?.byMonths?.toSet() ?: setOf(LocalDate.now().monthValue)) }
+    var firstMonth by remember { mutableStateOf((existing?.startDate ?: LocalDate.now()).monthValue) }
     var auto by remember { mutableStateOf(existing?.autoCreate ?: true) }
     var active by remember { mutableStateOf(existing?.active ?: true) }
     val minor = MoneyParser.parse(amount, f.currency, f.decimalStyle)
@@ -118,7 +130,10 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
         when (frequency) {
             Frequency.DAILY -> Schedule(Frequency.DAILY)
             Frequency.WEEKLY -> Schedule(Frequency.WEEKLY, byWeekday = weekdays.sorted())
-            Frequency.MONTHLY -> Schedule(Frequency.MONTHLY, byMonthDay = dayNumber)
+            Frequency.MONTHLY -> when {
+                every == 0 -> Schedule(Frequency.MONTHLY, byMonthDay = dayNumber, byMonths = months.sorted())
+                else -> Schedule(Frequency.MONTHLY, interval = every, byMonthDay = dayNumber)
+            }
             Frequency.YEARLY -> Schedule(Frequency.YEARLY, byMonthDay = dayNumber, byMonth = month)
         }
     }.getOrNull()
@@ -158,6 +173,27 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                         if (frequency == Frequency.YEARLY) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             for (m in 1..12) Chip(Month.of(m).getDisplayName(TextStyle.SHORT, locale), m == month, { month = m })
                         }
+                        if (frequency == Frequency.MONTHLY) {
+                            Text(stringResource(R.string.how_often), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Chip(stringResource(R.string.every_month), every == 1, { every = 1 })
+                                for (n in listOf(2, 3, 6)) Chip(stringResource(R.string.every_n_months, n), every == n, { every = n })
+                                Chip(stringResource(R.string.pick_months), every == 0, { every = 0 })
+                            }
+                            if (every == 0) {
+                                Text(stringResource(R.string.only_these_months), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    for (m in 1..12) Chip(Month.of(m).getDisplayName(TextStyle.SHORT_STANDALONE, locale), m in months, {
+                                        months = if (m in months && months.size > 1) months - m else months + m
+                                    })
+                                }
+                            } else if (every > 1) {
+                                Text(stringResource(R.string.first_payment_in), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    for (m in 1..12) Chip(Month.of(m).getDisplayName(TextStyle.SHORT_STANDALONE, locale), m == firstMonth, { firstMonth = m })
+                                }
+                            }
+                        }
                     }
                     Frequency.DAILY -> Unit
                 }
@@ -168,6 +204,10 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
         confirmButton = {
             TextButton(enabled = valid, onClick = {
                 val everyone = view.config.activeMembers.map { it.id }
+                val startDate = when {
+                    frequency == Frequency.MONTHLY && every > 1 -> (existing?.startDate ?: LocalDate.now()).withDayOfMonth(1).withMonth(firstMonth)
+                    else -> existing?.startDate ?: LocalDate.now().withDayOfMonth(1)
+                }
                 val template = (t ?: Transaction(id = "", kind = kind, date = LocalDate.now(), amountMinor = 0, createdAt = "", clientUpdatedAt = "")).copy(
                     kind = kind, amountMinor = minor!!, categoryId = category,
                     accountId = t?.accountId ?: view.config.accounts.firstOrNull { !it.archived }?.id,
@@ -177,7 +217,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                 )
                 onSave(RecurringRule(
                     id = existing?.id ?: UUID.randomUUID().toString(), name = name.trim(), template = template, schedule = schedule!!,
-                    startDate = existing?.startDate ?: LocalDate.now().withDayOfMonth(1), endDate = existing?.endDate,
+                    startDate = startDate, endDate = existing?.endDate,
                     autoCreate = auto, active = active,
                 ))
                 onDismiss()

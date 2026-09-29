@@ -138,12 +138,27 @@ class ForecastTest {
     }
 
     @Test
-    fun `nothing to forecast before the period starts or once an open period has run past its length`() {
-        val a = analytics()
-        assertNull(a.forecast(emptyList(), jan, today = d(31, 12, 2029)))
+    fun `nothing to forecast before the period starts`() {
+        assertNull(analytics().forecast(emptyList(), jan, today = d(31, 12, 2029)))
         val open = Analytics(Fixtures.config(), PeriodRule(anchors = listOf(d(1))))
         assertNotNull(open.forecast(emptyList(), jan, today = d(20)))
-        assertNull(open.forecast(emptyList(), jan, today = d(5, 2)), "still waiting for the salary that closes it")
+    }
+
+    @Test
+    fun `an open period past its length still lists the fixed costs and forecasts nothing`() {
+        val open = analytics(rent, car, pay, periodRule = PeriodRule(anchors = listOf(d(1))))
+        val rows = listOf(written(rent, d(1)), written(car, d(7)), plain(5_000, d(10)))
+        // Jan 1 opens the period; on Feb 5 no salary has closed it yet.
+        val f = open.forecast(rows, jan, today = d(5, 2))!!
+        assertTrue(f.waiting)
+        assertEquals(false, f.known)
+        assertEquals(null, f.spentEndMinor)
+        assertEquals(null, f.perDayMinor)
+        // Charges that fell due after the usual end and before today are listed too: the Feb 1 rent, not written yet.
+        assertEquals(listOf(FixedStatus.PAID, FixedStatus.PAID, FixedStatus.PENDING), f.fixed.map { it.status })
+        assertEquals(d(1, 2), f.fixed.last().date)
+        assertEquals(195_000, f.fixedTotalMinor)
+        assertEquals(false, open.forecast(rows, jan, today = d(20))!!.waiting)
     }
 
     @Test

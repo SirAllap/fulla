@@ -258,7 +258,7 @@ object Wire {
         val freq = Frequency.of(s.str("freq") ?: "") ?: return null
         val schedule = runCatching {
             Schedule(freq, s.int("interval") ?: 1, s.arr("by_weekday").mapNotNull { it.jsonPrimitive.intOrNull },
-                s.int("by_month_day"), s.int("by_month"))
+                s.int("by_month_day"), s.int("by_month"), s.arr("by_months").mapNotNull { it.jsonPrimitive.intOrNull })
         }.getOrNull() ?: return null
         val template = o.obj("template") ?: return null
         val start = o.str("start_date") ?: return null
@@ -335,6 +335,7 @@ object Wire {
             put("freq", r.schedule.frequency.key); put("interval", r.schedule.interval)
             put("by_weekday", JsonArray(r.schedule.byWeekday.map(::JsonPrimitive)))
             put("by_month_day", r.schedule.byMonthDay); put("by_month", r.schedule.byMonth)
+            if (r.schedule.byMonths.isNotEmpty()) put("by_months", JsonArray(r.schedule.byMonths.map(::JsonPrimitive)))
         })
         put("template", JsonObject(transaction(r.template) - setOf("id", "date", "status", "client_updated_at", "created_at",
             "recurring_rule_id", "occurrence_date", "import_fingerprint")))

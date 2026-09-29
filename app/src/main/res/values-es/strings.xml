@@ -361,6 +361,14 @@
     <string name="day_of_month_help">Si el mes es más corto, cae en su último día.</string>
     <string name="every_day">Cada día</string>
     <string name="monthly">Mensual</string>
+    <string name="every_month">Cada mes</string>
+    <string name="every_n_months">Cada %1$d meses</string>
+    <string name="pick_months">Elegir meses</string>
+    <string name="only_these_months">Solo en estos meses</string>
+    <string name="first_payment_in">Primer pago en</string>
+    <string name="how_often">Cada cuánto</string>
+    <string name="every_n_months_on_day">Cada %1$d meses, el día %2$d</string>
+    <string name="monthly_in_months">El día %1$d de %2$s</string>
     <string name="repeats">Se repite</string>
     <string name="weekly">Semanal</string>
     <string name="weekly_on">Cada semana, el %1$s</string>
@@ -594,6 +602,8 @@
     <string name="forecast_kept">Te quedarían</string>
     <string name="forecast_between">Entre %1$s y %2$s</string>
     <string name="forecast_add_income">Apunta tus ingresos para ver cuánto te quedaría</string>
+    <string name="forecast_waiting">Esperando tu próximo sueldo</string>
+    <string name="forecast_waiting_text">La previsión vuelve cuando lo anotes. Mientras, estos son tus gastos fijos.</string>
     <string name="forecast_no_history">Aún no hay historial para estimar el gasto del día a día. Hace falta al menos un periodo anterior.</string>
     <string name="forecast_how">¿Cómo se calcula?</string>
     <string name="forecast_income">Ingresos</string>

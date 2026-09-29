@@ -361,6 +361,14 @@
     <string name="day_of_month_help">Se il mese è più corto, cade nel suo ultimo giorno.</string>
     <string name="every_day">Ogni giorno</string>
     <string name="monthly">Mensile</string>
+    <string name="every_month">Ogni mese</string>
+    <string name="every_n_months">Ogni %1$d mesi</string>
+    <string name="pick_months">Scegli i mesi</string>
+    <string name="only_these_months">Solo in questi mesi</string>
+    <string name="first_payment_in">Primo pagamento a</string>
+    <string name="how_often">Frequenza</string>
+    <string name="every_n_months_on_day">Ogni %1$d mesi, il giorno %2$d</string>
+    <string name="monthly_in_months">Il giorno %1$d in %2$s</string>
     <string name="repeats">Si ripete</string>
     <string name="weekly">Settimanale</string>
     <string name="weekly_on">Ogni settimana, il %1$s</string>
@@ -594,6 +602,8 @@
     <string name="forecast_kept">Ti resterebbero</string>
     <string name="forecast_between">Tra %1$s e %2$s</string>
     <string name="forecast_add_income">Aggiungi le tue entrate per vedere cosa ti resterebbe</string>
+    <string name="forecast_waiting">In attesa del tuo prossimo stipendio</string>
+    <string name="forecast_waiting_text">La previsione torna quando lo annoti. Intanto, ecco le tue spese fisse.</string>
     <string name="forecast_no_history">Non c’è ancora abbastanza storico per stimare le spese di ogni giorno. Serve almeno un periodo precedente.</string>
     <string name="forecast_how">Come si calcola?</string>
     <string name="forecast_income">Entrate</string>

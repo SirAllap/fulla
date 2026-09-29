@@ -10,6 +10,7 @@ import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class RecurringTest {
@@ -46,6 +47,25 @@ class RecurringTest {
             dates(rule(Schedule(Frequency.YEARLY, byMonthDay = 1, byMonth = 6)), "2030-01-01", "2031-12-31"))
         assertEquals(listOf("2030-01-01", "2030-01-04", "2030-01-07"),
             dates(rule(Schedule(Frequency.DAILY, interval = 3)), "2030-01-01", "2030-01-08"))
+    }
+
+    @Test
+    fun `a monthly item can name its months`() {
+        val quarterly = rule(Schedule(Frequency.MONTHLY, byMonthDay = 15, byMonths = listOf(1, 4, 7, 10)))
+        assertEquals(listOf("2030-01-15", "2030-04-15", "2030-07-15", "2030-10-15", "2031-01-15"), dates(quarterly, "2030-01-01", "2031-01-31"))
+        val twice = rule(Schedule(Frequency.MONTHLY, byMonthDay = -1, byMonths = listOf(10, 12)), start = "2030-03-01")
+        assertEquals(listOf("2030-10-31", "2030-12-31"), dates(twice, "2030-01-01", "2030-12-31"))
+        assertEquals(emptyList(), dates(twice, "2030-11-01", "2030-11-30"))
+    }
+
+    @Test
+    fun `every three months counts from the start month, and a list of months has no interval`() {
+        val r = rule(Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 20), start = "2030-02-01")
+        assertEquals(listOf("2030-02-20", "2030-05-20", "2030-08-20", "2030-11-20"), dates(r, "2030-01-01", "2030-12-31"))
+        assertFailsWith<IllegalArgumentException> { Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 1, byMonths = listOf(1)) }
+        assertFailsWith<IllegalArgumentException> { Schedule(Frequency.MONTHLY, byMonthDay = 1, byMonths = listOf(13)) }
+        assertFailsWith<IllegalArgumentException> { Schedule(Frequency.MONTHLY, byMonthDay = 1, byMonths = listOf(2, 2)) }
+        assertFailsWith<IllegalArgumentException> { Schedule(Frequency.YEARLY, byMonthDay = 1, byMonth = 3, byMonths = listOf(3)) }
     }
 
     @Test

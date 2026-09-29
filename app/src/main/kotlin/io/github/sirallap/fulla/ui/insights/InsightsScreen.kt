@@ -43,7 +43,7 @@ import kotlin.math.roundToInt
  * what moved against the usual, who paid, and how each period compares.
  */
 @Composable
-fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
+fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> Unit = {}) {
     val c = FullaTheme.colors
     val f = view.formats
     val a = view.analytics
@@ -97,6 +97,9 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit) {
             item(key = "figures") {
                 Section(stringResource(R.string.period_summary), top = 8.dp())
                 FigureTiles(view, period, report, forecast, noSpend)
+            }
+            if (forecast != null && forecast.fixed.isNotEmpty()) item(key = "fixed") {
+                io.github.sirallap.fulla.ui.home.FixedCostsSection(view, forecast, onFixedCosts)
             }
             if (top.isNotEmpty()) item(key = "vials") {
                 val total = top.sumOf { it.amountMinor }.toFloat()

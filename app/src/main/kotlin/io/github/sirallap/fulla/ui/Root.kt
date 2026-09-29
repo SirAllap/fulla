@@ -190,7 +190,7 @@ private fun Household(state: HouseholdState) {
             composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
                 EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() }, onSaved = ::announceSaved)
             }
-            composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }) }
+            composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }, onFixedCosts = { nav.navigate("settings/recurring") }) }
             composable("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
                 io.github.sirallap.fulla.ui.trips.TripScreen(view, tripId = entry.arguments?.getString("id") ?: "",
                     onBack = { nav.popBackStack() }, onOpenTransaction = { nav.navigate("edit/$it") })

@@ -103,6 +103,8 @@ data class PeriodForecast(
     val everydayLowMinor: Long?,
     val everydayRestMinor: Long?,
     val everydayHighMinor: Long?,
+    /** The period is open past its length: the next salary has not been noted, so there is no end to forecast. */
+    val waiting: Boolean = false,
 ) {
     val fixedPaidMinor: Long get() = fixed.filter { it.status == FixedStatus.PAID }.sumOf { it.amountMinor }
     val fixedToComeMinor: Long get() = fixed.filter { it.status == FixedStatus.PENDING }.sumOf { it.amountMinor }
@@ -324,6 +326,10 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
      *   trip and rows that look like a recurring item are not everyday
      *   spending: the first are counted exactly, the others are one-offs.
      *
+     * An open period past its length (the next salary not noted yet) has no
+     * end to forecast: the fixed costs are still listed, [PeriodForecast.waiting]
+     * is set, and nothing about the end is guessed.
+     *
      * With no earlier period to learn from, the everyday part is left out
      * (null) rather than guessed: the fixed part is still exact.
      *
@@ -333,7 +339,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
     fun forecast(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate, deleted: Set<String> = emptySet()): PeriodForecast? {
         val range = rule.daysOf(period)
         if (today < range.start) return null
-        if (rule.isOpen(period) && today > range.endInclusive) return null
+        val waiting = rule.isOpen(period) && today > range.endInclusive
         val list = txs.toList()
         val length = (ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt()
         val day = (ChronoUnit.DAYS.between(range.start, minOf(today, range.endInclusive)) + 1).toInt()
@@ -343,7 +349,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val fixed = mutableListOf<FixedItem>()
         var expectedIncome = 0L
         for (r in rules) {
-            for (date in Scheduler.occurrences(r, range.start, range.endInclusive)) {
+            for (date in Scheduler.occurrences(r, range.start, if (waiting) today else range.endInclusive)) {
                 val id = DeterministicId.occurrence(r.id, date)
                 val written = byId[id]
                 if (r.template.kind == TransactionKind.INCOME) {
@@ -386,7 +392,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         var lowRest: Long? = null
         var midRest: Long? = null
         var highRest: Long? = null
-        if (earlier.isNotEmpty() && day <= length) {
+        if (!waiting && earlier.isNotEmpty() && day <= length) {
             val rate = median(earlier.map { it.first })
             val usualSoFar = median(earlier.map { it.second.toDouble() })
             val ratio = if (usualSoFar > 0) (everydaySoFar / usualSoFar).coerceIn(0.5, 2.0) else 1.0
@@ -396,7 +402,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
             lowRest = (rest * LOW_FACTOR).toLong()
             highRest = (rest * HIGH_FACTOR).toLong()
         }
-        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest)
+        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest, waiting)
     }
 
     private fun median(values: List<Double>): Double {

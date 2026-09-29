@@ -637,6 +637,25 @@ test('recurring rules: the template is checked like a transaction, the schedule 
   rpc(ctx.db, ctx.alice, 'fulla_recurring_upsert', { p_household_id: ctx.hh, p_rule: { ...rule, id: uuid(), schedule: { freq: 'weekly', interval: 2, by_weekday: [5, 1] } } });
 });
 
+test('a monthly schedule can name its months, and then it is the calendar', (ctx) => {
+  const rule = {
+    id: uuid(), name: 'Tax', start_date: '2030-01-01', auto_create: true,
+    schedule: { freq: 'monthly', by_month_day: 10, by_months: [12, 10] },
+    template: { kind: 'expense', amount_minor: 30000, category_id: ctx.cat('Housing'), paid_by_member_id: ctx.aliceMember,
+                split: { mode: 'equal', members: [ctx.aliceMember] }, recurrence: 'fixed', note: 'TAX' },
+  };
+  const save = (r) => rpc(ctx.db, ctx.alice, 'fulla_recurring_upsert', { p_household_id: ctx.hh, p_rule: r });
+  const fails = (r) => expectError(ctx.db, ctx.alice, 'fulla_recurring_upsert', { p_household_id: ctx.hh, p_rule: r }, 'validation_failed');
+  const saved = save(rule).recurring_rules.find((r) => r.id === rule.id);
+  assert.deepEqual(saved.schedule, { freq: 'monthly', interval: 1, by_month_day: 10, by_months: [10, 12] });
+  const every3 = save({ ...rule, id: uuid(), schedule: { freq: 'monthly', interval: 3, by_month_day: 15 } });
+  assert.ok(every3.recurring_rules.some((r) => r.schedule.interval === 3 && r.schedule.by_months === undefined));
+  fails({ ...rule, id: uuid(), schedule: { freq: 'monthly', by_month_day: 10, by_months: [13] } });
+  fails({ ...rule, id: uuid(), schedule: { freq: 'monthly', by_month_day: 10, by_months: [3, 3] } });
+  fails({ ...rule, id: uuid(), schedule: { freq: 'monthly', by_month_day: 10, by_months: 'oct' } });
+  fails({ ...rule, id: uuid(), schedule: { freq: 'monthly', interval: 3, by_month_day: 10, by_months: [1, 4] } });
+});
+
 test('categorisation rules must do something valid', (ctx) => {
   const save = (r) => rpc(ctx.db, ctx.alice, 'fulla_rule_upsert', { p_household_id: ctx.hh, p_rule: r });
   const fails = (r) => expectError(ctx.db, ctx.alice, 'fulla_rule_upsert', { p_household_id: ctx.hh, p_rule: r }, 'validation_failed');

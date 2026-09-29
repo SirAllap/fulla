@@ -71,10 +71,27 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast, onFixedCosts:
                     context = stringResource(R.string.forecast_add_income), tone = LiquidTone.IN)
             }
         }
+    } else if (forecast.waiting) {
+        ListRow(stringResource(R.string.forecast_waiting), context = stringResource(R.string.forecast_waiting_text), divider = false)
     } else {
         ListRow(stringResource(R.string.forecast_no_history), divider = false, onClick = { explaining = true })
     }
 
+    FixedCostsSection(view, forecast, onFixedCosts)
+
+    if (explaining) ForecastSheet(view, forecast) { explaining = false }
+}
+
+/**
+ * The fixed costs that write themselves: the total, what is still to be
+ * charged, what is left of the income once they are paid, what can be spent
+ * per day meanwhile, and each charge with its state. On the overview and in
+ * the insights.
+ */
+@Composable
+fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCosts: () -> Unit) {
+    val c = FullaTheme.colors
+    val f = view.formats
     val fixed = forecast.fixed
     if (fixed.isNotEmpty()) {
         Section(stringResource(R.string.fixed_costs), top = 16.dp)
@@ -134,8 +151,6 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast, onFixedCosts:
     } else if (view.config.recurringRules.none { it.active }) {
         ListRow(stringResource(R.string.fixed_empty_title), context = stringResource(R.string.fixed_empty_text), onClick = onFixedCosts)
     }
-
-    if (explaining) ForecastSheet(view, forecast) { explaining = false }
 }
 
 /** How the forecast is worked out, line by line, so every figure can be checked. */

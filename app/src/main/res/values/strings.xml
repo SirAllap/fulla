@@ -362,6 +362,14 @@
     <string name="day_of_month_help">Days past the end of a short month fall on its last day.</string>
     <string name="every_day">Every day</string>
     <string name="monthly">Monthly</string>
+    <string name="every_month">Every month</string>
+    <string name="every_n_months">Every %1$d months</string>
+    <string name="pick_months">Pick months</string>
+    <string name="only_these_months">Only in these months</string>
+    <string name="first_payment_in">First payment in</string>
+    <string name="how_often">How often</string>
+    <string name="every_n_months_on_day">Every %1$d months, on day %2$d</string>
+    <string name="monthly_in_months">On day %1$d of %2$s</string>
     <string name="repeats">Repeats</string>
     <string name="weekly">Weekly</string>
     <string name="weekly_on">Weekly, on %1$s</string>
@@ -644,6 +652,8 @@
     <string name="forecast_kept">You would keep</string>
     <string name="forecast_between">Between %1$s and %2$s</string>
     <string name="forecast_add_income">Add your income to see what you would keep</string>
+    <string name="forecast_waiting">Waiting for your next salary</string>
+    <string name="forecast_waiting_text">The forecast returns once you note it. Meanwhile, these are your fixed costs.</string>
     <string name="forecast_no_history">Not enough history yet to estimate everyday spending. It needs at least one earlier period.</string>
     <string name="forecast_how">How is it worked out?</string>
     <string name="forecast_income">Income</string>

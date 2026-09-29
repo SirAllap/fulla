@@ -25,6 +25,10 @@ enum class Frequency(val key: String) {
  * - [byMonthDay]: monthly and yearly; -1 is the last day of the month, and a
  *   day past the end of a month falls on its last day (31 → 30 April).
  * - [byMonth]: yearly only.
+ * - [byMonths]: monthly only, the months (1..12) it falls due in, for the
+ *   irregular calendar (October and December; each quarter). Empty means
+ *   every month, counted by [interval] from the start month. With months
+ *   listed the interval is 1: the list is the calendar.
  */
 data class Schedule(
     val frequency: Frequency,
@@ -32,9 +36,12 @@ data class Schedule(
     val byWeekday: List<Int> = emptyList(),
     val byMonthDay: Int? = null,
     val byMonth: Int? = null,
+    val byMonths: List<Int> = emptyList(),
 ) {
     init {
         require(interval in 1..365) { "interval must be 1..365" }
+        require(byMonths.all { it in 1..12 } && byMonths.distinct().size == byMonths.size) { "byMonths must be months 1..12, each once" }
+        require(byMonths.isEmpty() || (frequency == Frequency.MONTHLY && interval == 1)) { "byMonths is for monthly, with interval 1" }
         when (frequency) {
             Frequency.WEEKLY -> require(byWeekday.isNotEmpty() && byWeekday.all { it in 1..7 }) { "weekly needs byWeekday 1..7" }
             Frequency.MONTHLY -> require(byMonthDay != null && byMonthDay != 0 && byMonthDay in -1..31) { "monthly needs byMonthDay" }
@@ -94,7 +101,8 @@ object Scheduler {
                 }
                 while (month.atDay(1) <= last) {
                     val d = dayIn(month, s.byMonthDay!!)
-                    if (d in first..last && d >= rule.startDate) out += d
+                    val inCalendar = s.byMonths.isEmpty() || month.monthValue in s.byMonths
+                    if (inCalendar && d in first..last && d >= rule.startDate) out += d
                     month = month.plusMonths(step)
                 }
             }
