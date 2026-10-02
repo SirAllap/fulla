@@ -131,6 +131,14 @@ object Scheduler {
         return all.count { it <= today } to all.size
     }
 
+    /** Which payment of its run [date] is, and how many there are, for a rule with an end ("2 of 6"). Null for one that never ends, or a day it does not fall due. */
+    fun installment(rule: RecurringRule, date: LocalDate): Pair<Int, Int>? {
+        val end = rule.endDate ?: return null
+        val all = occurrences(rule.copy(active = true, archived = false), rule.startDate, end)
+        val at = all.indexOf(date)
+        return if (at < 0) null else (at + 1) to all.size
+    }
+
     private fun dayIn(month: YearMonth, day: Int): LocalDate =
         if (day == -1 || day > month.lengthOfMonth()) month.atEndOfMonth() else month.atDay(day)
 }

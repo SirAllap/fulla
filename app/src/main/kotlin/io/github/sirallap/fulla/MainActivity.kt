@@ -26,6 +26,7 @@ class MainActivity : FragmentActivity() {
     private val container get() = (application as FullaApp).container
     private var lastForegroundSync = 0L
     private var recurring: Job? = null
+    private var updates: Job? = null
 
     // Below Android 13 there is no per-app language, so a chosen language is
     // kept outside DataStore (sync, unlike DataStore) and applied here, before
@@ -66,9 +67,16 @@ class MainActivity : FragmentActivity() {
             lastForegroundSync = now
             lifecycleScope.launch { container.syncAll() }
         }
-        // AppContainer.checkForUpdates keeps its own 12-hour throttle in
+        container.foreground.value += 1
+        // On opening the app, and once an hour while it stays open.
+        // AppContainer.checkForUpdates keeps its own one-hour throttle in
         // DataStore, so calling it on every foreground is cheap and correct.
-        lifecycleScope.launch { container.checkForUpdates() }
+        updates = lifecycleScope.launch {
+            while (true) {
+                container.checkForUpdates()
+                delay(60 * 60 * 1000L)
+            }
+        }
         // One RPC, only when signed in to a connected household; cheap enough
         // to run on every foreground too, no throttle needed.
         lifecycleScope.launch { container.checkDbSchema() }
@@ -77,6 +85,8 @@ class MainActivity : FragmentActivity() {
     override fun onStop() {
         recurring?.cancel()
         recurring = null
+        updates?.cancel()
+        updates = null
         super.onStop()
     }
 

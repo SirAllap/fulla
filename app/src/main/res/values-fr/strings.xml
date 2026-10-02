@@ -473,10 +473,10 @@
     <string name="setup_paused">en pause</string>
     <string name="setup_project_paused">Ce projet est en pause. Relancez-le sur supabase.com et réessayez.</string>
     <string name="use_token_instead">Utiliser un jeton à la place</string>
-    <string name="update_check_now">Vérifier maintenant</string>
+    <string name="update_check_now">Rechercher des mises à jour maintenant</string>
     <string name="update_checking">Vérification…</string>
     <string name="update_up_to_date">Fulla est à jour.</string>
-    <string name="update_found_text">Une nouvelle version est prête : voyez en haut des Réglages.</string>
+    <string name="update_found_text">Une nouvelle version est prête.</string>
     <string name="update_check_failed">Impossible de joindre GitHub. Réessayez plus tard.</string>
     <string name="update_test_build">Les versions de test ne se mettent pas à jour seules.</string>
     <string name="money_mode_ask_title">Comment gérez-vous l\'argent ensemble ?</string>
@@ -645,7 +645,7 @@
     <string name="last_payment">Dernier paiement : %1$s · %2$d paiements au total</string>
     <string name="end_problem">Avec cette fin, aucun paiement ne reste : elle précède le premier.</string>
     <string name="fixed_ended">Terminé le %1$s</string>
-    <string name="payment_progress">paiement %1$d sur %2$d</string>
+    <string name="payment_progress">%1$d sur %2$d payées</string>
     <string name="delete_fixed_title">Supprimer « %1$s » ?</string>
     <string name="delete_fixed_text">Il n’écrit plus rien et quitte la liste. Ce qu’il a déjà écrit reste dans l’historique.</string>
     <string name="delete_fixed_and_rows">Le supprimer avec ses %1$d écritures</string>
@@ -654,4 +654,17 @@
     <string name="until_date">jusqu’au %1$s</string>
     <string name="summary_writes_itself">s’écrit tout seul</string>
     <string name="summary_reminder_only">ne s’écrit pas tout seul</string>
+    <string name="installment_of">Échéance %1$d sur %2$d</string>
+    <string name="delete_item_title">Supprimer « %1$s » ?</string>
+    <string name="delete_category_unused">Rien ne l’utilise, elle est donc supprimée.</string>
+    <string name="delete_category_children">Pour la supprimer, supprimez ou archivez d’abord ses sous-catégories.</string>
+    <string name="fixed_bars_help">Chaque barre se remplit à mesure que le jour du prélèvement approche. Une fois prélevée, elle est pleine, change de couleur et compte dans vos totaux.</string>
+    <string name="in_days">dans %1$d j</string>
+    <string name="archive_item_title">Archiver « %1$s » ?</string>
+    <string name="delete_category_move">%1$d écritures l’utilisent. Choisissez la catégorie où elles vont :</string>
+    <string name="delete_category_kept">Un budget, une charge fixe ou un champ l’utilise encore ; elle reste dans la liste, archivée : plus proposée, son historique reste.</string>
+    <string name="delete_and_move">Déplacer et supprimer</string>
+    <string name="delete_category_no_target">Aucune autre catégorie ne peut accueillir ses écritures.</string>
+    <string name="update_why">Une nouvelle version apporte de nouvelles fonctions et des corrections. La mise à jour prend une minute et vos données restent telles quelles.</string>
+    <string name="update_later">Pas maintenant</string>
 </resources>

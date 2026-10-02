@@ -473,10 +473,10 @@
     <string name="setup_paused">pausiert</string>
     <string name="setup_project_paused">Dieses Projekt ist pausiert. Setze es auf supabase.com fort und versuche es erneut.</string>
     <string name="use_token_instead">Stattdessen ein Token verwenden</string>
-    <string name="update_check_now">Jetzt prüfen</string>
+    <string name="update_check_now">Jetzt nach Updates suchen</string>
     <string name="update_checking">Wird geprüft…</string>
     <string name="update_up_to_date">Fulla ist aktuell.</string>
-    <string name="update_found_text">Eine neue Version ist bereit: siehe oben in den Einstellungen.</string>
+    <string name="update_found_text">Eine neue Version ist bereit.</string>
     <string name="update_check_failed">GitHub ist nicht erreichbar. Versuche es später erneut.</string>
     <string name="update_test_build">Testversionen aktualisieren sich nicht selbst.</string>
     <string name="money_mode_ask_title">Wie macht ihr das mit dem Geld?</string>
@@ -645,7 +645,7 @@
     <string name="last_payment">Letzte Zahlung: %1$s · %2$d Zahlungen insgesamt</string>
     <string name="end_problem">Mit diesem Ende bleibt keine Zahlung übrig: es liegt vor der ersten.</string>
     <string name="fixed_ended">Beendet am %1$s</string>
-    <string name="payment_progress">Zahlung %1$d von %2$d</string>
+    <string name="payment_progress">%1$d von %2$d bezahlt</string>
     <string name="delete_fixed_title">„%1$s“ löschen?</string>
     <string name="delete_fixed_text">Es schreibt nichts mehr und verschwindet aus der Liste. Was es schon geschrieben hat, bleibt im Verlauf.</string>
     <string name="delete_fixed_and_rows">Löschen samt seiner %1$d geschriebenen Einträge</string>
@@ -654,4 +654,17 @@
     <string name="until_date">bis %1$s</string>
     <string name="summary_writes_itself">schreibt sich selbst</string>
     <string name="summary_reminder_only">schreibt sich nicht selbst</string>
+    <string name="installment_of">Rate %1$d von %2$d</string>
+    <string name="delete_item_title">„%1$s“ löschen?</string>
+    <string name="delete_category_unused">Nichts verwendet sie, also wird sie entfernt.</string>
+    <string name="delete_category_children">Um sie zu löschen, lösche oder archiviere zuerst ihre Unterkategorien.</string>
+    <string name="fixed_bars_help">Jeder Balken füllt sich, je näher der Tag der Abbuchung rückt. Ist sie abgebucht, ist er voll, ändert die Farbe und zählt in deinen Summen.</string>
+    <string name="in_days">in %1$d T</string>
+    <string name="archive_item_title">„%1$s“ archivieren?</string>
+    <string name="delete_category_move">%1$d Einträge verwenden sie. Wähle die Kategorie, in die sie wechseln:</string>
+    <string name="delete_category_kept">Ein Budget, Fixkosten oder ein Feld verwendet sie noch; sie bleibt archiviert in der Liste: nicht mehr angeboten, der Verlauf bleibt.</string>
+    <string name="delete_and_move">Verschieben und löschen</string>
+    <string name="delete_category_no_target">Es gibt keine andere Kategorie, in die ihre Einträge wechseln könnten.</string>
+    <string name="update_why">Eine neue Version bringt neue Funktionen und Korrekturen. Das Update dauert eine Minute, deine Daten bleiben, wie sie sind.</string>
+    <string name="update_later">Jetzt nicht</string>
 </resources>

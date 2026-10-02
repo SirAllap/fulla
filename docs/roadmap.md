@@ -44,7 +44,7 @@ to share the household first.
   "remember"), paused and resumed in settings.
 - Saved CSV mappings: a bank's file is mapped once.
 - Backup to a file and restore, for phone-only households especially.
-- Insights (Overview → ⋮): period by period, against the usual, who paid,
+- Insights (the Analysis button on the Overview): period by period, against the usual, who paid,
   totals by custom field, charges that look recurring, days without spending.
 - Budgets for one particular month, and copying last month's.
 - Recurring items of any schedule (daily, weekly, monthly, yearly), expense
@@ -101,11 +101,15 @@ Google Play, so it finds and installs its own updates:
   the same hand-written, host-checked pattern as `ProjectSetup`: redirects are
   followed only to GitHub's own hosts, and the download's SHA-256 is verified
   against the digest GitHub provides when there is one.
-- The app checks on `MainActivity.onStart`, throttled to once every 12 hours
-  and stored in DataStore so the throttle and the pending update both survive
-  a restart, skipped on a debug build (different signing key, can never
-  install over a release build) and behind a Settings › About switch, on by
-  default.
+- The app checks on `MainActivity.onStart` and once an hour while it stays
+  open, throttled to once an hour and stored in DataStore so the throttle and
+  the pending update both survive a restart, skipped on a debug build
+  (different signing key, can never install over a release build) and behind a
+  Settings › About switch, on by default. A new version is announced by a
+  pop-up (`UpdateAnnouncement`: once per version, again after a day), and then
+  stays visible as the gear's dot and a banner at the top of Settings; "Check
+  for updates now" is at the bottom of Settings and in About, and opens the
+  update sheet at once when it finds one.
 - A pending update shows as a dot on the Settings gear and a highlighted row
   at the top of the Settings index; either opens a sheet with the version,
   the release notes, the size, and an "Update now" button that downloads with

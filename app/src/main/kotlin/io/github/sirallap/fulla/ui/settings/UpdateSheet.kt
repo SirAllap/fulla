@@ -94,6 +94,7 @@ fun UpdateSheet(update: Update, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.paper) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(20.dp)) {
             Text(stringResource(R.string.update_available, update.version), style = FullaType.title, color = c.ink)
+            Text(stringResource(R.string.update_why), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(top = 4.dp))
             if (update.sizeBytes > 0) {
                 Text(megabytes(update.sizeBytes), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(top = 4.dp))
             }
@@ -113,6 +114,10 @@ fun UpdateSheet(update: Update, onDismiss: () -> Unit) {
                     busy = progress != null,
                     modifier = Modifier.padding(top = 20.dp),
                 )
+                // Not now: it stays in Settings (the gear's dot and the banner), and the app mentions it again tomorrow.
+                if (progress == null) androidx.compose.material3.TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.update_later))
+                }
             }
         }
     }

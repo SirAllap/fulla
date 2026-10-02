@@ -473,10 +473,10 @@
     <string name="setup_paused">em pausa</string>
     <string name="setup_project_paused">Esse projeto está em pausa. Retoma-o em supabase.com e tenta de novo.</string>
     <string name="use_token_instead">Usar um token em vez disso</string>
-    <string name="update_check_now">Verificar agora</string>
+    <string name="update_check_now">Procurar atualizações agora</string>
     <string name="update_checking">A verificar…</string>
     <string name="update_up_to_date">O Fulla está atualizado.</string>
-    <string name="update_found_text">Há uma versão nova: vê no topo das Definições.</string>
+    <string name="update_found_text">Há uma versão nova pronta.</string>
     <string name="update_check_failed">Não foi possível contactar o GitHub. Tenta mais tarde.</string>
     <string name="update_test_build">As versões de teste não se atualizam sozinhas.</string>
     <string name="money_mode_ask_title">Como vocês cuidam do dinheiro juntos?</string>
@@ -645,7 +645,7 @@
     <string name="last_payment">Último pagamento: %1$s · %2$d pagamentos no total</string>
     <string name="end_problem">Com este fim não resta nenhum pagamento: é anterior ao primeiro.</string>
     <string name="fixed_ended">Terminou a %1$s</string>
-    <string name="payment_progress">pagamento %1$d de %2$d</string>
+    <string name="payment_progress">%1$d de %2$d pagas</string>
     <string name="delete_fixed_title">Eliminar «%1$s»?</string>
     <string name="delete_fixed_text">Deixa de escrever e sai da lista. O que já escreveu fica no Histórico.</string>
     <string name="delete_fixed_and_rows">Eliminá-la com os seus %1$d movimentos escritos</string>
@@ -654,4 +654,17 @@
     <string name="until_date">até %1$s</string>
     <string name="summary_writes_itself">escreve-se sozinha</string>
     <string name="summary_reminder_only">não se escreve sozinha</string>
+    <string name="installment_of">Prestação %1$d de %2$d</string>
+    <string name="delete_item_title">Eliminar «%1$s»?</string>
+    <string name="delete_category_unused">Nada a usa, por isso é eliminada.</string>
+    <string name="delete_category_children">Para a eliminar, elimina ou arquiva primeiro as suas subcategorias.</string>
+    <string name="fixed_bars_help">Cada barra enche à medida que o dia da cobrança se aproxima. Depois de cobrada fica cheia, muda de cor e conta nos teus totais.</string>
+    <string name="in_days">em %1$d d</string>
+    <string name="archive_item_title">Arquivar «%1$s»?</string>
+    <string name="delete_category_move">Usam-na %1$d movimentos. Escolhe a categoria para onde passam:</string>
+    <string name="delete_category_kept">Um orçamento, despesa fixa ou campo ainda a usa, por isso fica na lista, arquivada: deixa de ser oferecida e o histórico fica.</string>
+    <string name="delete_and_move">Mover e eliminar</string>
+    <string name="delete_category_no_target">Não há outra categoria para onde os seus movimentos possam passar.</string>
+    <string name="update_why">Uma versão nova traz funções novas e correções. Atualizar demora um minuto e os teus dados ficam como estão.</string>
+    <string name="update_later">Agora não</string>
 </resources>

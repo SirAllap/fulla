@@ -38,6 +38,7 @@ import io.github.sirallap.fulla.ui.theme.FullaMotion
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -144,6 +145,19 @@ private fun Household(state: HouseholdState) {
     fun announceSaved(tripName: String?) {
         if (tripName == null) return
         snackScope.launch { snackbarHostState.showSnackbar(savedTripLabel.format(tripName)) }
+    }
+
+    // A new version: told once, in whatever screen the person is on, and again a day later while it is not installed.
+    // Not over the guide. Dismissing it leaves the gear's dot and the banner at the top of Settings.
+    val foreground by container.foreground.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingUpdate?.version, settings?.updateAnnouncedVersion, settings?.updateAnnouncedAt, settings?.guideHousehold, foreground) {
+        val s = settings ?: return@LaunchedEffect
+        val version = s.pendingUpdate?.version ?: return@LaunchedEffect
+        val now = System.currentTimeMillis()
+        if (s.guideHousehold == null && io.github.sirallap.fulla.client.remote.UpdateAnnouncement.due(version, s.updateAnnouncedVersion, s.updateAnnouncedAt, now)) {
+            container.settings.setUpdateAnnounced(version, now)
+            updateOpen = true
+        }
     }
 
     CompositionLocalProvider(io.github.sirallap.fulla.ui.guide.LocalGuideTargets provides guideTargets) {

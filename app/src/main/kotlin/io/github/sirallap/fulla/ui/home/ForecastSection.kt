@@ -104,6 +104,8 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
     val fixed = forecast.fixed
     if (fixed.isNotEmpty()) {
         Section(stringResource(R.string.fixed_costs), top = 16.dp)
+        Text(stringResource(R.string.fixed_bars_help), style = FullaType.secondary, color = c.inkMuted,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
         val total = forecast.fixedTotalMinor
         val next = fixed.firstOrNull { it.status == FixedStatus.PENDING }
         TileRow {
@@ -111,8 +113,8 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
                 context = stringResource(R.string.fixed_progress, f.money(forecast.fixedPaidMinor), f.money(forecast.fixedToComeMinor)),
                 level = if (total > 0) forecast.fixedPaidMinor.toFloat() / total else null, phase = 2.2f)
             LiquidTile(stringResource(R.string.fixed_to_come_tile), f.money(forecast.fixedToComeMinor), Modifier.weight(1f),
-                context = next?.let { it.name + " · " + f.day(it.date) },
-                level = if (total > 0) forecast.fixedToComeMinor.toFloat() / total else null, phase = 3.0f)
+                // No liquid: a full glass here read as "all paid". What is paid is the glass on the left.
+                context = next?.let { it.name + " · " + f.day(it.date) }, phase = 3.0f)
         }
         val after = forecast.afterFixedMinor
         val perDay = forecast.perDayMinor
@@ -132,19 +134,25 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
             Text(stringResource(R.string.forecast_add_income), style = FullaType.secondary, color = c.inkMuted,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
         }
-        val largest = fixed.maxOf { it.amountMinor }.coerceAtLeast(1).toFloat()
+        val today = java.time.LocalDate.now()
         for (item in fixed) {
+            val installmentText = item.installment?.let { n -> item.installments?.let { total -> stringResource(R.string.installment_of, n, total) } }
+            val daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, item.date).toInt()
+            val daysText = if (item.status == FixedStatus.PENDING && !item.overdue && daysLeft > 0) stringResource(R.string.in_days, daysLeft) else null
             LiquidBarRow(
                 title = item.name,
                 amount = f.money(item.amountMinor),
-                fraction = if (item.status == FixedStatus.SKIPPED) 0f else item.amountMinor / largest,
+                // The bar fills as the day comes closer, over the length of the period; once paid it is full and takes the colour of money in.
+                fraction = item.countdown(today, forecast.length),
+                tone = if (item.status == FixedStatus.PAID) LiquidTone.IN else LiquidTone.OUT,
                 context = when {
                     item.status == FixedStatus.PAID && item.byHand -> stringResource(R.string.fixed_by_hand, f.day(item.date))
                     item.status == FixedStatus.PAID -> stringResource(R.string.fixed_paid_on, f.day(item.date))
                     item.status == FixedStatus.PENDING && item.overdue -> stringResource(R.string.fixed_overdue, f.day(item.date))
                     item.status == FixedStatus.PENDING -> stringResource(R.string.fixed_due_on, f.day(item.date))
                     else -> stringResource(R.string.fixed_skipped)
-                },
+                }.let { base -> listOfNotNull(base, daysText).joinToString(" · ") },
+                detail = installmentText,
                 phase = item.date.dayOfMonth * 0.7f,
                 start = {
                     Icon(

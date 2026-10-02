@@ -93,7 +93,24 @@ data class FixedItem(
     val status: FixedStatus,
     val byHand: Boolean = false,
     val overdue: Boolean = false,
-)
+    /** Which payment of a financing this is ([installment] of [installments]); null for a fixed cost that never ends. */
+    val installment: Int? = null,
+    val installments: Int? = null,
+) {
+    /**
+     * How far along the charge is, for its bar: a pending one fills as its day
+     * comes closer, over the length of the period (a charge 11 days away in a
+     * 31-day period is a third short of full); a paid one is full, and one whose
+     * day has come and nothing wrote is full too. A skipped one is empty.
+     */
+    fun countdown(today: LocalDate, periodLength: Int): Float = when (status) {
+        FixedStatus.PAID -> 1f
+        FixedStatus.SKIPPED -> 0f
+        FixedStatus.PENDING ->
+            if (date <= today || periodLength <= 0) 1f
+            else ((periodLength - ChronoUnit.DAYS.between(today, date)).toFloat() / periodLength).coerceIn(0f, 1f)
+    }
+}
 
 /**
  * How a period is likely to end (Analytics.forecast). [everydayRestMinor]
@@ -369,12 +386,14 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
                 continue
             }
             if (r.template.kind != TransactionKind.EXPENSE) continue
-            fixed += when {
+            val nth = Scheduler.installment(r, o.date)
+            val item = when {
                 written != null && written.isActive -> FixedItem(r.id, r.name, r.template.categoryId, written.amountMinor, o.date, FixedStatus.PAID)
                 o.id in deleted || written != null -> FixedItem(r.id, r.name, r.template.categoryId, r.template.amountMinor, o.date, FixedStatus.SKIPPED)
                 covering != null -> FixedItem(r.id, r.name, r.template.categoryId, covering.amountMinor, o.date, FixedStatus.PAID, byHand = true)
                 else -> FixedItem(r.id, r.name, r.template.categoryId, r.template.amountMinor, o.date, FixedStatus.PENDING, overdue = o.date <= today)
             }
+            fixed += item.copy(installment = nth?.first, installments = nth?.second)
         }
 
         // Everyday spending: not written by a recurring item, not a trip's, not like a recurring item.

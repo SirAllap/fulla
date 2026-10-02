@@ -473,10 +473,10 @@
     <string name="setup_paused">in pausa</string>
     <string name="setup_project_paused">Quel progetto è in pausa. Riattivalo su supabase.com e riprova.</string>
     <string name="use_token_instead">Usa un token invece</string>
-    <string name="update_check_now">Controlla ora</string>
+    <string name="update_check_now">Cerca aggiornamenti adesso</string>
     <string name="update_checking">Controllo…</string>
     <string name="update_up_to_date">Fulla è aggiornata.</string>
-    <string name="update_found_text">È pronta una nuova versione: guarda in cima alle Impostazioni.</string>
+    <string name="update_found_text">Una nuova versione è pronta.</string>
     <string name="update_check_failed">Impossibile raggiungere GitHub. Riprova più tardi.</string>
     <string name="update_test_build">Le versioni di prova non si aggiornano da sole.</string>
     <string name="money_mode_ask_title">Come gestite i soldi insieme?</string>
@@ -645,7 +645,7 @@
     <string name="last_payment">Ultimo pagamento: %1$s · %2$d pagamenti in tutto</string>
     <string name="end_problem">Con questa fine non resta nessun pagamento: precede il primo.</string>
     <string name="fixed_ended">Terminata il %1$s</string>
-    <string name="payment_progress">pagamento %1$d di %2$d</string>
+    <string name="payment_progress">%1$d di %2$d pagate</string>
     <string name="delete_fixed_title">Eliminare «%1$s»?</string>
     <string name="delete_fixed_text">Non scrive più e sparisce dall’elenco. Quello che ha già scritto resta nella cronologia.</string>
     <string name="delete_fixed_and_rows">Eliminarla con i suoi %1$d movimenti scritti</string>
@@ -654,4 +654,17 @@
     <string name="until_date">fino al %1$s</string>
     <string name="summary_writes_itself">si scrive da sola</string>
     <string name="summary_reminder_only">non si scrive da sola</string>
+    <string name="installment_of">Rata %1$d di %2$d</string>
+    <string name="delete_item_title">Eliminare «%1$s»?</string>
+    <string name="delete_category_unused">Nulla la usa, quindi viene eliminata.</string>
+    <string name="delete_category_children">Per eliminarla, elimina o archivia prima le sue sottocategorie.</string>
+    <string name="fixed_bars_help">Ogni barra si riempie man mano che si avvicina il giorno dell’addebito. Una volta addebitata è piena, cambia colore e conta nei tuoi totali.</string>
+    <string name="in_days">tra %1$d g</string>
+    <string name="archive_item_title">Archiviare «%1$s»?</string>
+    <string name="delete_category_move">La usano %1$d movimenti. Scegli la categoria in cui passano:</string>
+    <string name="delete_category_kept">Un budget, una spesa fissa o un campo la usa ancora, quindi resta nell’elenco, archiviata: non più proposta, la cronologia resta.</string>
+    <string name="delete_and_move">Sposta ed elimina</string>
+    <string name="delete_category_no_target">Non c’è un’altra categoria in cui possano passare i suoi movimenti.</string>
+    <string name="update_why">Una nuova versione porta nuove funzioni e correzioni. L’aggiornamento richiede un minuto e i tuoi dati restano come sono.</string>
+    <string name="update_later">Non ora</string>
 </resources>

@@ -103,8 +103,9 @@ import kotlinx.coroutines.launch
 data class MenuItem(val label: String, val icon: ImageVector, val danger: Boolean = false, val onClick: () -> Unit)
 
 /**
- * The top of a tab: its title, then whatever the app puts on every tab
- * (sync, settings), then the tab's own ⋮.
+ * The top of a tab: its title, then the tab's own ⋮ if it has one, then
+ * whatever the app puts on every tab (sync, settings). The settings gear is
+ * always last, so it is in the same place on every tab.
  */
 @Composable
 fun TabHeader(
@@ -122,8 +123,8 @@ fun TabHeader(
             title, style = FullaType.screenTitle, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).semantics { heading() },
         )
-        actions()
         if (menu.isNotEmpty()) OverflowMenu(menu)
+        actions()
     }
 }
 

@@ -290,11 +290,16 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     /** The category a new subcategory goes under, once picked. */
     var creatingUnder by remember { mutableStateOf<io.github.sirallap.fulla.core.model.Category?>(null) }
     var pickingParent by remember { mutableStateOf<AppliesTo?>(null) }
+    /** The category being deleted: asks where its entries go, then archives it. */
+    var deleting by remember { mutableStateOf<io.github.sirallap.fulla.core.model.Category?>(null) }
     val order = compareBy<io.github.sirallap.fulla.core.model.Category>({ it.archived }, { it.sort })
+    // A category deleted (archived) that nothing refers to any more is not listed: it is gone. One with history stays, archived.
+    val referenced = remember(view.config, view.active) { runCatching { io.github.sirallap.fulla.core.categories.CategoryUse.referenced(view.config, view.active) }.getOrNull() }
     Column {
         for ((title, applies) in listOf(R.string.spending to AppliesTo.EXPENSE, R.string.income to AppliesTo.INCOME)) {
             Section(stringResource(title))
             val list = view.config.categories.filter { it.appliesTo == applies || (applies == AppliesTo.EXPENSE && it.appliesTo == AppliesTo.BOTH) }
+                .filter { referenced == null || !io.github.sirallap.fulla.core.categories.CategoryUse.isGone(view.config, referenced, it.id) }
             // Each category, then its subcategories just under it.
             val tops = list.filter { cat -> cat.parentId == null || list.none { it.id == cat.parentId } }.sortedWith(order)
             for (top in tops) {
@@ -343,8 +348,25 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         }
     }
     editing?.let { item ->
-        StructureDialog(item, onDismiss = { editing = null }, iconPicker = true) { updated ->
+        val use = view.config.category((item["id"] as? JsonPrimitive)?.content)?.let {
+            runCatching { io.github.sirallap.fulla.core.categories.CategoryUse.of(view.config, view.active, it.id) }.getOrNull()
+        }
+        val category = view.config.category((item["id"] as? JsonPrimitive)?.content)
+        StructureDialog(item, onDismiss = { editing = null }, iconPicker = true,
+            onDeleteClick = if (use != null && category != null && use.children == 0) ({ deleting = category }) else null,
+            deleteBlockedText = if (use != null && use.children > 0) stringResource(R.string.delete_category_children) else null,
+        ) { updated ->
             change { api -> ledger.upsert(view.id, Structure.CATEGORY, updated, api) }
+        }
+    }
+    deleting?.let { category ->
+        DeleteCategoryDialog(view, category, onDismiss = { deleting = null }) { moveTo ->
+            val item = bundleItem(view, Structure.CATEGORY, category.id)
+            if (item != null) change { api ->
+                // Its entries go first, then it is archived: one without entries, budgets, fixed costs or fields leaves the list.
+                if (moveTo != null) ledger.saveAll(view.id, io.github.sirallap.fulla.core.categories.CategoryUse.move(view.active, category.id, moveTo))
+                ledger.upsert(view.id, Structure.CATEGORY, JsonObject(item + mapOf("archived" to JsonPrimitive(true))), api)
+            }
         }
     }
     creating?.let { applies ->
@@ -412,6 +434,9 @@ private fun StructureDialog(
     iconPicker: Boolean,
     formats: io.github.sirallap.fulla.ui.Formats? = null,
     isNewAccount: Boolean = false,
+    /** Deleting, for what can be deleted: it closes this dialog and the caller asks what the deletion needs. [deleteBlockedText] says why it cannot be done now. */
+    onDeleteClick: (() -> Unit)? = null,
+    deleteBlockedText: String? = null,
     onSave: (JsonObject) -> Unit,
 ) {
     var name by remember { mutableStateOf((item["name"] as? JsonPrimitive)?.content ?: "") }
@@ -466,6 +491,11 @@ private fun StructureDialog(
                     }
                 }
                 SwitchRow(stringResource(R.string.archive), stringResource(R.string.archive_help), archived) { archived = it }
+                if (deleteBlockedText != null) {
+                    Text(deleteBlockedText, style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                } else if (onDeleteClick != null) {
+                    TextButton(onClick = { onDeleteClick(); onDismiss() }) { Text(stringResource(R.string.delete), color = FullaTheme.colors.danger) }
+                }
             }
         },
         confirmButton = {
@@ -656,7 +686,7 @@ private fun paletteName(p: MoneyPalette): Int = when (p.name) {
 // ── about ────────────────────────────────────────────────────────────────────
 
 @Composable
-fun AboutSettings() {
+fun AboutSettings(onUpdate: () -> Unit = {}) {
     val context = LocalContext.current
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
@@ -667,20 +697,7 @@ fun AboutSettings() {
         SwitchRow(stringResource(R.string.update_check), stringResource(R.string.update_check_text),
             checked = settings?.checkForUpdates ?: true,
             onChange = { on -> scope.launch { container.settings.setCheckForUpdates(on) } })
-        var checking by remember { mutableStateOf(false) }
-        var checked by remember { mutableStateOf<io.github.sirallap.fulla.AppContainer.UpdateCheckResult?>(null) }
-        val result = when (checked) {
-            io.github.sirallap.fulla.AppContainer.UpdateCheckResult.FOUND -> stringResource(R.string.update_found_text)
-            io.github.sirallap.fulla.AppContainer.UpdateCheckResult.UP_TO_DATE -> stringResource(R.string.update_up_to_date)
-            io.github.sirallap.fulla.AppContainer.UpdateCheckResult.FAILED -> stringResource(R.string.update_check_failed)
-            io.github.sirallap.fulla.AppContainer.UpdateCheckResult.SKIPPED -> stringResource(R.string.update_test_build)
-            null -> null
-        }
-        ListRow(stringResource(if (checking) R.string.update_checking else R.string.update_check_now), context = result,
-            onClick = if (checking) null else ({
-                checking = true
-                scope.launch { checked = container.checkForUpdates(now = true); checking = false }
-            }))
+        CheckUpdatesRow(onUpdate)
         ListRow(stringResource(R.string.licence), context = stringResource(R.string.licence_text))
         ListRow(stringResource(R.string.privacy), context = stringResource(R.string.privacy_text))
         ListRow(stringResource(R.string.third_party_licences), context = stringResource(R.string.third_party_licences_text), onClick = {
@@ -699,4 +716,53 @@ fun AboutSettings() {
             confirmButton = { TextButton(onClick = { notices = null }) { Text(stringResource(R.string.done)) } },
         )
     }
+}
+
+/**
+ * Deleting a category. Nothing is physically deleted, so it is archived; what
+ * makes it vanish from the list is that nothing refers to it any more. So the
+ * entries that use it are moved first, to a category the person picks (the one
+ * above it, for a subcategory, is already picked). What cannot be moved here
+ * (a budget, a fixed cost, a field) keeps it in the list, archived, and the
+ * dialog says so before it is confirmed.
+ */
+@Composable
+private fun DeleteCategoryDialog(
+    view: HouseholdView,
+    category: io.github.sirallap.fulla.core.model.Category,
+    onDismiss: () -> Unit,
+    onConfirm: (moveTo: String?) -> Unit,
+) {
+    val use = remember(category.id) { io.github.sirallap.fulla.core.categories.CategoryUse.of(view.config, view.active, category.id) }
+    val targets = remember(category.id) { io.github.sirallap.fulla.core.categories.CategoryUse.targetsFor(view.config, view.active, category.id) }
+    val others = use.budgets + use.recurring + use.fields
+    var target by remember { mutableStateOf(if (use.rows > 0) targets.firstOrNull { it.id == category.parentId }?.id else null) }
+    val c = FullaTheme.colors
+    FullaDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(if (others > 0) R.string.archive_item_title else R.string.delete_item_title, category.name)) },
+        text = {
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (use.rows == 0 && others == 0) Text(stringResource(R.string.delete_category_unused), style = FullaType.secondary)
+                if (use.rows > 0) {
+                    Text(stringResource(R.string.delete_category_move, use.rows), style = FullaType.secondary)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        for (t in targets) Chip(t.name, t.id == target, { target = t.id })
+                    }
+                    if (targets.isEmpty()) Text(stringResource(R.string.delete_category_no_target), style = FullaType.secondary, color = c.warning)
+                }
+                if (others > 0) Text(stringResource(R.string.delete_category_kept), style = FullaType.secondary, color = c.inkMuted)
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = use.rows == 0 || target != null, onClick = { onConfirm(target); onDismiss() }) {
+                Text(stringResource(when {
+                    use.rows > 0 -> R.string.delete_and_move
+                    others > 0 -> R.string.archive
+                    else -> R.string.delete
+                }))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }

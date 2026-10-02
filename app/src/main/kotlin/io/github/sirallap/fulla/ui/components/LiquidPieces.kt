@@ -136,18 +136,22 @@ fun LiquidBarRow(
     fraction: Float,
     modifier: Modifier = Modifier,
     context: String? = null,
+    /** A third line, for a fact that must not be cut short by the one above it. */
+    detail: String? = null,
     phase: Float = 0f,
+    tone: LiquidTone = LiquidTone.OUT,
     start: (@Composable () -> Unit)? = null,
     below: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val c = FullaTheme.colors
     val fill = rememberFill(fraction)
+    val (surface, body) = toneColors(tone)
     Row(
         modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clip(RoundedCornerShape(16.dp))
             .drawBehind {
                 drawRect(c.paperHigh)
-                liquidSheet(fraction * fill.value, c.outSurface, c.outBody, vertical = false, phase = phase, alpha = if (c.isDark) 0.40f else 0.26f)
+                liquidSheet(fraction * fill.value, surface, body, vertical = false, phase = phase, alpha = if (c.isDark) 0.40f else 0.26f)
             }
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 10.dp),
@@ -157,7 +161,8 @@ fun LiquidBarRow(
         start?.invoke()
         Column(Modifier.weight(1f)) {
             Text(title, style = FullaType.body, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (context != null) Text(context, style = FullaType.label, color = c.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (context != null) Text(context, style = FullaType.label, color = c.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (detail != null) Text(detail, style = FullaType.label, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             below?.invoke()
         }
         Text(amount, style = FullaType.amount, color = c.ink, maxLines = 1)

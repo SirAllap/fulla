@@ -113,6 +113,30 @@ class ForecastTest {
     }
 
     @Test
+    fun `a financing says which instalment each charge is, and a fixed cost that never ends says nothing`() {
+        val sofa = rent.copy(id = "00000000-0000-4000-8000-000000000477", name = "Sofa", startDate = d(1, 11, 2029), endDate = d(1, 3))
+        val f = analytics(sofa, car).forecast(listOf(written(sofa, d(1))), jan, today = d(5))!!
+        val s = f.fixed.first { it.name == "Sofa" }
+        assertEquals(3 to 5, s.installment!! to s.installments!!, "Nov, Dec, Jan, Feb, Mar: January is the third of five")
+        assertNull(f.fixed.first { it.name == "Car" }.installment)
+    }
+
+    @Test
+    fun `a charge's bar fills as its day comes closer over the period, and is full once paid`() {
+        val f = analytics(rent, bike, gym).forecast(listOf(written(rent, d(1))), jan, today = d(2))!!
+        val by = f.fixed.associateBy { it.name }
+        assertEquals(1f, by.getValue("Rent").countdown(d(2), f.length), "paid")
+        // Bike on the 14th, today the 2nd: 12 days left of 31.
+        assertEquals((31 - 12) / 31f, by.getValue("Bike").countdown(d(2), f.length), 0.0001f)
+        // Gym on the 20th: further away, emptier.
+        assertTrue(by.getValue("Gym").countdown(d(2), f.length) < by.getValue("Bike").countdown(d(2), f.length))
+        // The day itself, and after it with nothing written: full.
+        assertEquals(1f, by.getValue("Bike").countdown(d(14), f.length))
+        assertEquals(1f, by.getValue("Bike").countdown(d(20), f.length))
+        assertEquals(0f, by.getValue("Bike").copy(status = FixedStatus.SKIPPED).countdown(d(2), f.length))
+    }
+
+    @Test
     fun `income somebody wrote down by hand is not expected a second time`() {
         val a = analytics(pay)
         assertEquals(300_000, a.forecast(emptyList(), jan, today = d(10))!!.expectedIncomeMinor)

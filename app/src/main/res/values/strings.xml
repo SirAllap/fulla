@@ -474,10 +474,10 @@
     <string name="setup_paused">paused</string>
     <string name="setup_project_paused">That project is paused. Resume it on supabase.com and try again.</string>
     <string name="use_token_instead">Use a token instead</string>
-    <string name="update_check_now">Check now</string>
+    <string name="update_check_now">Check for updates now</string>
     <string name="update_checking">Checking…</string>
     <string name="update_up_to_date">Fulla is up to date.</string>
-    <string name="update_found_text">A new version is ready: see the top of Settings.</string>
+    <string name="update_found_text">A new version is ready.</string>
     <string name="update_check_failed">Could not reach GitHub. Try again later.</string>
     <string name="update_test_build">Test builds do not update themselves.</string>
     <string name="money_mode_ask_title">How do you handle money together?</string>
@@ -695,7 +695,7 @@
     <string name="last_payment">Last payment: %1$s · %2$d payments in all</string>
     <string name="end_problem">That end leaves no payment: it comes before the first one.</string>
     <string name="fixed_ended">Ended %1$s</string>
-    <string name="payment_progress">payment %1$d of %2$d</string>
+    <string name="payment_progress">%1$d of %2$d paid</string>
     <string name="delete_fixed_title">Delete “%1$s”?</string>
     <string name="delete_fixed_text">It stops writing and leaves the list. What it already wrote stays in History.</string>
     <string name="delete_fixed_and_rows">Delete it and its %1$d written entries</string>
@@ -704,4 +704,17 @@
     <string name="until_date">until %1$s</string>
     <string name="summary_writes_itself">writes itself</string>
     <string name="summary_reminder_only">not written by itself</string>
+    <string name="installment_of">Instalment %1$d of %2$d</string>
+    <string name="delete_item_title">Delete “%1$s”?</string>
+    <string name="delete_category_unused">Nothing uses it, so it is removed.</string>
+    <string name="delete_category_children">To delete it, first delete or archive its subcategories.</string>
+    <string name="fixed_bars_help">Each bar fills as the day of its charge comes closer. Once it is charged it is full, changes colour and counts in your totals.</string>
+    <string name="in_days">in %1$d d</string>
+    <string name="archive_item_title">Archive “%1$s”?</string>
+    <string name="delete_category_move">%1$d entries use it. Choose the category they go to:</string>
+    <string name="delete_category_kept">A budget, fixed cost or field still uses it, so it stays in the list, archived: no longer offered, and its history stays.</string>
+    <string name="delete_and_move">Move and delete</string>
+    <string name="delete_category_no_target">There is no other category their entries could go to.</string>
+    <string name="update_why">A new version has new features and fixes. Updating takes a minute, and your data stays as it is.</string>
+    <string name="update_later">Not now</string>
 </resources>

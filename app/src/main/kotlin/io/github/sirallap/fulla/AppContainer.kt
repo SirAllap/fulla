@@ -94,9 +94,10 @@ class AppContainer(private val context: Context) {
     enum class UpdateCheckResult { FOUND, UP_TO_DATE, FAILED, SKIPPED }
 
     /**
-     * Asks GitHub for a newer release. On its own (app start) at most every
-     * 12 hours and only when the setting is on; [now] is the "Check now" row,
-     * which asks right away.
+     * Asks GitHub for a newer release. On its own (every time the app is
+     * opened, and once an hour while it stays open) at most every hour and
+     * only when the setting is on; [now] is the "Check now" row, which asks
+     * right away. One small request: it costs next to nothing.
      */
     suspend fun checkForUpdates(now: Boolean = false): UpdateCheckResult {
         if (BuildConfig.DEBUG) return UpdateCheckResult.SKIPPED
@@ -161,6 +162,9 @@ class AppContainer(private val context: Context) {
     }
 
     suspend fun api(endpoint: Endpoint? = null): FullaApi? = supabase(endpoint)?.let(::FullaApi)
+
+    /** Counts every time the app comes to the front, so the screen can look again at what needs saying (a new version). */
+    val foreground = MutableStateFlow(0)
 
     /** An invite link the app was opened with, waiting for the person to act on it. */
     val pendingInvite = MutableStateFlow<InviteLink?>(null)
@@ -254,7 +258,7 @@ class AppContainer(private val context: Context) {
     }
 
     companion object {
-        const val UPDATE_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000L
+        const val UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000L
         private val MIGRATION_FILENAME = Regex("""^(\d{4})_.+\.sql$""")
     }
 }

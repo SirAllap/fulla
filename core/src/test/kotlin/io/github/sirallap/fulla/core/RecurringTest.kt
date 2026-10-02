@@ -120,6 +120,15 @@ class RecurringTest {
     }
 
     @Test
+    fun `which payment of the run a day is`() {
+        val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 13), start = "2030-09-27", end = "2030-12-13")
+        assertEquals(1 to 3, Scheduler.installment(r, LocalDate.parse("2030-10-13")))
+        assertEquals(3 to 3, Scheduler.installment(r, LocalDate.parse("2030-12-13")))
+        assertEquals(null, Scheduler.installment(r, LocalDate.parse("2030-10-14")), "not a day it falls due")
+        assertEquals(null, Scheduler.installment(rule(Schedule(Frequency.MONTHLY, byMonthDay = 13)), LocalDate.parse("2030-10-13")), "never ends")
+    }
+
+    @Test
     fun `uuid5 matches the RFC example`() {
         val dns = UUID.fromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
         assertEquals("2ed6657d-e927-568b-95e1-2665a8aea6a2", DeterministicId.uuid5(dns, "www.example.com"))

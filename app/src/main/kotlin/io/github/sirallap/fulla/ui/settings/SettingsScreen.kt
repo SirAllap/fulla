@@ -5,6 +5,8 @@ import io.github.sirallap.fulla.ui.components.listEndPadding
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -117,7 +119,7 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
                 SettingsSection.BACKUP -> item { BackupSettings(view) }
                 SettingsSection.APPEARANCE -> item { AppearanceSettings() }
                 SettingsSection.SYNC -> item { SyncSettings(view, onBack, onInvite = { onOpen(SettingsSection.MEMBERS) }) }
-                SettingsSection.ABOUT -> item { AboutSettings() }
+                SettingsSection.ABOUT -> item { AboutSettings(onUpdate) }
             }
         }
     }
@@ -128,18 +130,8 @@ private fun LazyListScope.index(
     pendingUpdate: Update?, onUpdate: () -> Unit,
     dbNeedsUpdate: Boolean, projectUrl: String?,
 ) {
-    if (pendingUpdate != null) {
-        item {
-            ListRow(
-                stringResource(R.string.update_available, pendingUpdate.version),
-                icon = Icons.Outlined.SystemUpdate,
-                iconTint = FullaTheme.colors.accent,
-                titleColor = FullaTheme.colors.accent,
-                onClick = onUpdate,
-                end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.accent) },
-            )
-        }
-    }
+    // A new version stays here, at the top, until it is installed: it is never dismissed away.
+    if (pendingUpdate != null) item { UpdateBanner(pendingUpdate, onUpdate) }
     if (dbNeedsUpdate) {
         item {
             val container = LocalContainer.current
@@ -172,6 +164,62 @@ private fun LazyListScope.index(
             }
         })
     }
+    // At the bottom, where the list ends: no need to go looking for it in About.
+    item { CheckUpdatesRow(onUpdate) }
+}
+
+/** A new version, impossible to miss: what it is for and the button, at the top of Settings. */
+@Composable
+private fun UpdateBanner(update: Update, onUpdate: () -> Unit) {
+    val c = FullaTheme.colors
+    androidx.compose.foundation.layout.Column(
+        Modifier.fillMaxWidth().padding(16.dp)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp)).background(c.paperHigh).padding(16.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+    ) {
+        androidx.compose.foundation.layout.Row(
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(Icons.Outlined.SystemUpdate, null, tint = c.accent)
+            Text(stringResource(R.string.update_available, update.version), style = FullaType.title, color = c.ink)
+        }
+        Text(stringResource(R.string.update_why), style = FullaType.secondary, color = c.inkMuted)
+        io.github.sirallap.fulla.ui.components.PrimaryButton(stringResource(R.string.update_now), onUpdate)
+    }
+}
+
+/**
+ * Asks right away whether there is a newer version (here, at the bottom of
+ * Settings, and in About). When there is, the update sheet opens on the spot:
+ * the person never has to go back and look for it.
+ */
+@Composable
+fun CheckUpdatesRow(onFound: () -> Unit) {
+    val container = LocalContainer.current
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var checked by remember { mutableStateOf<AppContainer.UpdateCheckResult?>(null) }
+    val result = when (checked) {
+        AppContainer.UpdateCheckResult.FOUND -> stringResource(R.string.update_found_text)
+        AppContainer.UpdateCheckResult.UP_TO_DATE -> stringResource(R.string.update_up_to_date)
+        AppContainer.UpdateCheckResult.FAILED -> stringResource(R.string.update_check_failed)
+        AppContainer.UpdateCheckResult.SKIPPED -> stringResource(R.string.update_test_build)
+        null -> null
+    }
+    ListRow(
+        stringResource(if (checking) R.string.update_checking else R.string.update_check_now),
+        context = result ?: stringResource(R.string.version, io.github.sirallap.fulla.BuildConfig.VERSION_NAME),
+        icon = Icons.Outlined.SystemUpdate,
+        onClick = if (checking) null else ({
+            checking = true
+            scope.launch {
+                checked = container.checkForUpdates(now = true)
+                checking = false
+                if (checked == AppContainer.UpdateCheckResult.FOUND) onFound()
+            }
+        }),
+    )
 }
 
 /**

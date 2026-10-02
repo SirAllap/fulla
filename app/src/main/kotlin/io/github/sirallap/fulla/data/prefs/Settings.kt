@@ -38,6 +38,9 @@ data class Settings(
     val checkForUpdates: Boolean = true,
     /** Found by AppContainer.checkForUpdates, cleared once installed. */
     val pendingUpdate: Update? = null,
+    /** The version the person was last told about by the pop-up, and when (epoch millis): see UpdateAnnouncement. */
+    val updateAnnouncedVersion: String? = null,
+    val updateAnnouncedAt: Long = 0L,
     /** Set by AppContainer.checkDbSchema when the backend's `fulla_schema_version` is confirmed
      *  below EXPECTED_SCHEMA_VERSION or missing; cleared once it answers current. Never set on an
      *  ambiguous transport error (offline, 5xx), so a phone with no signal keeps whatever it last knew. */
@@ -70,6 +73,8 @@ class SettingsStore(context: Context) {
         val dbNeedsUpdate = booleanPreferencesKey("db_needs_update")
         val lastUpdateCheckAt = longPreferencesKey("last_update_check_at")
         val updateVersion = stringPreferencesKey("update_version")
+        val updateAnnouncedVersion = stringPreferencesKey("update_announced_version")
+        val updateAnnouncedAt = longPreferencesKey("update_announced_at")
         val updateNotes = stringPreferencesKey("update_notes")
         val updateApkUrl = stringPreferencesKey("update_apk_url")
         val updateSizeBytes = longPreferencesKey("update_size_bytes")
@@ -97,6 +102,8 @@ class SettingsStore(context: Context) {
                     Update(version, p[Keys.updateNotes] ?: "", url, p[Keys.updateSizeBytes] ?: 0L, p[Keys.updateSha256])
                 }
             },
+            updateAnnouncedVersion = p[Keys.updateAnnouncedVersion],
+            updateAnnouncedAt = p[Keys.updateAnnouncedAt] ?: 0L,
             guideHousehold = p[Keys.guideHousehold],
             guideOrigin = p[Keys.guideOrigin],
             guideStep = p[Keys.guideStep],
@@ -153,6 +160,11 @@ class SettingsStore(context: Context) {
 
     suspend fun lastUpdateCheckAt(): Long = store.data.first()[Keys.lastUpdateCheckAt] ?: 0L
     suspend fun setLastUpdateCheckAt(at: Long) { store.edit { it[Keys.lastUpdateCheckAt] = at } }
+
+    /** The pop-up has told the person about [version] now. */
+    suspend fun setUpdateAnnounced(version: String, at: Long) {
+        store.edit { it[Keys.updateAnnouncedVersion] = version; it[Keys.updateAnnouncedAt] = at }
+    }
 
     /** The update found by AppContainer.checkForUpdates, or null to clear it once installed. */
     suspend fun setPendingUpdate(update: Update?) {
