@@ -146,7 +146,7 @@ class Ledger(
             connected = h.mode == CONNECTED
             val bundle = Wire.json.parseToJsonElement(h.configJson).jsonObject
             val config = LocalHousehold.config(bundle)
-            if (config.recurringRules.none { it.active && it.autoCreate }) return@withTransaction
+            if (config.recurringRules.none { it.active && !it.archived && it.autoCreate }) return@withTransaction
             val due = RecurringPlanner.plan(config, transactions.ids(householdId).toSet(), today) {
                 transactions.all(householdId).map { Rows.local(it).transaction }
             }

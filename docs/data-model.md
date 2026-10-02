@@ -104,3 +104,7 @@ For each member, `balance = paid − share`:
 | settlement of A from X to Y | X +A, Y −A | |
 
 Balances in a household always add up to zero.
+
+A recurring item is never physically deleted (rows it wrote point at it): deleting
+it sets `archived`, which hides it and stops it writing, like accounts and
+categories (0021).

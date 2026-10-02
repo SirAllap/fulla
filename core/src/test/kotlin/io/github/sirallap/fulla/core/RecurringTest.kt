@@ -112,6 +112,14 @@ class RecurringTest {
     }
 
     @Test
+    fun `an archived item never falls due, and an end can still be worked out for the one it was`() {
+        val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 27), start = "2030-01-01")
+        assertEquals(6, dates(r, "2030-01-01", "2030-06-30").size)
+        assertTrue(dates(r.copy(archived = true), "2030-01-01", "2030-06-30").isEmpty())
+        assertEquals(LocalDate.parse("2030-06-27"), Scheduler.endAfter(r.copy(archived = true), 6))
+    }
+
+    @Test
     fun `uuid5 matches the RFC example`() {
         val dns = UUID.fromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
         assertEquals("2ed6657d-e927-568b-95e1-2665a8aea6a2", DeterministicId.uuid5(dns, "www.example.com"))

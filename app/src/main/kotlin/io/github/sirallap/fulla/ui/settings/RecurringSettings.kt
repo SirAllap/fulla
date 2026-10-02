@@ -124,10 +124,11 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             }
             Section(stringResource(R.string.settings_recurring), top = 16.dp)
         }
-        if (view.config.recurringRules.isEmpty()) {
+        val shown = view.config.recurringRules.filter { !it.archived }
+        if (shown.isEmpty()) {
             EmptyState(Icons.Outlined.Event, stringResource(R.string.no_recurring_title), stringResource(R.string.no_recurring_text))
         }
-        for (r in view.config.recurringRules.sortedWith(compareBy({ !it.active }, { it.name }))) {
+        for (r in shown.sortedWith(compareBy({ !it.active }, { it.name }))) {
             val income = r.template.kind == TransactionKind.INCOME
             val ended = r.endDate
             ListRow(r.name, titleColor = if (r.active) c.ink else c.inkMuted,
@@ -144,14 +145,21 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         if (canEdit) ListRow(stringResource(R.string.add_recurring), icon = Icons.Outlined.Add, onClick = { creating = true })
     }
     if (creating || editing != null) {
-        RecurringDialog(view, editing, onDismiss = { creating = false; editing = null }) { rule ->
+        RecurringDialog(view, editing, onDismiss = { creating = false; editing = null }, onDelete = { rule, withRows ->
+            // Archived, as accounts and categories are: it never writes again and leaves the list. What it wrote stays, unless the person says otherwise.
+            val wrote = if (withRows) view.rows.filter { it.transaction.recurringRuleId == rule.id && it.transaction.isActive }.map { it.transaction.id } else emptyList()
+            change { api ->
+                ledger.upsert(view.id, Structure.RECURRING, Wire.recurring(rule.copy(active = false, archived = true)), api)
+                wrote.forEach { ledger.delete(view.id, it) }
+            }
+        }) { rule ->
             change { api -> ledger.upsert(view.id, Structure.RECURRING, Wire.recurring(rule), api) }
         }
     }
 }
 
 @Composable
-private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDismiss: () -> Unit, onSave: (RecurringRule) -> Unit) {
+private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDismiss: () -> Unit, onDelete: (RecurringRule, Boolean) -> Unit, onSave: (RecurringRule) -> Unit) {
     val f = view.formats
     val locale = Locale.getDefault()
     val dateFormat = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale)
@@ -175,6 +183,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     var endPick by remember { mutableStateOf(existing?.endDate ?: LocalDate.now().plusMonths(6)) }
     var paymentsText by remember { mutableStateOf("6") }
     var pickingEnd by remember { mutableStateOf(false) }
+    var confirmingDelete by remember { mutableStateOf(false) }
     var auto by remember { mutableStateOf(existing?.autoCreate ?: true) }
     var active by remember { mutableStateOf(existing?.active ?: true) }
     val minor = MoneyParser.parse(amount, f.currency, f.decimalStyle)
@@ -315,6 +324,9 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                 }
                 SwitchRow(stringResource(R.string.write_itself), stringResource(R.string.write_itself_help), auto) { auto = it }
                 if (existing != null) SwitchRow(stringResource(R.string.active), stringResource(R.string.active_help), active) { active = it }
+                if (existing != null) TextButton(onClick = { confirmingDelete = true }) {
+                    Text(stringResource(R.string.delete), color = FullaTheme.colors.danger)
+                }
                 if (writeNow.isNotEmpty()) Text(
                     if (writeNow.size <= 3) stringResource(R.string.write_now, writeNow.joinToString(" · ") { dateFormat.format(it) })
                     else stringResource(R.string.write_now_many, writeNow.size, dateFormat.format(writeNow.first())),
@@ -342,6 +354,23 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+    if (confirmingDelete && existing != null) {
+        val wrote = view.rows.count { it.transaction.recurringRuleId == existing.id && it.transaction.isActive }
+        FullaDialog(
+            onDismissRequest = { confirmingDelete = false },
+            title = { Text(stringResource(R.string.delete_fixed_title, existing.name)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.delete_fixed_text), style = FullaType.secondary)
+                    if (wrote > 0) TextButton(onClick = { onDelete(existing, true); confirmingDelete = false; onDismiss() }) {
+                        Text(stringResource(R.string.delete_fixed_and_rows, wrote), color = FullaTheme.colors.danger)
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { onDelete(existing, false); confirmingDelete = false; onDismiss() }) { Text(stringResource(R.string.delete)) } },
+            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
     if (pickingEnd) {
         val state = rememberDatePickerState(initialSelectedDateMillis = endPick.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(onDismissRequest = { pickingEnd = false }, confirmButton = {

@@ -354,7 +354,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val day = (ChronoUnit.DAYS.between(range.start, minOf(today, range.endInclusive)) + 1).toInt()
         val byId = list.associateBy { it.id }
 
-        val rules = config.recurringRules.filter { it.active && it.autoCreate }
+        val rules = config.recurringRules.filter { it.active && !it.archived && it.autoCreate }
         val slots = rules.flatMap { r -> Scheduler.occurrences(r, range.start, if (waiting) today else range.endInclusive).map { Occurrence(r, it) } }
         // What nothing has written yet may still be on the books: somebody wrote it down by hand.
         val byHand = Coverage.byHand(slots.filter { byId[it.id] == null && it.id !in deleted }, list)

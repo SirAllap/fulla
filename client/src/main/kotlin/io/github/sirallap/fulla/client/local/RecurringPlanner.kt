@@ -74,7 +74,7 @@ object RecurringPlanner {
     }
 
     private fun unwritten(config: Config, existingIds: Set<String>, today: LocalDate, periodStart: LocalDate?): List<Occurrence> =
-        config.recurringRules.filter { it.active && it.autoCreate }.flatMap { rule ->
+        config.recurringRules.filter { it.active && !it.archived && it.autoCreate }.flatMap { rule ->
             Scheduler.occurrences(rule, firstDay(rule, existingIds, today, periodStart), today)
                 .map { Occurrence(rule, it) }
                 .filter { it.id !in existingIds }

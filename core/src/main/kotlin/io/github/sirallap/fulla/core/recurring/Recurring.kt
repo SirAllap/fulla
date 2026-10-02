@@ -63,13 +63,15 @@ data class RecurringRule(
     val endDate: LocalDate? = null,
     val autoCreate: Boolean = false,
     val active: Boolean = true,
+    /** Deleted from the list. It is never written, and nothing it wrote is touched. */
+    val archived: Boolean = false,
 )
 
 object Scheduler {
 
     /** Every date the rule falls due on within [from]..[to], in order. */
     fun occurrences(rule: RecurringRule, from: LocalDate, to: LocalDate): List<LocalDate> {
-        if (!rule.active) return emptyList()
+        if (!rule.active || rule.archived) return emptyList()
         val first = maxOf(from, rule.startDate)
         val last = rule.endDate?.let { minOf(it, to) } ?: to
         if (first > last) return emptyList()
@@ -118,13 +120,13 @@ object Scheduler {
      */
     fun endAfter(rule: RecurringRule, count: Int): LocalDate? {
         if (count < 1) return null
-        return occurrences(rule.copy(endDate = null, active = true), rule.startDate, rule.startDate.plusYears(60)).getOrNull(count - 1)
+        return occurrences(rule.copy(endDate = null, active = true, archived = false), rule.startDate, rule.startDate.plusYears(60)).getOrNull(count - 1)
     }
 
     /** How many payments of a rule with an end have fallen due by [today], and how many it has in all. Null for one that never ends. */
     fun progress(rule: RecurringRule, today: LocalDate): Pair<Int, Int>? {
         val end = rule.endDate ?: return null
-        val all = occurrences(rule.copy(active = true), rule.startDate, end)
+        val all = occurrences(rule.copy(active = true, archived = false), rule.startDate, end)
         if (all.isEmpty()) return null
         return all.count { it <= today } to all.size
     }

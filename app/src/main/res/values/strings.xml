@@ -696,4 +696,7 @@
     <string name="end_problem">That end leaves no payment: it comes before the first one.</string>
     <string name="fixed_ended">Ended %1$s</string>
     <string name="payment_progress">payment %1$d of %2$d</string>
+    <string name="delete_fixed_title">Delete “%1$s”?</string>
+    <string name="delete_fixed_text">It stops writing and leaves the list. What it already wrote stays in History.</string>
+    <string name="delete_fixed_and_rows">Delete it and its %1$d written entries</string>
 </resources>

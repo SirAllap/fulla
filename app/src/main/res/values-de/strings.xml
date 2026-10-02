@@ -646,4 +646,7 @@
     <string name="end_problem">Mit diesem Ende bleibt keine Zahlung übrig: es liegt vor der ersten.</string>
     <string name="fixed_ended">Beendet am %1$s</string>
     <string name="payment_progress">Zahlung %1$d von %2$d</string>
+    <string name="delete_fixed_title">„%1$s“ löschen?</string>
+    <string name="delete_fixed_text">Es schreibt nichts mehr und verschwindet aus der Liste. Was es schon geschrieben hat, bleibt im Verlauf.</string>
+    <string name="delete_fixed_and_rows">Löschen samt seiner %1$d geschriebenen Einträge</string>
 </resources>

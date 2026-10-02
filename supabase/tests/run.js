@@ -656,6 +656,20 @@ test('a monthly schedule can name its months, and then it is the calendar', (ctx
   fails({ ...rule, id: uuid(), schedule: { freq: 'monthly', interval: 3, by_month_day: 10, by_months: [1, 4] } });
 });
 
+test('a recurring item can be archived, and it comes back archived', (ctx) => {
+  const rule = {
+    id: uuid(), name: 'Gym', start_date: '2030-01-01', auto_create: true, schedule: { freq: 'monthly', by_month_day: 5 },
+    template: { kind: 'expense', amount_minor: 3000, category_id: ctx.cat('Housing'), paid_by_member_id: ctx.aliceMember,
+                split: { mode: 'equal', members: [ctx.aliceMember] }, recurrence: 'fixed', note: 'GYM' },
+  };
+  const save = (r) => rpc(ctx.db, ctx.alice, 'fulla_recurring_upsert', { p_household_id: ctx.hh, p_rule: r });
+  assert.equal(save(rule).recurring_rules.find((r) => r.id === rule.id).archived, false, 'not archived unless said');
+  const archived = save({ ...rule, active: false, archived: true }).recurring_rules.find((r) => r.id === rule.id);
+  assert.equal(archived.archived, true);
+  assert.equal(archived.active, false);
+  assert.equal(save({ ...rule, active: true, archived: false }).recurring_rules.find((r) => r.id === rule.id).archived, false, 'and it can be brought back');
+});
+
 test('categorisation rules must do something valid', (ctx) => {
   const save = (r) => rpc(ctx.db, ctx.alice, 'fulla_rule_upsert', { p_household_id: ctx.hh, p_rule: r });
   const fails = (r) => expectError(ctx.db, ctx.alice, 'fulla_rule_upsert', { p_household_id: ctx.hh, p_rule: r }, 'validation_failed');

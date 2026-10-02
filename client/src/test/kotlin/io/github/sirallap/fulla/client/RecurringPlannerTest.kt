@@ -73,6 +73,22 @@ class RecurringPlannerTest {
     }
 
     @Test
+    fun `a deleted fixed cost leaves the list, writes nothing more and keeps what it wrote`() {
+        val live = rule(rentId, "Rent", monthly(20))
+        val gone = JsonObject(live + mapOf("active" to kotlinx.serialization.json.JsonPrimitive(false), "archived" to kotlinx.serialization.json.JsonPrimitive(true)))
+        val c = config(gone, rule(gymId, "Gym", monthly(20)))
+        val rent = c.recurringRules.first { it.id == rentId }
+        assertTrue(rent.archived && !rent.active, "it comes back archived")
+        assertEquals(true, Wire.recurring(rent)["archived"]?.toString()?.contains("true"), "and goes out archived")
+        assertEquals(listOf(gymId), RecurringPlanner.due(c, emptySet(), d(3, 21)).map { it.recurringRuleId }.distinct(), "only the live one writes")
+        // Archived but still active (an older phone that only knew "active"): never written either.
+        val stillActive = c.copy(recurringRules = c.recurringRules.map { if (it.id == rentId) it.copy(active = true) else it })
+        assertEquals(listOf(gymId), RecurringPlanner.due(stillActive, emptySet(), d(3, 21)).map { it.recurringRuleId }.distinct())
+        // A household saved before the field existed: nothing is archived.
+        assertEquals(false, config(live).recurringRules.single().archived)
+    }
+
+    @Test
     fun `a financing writes its payments and then stops, even for a phone opened long after`() {
         val six = rule(rentId, "Sofa", monthly(27), start = d(1, 1)).let { kotlinx.serialization.json.JsonObject(it + ("end_date" to kotlinx.serialization.json.JsonPrimitive(d(6, 27).toString()))) }
         val c = config(six)

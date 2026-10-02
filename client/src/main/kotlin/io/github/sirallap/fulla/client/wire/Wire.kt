@@ -267,7 +267,7 @@ object Wire {
             "status" to JsonPrimitive("active"), "client_updated_at" to JsonPrimitive(""),
         )))
         return RecurringRule(o.str("id")!!, o.str("name") ?: "", t, schedule, LocalDate.parse(start),
-            o.str("end_date")?.let(LocalDate::parse), o.bool("auto_create") ?: false, o.bool("active") ?: true)
+            o.str("end_date")?.let(LocalDate::parse), o.bool("auto_create") ?: false, o.bool("active") ?: true, o.bool("archived") ?: false)
     }
 
     fun rules(o: JsonObject): List<CategorizationRule> = o.arr("categorization_rules").map { it.jsonObject }.map { r ->
@@ -340,7 +340,7 @@ object Wire {
         put("template", JsonObject(transaction(r.template) - setOf("id", "date", "status", "client_updated_at", "created_at",
             "recurring_rule_id", "occurrence_date", "import_fingerprint")))
         put("start_date", r.startDate.toString()); put("end_date", r.endDate?.toString())
-        put("auto_create", r.autoCreate); put("active", r.active)
+        put("auto_create", r.autoCreate); put("active", r.active); put("archived", r.archived)
     }
 
     fun list(e: JsonElement?): List<JsonObject> = (e as? JsonArray)?.map { it.jsonObject } ?: emptyList()

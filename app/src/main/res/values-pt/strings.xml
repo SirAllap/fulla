@@ -646,4 +646,7 @@
     <string name="end_problem">Com este fim não resta nenhum pagamento: é anterior ao primeiro.</string>
     <string name="fixed_ended">Terminou a %1$s</string>
     <string name="payment_progress">pagamento %1$d de %2$d</string>
+    <string name="delete_fixed_title">Eliminar «%1$s»?</string>
+    <string name="delete_fixed_text">Deixa de escrever e sai da lista. O que já escreveu fica no Histórico.</string>
+    <string name="delete_fixed_and_rows">Eliminá-la com os seus %1$d movimentos escritos</string>
 </resources>
