@@ -616,10 +616,8 @@
     <string name="fixed_total_tile">Fixos do período</string>
     <string name="fixed_to_come_tile">Faltam cobrar</string>
     <string name="fixed_progress">%1$s cobrados · faltam %2$s</string>
-    <string name="fixed_after">Depois dos fixos sobram</string>
-    <string name="fixed_of_income">De %1$s de receitas</string>
     <string name="per_day">Você pode gastar por dia</string>
-    <string name="per_day_text">O que sobra depois de cobrados os fixos que faltam, em %1$d dias</string>
+    <string name="per_day_text">O que resta, repartido pelos %1$d dias que faltam</string>
     <string name="fixed_paid_on">Cobrado em %1$s</string>
     <string name="fixed_due_on">Previsto em %1$s</string>
     <string name="fixed_overdue">Atrasado · era para %1$s</string>
@@ -667,4 +665,8 @@
     <string name="delete_category_no_target">Não há outra categoria para onde os seus movimentos possam passar.</string>
     <string name="update_why">Uma versão nova traz funções novas e correções. Atualizar demora um minuto e os teus dados ficam como estão.</string>
     <string name="update_later">Agora não</string>
+    <string name="forecast_day">Dia %1$d de %2$d do período. Uma estimativa: o que já gastaste, mais as despesas fixas que faltam, mais o teu gasto habitual do dia a dia nos dias que restam.</string>
+    <string name="forecast_early">Ainda é cedo, por isso o intervalo é largo; estreita-se com os dias.</string>
+    <string name="left_to_spend">Resta para gastar</string>
+    <string name="left_to_spend_text">Receitas %1$s − gasto %2$s − fixas %3$s</string>
 </resources>

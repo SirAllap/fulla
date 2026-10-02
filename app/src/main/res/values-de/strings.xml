@@ -616,10 +616,8 @@
     <string name="fixed_total_tile">Fixkosten im Zeitraum</string>
     <string name="fixed_to_come_tile">Noch abzubuchen</string>
     <string name="fixed_progress">%1$s abgebucht · %2$s offen</string>
-    <string name="fixed_after">Nach deinen Fixkosten bleiben</string>
-    <string name="fixed_of_income">Von %1$s Einnahmen</string>
     <string name="per_day">Du kannst pro Tag ausgeben</string>
-    <string name="per_day_text">Was bleibt, wenn die noch fälligen Fixkosten abgebucht sind, über %1$d Tage</string>
+    <string name="per_day_text">Was bleibt, verteilt auf die %1$d verbleibenden Tage</string>
     <string name="fixed_paid_on">Abgebucht am %1$s</string>
     <string name="fixed_due_on">Fällig am %1$s</string>
     <string name="fixed_overdue">Überfällig · war am %1$s fällig</string>
@@ -667,4 +665,8 @@
     <string name="delete_category_no_target">Es gibt keine andere Kategorie, in die ihre Einträge wechseln könnten.</string>
     <string name="update_why">Eine neue Version bringt neue Funktionen und Korrekturen. Das Update dauert eine Minute, deine Daten bleiben, wie sie sind.</string>
     <string name="update_later">Jetzt nicht</string>
+    <string name="forecast_day">Tag %1$d von %2$d des Zeitraums. Eine Schätzung: schon Ausgegebenes, plus die noch fälligen Fixkosten, plus deine üblichen Alltagsausgaben für die restlichen Tage.</string>
+    <string name="forecast_early">Es ist noch früh, deshalb ist die Spanne weit; sie wird mit den Tagen enger.</string>
+    <string name="left_to_spend">Noch auszugeben</string>
+    <string name="left_to_spend_text">Einnahmen %1$s − ausgegeben %2$s − Fixkosten %3$s</string>
 </resources>

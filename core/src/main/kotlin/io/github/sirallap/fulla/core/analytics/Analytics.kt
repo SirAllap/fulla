@@ -152,11 +152,20 @@ data class PeriodForecast(
     val afterFixedMinor: Long? get() = totalIncomeMinor.takeIf { it > 0 }?.let { it - fixedTotalMinor }
 
     /**
-     * What can be spent per day from tomorrow on: what income leaves after
-     * what was spent and what is still to be charged, over the days left;
-     * null without income or once the period is over.
+     * What is left to spend: the income, less what was spent so far, less the
+     * fixed costs still to be charged. Null without income. (Unlike
+     * [afterFixedMinor], it counts what was already spent.)
      */
-    val perDayMinor: Long? get() = if (totalIncomeMinor > 0 && length > day) (totalIncomeMinor - spentMinor - fixedToComeMinor) / (length - day) else null
+    val leftToSpendMinor: Long? get() = totalIncomeMinor.takeIf { it > 0 }?.let { it - spentMinor - fixedToComeMinor }
+
+    /**
+     * What can be spent per day from tomorrow on: [leftToSpendMinor] over the
+     * days left; null without income or once the period is over.
+     */
+    val perDayMinor: Long? get() = if (length > day) leftToSpendMinor?.let { it / (length - day) } else null
+
+    /** Too early in the period for the estimate to be tight: under a quarter of it has gone. */
+    val early: Boolean get() = day * 4 < length
 }
 
 data class MemberSpending(val memberId: String, val paidMinor: Long, val shareMinor: Long)

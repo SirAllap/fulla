@@ -237,6 +237,11 @@ class ForecastTest {
         assertEquals(35_000, f.fixedToComeMinor)
         assertEquals(300_000 - 115_000, f.afterFixedMinor)
         assertEquals((300_000 - 85_000 - 35_000) / 21, f.perDayMinor)
+        assertEquals(300_000 - 85_000 - 35_000, f.leftToSpendMinor, "income, less what was spent, less the fixed costs still to come")
+        assertEquals(f.leftToSpendMinor!! / 21, f.perDayMinor, "and the per day is that over the days left")
+        assertTrue(f.afterFixedMinor!! > f.leftToSpendMinor!!, "after the fixed costs alone it is more: it does not count what was spent")
+        assertTrue(!f.early, "the 10th of 31 days is not early")
+        assertTrue(analytics(rent).forecast(emptyList(), jan, today = d(5))!!.early, "the 5th is")
         assertNull(analytics(rent).forecast(rows, jan, today = d(10))!!.afterFixedMinor, "no income known")
         assertNull(analytics(rent).forecast(rows, jan, today = d(10))!!.perDayMinor)
         val written25 = a.forecast(rows + written(pay, d(25)), jan, today = d(26))!!

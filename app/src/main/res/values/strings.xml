@@ -666,10 +666,8 @@
     <string name="fixed_total_tile">Fixed this period</string>
     <string name="fixed_to_come_tile">Still to charge</string>
     <string name="fixed_progress">%1$s charged · %2$s to go</string>
-    <string name="fixed_after">After your fixed costs</string>
-    <string name="fixed_of_income">Of %1$s of income</string>
     <string name="per_day">You can spend per day</string>
-    <string name="per_day_text">What is left once the fixed costs to come are charged, over %1$d days</string>
+    <string name="per_day_text">What is left, spread over the %1$d days to go</string>
     <string name="fixed_paid_on">Charged on %1$s</string>
     <string name="fixed_due_on">Due on %1$s</string>
     <string name="fixed_overdue">Overdue · was due on %1$s</string>
@@ -717,4 +715,8 @@
     <string name="delete_category_no_target">There is no other category their entries could go to.</string>
     <string name="update_why">A new version has new features and fixes. Updating takes a minute, and your data stays as it is.</string>
     <string name="update_later">Not now</string>
+    <string name="forecast_day">Day %1$d of %2$d of the period. An estimate: what is already spent, plus the fixed costs still to come, plus your usual everyday spending for the days left.</string>
+    <string name="forecast_early">It is still early, so the range is wide; it narrows as the days pass.</string>
+    <string name="left_to_spend">Left to spend</string>
+    <string name="left_to_spend_text">Income %1$s − spent %2$s − fixed %3$s</string>
 </resources>

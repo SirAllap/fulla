@@ -61,6 +61,11 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast, onFixedCosts:
     var explaining by remember { mutableStateOf(false) }
 
     Section(stringResource(R.string.forecast), top = 16.dp)
+    // What these figures are, so nobody has to guess: the day of the period, what they are made of, and that it is an estimate.
+    if (forecast.known) {
+        Text(stringResource(R.string.forecast_day, forecast.day, forecast.length) + if (forecast.early) " " + stringResource(R.string.forecast_early) else "",
+            style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+    }
     if (forecast.known) {
         val spendEnd = forecast.spentEndMinor!!
         TileRow {
@@ -116,14 +121,14 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
                 // No liquid: a full glass here read as "all paid". What is paid is the glass on the left.
                 context = next?.let { it.name + " · " + f.day(it.date) }, phase = 3.0f)
         }
-        val after = forecast.afterFixedMinor
+        val left = forecast.leftToSpendMinor
         val perDay = forecast.perDayMinor
-        if (after != null) {
+        if (left != null) {
             TileRow {
-                LiquidTile(stringResource(R.string.fixed_after), f.money(after), Modifier.weight(1f),
-                    context = stringResource(R.string.fixed_of_income, f.money(forecast.totalIncomeMinor)),
-                    level = (after.toFloat() / forecast.totalIncomeMinor).coerceIn(0f, 1f), tone = LiquidTone.IN,
-                    valueColor = if (after < 0) c.moneyOut else c.moneyIn, phase = 3.8f)
+                LiquidTile(stringResource(R.string.left_to_spend), f.money(left), Modifier.weight(1f),
+                    context = stringResource(R.string.left_to_spend_text, f.money(forecast.totalIncomeMinor), f.money(forecast.spentMinor), f.money(forecast.fixedToComeMinor)),
+                    level = (left.toFloat() / forecast.totalIncomeMinor).coerceIn(0f, 1f), tone = LiquidTone.IN,
+                    valueColor = if (left < 0) c.moneyOut else c.moneyIn, phase = 3.8f)
                 if (perDay != null) {
                     LiquidTile(stringResource(R.string.per_day), f.money(perDay), Modifier.weight(1f),
                         context = stringResource(R.string.per_day_text, forecast.length - forecast.day),

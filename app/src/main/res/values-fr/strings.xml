@@ -616,10 +616,8 @@
     <string name="fixed_total_tile">Fixes de la période</string>
     <string name="fixed_to_come_tile">Reste à prélever</string>
     <string name="fixed_progress">%1$s prélevés · %2$s à venir</string>
-    <string name="fixed_after">Après vos frais fixes</string>
-    <string name="fixed_of_income">Sur %1$s de revenus</string>
     <string name="per_day">Vous pouvez dépenser par jour</string>
-    <string name="per_day_text">Ce qui reste une fois les frais fixes à venir prélevés, sur %1$d jours</string>
+    <string name="per_day_text">Ce qui reste, réparti sur les %1$d jours à venir</string>
     <string name="fixed_paid_on">Prélevé le %1$s</string>
     <string name="fixed_due_on">Prévu le %1$s</string>
     <string name="fixed_overdue">En retard · prévu le %1$s</string>
@@ -667,4 +665,8 @@
     <string name="delete_category_no_target">Aucune autre catégorie ne peut accueillir ses écritures.</string>
     <string name="update_why">Une nouvelle version apporte de nouvelles fonctions et des corrections. La mise à jour prend une minute et vos données restent telles quelles.</string>
     <string name="update_later">Pas maintenant</string>
+    <string name="forecast_day">Jour %1$d sur %2$d de la période. Une estimation : ce qui est déjà dépensé, plus les charges fixes à venir, plus vos dépenses courantes habituelles pour les jours restants.</string>
+    <string name="forecast_early">Il est encore tôt, la fourchette est donc large ; elle se resserre au fil des jours.</string>
+    <string name="left_to_spend">Reste à dépenser</string>
+    <string name="left_to_spend_text">Revenus %1$s − dépensé %2$s − fixes %3$s</string>
 </resources>
