@@ -614,7 +614,6 @@
     <string name="forecast_note">Le spese di ogni giorno sono quanto hanno speso al giorno gli ultimi tre periodi da questo giorno in poi, adattato a come va questo. Le spese fisse sono esatte: vengono dai tuoi elementi ricorrenti.</string>
     <string name="fixed_costs">Spese fisse</string>
     <string name="fixed_total_tile">Fisse del periodo</string>
-    <string name="fixed_to_come_tile">Ancora da addebitare</string>
     <string name="fixed_progress">%1$s addebitati · mancano %2$s</string>
     <string name="per_day">Puoi spendere al giorno</string>
     <string name="per_day_text">Quello che resta, ripartito sui %1$d giorni che mancano</string>
@@ -656,7 +655,7 @@
     <string name="delete_item_title">Eliminare «%1$s»?</string>
     <string name="delete_category_unused">Nulla la usa, quindi viene eliminata.</string>
     <string name="delete_category_children">Per eliminarla, elimina o archivia prima le sue sottocategorie.</string>
-    <string name="fixed_bars_help">Ogni barra si riempie man mano che si avvicina il giorno dell’addebito. Una volta addebitata è piena, cambia colore e conta nei tuoi totali.</string>
+    <string name="fixed_bars_help">Una barra si riempie man mano che si avvicina l’addebito. Piena e di un altro colore: già addebitato.</string>
     <string name="in_days">tra %1$d g</string>
     <string name="archive_item_title">Archiviare «%1$s»?</string>
     <string name="delete_category_move">La usano %1$d movimenti. Scegli la categoria in cui passano:</string>
@@ -666,7 +665,7 @@
     <string name="update_why">Una nuova versione porta nuove funzioni e correzioni. L’aggiornamento richiede un minuto e i tuoi dati restano come sono.</string>
     <string name="update_later">Non ora</string>
     <string name="forecast_day">Giorno %1$d di %2$d del periodo. Una stima: quanto hai già speso, più le spese fisse ancora da addebitare, più la tua spesa abituale di ogni giorno per i giorni che restano.</string>
-    <string name="forecast_early">È ancora presto, quindi l’intervallo è ampio; si restringe con i giorni.</string>
     <string name="left_to_spend">Ti resta da spendere</string>
     <string name="left_to_spend_text">Entrate %1$s − speso %2$s − fisse %3$s</string>
+    <string name="forecast_too_early">Troppo presto per stimare come finirà il periodo (giorno %1$d di %2$d). Torna tra qualche giorno.</string>
 </resources>

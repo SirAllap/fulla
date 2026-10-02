@@ -614,7 +614,6 @@
     <string name="forecast_note">Os gastos do dia a dia são o que os últimos três períodos gastaram por dia a partir deste dia, ajustado a como este está indo. Os fixos são exatos: vêm dos seus itens recorrentes.</string>
     <string name="fixed_costs">Gastos fixos</string>
     <string name="fixed_total_tile">Fixos do período</string>
-    <string name="fixed_to_come_tile">Faltam cobrar</string>
     <string name="fixed_progress">%1$s cobrados · faltam %2$s</string>
     <string name="per_day">Você pode gastar por dia</string>
     <string name="per_day_text">O que resta, repartido pelos %1$d dias que faltam</string>
@@ -656,7 +655,7 @@
     <string name="delete_item_title">Eliminar «%1$s»?</string>
     <string name="delete_category_unused">Nada a usa, por isso é eliminada.</string>
     <string name="delete_category_children">Para a eliminar, elimina ou arquiva primeiro as suas subcategorias.</string>
-    <string name="fixed_bars_help">Cada barra enche à medida que o dia da cobrança se aproxima. Depois de cobrada fica cheia, muda de cor e conta nos teus totais.</string>
+    <string name="fixed_bars_help">Uma barra enche à medida que a cobrança se aproxima. Cheia e de outra cor: já cobrada.</string>
     <string name="in_days">em %1$d d</string>
     <string name="archive_item_title">Arquivar «%1$s»?</string>
     <string name="delete_category_move">Usam-na %1$d movimentos. Escolhe a categoria para onde passam:</string>
@@ -666,7 +665,7 @@
     <string name="update_why">Uma versão nova traz funções novas e correções. Atualizar demora um minuto e os teus dados ficam como estão.</string>
     <string name="update_later">Agora não</string>
     <string name="forecast_day">Dia %1$d de %2$d do período. Uma estimativa: o que já gastaste, mais as despesas fixas que faltam, mais o teu gasto habitual do dia a dia nos dias que restam.</string>
-    <string name="forecast_early">Ainda é cedo, por isso o intervalo é largo; estreita-se com os dias.</string>
     <string name="left_to_spend">Resta para gastar</string>
     <string name="left_to_spend_text">Receitas %1$s − gasto %2$s − fixas %3$s</string>
+    <string name="forecast_too_early">Ainda é cedo para estimar como acaba o período (dia %1$d de %2$d). Volta daqui a uns dias.</string>
 </resources>

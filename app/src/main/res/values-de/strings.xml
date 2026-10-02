@@ -614,7 +614,6 @@
     <string name="forecast_note">Die Alltagsausgaben sind das, was die letzten drei Zeiträume ab diesem Tag pro Tag ausgegeben haben, angepasst daran, wie dieser läuft. Fixkosten sind exakt: Sie stammen aus deinen wiederkehrenden Posten.</string>
     <string name="fixed_costs">Fixkosten</string>
     <string name="fixed_total_tile">Fixkosten im Zeitraum</string>
-    <string name="fixed_to_come_tile">Noch abzubuchen</string>
     <string name="fixed_progress">%1$s abgebucht · %2$s offen</string>
     <string name="per_day">Du kannst pro Tag ausgeben</string>
     <string name="per_day_text">Was bleibt, verteilt auf die %1$d verbleibenden Tage</string>
@@ -656,7 +655,7 @@
     <string name="delete_item_title">„%1$s“ löschen?</string>
     <string name="delete_category_unused">Nichts verwendet sie, also wird sie entfernt.</string>
     <string name="delete_category_children">Um sie zu löschen, lösche oder archiviere zuerst ihre Unterkategorien.</string>
-    <string name="fixed_bars_help">Jeder Balken füllt sich, je näher der Tag der Abbuchung rückt. Ist sie abgebucht, ist er voll, ändert die Farbe und zählt in deinen Summen.</string>
+    <string name="fixed_bars_help">Ein Balken füllt sich, je näher die Abbuchung rückt. Voll und in anderer Farbe: bereits abgebucht.</string>
     <string name="in_days">in %1$d T</string>
     <string name="archive_item_title">„%1$s“ archivieren?</string>
     <string name="delete_category_move">%1$d Einträge verwenden sie. Wähle die Kategorie, in die sie wechseln:</string>
@@ -666,7 +665,7 @@
     <string name="update_why">Eine neue Version bringt neue Funktionen und Korrekturen. Das Update dauert eine Minute, deine Daten bleiben, wie sie sind.</string>
     <string name="update_later">Jetzt nicht</string>
     <string name="forecast_day">Tag %1$d von %2$d des Zeitraums. Eine Schätzung: schon Ausgegebenes, plus die noch fälligen Fixkosten, plus deine üblichen Alltagsausgaben für die restlichen Tage.</string>
-    <string name="forecast_early">Es ist noch früh, deshalb ist die Spanne weit; sie wird mit den Tagen enger.</string>
     <string name="left_to_spend">Noch auszugeben</string>
     <string name="left_to_spend_text">Einnahmen %1$s − ausgegeben %2$s − Fixkosten %3$s</string>
+    <string name="forecast_too_early">Noch zu früh, um das Ende des Zeitraums zu schätzen (Tag %1$d von %2$d). Schau in ein paar Tagen wieder vorbei.</string>
 </resources>

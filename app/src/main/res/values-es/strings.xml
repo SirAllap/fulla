@@ -614,7 +614,6 @@
     <string name="forecast_note">El gasto del día a día es lo que gastaron los últimos tres periodos por día desde este día, ajustado a cómo va este. Los fijos son exactos: salen de tus gastos fijos.</string>
     <string name="fixed_costs">Gastos fijos</string>
     <string name="fixed_total_tile">Fijos del periodo</string>
-    <string name="fixed_to_come_tile">Faltan por cobrar</string>
     <string name="fixed_progress">%1$s cobrados · faltan %2$s</string>
     <string name="per_day">Puedes gastar al día</string>
     <string name="per_day_text">Lo que te queda, repartido en los %1$d días que faltan</string>
@@ -656,7 +655,7 @@
     <string name="delete_item_title">¿Eliminar «%1$s»?</string>
     <string name="delete_category_unused">Nada la usa, así que se elimina.</string>
     <string name="delete_category_children">Para eliminarla, elimina o archiva antes sus subcategorías.</string>
-    <string name="fixed_bars_help">Cada barra se llena según se acerca el día de su cobro. Cuando se cobra queda llena, cambia de color y cuenta en tus totales.</string>
+    <string name="fixed_bars_help">La barra se llena según se acerca el cobro. Llena y de otro color: ya cobrado.</string>
     <string name="in_days">en %1$d d</string>
     <string name="archive_item_title">¿Archivar «%1$s»?</string>
     <string name="delete_category_move">La usan %1$d movimientos. Elige a qué categoría pasan:</string>
@@ -666,7 +665,7 @@
     <string name="update_why">Una versión nueva trae funciones nuevas y arreglos. Actualizar lleva un minuto y tus datos se quedan como están.</string>
     <string name="update_later">Ahora no</string>
     <string name="forecast_day">Día %1$d de %2$d del periodo. Es una estimación: lo que ya has gastado, más los fijos que faltan, más tu gasto habitual al día en los días que quedan.</string>
-    <string name="forecast_early">Aún es pronto, así que el rango es amplio; se estrecha según pasan los días.</string>
     <string name="left_to_spend">Te queda por gastar</string>
     <string name="left_to_spend_text">Ingresos %1$s − gastado %2$s − fijos %3$s</string>
+    <string name="forecast_too_early">Aún es pronto para estimar cómo acabará el periodo (día %1$d de %2$d). Vuelve en unos días.</string>
 </resources>

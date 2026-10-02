@@ -664,7 +664,6 @@
     <string name="forecast_note">Everyday spending is what the last three periods spent per day from this day on, adjusted to how this period is going. Fixed costs are exact: they come from your recurring items.</string>
     <string name="fixed_costs">Fixed costs</string>
     <string name="fixed_total_tile">Fixed this period</string>
-    <string name="fixed_to_come_tile">Still to charge</string>
     <string name="fixed_progress">%1$s charged · %2$s to go</string>
     <string name="per_day">You can spend per day</string>
     <string name="per_day_text">What is left, spread over the %1$d days to go</string>
@@ -706,7 +705,7 @@
     <string name="delete_item_title">Delete “%1$s”?</string>
     <string name="delete_category_unused">Nothing uses it, so it is removed.</string>
     <string name="delete_category_children">To delete it, first delete or archive its subcategories.</string>
-    <string name="fixed_bars_help">Each bar fills as the day of its charge comes closer. Once it is charged it is full, changes colour and counts in your totals.</string>
+    <string name="fixed_bars_help">A bar fills as its charge comes closer. Full and in another colour: already charged.</string>
     <string name="in_days">in %1$d d</string>
     <string name="archive_item_title">Archive “%1$s”?</string>
     <string name="delete_category_move">%1$d entries use it. Choose the category they go to:</string>
@@ -716,7 +715,7 @@
     <string name="update_why">A new version has new features and fixes. Updating takes a minute, and your data stays as it is.</string>
     <string name="update_later">Not now</string>
     <string name="forecast_day">Day %1$d of %2$d of the period. An estimate: what is already spent, plus the fixed costs still to come, plus your usual everyday spending for the days left.</string>
-    <string name="forecast_early">It is still early, so the range is wide; it narrows as the days pass.</string>
     <string name="left_to_spend">Left to spend</string>
     <string name="left_to_spend_text">Income %1$s − spent %2$s − fixed %3$s</string>
+    <string name="forecast_too_early">Too early to estimate how the period will end (day %1$d of %2$d). Come back in a few days.</string>
 </resources>

@@ -96,10 +96,13 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
         LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding()) {
             item(key = "figures") {
                 Section(stringResource(R.string.period_summary), top = 8.dp())
-                FigureTiles(view, period, report, forecast, noSpend)
+                FigureTiles(view, period, report, noSpend)
+            }
+            if (forecast != null) item(key = "forecast") {
+                io.github.sirallap.fulla.ui.home.ForecastSection(view, forecast)
             }
             if (forecast != null && forecast.fixed.isNotEmpty()) item(key = "fixed") {
-                io.github.sirallap.fulla.ui.home.FixedCostsSection(view, forecast, onFixedCosts)
+                io.github.sirallap.fulla.ui.home.FixedTotalsSection(view, forecast, onFixedCosts)
             }
             if (top.isNotEmpty()) item(key = "vials") {
                 val total = top.sumOf { it.amountMinor }.toFloat()
@@ -223,7 +226,6 @@ private fun FigureTiles(
     view: HouseholdView,
     period: java.time.YearMonth,
     report: io.github.sirallap.fulla.core.analytics.PeriodReport,
-    forecast: io.github.sirallap.fulla.core.analytics.PeriodForecast?,
     noSpend: Int,
 ) {
     val c = FullaTheme.colors
@@ -249,12 +251,6 @@ private fun FigureTiles(
     if (report.days > 0) {
         tiles.add { m -> LiquidTile(stringResource(R.string.daily_average), f.money(report.dailyMinor), m,
             context = stringResource(R.string.day_of, report.days, length), level = report.days.toFloat() / length, phase = 2.1f) }
-    }
-    forecast?.takeIf { it.known }?.let { p ->
-        val end = p.spentEndMinor!!
-        tiles.add { m -> LiquidTile(stringResource(R.string.forecast), "≈ " + f.money(end), m,
-            context = stringResource(R.string.forecast_between, f.money(p.spentEndLowMinor!!), f.money(p.spentEndHighMinor!!)),
-            level = if (end > 0) (p.spentMinor.toFloat() / end).coerceIn(0f, 1f) else null, phase = 2.9f) }
     }
     if (report.count > 0) {
         tiles.add { m -> LiquidTile(stringResource(R.string.movements), "${report.count}", m,

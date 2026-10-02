@@ -206,7 +206,7 @@ fun HomeScreen(
                         )
                     }
                 }
-                if (forecast != null) item(key = "forecast") { ForecastSection(view, forecast, onFixedCosts) }
+                if (forecast != null) item(key = "fixed") { FixedCostsSection(view, forecast, onFixedCosts) }
                 if (categories.isEmpty()) {
                     item {
                         EmptyState(Icons.Outlined.Opacity, stringResource(R.string.empty_period_title), stringResource(R.string.empty_period_text))

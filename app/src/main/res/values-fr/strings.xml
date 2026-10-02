@@ -614,7 +614,6 @@
     <string name="forecast_note">Les dépenses courantes sont ce que les trois dernières périodes ont dépensé par jour à partir de ce jour, ajusté à la marche de celle-ci. Les frais fixes sont exacts : ils viennent de vos éléments récurrents.</string>
     <string name="fixed_costs">Frais fixes</string>
     <string name="fixed_total_tile">Fixes de la période</string>
-    <string name="fixed_to_come_tile">Reste à prélever</string>
     <string name="fixed_progress">%1$s prélevés · %2$s à venir</string>
     <string name="per_day">Vous pouvez dépenser par jour</string>
     <string name="per_day_text">Ce qui reste, réparti sur les %1$d jours à venir</string>
@@ -656,7 +655,7 @@
     <string name="delete_item_title">Supprimer « %1$s » ?</string>
     <string name="delete_category_unused">Rien ne l’utilise, elle est donc supprimée.</string>
     <string name="delete_category_children">Pour la supprimer, supprimez ou archivez d’abord ses sous-catégories.</string>
-    <string name="fixed_bars_help">Chaque barre se remplit à mesure que le jour du prélèvement approche. Une fois prélevée, elle est pleine, change de couleur et compte dans vos totaux.</string>
+    <string name="fixed_bars_help">Une barre se remplit à mesure que le prélèvement approche. Pleine et d’une autre couleur : déjà prélevé.</string>
     <string name="in_days">dans %1$d j</string>
     <string name="archive_item_title">Archiver « %1$s » ?</string>
     <string name="delete_category_move">%1$d écritures l’utilisent. Choisissez la catégorie où elles vont :</string>
@@ -666,7 +665,7 @@
     <string name="update_why">Une nouvelle version apporte de nouvelles fonctions et des corrections. La mise à jour prend une minute et vos données restent telles quelles.</string>
     <string name="update_later">Pas maintenant</string>
     <string name="forecast_day">Jour %1$d sur %2$d de la période. Une estimation : ce qui est déjà dépensé, plus les charges fixes à venir, plus vos dépenses courantes habituelles pour les jours restants.</string>
-    <string name="forecast_early">Il est encore tôt, la fourchette est donc large ; elle se resserre au fil des jours.</string>
     <string name="left_to_spend">Reste à dépenser</string>
     <string name="left_to_spend_text">Revenus %1$s − dépensé %2$s − fixes %3$s</string>
+    <string name="forecast_too_early">Trop tôt pour estimer la fin de la période (jour %1$d sur %2$d). Revenez dans quelques jours.</string>
 </resources>
