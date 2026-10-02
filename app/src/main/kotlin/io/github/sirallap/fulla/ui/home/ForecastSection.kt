@@ -63,7 +63,9 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
     Section(stringResource(R.string.forecast), top = 16.dp)
     if (forecast.known && forecast.early) {
         // Under a quarter of the period gone, the range is so wide that the figures would only alarm: nothing is shown until they mean something.
-        ListRow(stringResource(R.string.forecast_too_early, forecast.day, forecast.length), divider = false)
+        // Plain text, not a row: a row's title is one line, and this is a sentence.
+        Text(stringResource(R.string.forecast_too_early, forecast.day, forecast.length), style = FullaType.secondary, color = c.inkMuted,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
     } else if (forecast.known) {
         // What these figures are, so nobody has to guess: the day of the period, what they are made of, and that it is an estimate.
         Text(stringResource(R.string.forecast_day, forecast.day, forecast.length),
@@ -87,7 +89,8 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
     } else if (forecast.waiting) {
         ListRow(stringResource(R.string.forecast_waiting), context = stringResource(R.string.forecast_waiting_text), divider = false)
     } else {
-        ListRow(stringResource(R.string.forecast_no_history), divider = false, onClick = { explaining = true })
+        Text(stringResource(R.string.forecast_no_history), style = FullaType.secondary, color = c.inkMuted,
+            modifier = Modifier.clickable { explaining = true }.padding(horizontal = 20.dp, vertical = 8.dp))
     }
 
     if (explaining) ForecastSheet(view, forecast) { explaining = false }
@@ -145,6 +148,10 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
     val ledger = LocalContainer.current.ledger
     val scope = rememberCoroutineScope()
     val fixed = forecast.fixed
+    // The period is open past its length: the one thing the person can do about it is to note the salary, so the overview still says so.
+    if (forecast.waiting) {
+        ListRow(stringResource(R.string.forecast_waiting), context = stringResource(R.string.forecast_waiting_text), divider = false)
+    }
     if (fixed.isNotEmpty()) {
         Section(stringResource(R.string.fixed_costs), top = 16.dp)
         Text(stringResource(R.string.fixed_bars_help), style = FullaType.secondary, color = c.inkMuted,

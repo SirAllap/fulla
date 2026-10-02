@@ -153,6 +153,8 @@ private fun Household(state: HouseholdState) {
     LaunchedEffect(pendingUpdate?.version, settings?.updateAnnouncedVersion, settings?.updateAnnouncedAt, settings?.guideHousehold, foreground) {
         val s = settings ?: return@LaunchedEffect
         val version = s.pendingUpdate?.version ?: return@LaunchedEffect
+        // Just installed: the stored update is cleared at the next check, and until then it must not be announced again.
+        if (!io.github.sirallap.fulla.core.version.Versions.isNewer(io.github.sirallap.fulla.BuildConfig.VERSION_NAME, version)) return@LaunchedEffect
         val now = System.currentTimeMillis()
         if (s.guideHousehold == null && io.github.sirallap.fulla.client.remote.UpdateAnnouncement.due(version, s.updateAnnouncedVersion, s.updateAnnouncedAt, now)) {
             container.settings.setUpdateAnnounced(version, now)
