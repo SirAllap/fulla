@@ -636,4 +636,14 @@
     <string name="fixed_skipped">Ignorado</string>
     <string name="fixed_empty_title">Ainda não há gastos fixos</string>
     <string name="fixed_empty_text">Adicione aluguel, carro, assinaturas… Eles se registram sozinhos no dia, e a previsão sabe o que vem.</string>
+    <string name="ends">Termina</string>
+    <string name="ends_never">Nunca</string>
+    <string name="ends_on_date">Numa data</string>
+    <string name="ends_after_payments">Após vários pagamentos</string>
+    <string name="payments_count">Número de pagamentos</string>
+    <string name="payments_count_help">Contados desde o primeiro pagamento que esta despesa fixa escreve, incluindo os já escritos.</string>
+    <string name="last_payment">Último pagamento: %1$s · %2$d pagamentos no total</string>
+    <string name="end_problem">Com este fim não resta nenhum pagamento: é anterior ao primeiro.</string>
+    <string name="fixed_ended">Terminou a %1$s</string>
+    <string name="payment_progress">pagamento %1$d de %2$d</string>
 </resources>

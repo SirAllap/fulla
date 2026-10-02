@@ -59,6 +59,19 @@ class RecurringPlannerTest {
     private fun held(rows: List<Transaction>) = rows.map { it.id }.toSet()
 
     @Test
+    fun `a financing writes its payments and then stops, even for a phone opened long after`() {
+        val six = rule(rentId, "Sofa", monthly(27), start = d(1, 1)).let { kotlinx.serialization.json.JsonObject(it + ("end_date" to kotlinx.serialization.json.JsonPrimitive(d(6, 27).toString()))) }
+        val c = config(six)
+        assertEquals(d(6, 27), c.recurringRules.single().endDate, "the end travels through the wire")
+        val written = (1..6).map { DeterministicId.occurrence(rentId, d(it, 27)) }.toSet()
+        // Opened in March: three so far, nothing after the end is written ahead of time.
+        assertEquals(listOf(d(1, 27), d(2, 27), d(3, 27)), RecurringPlanner.due(c, emptySet(), d(3, 28)).map { it.date })
+        // Opened a year later: what is left is written, and nothing past the sixth.
+        assertEquals(emptyList(), RecurringPlanner.due(c, written, d(1, 15, 2031)).map { it.date })
+        assertEquals(listOf(d(6, 27)), RecurringPlanner.due(c, written - DeterministicId.occurrence(rentId, d(6, 27)), d(7, 20)).map { it.date })
+    }
+
+    @Test
     fun `a rule that never wrote a row starts with the current period, not the day it says`() {
         val c = config(rule(rentId, "Rent", monthly(20), start = d(12, 1, 2029)))
         val today = d(3, 25)

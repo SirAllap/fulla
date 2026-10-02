@@ -636,4 +636,14 @@
     <string name="fixed_skipped">Saltato</string>
     <string name="fixed_empty_title">Ancora nessuna spesa fissa</string>
     <string name="fixed_empty_text">Aggiungi affitto, auto, abbonamenti… Si scrivono da soli il loro giorno e la previsione sa cosa sta arrivando.</string>
+    <string name="ends">Termina</string>
+    <string name="ends_never">Mai</string>
+    <string name="ends_on_date">In una data</string>
+    <string name="ends_after_payments">Dopo alcuni pagamenti</string>
+    <string name="payments_count">Numero di pagamenti</string>
+    <string name="payments_count_help">Contati dal primo pagamento che questa spesa fissa scrive, compresi quelli già scritti.</string>
+    <string name="last_payment">Ultimo pagamento: %1$s · %2$d pagamenti in tutto</string>
+    <string name="end_problem">Con questa fine non resta nessun pagamento: precede il primo.</string>
+    <string name="fixed_ended">Terminata il %1$s</string>
+    <string name="payment_progress">pagamento %1$d di %2$d</string>
 </resources>

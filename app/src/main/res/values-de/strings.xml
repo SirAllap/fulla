@@ -636,4 +636,14 @@
     <string name="fixed_skipped">Übersprungen</string>
     <string name="fixed_empty_title">Noch keine Fixkosten</string>
     <string name="fixed_empty_text">Füge Miete, Auto, Abos hinzu … Sie werden am Tag selbst eingetragen, und die Vorhersage weiß, was kommt.</string>
+    <string name="ends">Endet</string>
+    <string name="ends_never">Nie</string>
+    <string name="ends_on_date">An einem Datum</string>
+    <string name="ends_after_payments">Nach einigen Zahlungen</string>
+    <string name="payments_count">Anzahl der Zahlungen</string>
+    <string name="payments_count_help">Gezählt ab der ersten Zahlung, die diese Fixkosten schreiben, bereits geschriebene eingeschlossen.</string>
+    <string name="last_payment">Letzte Zahlung: %1$s · %2$d Zahlungen insgesamt</string>
+    <string name="end_problem">Mit diesem Ende bleibt keine Zahlung übrig: es liegt vor der ersten.</string>
+    <string name="fixed_ended">Beendet am %1$s</string>
+    <string name="payment_progress">Zahlung %1$d von %2$d</string>
 </resources>

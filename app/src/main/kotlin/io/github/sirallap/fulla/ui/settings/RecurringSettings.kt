@@ -15,10 +15,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,8 +56,10 @@ import io.github.sirallap.fulla.ui.components.SwitchRow
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.Month
+import java.time.ZoneOffset
 import java.time.format.TextStyle
 import java.util.Locale
 import java.util.UUID
@@ -125,9 +129,15 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         }
         for (r in view.config.recurringRules.sortedWith(compareBy({ !it.active }, { it.name }))) {
             val income = r.template.kind == TransactionKind.INCOME
+            val ended = r.endDate
             ListRow(r.name, titleColor = if (r.active) c.ink else c.inkMuted,
-                context = scheduleText(r.schedule, r.startDate),
-                detail = if (!r.active) stringResource(R.string.paused) else view.categoryName(r.template.categoryId),
+                context = scheduleText(r.schedule, r.startDate) + (runCatching { Scheduler.progress(r, LocalDate.now()) }.getOrNull()
+                    ?.let { (done, all) -> " · " + stringResource(R.string.payment_progress, done, all) } ?: ""),
+                detail = when {
+                    !r.active -> stringResource(R.string.paused)
+                    ended != null && ended < LocalDate.now() -> stringResource(R.string.fixed_ended, f.day(ended))
+                    else -> view.categoryName(r.template.categoryId)
+                },
                 end = { AmountText(f.money(r.template.amountMinor, signed = income), color = if (income) c.moneyIn else c.ink) },
                 onClick = if (canEdit) ({ editing = r }) else null)
         }
@@ -158,6 +168,11 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     var every by remember { mutableStateOf(existing?.schedule?.let { if (it.byMonths.isNotEmpty()) 0 else it.interval } ?: 1) }
     var months by remember { mutableStateOf(existing?.schedule?.byMonths?.toSet() ?: setOf(LocalDate.now().monthValue)) }
     var firstMonth by remember { mutableStateOf((existing?.startDate ?: LocalDate.now()).monthValue) }
+    // How it ends: 0 = never, 1 = on a date, 2 = after some number of payments. Saved as a date either way.
+    var ends by remember { mutableStateOf(if (existing?.endDate != null) 1 else 0) }
+    var endPick by remember { mutableStateOf(existing?.endDate ?: LocalDate.now().plusMonths(6)) }
+    var paymentsText by remember { mutableStateOf("6") }
+    var pickingEnd by remember { mutableStateOf(false) }
     var auto by remember { mutableStateOf(existing?.autoCreate ?: true) }
     var active by remember { mutableStateOf(existing?.active ?: true) }
     val minor = MoneyParser.parse(amount, f.currency, f.decimalStyle)
@@ -178,10 +193,23 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     val periodStart = remember(view.config, view.active) { RecurringPlanner.currentPeriodStart(view.config, view.active, today) }
     val startDate = schedule?.let { RecurringPlanner.startFor(existing, it, active, if (every > 1) firstMonth else null, periodStart, today) } ?: today
     // What saving does, before it does it: the rule as it would be saved, what it writes now and what it writes next.
-    val previewRule = schedule?.let {
+    val startRule = schedule?.let {
         RecurringRule(existing?.id ?: PREVIEW_ID, "", Transaction(id = "", kind = kind, date = today, amountMinor = minor ?: 0, categoryId = category,
             createdAt = "", clientUpdatedAt = ""), it, startDate)
     }
+    // The end, as the date it is saved with: picked, or the day the Nth payment falls due counting from the start.
+    val payments = paymentsText.toIntOrNull()?.takeIf { it in 1..999 }
+    val endDate = when (ends) {
+        1 -> endPick
+        2 -> startRule?.let { r -> payments?.let { n -> runCatching { Scheduler.endAfter(r, n) }.getOrNull() } }
+        else -> null
+    }
+    val previewRule = startRule?.copy(endDate = endDate)
+    // What the end leaves: its last payment and how many there are. An end that leaves none is a mistake the person should hear about now.
+    val endPayments = if (ends != 0 && previewRule != null && endDate != null) runCatching {
+        Scheduler.occurrences(previewRule, previewRule.startDate, endDate)
+    }.getOrDefault(emptyList()) else emptyList()
+    val endProblem = ends != 0 && schedule != null && (endDate == null || endPayments.isEmpty())
     val held = remember(view.rows) { view.rows.map { it.transaction.id }.toSet() }
     // What saving writes right now: asked of the planner itself, with the rule as it would be saved, so the screen never promises what the phone will not do.
     val writeNow = if (previewRule != null && auto && active && minor != null && minor > 0) {
@@ -197,7 +225,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
         val year = ahead.filter { it <= today.plusMonths(12) }
         if (year.size >= 3) year.take(6) else ahead.take(3)
     } else emptyList()
-    val valid = name.isNotBlank() && minor != null && minor > 0 && category != null && schedule != null
+    val valid = name.isNotBlank() && minor != null && minor > 0 && category != null && schedule != null && !endProblem
 
     FullaDialog(
         onDismissRequest = onDismiss,
@@ -261,6 +289,21 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                     }
                     Frequency.DAILY -> Unit
                 }
+                Text(stringResource(R.string.ends), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Chip(stringResource(R.string.ends_never), ends == 0, { ends = 0 })
+                    Chip(stringResource(R.string.ends_on_date), ends == 1, { ends = 1 })
+                    Chip(stringResource(R.string.ends_after_payments), ends == 2, { ends = 2 })
+                }
+                if (ends == 1) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Chip(f.day(endPick), false, { pickingEnd = true }) }
+                if (ends == 2) OutlinedTextField(paymentsText, { paymentsText = it.filter(Char::isDigit).take(3) }, Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.payments_count)) }, supportingText = { Text(stringResource(R.string.payments_count_help)) },
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                if (ends != 0) {
+                    if (endProblem) Text(stringResource(R.string.end_problem), style = FullaType.secondary, color = FullaTheme.colors.danger)
+                    else Text(stringResource(R.string.last_payment, dateFormat.format(endPayments.last()), endPayments.size),
+                        style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                }
                 SwitchRow(stringResource(R.string.write_itself), stringResource(R.string.write_itself_help), auto) { auto = it }
                 if (existing != null) SwitchRow(stringResource(R.string.active), stringResource(R.string.active_help), active) { active = it }
                 if (writeNow.isNotEmpty()) Text(
@@ -282,7 +325,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                 )
                 onSave(RecurringRule(
                     id = existing?.id ?: UUID.randomUUID().toString(), name = name.trim(), template = template, schedule = schedule!!,
-                    startDate = startDate, endDate = existing?.endDate,
+                    startDate = startDate, endDate = endDate,
                     autoCreate = auto, active = active,
                 ))
                 onDismiss()
@@ -290,4 +333,13 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+    if (pickingEnd) {
+        val state = rememberDatePickerState(initialSelectedDateMillis = endPick.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        DatePickerDialog(onDismissRequest = { pickingEnd = false }, confirmButton = {
+            TextButton(onClick = {
+                state.selectedDateMillis?.let { endPick = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+                pickingEnd = false
+            }) { Text(stringResource(R.string.done)) }
+        }) { DatePicker(state) }
+    }
 }

@@ -83,6 +83,35 @@ class RecurringTest {
     }
 
     @Test
+    fun `an end is chosen by date or by the number of payments, and both land on the same last day`() {
+        val monthly = rule(Schedule(Frequency.MONTHLY, byMonthDay = 27), start = "2030-01-01")
+        assertEquals(LocalDate.parse("2030-06-27"), Scheduler.endAfter(monthly, 6))
+        val quarterly = rule(Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 5), start = "2030-01-01")
+        assertEquals(LocalDate.parse("2030-10-05"), Scheduler.endAfter(quarterly, 4))
+        val calendar = rule(Schedule(Frequency.MONTHLY, byMonthDay = 10, byMonths = listOf(3, 10)), start = "2030-01-01")
+        assertEquals(LocalDate.parse("2031-03-10"), Scheduler.endAfter(calendar, 3))
+        val weekly = rule(Schedule(Frequency.WEEKLY, byWeekday = listOf(1)), start = "2030-01-07")
+        assertEquals(LocalDate.parse("2030-01-28"), Scheduler.endAfter(weekly, 4))
+        // The date it gives is a real day of the schedule: ended there, it writes exactly that many.
+        for (n in listOf(1, 2, 6, 12)) {
+            val end = Scheduler.endAfter(monthly, n)!!
+            assertEquals(n, dates(monthly.copy(endDate = end), "2030-01-01", "2040-01-01").size)
+        }
+        assertEquals(null, Scheduler.endAfter(monthly, 0))
+        assertEquals(LocalDate.parse("2030-06-27"), Scheduler.endAfter(monthly.copy(active = false, endDate = LocalDate.parse("2030-02-01")), 6), "a pause or an old end does not change what a count means")
+    }
+
+    @Test
+    fun `progress says how many payments have come of how many there are`() {
+        val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 27), start = "2030-01-01", end = "2030-06-27")
+        assertEquals(0 to 6, Scheduler.progress(r, LocalDate.parse("2030-01-26")))
+        assertEquals(3 to 6, Scheduler.progress(r, LocalDate.parse("2030-03-30")))
+        assertEquals(6 to 6, Scheduler.progress(r, LocalDate.parse("2031-01-01")))
+        assertEquals(null, Scheduler.progress(rule(Schedule(Frequency.MONTHLY, byMonthDay = 27)), LocalDate.parse("2030-03-30")), "never ends")
+        assertEquals(null, Scheduler.progress(r.copy(endDate = LocalDate.parse("2030-01-02")), LocalDate.parse("2030-03-30")), "ends before it falls due once")
+    }
+
+    @Test
     fun `uuid5 matches the RFC example`() {
         val dns = UUID.fromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
         assertEquals("2ed6657d-e927-568b-95e1-2665a8aea6a2", DeterministicId.uuid5(dns, "www.example.com"))

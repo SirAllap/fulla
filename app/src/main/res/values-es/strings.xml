@@ -636,4 +636,14 @@
     <string name="fixed_skipped">Omitido</string>
     <string name="fixed_empty_title">Aún no tienes gastos fijos</string>
     <string name="fixed_empty_text">Añade alquiler, coche, suscripciones… Se apuntan solos su día y así la previsión sabe lo que viene.</string>
+    <string name="ends">Termina</string>
+    <string name="ends_never">Nunca</string>
+    <string name="ends_on_date">En una fecha</string>
+    <string name="ends_after_payments">Tras varios pagos</string>
+    <string name="payments_count">Número de pagos</string>
+    <string name="payments_count_help">Se cuentan desde el primer pago que escribe este gasto fijo, incluidos los ya escritos.</string>
+    <string name="last_payment">Último pago: %1$s · %2$d pagos en total</string>
+    <string name="end_problem">Con ese final no queda ningún pago: es anterior al primero.</string>
+    <string name="fixed_ended">Terminó el %1$s</string>
+    <string name="payment_progress">pago %1$d de %2$d</string>
 </resources>

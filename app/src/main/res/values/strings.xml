@@ -686,4 +686,14 @@
     <string name="fixed_skipped">Skipped</string>
     <string name="fixed_empty_title">No fixed costs yet</string>
     <string name="fixed_empty_text">Add rent, car, subscriptions… They write themselves on their day, and the forecast knows what is coming.</string>
+    <string name="ends">Ends</string>
+    <string name="ends_never">Never</string>
+    <string name="ends_on_date">On a date</string>
+    <string name="ends_after_payments">After some payments</string>
+    <string name="payments_count">Number of payments</string>
+    <string name="payments_count_help">Counted from the first payment this fixed cost writes, the ones already written included.</string>
+    <string name="last_payment">Last payment: %1$s · %2$d payments in all</string>
+    <string name="end_problem">That end leaves no payment: it comes before the first one.</string>
+    <string name="fixed_ended">Ended %1$s</string>
+    <string name="payment_progress">payment %1$d of %2$d</string>
 </resources>

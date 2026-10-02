@@ -110,6 +110,25 @@ object Scheduler {
         return out
     }
 
+    /**
+     * The day the [count]th payment falls due, counting from the rule's start:
+     * "six payments" as the date of the sixth. Null for a count under 1, or
+     * when the schedule never reaches that many in sixty years. The rule's own
+     * end and pause are ignored: this is how an end is chosen.
+     */
+    fun endAfter(rule: RecurringRule, count: Int): LocalDate? {
+        if (count < 1) return null
+        return occurrences(rule.copy(endDate = null, active = true), rule.startDate, rule.startDate.plusYears(60)).getOrNull(count - 1)
+    }
+
+    /** How many payments of a rule with an end have fallen due by [today], and how many it has in all. Null for one that never ends. */
+    fun progress(rule: RecurringRule, today: LocalDate): Pair<Int, Int>? {
+        val end = rule.endDate ?: return null
+        val all = occurrences(rule.copy(active = true), rule.startDate, end)
+        if (all.isEmpty()) return null
+        return all.count { it <= today } to all.size
+    }
+
     private fun dayIn(month: YearMonth, day: Int): LocalDate =
         if (day == -1 || day > month.lengthOfMonth()) month.atEndOfMonth() else month.atDay(day)
 }

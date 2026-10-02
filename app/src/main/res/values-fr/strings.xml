@@ -636,4 +636,14 @@
     <string name="fixed_skipped">Ignoré</string>
     <string name="fixed_empty_title">Pas encore de frais fixes</string>
     <string name="fixed_empty_text">Ajoutez loyer, voiture, abonnements… Ils s’écrivent tout seuls le jour venu, et la prévision sait ce qui arrive.</string>
+    <string name="ends">Se termine</string>
+    <string name="ends_never">Jamais</string>
+    <string name="ends_on_date">À une date</string>
+    <string name="ends_after_payments">Après plusieurs paiements</string>
+    <string name="payments_count">Nombre de paiements</string>
+    <string name="payments_count_help">Comptés depuis le premier paiement que cette charge fixe écrit, ceux déjà écrits compris.</string>
+    <string name="last_payment">Dernier paiement : %1$s · %2$d paiements au total</string>
+    <string name="end_problem">Avec cette fin, aucun paiement ne reste : elle précède le premier.</string>
+    <string name="fixed_ended">Terminé le %1$s</string>
+    <string name="payment_progress">paiement %1$d sur %2$d</string>
 </resources>

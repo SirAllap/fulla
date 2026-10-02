@@ -127,3 +127,9 @@ each day up to today (never for a day to come), looking back at most 62 days;
 a rule that has never written starts with the current period, and an occurrence
 somebody already wrote down by hand (same kind and category, an amount within
 5 %, a date within 3 days) is not written again.
+
+A rule may carry an `end_date`: nothing is written after it, and the planner,
+the forecast and the sync all stop there. The app offers "after N payments" as
+well; it is turned into the date of the Nth payment when the rule is saved
+(`Scheduler.endAfter`), so the stored rule, the wire format and the database
+only ever know a date (`end_date >= start_date`, enforced by `save_recurring_rule`).
