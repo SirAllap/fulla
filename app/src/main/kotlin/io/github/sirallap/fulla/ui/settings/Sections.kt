@@ -465,6 +465,7 @@ private fun StructureDialog(
         title = { Text(stringResource(R.string.edit)) },
         text = {
             // Scrolls: the icons of a category are many, and the buttons stay where they are.
+            androidx.compose.runtime.CompositionLocalProvider(io.github.sirallap.fulla.ui.components.LocalRowInset provides 0.dp) {
             Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(name, { name = it.take(40) }, label = { Text(stringResource(R.string.name)) }, singleLine = true)
                 if (formats != null) {
@@ -495,6 +496,7 @@ private fun StructureDialog(
                 if (deleteBlockedText != null) {
                     Text(deleteBlockedText, style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
                 }
+            }
             }
         },
         confirmButton = {
