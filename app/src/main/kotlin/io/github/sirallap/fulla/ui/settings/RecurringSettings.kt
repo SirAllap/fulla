@@ -160,6 +160,8 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     var kind by remember { mutableStateOf(t?.kind ?: TransactionKind.EXPENSE) }
     var amount by remember { mutableStateOf(t?.let { f.plain(it.amountMinor) } ?: "") }
     var category by remember { mutableStateOf(t?.categoryId) }
+    // The account it is charged to: the one it already has, else the first; the person can pick any.
+    var account by remember { mutableStateOf(t?.accountId ?: view.config.accounts.firstOrNull { !it.archived }?.id) }
     var frequency by remember { mutableStateOf(existing?.schedule?.frequency ?: Frequency.MONTHLY) }
     var day by remember { mutableStateOf((existing?.schedule?.byMonthDay ?: LocalDate.now().dayOfMonth).toString()) }
     var weekdays by remember { mutableStateOf(existing?.schedule?.byWeekday?.toSet() ?: setOf(LocalDate.now().dayOfWeek.value)) }
@@ -242,6 +244,13 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (cat in view.config.categories.filter { !it.archived && it.appliesTo.allows(kind) }) Chip(cat.name, cat.id == category, { category = cat.id })
                 }
+                val accounts = view.config.accounts.filter { !it.archived || it.id == account }
+                if (accounts.size > 1) {
+                    Text(stringResource(R.string.account), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        for (a in accounts) Chip(a.name, a.id == account, { account = a.id })
+                    }
+                }
                 Text(stringResource(R.string.repeats), style = FullaType.label, color = FullaTheme.colors.inkMuted)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for ((fr, label) in listOf(Frequency.WEEKLY to R.string.weekly, Frequency.MONTHLY to R.string.monthly, Frequency.YEARLY to R.string.yearly, Frequency.DAILY to R.string.daily)) {
@@ -318,7 +327,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                 val everyone = view.config.activeMembers.map { it.id }
                 val template = (t ?: Transaction(id = "", kind = kind, date = LocalDate.now(), amountMinor = 0, createdAt = "", clientUpdatedAt = "")).copy(
                     kind = kind, amountMinor = minor!!, categoryId = category,
-                    accountId = t?.accountId ?: view.config.accounts.firstOrNull { !it.archived }?.id,
+                    accountId = account,
                     paidByMemberId = t?.paidByMemberId ?: view.config.meMemberId,
                     split = if (kind == TransactionKind.EXPENSE && everyone.size >= 2) (t?.split ?: Split.Equal(everyone)) else null,
                     recurrence = Recurrence.FIXED, note = name.trim(), status = Status.ACTIVE,

@@ -59,6 +59,20 @@ class RecurringPlannerTest {
     private fun held(rows: List<Transaction>) = rows.map { it.id }.toSet()
 
     @Test
+    fun `each fixed cost is charged to the account it was given, and the rows it writes carry it`() {
+        val savings = "00000000-0000-4000-8000-0000000009a1"
+        val withAccount = rule(rentId, "Rent", monthly(20)).let { r ->
+            val t = r["template"] as JsonObject
+            JsonObject(r + ("template" to JsonObject(t + ("account_id" to kotlinx.serialization.json.JsonPrimitive(savings)))))
+        }
+        val c = config(withAccount, rule(gymId, "Gym", monthly(20)))
+        assertEquals(savings, c.recurringRules.first { it.id == rentId }.template.accountId)
+        val due = RecurringPlanner.due(c, emptySet(), d(3, 21)).filter { it.date == d(3, 20) }
+        assertEquals(savings, due.first { it.recurringRuleId == rentId }.accountId, "the row goes to the account chosen")
+        assertEquals(c.recurringRules.first { it.id == gymId }.template.accountId, due.first { it.recurringRuleId == gymId }.accountId, "the other keeps its own")
+    }
+
+    @Test
     fun `a financing writes its payments and then stops, even for a phone opened long after`() {
         val six = rule(rentId, "Sofa", monthly(27), start = d(1, 1)).let { kotlinx.serialization.json.JsonObject(it + ("end_date" to kotlinx.serialization.json.JsonPrimitive(d(6, 27).toString()))) }
         val c = config(six)
