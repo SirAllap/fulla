@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -211,6 +212,9 @@ fun CheckUpdatesRow(onFound: () -> Unit) {
         stringResource(if (checking) R.string.update_checking else R.string.update_check_now),
         context = result ?: stringResource(R.string.version, io.github.sirallap.fulla.BuildConfig.VERSION_NAME),
         icon = Icons.Outlined.SystemUpdate,
+        end = if (checking) ({
+            androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+        }) else null,
         onClick = if (checking) null else ({
             checking = true
             scope.launch {
@@ -233,6 +237,8 @@ fun CheckUpdatesRow(onFound: () -> Unit) {
  */
 private suspend fun updateDatabase(container: AppContainer, context: android.content.Context, clipboard: androidx.compose.ui.platform.ClipboardManager, projectUrl: String?) {
     clipboard.setText(AnnotatedString(container.dbUpdateSql()))
+    // Older Androids say nothing when something is copied.
+    android.widget.Toast.makeText(context, R.string.db_update_copied, android.widget.Toast.LENGTH_LONG).show()
     val ref = projectUrl?.let(::supabaseProjectRef) ?: return
     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://supabase.com/dashboard/project/$ref/sql/new")))
 }

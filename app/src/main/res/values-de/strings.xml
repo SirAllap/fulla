@@ -668,4 +668,8 @@
     <string name="left_to_spend">Noch auszugeben</string>
     <string name="left_to_spend_text">Einnahmen %1$s − ausgegeben %2$s − Fixkosten %3$s</string>
     <string name="forecast_too_early">Noch zu früh, um das Ende des Zeitraums zu schätzen (Tag %1$d von %2$d). Schau in ein paar Tagen wieder vorbei.</string>
+    <string name="entry_deleted">Eintrag gelöscht</string>
+    <string name="undo">Rückgängig</string>
+    <string name="fixed_missed_skip_confirm">%1$d Abbuchungen auslassen? Sie werden nicht geschrieben und nicht wieder angeboten.</string>
+    <string name="db_update_copied">Update kopiert. Füge es im SQL-Editor ein und drücke Run.</string>
 </resources>

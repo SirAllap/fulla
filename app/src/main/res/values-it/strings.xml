@@ -668,4 +668,8 @@
     <string name="left_to_spend">Ti resta da spendere</string>
     <string name="left_to_spend_text">Entrate %1$s − speso %2$s − fisse %3$s</string>
     <string name="forecast_too_early">Troppo presto per stimare come finirà il periodo (giorno %1$d di %2$d). Torna tra qualche giorno.</string>
+    <string name="entry_deleted">Movimento eliminato</string>
+    <string name="undo">Annulla</string>
+    <string name="fixed_missed_skip_confirm">Lasciar passare %1$d addebiti? Non verranno scritti né riproposti.</string>
+    <string name="db_update_copied">Aggiornamento copiato. Incollalo nell’editor SQL e premi Run.</string>
 </resources>

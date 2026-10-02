@@ -668,4 +668,8 @@
     <string name="left_to_spend">Te queda por gastar</string>
     <string name="left_to_spend_text">Ingresos %1$s − gastado %2$s − fijos %3$s</string>
     <string name="forecast_too_early">Aún es pronto para estimar cómo acabará el periodo (día %1$d de %2$d). Vuelve en unos días.</string>
+    <string name="entry_deleted">Movimiento eliminado</string>
+    <string name="undo">Deshacer</string>
+    <string name="fixed_missed_skip_confirm">¿Dejar pasar %1$d cargos? No se anotarán y no se volverán a ofrecer.</string>
+    <string name="db_update_copied">Actualización copiada. Pégala en el editor SQL y pulsa Run.</string>
 </resources>

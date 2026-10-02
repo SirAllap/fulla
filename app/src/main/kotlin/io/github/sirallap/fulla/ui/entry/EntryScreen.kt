@@ -189,7 +189,7 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
  * details line, so the common case is three taps.
  */
 @Composable
-fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit, onSaved: (String?) -> Unit = {}) {
+fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit, onSaved: (String?) -> Unit = {}, onDeleted: (String) -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val existing = remember(editingId) { editingId?.let { id -> view.rows.firstOrNull { it.id == id }?.transaction } }
@@ -247,7 +247,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
                 if (deleted) MenuItem(stringResource(R.string.restore), Icons.Outlined.RestoreFromTrash) {
                     scope.launch { container.ledger.restore(view.id, editingId); onDone() }
                 } else MenuItem(stringResource(R.string.delete), Icons.Outlined.DeleteOutline, danger = true) {
-                    scope.launch { container.ledger.delete(view.id, editingId); onDone() }
+                    scope.launch { container.ledger.delete(view.id, editingId); onDeleted(editingId); onDone() }
                 },
             ))
         }

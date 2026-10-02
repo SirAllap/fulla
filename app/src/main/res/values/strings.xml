@@ -718,4 +718,8 @@
     <string name="left_to_spend">Left to spend</string>
     <string name="left_to_spend_text">Income %1$s − spent %2$s − fixed %3$s</string>
     <string name="forecast_too_early">Too early to estimate how the period will end (day %1$d of %2$d). Come back in a few days.</string>
+    <string name="entry_deleted">Entry deleted</string>
+    <string name="undo">Undo</string>
+    <string name="fixed_missed_skip_confirm">Let %1$d charges pass? They will not be written, and will not be offered again.</string>
+    <string name="db_update_copied">Update copied. Paste it in the SQL editor and press Run.</string>
 </resources>

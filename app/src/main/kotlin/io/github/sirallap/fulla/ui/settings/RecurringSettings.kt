@@ -102,6 +102,7 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val c = FullaTheme.colors
     var editing by remember { mutableStateOf<RecurringRule?>(null) }
     var creating by remember { mutableStateOf(false) }
+    var confirmingSkip by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     // What fell due before this period and was never written: offered, not written behind the person's back.
     val leftOut = remember(view) {
@@ -124,7 +125,7 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                 TextButton(onClick = { scope.launch { leftOut.forEach { ledger.applyRecurring(view.id, it.rule.id, it.date) } } }) {
                     Text(stringResource(R.string.fixed_missed_apply, leftOut.size))
                 }
-                TextButton(onClick = { scope.launch { leftOut.forEach { ledger.skipRecurring(view.id, it.rule.id, it.date) } } }) {
+                TextButton(onClick = { confirmingSkip = true }) {
                     Text(stringResource(R.string.fixed_missed_skip))
                 }
             }
@@ -149,6 +150,20 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                 onClick = if (canEdit) ({ editing = r }) else null)
         }
         if (canEdit) ListRow(stringResource(R.string.add_recurring), icon = Icons.Outlined.Add, onClick = { creating = true })
+    }
+    if (confirmingSkip) {
+        FullaDialog(
+            onDismissRequest = { confirmingSkip = false },
+            title = { Text(stringResource(R.string.fixed_missed_skip)) },
+            text = { Text(stringResource(R.string.fixed_missed_skip_confirm, leftOut.size), style = FullaType.secondary) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmingSkip = false
+                    scope.launch { leftOut.forEach { ledger.skipRecurring(view.id, it.rule.id, it.date) } }
+                }) { Text(stringResource(R.string.fixed_missed_skip)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmingSkip = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
     if (creating || editing != null) {
         RecurringDialog(view, editing, onDismiss = { creating = false; editing = null }, onDelete = { rule, withRows ->

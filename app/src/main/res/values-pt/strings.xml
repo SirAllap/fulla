@@ -668,4 +668,8 @@
     <string name="left_to_spend">Resta para gastar</string>
     <string name="left_to_spend_text">Receitas %1$s − gasto %2$s − fixas %3$s</string>
     <string name="forecast_too_early">Ainda é cedo para estimar como acaba o período (dia %1$d de %2$d). Volta daqui a uns dias.</string>
+    <string name="entry_deleted">Movimento eliminado</string>
+    <string name="undo">Anular</string>
+    <string name="fixed_missed_skip_confirm">Deixar passar %1$d cobranças? Não serão escritas nem voltarão a ser oferecidas.</string>
+    <string name="db_update_copied">Atualização copiada. Cola-a no editor SQL e prime Run.</string>
 </resources>

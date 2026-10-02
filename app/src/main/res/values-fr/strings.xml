@@ -668,4 +668,8 @@
     <string name="left_to_spend">Reste à dépenser</string>
     <string name="left_to_spend_text">Revenus %1$s − dépensé %2$s − fixes %3$s</string>
     <string name="forecast_too_early">Trop tôt pour estimer la fin de la période (jour %1$d sur %2$d). Revenez dans quelques jours.</string>
+    <string name="entry_deleted">Écriture supprimée</string>
+    <string name="undo">Annuler</string>
+    <string name="fixed_missed_skip_confirm">Laisser passer %1$d prélèvements ? Ils ne seront pas écrits ni proposés de nouveau.</string>
+    <string name="db_update_copied">Mise à jour copiée. Collez-la dans l’éditeur SQL et appuyez sur Run.</string>
 </resources>
