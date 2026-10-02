@@ -13,8 +13,10 @@ import io.github.sirallap.fulla.client.wire.Wire
 import io.github.sirallap.fulla.core.demo.DemoData
 import io.github.sirallap.fulla.core.importers.CategorizationRule
 import io.github.sirallap.fulla.core.model.Config
+import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.recurring.Scheduler
 import io.github.sirallap.fulla.core.sync.LocalTransaction
 import io.github.sirallap.fulla.core.sync.SyncEngine
 import io.github.sirallap.fulla.core.sync.SyncState
@@ -127,11 +129,74 @@ class Ledger(
     suspend fun hasUnsentSettlements(householdId: String): Boolean =
         transactions.all(householdId).map(Rows::local).any { it.state == SyncState.PENDING && it.transaction.kind == TransactionKind.SETTLEMENT }
 
-    /** Writes the recurring occurrences that are due. Safe to call as often as you like. */
-    suspend fun generateRecurring(householdId: String, today: LocalDate = LocalDate.now()) {
-        val h = household(householdId) ?: return
-        val due = RecurringPlanner.due(h.config, transactions.ids(householdId).toSet(), today)
-        if (due.isNotEmpty()) saveAll(householdId, due)
+    /**
+     * Writes the recurring occurrences that are due, in one transaction, and
+     * says how many it wrote. Safe to call as often as you like, from
+     * anywhere: what is held is read and what is written is decided inside
+     * the transaction, so two callers never write the same occurrence twice,
+     * and the ids are the same on every phone. It runs in every household,
+     * phone-only ones too: nothing here waits for a network.
+     */
+    suspend fun generateRecurring(householdId: String, today: LocalDate = LocalDate.now()): Int {
+        var written = 0
+        var connected = false
+        db.withTransaction {
+            val h = households.get(householdId) ?: return@withTransaction
+            connected = h.mode == CONNECTED
+            val bundle = Wire.json.parseToJsonElement(h.configJson).jsonObject
+            val config = LocalHousehold.config(bundle)
+            if (config.recurringRules.none { it.active && it.autoCreate }) return@withTransaction
+            val due = RecurringPlanner.plan(config, transactions.ids(householdId).toSet(), today) {
+                transactions.all(householdId).map { Rows.local(it).transaction }
+            }
+            if (due.isEmpty()) return@withTransaction
+            transactions.upsert(due.map { Rows.entity(householdId, Edits.create(it, connected, now(), config.household)) })
+            written = due.size
+        }
+        if (written > 0 && connected) requestSync()
+        return written
+    }
+
+    /** [generateRecurring] for every household on this phone. */
+    suspend fun generateRecurringEverywhere(today: LocalDate = LocalDate.now()): Int =
+        households.all().sumOf { generateRecurring(it.id, today) }
+
+    /**
+     * Writes one occurrence that has come and that nothing has written: the
+     * "Apply" of a fixed cost the person sees as overdue. The row is the one
+     * the phone would have written on its own, with the same id, so applying
+     * it twice, or on two phones, writes it once. An occurrence that is not
+     * one (the rule is paused, or the day is not one of its days) or that
+     * already has a row, a deleted one too, writes nothing.
+     */
+    suspend fun applyRecurring(householdId: String, ruleId: String, date: LocalDate): Boolean =
+        writeOccurrence(householdId, ruleId, date, Status.ACTIVE)
+
+    /**
+     * Lets one occurrence go: writes it already deleted. A deleted row keeps
+     * its id, so the phone never writes that occurrence on its own, and it
+     * stops being offered. The "Not written" of what a fixed cost missed
+     * before this period.
+     */
+    suspend fun skipRecurring(householdId: String, ruleId: String, date: LocalDate): Boolean =
+        writeOccurrence(householdId, ruleId, date, Status.DELETED)
+
+    private suspend fun writeOccurrence(householdId: String, ruleId: String, date: LocalDate, status: Status): Boolean {
+        var written = false
+        var connected = false
+        db.withTransaction {
+            val h = households.get(householdId) ?: return@withTransaction
+            connected = h.mode == CONNECTED
+            val config = LocalHousehold.config(Wire.json.parseToJsonElement(h.configJson).jsonObject)
+            val rule = config.recurringRules.firstOrNull { it.id == ruleId } ?: return@withTransaction
+            if (Scheduler.occurrences(rule, date, date).isEmpty()) return@withTransaction
+            val row = RecurringPlanner.occurrence(rule, date, config).copy(status = status)
+            if (transactions.get(row.id) != null) return@withTransaction
+            transactions.upsert(listOf(Rows.entity(householdId, Edits.create(row, connected, now(), config.household))))
+            written = true
+        }
+        if (written && connected) requestSync()
+        return written
     }
 
     // ── households ───────────────────────────────────────────────────────────
@@ -240,8 +305,12 @@ class Ledger(
     // ── structure ────────────────────────────────────────────────────────────
 
     /** Saves one piece of structure: on this phone in local mode, through the server when shared. */
-    suspend fun upsert(householdId: String, kind: Structure, item: JsonObject, api: FullaApi?) = updateConfig(householdId, api) { bundle ->
-        if (api == null) LocalHousehold.upsert(bundle, kind, item) else api.upsert(householdId, kind, item)
+    suspend fun upsert(householdId: String, kind: Structure, item: JsonObject, api: FullaApi?) {
+        updateConfig(householdId, api) { bundle ->
+            if (api == null) LocalHousehold.upsert(bundle, kind, item) else api.upsert(householdId, kind, item)
+        }
+        // A fixed cost that was just saved may already have come due this period: it is written now, not at the next sync.
+        if (kind == Structure.RECURRING) generateRecurring(householdId)
     }
 
     /** A money_mode in [patch] is the choice from now on: a pot still waiting from before sharing is dropped. */

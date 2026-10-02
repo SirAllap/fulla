@@ -373,7 +373,7 @@
     <string name="weekly">Semanal</string>
     <string name="weekly_on">Cada semana, el %1$s</string>
     <string name="write_itself">Anotarse solo</string>
-    <string name="write_itself_help">En su día aparece solo en el historial.</string>
+    <string name="write_itself_help">En su día aparece solo en el historial. Si no abres la app ese día, se anota al abrirla.</string>
     <string name="yearly">Anual</string>
     <string name="yearly_on">Cada año, el %1$d de %2$s</string>
     <string name="delete_account">Borrar mi cuenta</string>
@@ -622,6 +622,17 @@
     <string name="per_day_text">Lo que queda una vez cobrados los fijos que faltan, en %1$d días</string>
     <string name="fixed_paid_on">Cobrado el %1$s</string>
     <string name="fixed_due_on">Toca el %1$s</string>
+    <string name="fixed_overdue">Vencido · tocaba el %1$s</string>
+    <string name="fixed_apply">Aplicar</string>
+    <string name="fixed_by_hand">Anotado a mano · %1$s</string>
+    <string name="write_now">Al guardar se anota ahora: %1$s</string>
+    <string name="write_now_many">Al guardar se anotan ahora %1$d cobros, desde el %2$s</string>
+    <string name="fixed_missed">Sin anotar de antes</string>
+    <string name="fixed_missed_text">Estos gastos fijos cayeron antes de este periodo y no llegaron a anotarse. Anótalos si quieres que cuenten, o déjalos pasar.</string>
+    <string name="fixed_missed_apply">Anotarlos (%1$d)</string>
+    <string name="fixed_missed_skip">Dejarlos pasar</string>
+    <string name="fixed_missed_hint">Gastos fijos de antes sin anotar: %1$d</string>
+    <string name="fixed_missed_hint_text">Toca para anotarlos o dejarlos pasar.</string>
     <string name="fixed_skipped">Omitido</string>
     <string name="fixed_empty_title">Aún no tienes gastos fijos</string>
     <string name="fixed_empty_text">Añade alquiler, coche, suscripciones… Se apuntan solos su día y así la previsión sabe lo que viene.</string>

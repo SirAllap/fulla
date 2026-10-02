@@ -43,6 +43,27 @@ object SyncScheduler {
     }
 }
 
+/**
+ * Fixed costs come due on their day whether or not the app is open: this
+ * looks every few hours, with or without a network (a phone-only household
+ * has no use for one).
+ */
+object RecurringScheduler {
+    private const val PERIODIC = "recurring-periodic"
+
+    fun schedulePeriodic(context: Context) {
+        val request = PeriodicWorkRequestBuilder<RecurringWorker>(6, TimeUnit.HOURS).build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+}
+
+class RecurringWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        (applicationContext as FullaApp).container.generateRecurring()
+        return Result.success()
+    }
+}
+
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val container = (applicationContext as FullaApp).container

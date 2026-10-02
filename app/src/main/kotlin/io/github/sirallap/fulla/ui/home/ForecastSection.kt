@@ -14,21 +14,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.client.local.RecurringPlanner
 import io.github.sirallap.fulla.core.analytics.FixedStatus
 import io.github.sirallap.fulla.core.analytics.PeriodForecast
 import io.github.sirallap.fulla.ui.HouseholdView
+import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AmountText
 import io.github.sirallap.fulla.ui.components.LiquidBarRow
 import io.github.sirallap.fulla.ui.components.LiquidTile
@@ -38,6 +43,8 @@ import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.TileRow
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 /**
  * How the period is likely to end, then the fixed costs it is made of, both
@@ -92,6 +99,8 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast, onFixedCosts:
 fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCosts: () -> Unit) {
     val c = FullaTheme.colors
     val f = view.formats
+    val ledger = LocalContainer.current.ledger
+    val scope = rememberCoroutineScope()
     val fixed = forecast.fixed
     if (fixed.isNotEmpty()) {
         Section(stringResource(R.string.fixed_costs), top = 16.dp)
@@ -129,27 +138,52 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
                 title = item.name,
                 amount = f.money(item.amountMinor),
                 fraction = if (item.status == FixedStatus.SKIPPED) 0f else item.amountMinor / largest,
-                context = when (item.status) {
-                    FixedStatus.PAID -> stringResource(R.string.fixed_paid_on, f.day(item.date))
-                    FixedStatus.PENDING -> stringResource(R.string.fixed_due_on, f.day(item.date))
-                    FixedStatus.SKIPPED -> stringResource(R.string.fixed_skipped)
+                context = when {
+                    item.status == FixedStatus.PAID && item.byHand -> stringResource(R.string.fixed_by_hand, f.day(item.date))
+                    item.status == FixedStatus.PAID -> stringResource(R.string.fixed_paid_on, f.day(item.date))
+                    item.status == FixedStatus.PENDING && item.overdue -> stringResource(R.string.fixed_overdue, f.day(item.date))
+                    item.status == FixedStatus.PENDING -> stringResource(R.string.fixed_due_on, f.day(item.date))
+                    else -> stringResource(R.string.fixed_skipped)
                 },
                 phase = item.date.dayOfMonth * 0.7f,
                 start = {
                     Icon(
-                        when (item.status) {
-                            FixedStatus.PAID -> Icons.Outlined.CheckCircle
-                            FixedStatus.PENDING -> Icons.Outlined.Schedule
-                            FixedStatus.SKIPPED -> Icons.Outlined.RemoveCircleOutline
+                        when {
+                            item.status == FixedStatus.PAID -> Icons.Outlined.CheckCircle
+                            item.status == FixedStatus.PENDING && item.overdue -> Icons.Outlined.Warning
+                            item.status == FixedStatus.PENDING -> Icons.Outlined.Schedule
+                            else -> Icons.Outlined.RemoveCircleOutline
                         },
-                        null, tint = if (item.status == FixedStatus.PAID) c.moneyIn else c.inkMuted, modifier = Modifier.size(20.dp),
+                        null,
+                        tint = when {
+                            item.status == FixedStatus.PAID -> c.moneyIn
+                            item.status == FixedStatus.PENDING && item.overdue -> c.warning
+                            else -> c.inkMuted
+                        },
+                        modifier = Modifier.size(20.dp),
                     )
                 },
+                // A charge whose day has come and that nothing has written: the phone writes it by itself the next time it looks, and this does it now.
+                below = if (item.status == FixedStatus.PENDING && item.overdue) ({
+                    TextButton(onClick = { scope.launch { ledger.applyRecurring(view.id, item.ruleId, item.date) } }) {
+                        Text(stringResource(R.string.fixed_apply))
+                    }
+                }) else null,
                 onClick = onFixedCosts,
             )
         }
     } else if (view.config.recurringRules.none { it.active }) {
         ListRow(stringResource(R.string.fixed_empty_title), context = stringResource(R.string.fixed_empty_text), onClick = onFixedCosts)
+    }
+    // What fell due before this period and was never written: the person is told, and decides in Fixed costs.
+    val leftOut = remember(view) {
+        val today = LocalDate.now()
+        RecurringPlanner.leftOut(view.config, view.rows.map { it.transaction.id }.toSet(), view.active, today,
+            RecurringPlanner.currentPeriodStart(view.config, view.active, today))
+    }
+    if (leftOut.isNotEmpty()) {
+        ListRow(stringResource(R.string.fixed_missed_hint, leftOut.size), context = stringResource(R.string.fixed_missed_hint_text),
+            icon = Icons.Outlined.Warning, iconTint = c.warning, onClick = onFixedCosts)
     }
 }
 

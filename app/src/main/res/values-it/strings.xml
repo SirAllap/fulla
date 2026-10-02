@@ -373,7 +373,7 @@
     <string name="weekly">Settimanale</string>
     <string name="weekly_on">Ogni settimana, il %1$s</string>
     <string name="write_itself">Registrarsi da sola</string>
-    <string name="write_itself_help">Nel suo giorno compare da sola nella cronologia.</string>
+    <string name="write_itself_help">Nel suo giorno compare da sola nella cronologia. Se non apri l’app quel giorno, si registra quando la apri.</string>
     <string name="yearly">Annuale</string>
     <string name="yearly_on">Ogni anno, il %1$d %2$s</string>
     <string name="delete_account">Elimina il mio account</string>
@@ -622,6 +622,17 @@
     <string name="per_day_text">Quello che resta una volta addebitate le spese fisse in arrivo, su %1$d giorni</string>
     <string name="fixed_paid_on">Addebitato il %1$s</string>
     <string name="fixed_due_on">Previsto il %1$s</string>
+    <string name="fixed_overdue">In ritardo · previsto il %1$s</string>
+    <string name="fixed_apply">Applica</string>
+    <string name="fixed_by_hand">Registrato a mano · %1$s</string>
+    <string name="write_now">Salvando si registra ora: %1$s</string>
+    <string name="write_now_many">Salvando si registrano ora %1$d addebiti, dal %2$s</string>
+    <string name="fixed_missed">Non registrate da prima</string>
+    <string name="fixed_missed_text">Queste spese fisse erano dovute prima di questo periodo e non sono mai state registrate. Registrale se vuoi che contino, oppure lasciale andare.</string>
+    <string name="fixed_missed_apply">Registrale (%1$d)</string>
+    <string name="fixed_missed_skip">Lasciale andare</string>
+    <string name="fixed_missed_hint">Spese fisse precedenti non registrate: %1$d</string>
+    <string name="fixed_missed_hint_text">Tocca per registrarle o lasciarle andare.</string>
     <string name="fixed_skipped">Saltato</string>
     <string name="fixed_empty_title">Ancora nessuna spesa fissa</string>
     <string name="fixed_empty_text">Aggiungi affitto, auto, abbonamenti… Si scrivono da soli il loro giorno e la previsione sa cosa sta arrivando.</string>

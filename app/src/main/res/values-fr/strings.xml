@@ -373,7 +373,7 @@
     <string name="weekly">Hebdomadaire</string>
     <string name="weekly_on">Chaque semaine, le %1$s</string>
     <string name="write_itself">Se noter toute seule</string>
-    <string name="write_itself_help">Le jour venu, elle apparaît toute seule dans l\'historique.</string>
+    <string name="write_itself_help">Le jour venu, elle apparaît toute seule dans l’historique. Si vous n’ouvrez pas l’appli ce jour-là, elle se note à l’ouverture.</string>
     <string name="yearly">Annuelle</string>
     <string name="yearly_on">Chaque année, le %1$d %2$s</string>
     <string name="delete_account">Supprimer mon compte</string>
@@ -622,6 +622,17 @@
     <string name="per_day_text">Ce qui reste une fois les frais fixes à venir prélevés, sur %1$d jours</string>
     <string name="fixed_paid_on">Prélevé le %1$s</string>
     <string name="fixed_due_on">Prévu le %1$s</string>
+    <string name="fixed_overdue">En retard · prévu le %1$s</string>
+    <string name="fixed_apply">Appliquer</string>
+    <string name="fixed_by_hand">Noté à la main · %1$s</string>
+    <string name="write_now">En enregistrant, elle se note maintenant : %1$s</string>
+    <string name="write_now_many">En enregistrant, %1$d prélèvements se notent maintenant, depuis le %2$s</string>
+    <string name="fixed_missed">Non notés d’avant</string>
+    <string name="fixed_missed_text">Ces frais fixes étaient dus avant cette période et n’ont jamais été notés. Notez-les pour qu’ils comptent, ou laissez-les passer.</string>
+    <string name="fixed_missed_apply">Les noter (%1$d)</string>
+    <string name="fixed_missed_skip">Les laisser passer</string>
+    <string name="fixed_missed_hint">Frais fixes d’avant non notés : %1$d</string>
+    <string name="fixed_missed_hint_text">Touchez pour les noter ou les laisser passer.</string>
     <string name="fixed_skipped">Ignoré</string>
     <string name="fixed_empty_title">Pas encore de frais fixes</string>
     <string name="fixed_empty_text">Ajoutez loyer, voiture, abonnements… Ils s’écrivent tout seuls le jour venu, et la prévision sait ce qui arrive.</string>

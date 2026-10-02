@@ -162,6 +162,36 @@ An edit is stamped with the phone's clock or one millisecond after the version
 it edits, whichever is later (`SyncEngine.stampFor`), so a phone whose clock is
 behind cannot lose an edit to the very version it was looking at.
 
+### Fixed costs write themselves, on every phone, in every mode
+
+A recurring item with `auto_create` is written by the phone, never by the
+server, and in every household: `Ledger.generateRecurring` runs for each one
+on the phone, phone-only ones included. (An earlier version ran it only for
+shared households, inside the sync, so a phone-only household's fixed costs
+never wrote themselves: nobody noticed until people relied on them.) It never
+waits for a network. It runs when the app opens or comes back
+(`MainActivity.onStart`), at midnight while the app stays open, every six
+hours in the background (`RecurringWorker`), after every sync, and as soon as
+a fixed cost is saved (`Ledger.upsert`). Reading what is held, deciding and
+writing happen in one Room transaction, so two callers never write one
+occurrence twice; the id (uuid5 of rule and date) is the same on every
+phone, so the sync merges what two phones wrote. `a phone-only household
+writes its fixed costs too, with nothing owed to a server` and `a phone opened
+every day and one opened once after a month write the same rows` hold it.
+
+What it writes is decided in `RecurringPlanner`, three guards deep: nothing
+for a day that has not come; nothing for an occurrence somebody already wrote
+down by hand (`Coverage.byHand`: same kind and category, an amount within
+5 %, a date within 3 days, each row standing for one occurrence); and a rule
+that has never written starts with the current period, then carries on from
+the first thing it wrote, so what was left out the first time is not written
+the second (`what was left out the first time is not written the second`).
+The forecast asks `Coverage.byHand` too, so what the planner leaves alone it
+counts as paid, never as still to come: the two cannot disagree. A new rule
+begins with the current period, a changed one from today on
+(`RecurringPlanner.startFor`). An occurrence whose day has come and which
+nothing wrote shows as overdue, with "Apply" (`Ledger.applyRecurring`).
+
 ### Migrations
 
 Applied in filename order, each once, recorded in `fulla.schema_migrations`.

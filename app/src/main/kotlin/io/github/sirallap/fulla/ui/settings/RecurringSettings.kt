@@ -6,6 +6,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -22,12 +23,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.client.local.RecurringPlanner
 import io.github.sirallap.fulla.client.remote.Structure
 import io.github.sirallap.fulla.client.wire.Wire
 import io.github.sirallap.fulla.core.model.Recurrence
@@ -46,6 +49,7 @@ import io.github.sirallap.fulla.ui.components.AmountText
 import io.github.sirallap.fulla.ui.components.Chip
 import io.github.sirallap.fulla.ui.components.EmptyState
 import io.github.sirallap.fulla.ui.components.ListRow
+import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.SwitchRow
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
@@ -55,6 +59,10 @@ import java.time.Month
 import java.time.format.TextStyle
 import java.util.Locale
 import java.util.UUID
+import kotlinx.coroutines.launch
+
+/** The id a rule being made has in the preview: it has none until it is saved. */
+private const val PREVIEW_ID = "00000000-0000-4000-8000-000000000000"
 
 @Composable
 private fun scheduleText(s: Schedule, start: LocalDate): String {
@@ -84,8 +92,32 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val c = FullaTheme.colors
     var editing by remember { mutableStateOf<RecurringRule?>(null) }
     var creating by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    // What fell due before this period and was never written: offered, not written behind the person's back.
+    val leftOut = remember(view) {
+        val today = LocalDate.now()
+        RecurringPlanner.leftOut(view.config, view.rows.map { it.transaction.id }.toSet(), view.active, today,
+            RecurringPlanner.currentPeriodStart(view.config, view.active, today))
+    }
     Column {
         Text(stringResource(R.string.recurring_text), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
+        if (canEdit && leftOut.isNotEmpty()) {
+            Section(stringResource(R.string.fixed_missed), top = 8.dp)
+            Text(stringResource(R.string.fixed_missed_text), style = FullaType.secondary, color = c.inkMuted,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            for (o in leftOut) {
+                ListRow(o.rule.name, context = f.day(o.date), end = { AmountText(f.money(o.rule.template.amountMinor), color = c.ink) })
+            }
+            Row(Modifier.padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { scope.launch { leftOut.forEach { ledger.applyRecurring(view.id, it.rule.id, it.date) } } }) {
+                    Text(stringResource(R.string.fixed_missed_apply, leftOut.size))
+                }
+                TextButton(onClick = { scope.launch { leftOut.forEach { ledger.skipRecurring(view.id, it.rule.id, it.date) } } }) {
+                    Text(stringResource(R.string.fixed_missed_skip))
+                }
+            }
+            Section(stringResource(R.string.settings_recurring), top = 16.dp)
+        }
         if (view.config.recurringRules.isEmpty()) {
             EmptyState(Icons.Outlined.Event, stringResource(R.string.no_recurring_title), stringResource(R.string.no_recurring_text))
         }
@@ -139,24 +171,25 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
             Frequency.YEARLY -> Schedule(Frequency.YEARLY, byMonthDay = dayNumber, byMonth = month)
         }
     }.getOrNull()
-    // From today on, never back: a cycle "every N months from <month>" starts at the first month, this one or later, that is on it,
-    // and a past day of this month is not charged now.
-    val startDate = when {
-        frequency == Frequency.MONTHLY && every > 1 -> existing?.let { e -> e.startDate.takeIf { e.schedule.interval == every && Math.floorMod(it.monthValue - firstMonth, every) == 0 } }
-            ?: generateSequence(LocalDate.now().withDayOfMonth(1)) { it.plusMonths(1) }
-                .first { Math.floorMod(it.monthValue - firstMonth, every) == 0 }
-                .let { if (it.month == LocalDate.now().month && it.year == LocalDate.now().year) LocalDate.now() else it }
-        frequency == Frequency.MONTHLY && every == 0 -> existing?.startDate ?: LocalDate.now()
-        else -> existing?.startDate ?: LocalDate.now().withDayOfMonth(1)
+    // From today on, never back (RecurringPlanner.startFor): a new item applies from the start of this period, a changed one from today.
+    val today = LocalDate.now()
+    val periodStart = remember(view.config, view.active) { RecurringPlanner.currentPeriodStart(view.config, view.active, today) }
+    val startDate = schedule?.let { RecurringPlanner.startFor(existing, it, active, if (every > 1) firstMonth else null, periodStart, today) } ?: today
+    // What saving does, before it does it: the rule as it would be saved, what it writes now and what it writes next.
+    val previewRule = schedule?.let {
+        RecurringRule(existing?.id ?: PREVIEW_ID, "", Transaction(id = "", kind = kind, date = today, amountMinor = minor ?: 0, categoryId = category,
+            createdAt = "", clientUpdatedAt = ""), it, startDate)
     }
+    val held = remember(view.rows) { view.rows.map { it.transaction.id }.toSet() }
+    // What saving writes right now: asked of the planner itself, with the rule as it would be saved, so the screen never promises what the phone will not do.
+    val writeNow = if (previewRule != null && auto && active && minor != null && minor > 0) {
+        val rule = previewRule.copy(autoCreate = true, active = true)
+        val config = view.config.copy(recurringRules = view.config.recurringRules.filter { it.id != rule.id } + rule)
+        RecurringPlanner.due(config, held, today, view.active, periodStart).filter { it.recurringRuleId == rule.id }.map { it.date }
+    } else emptyList()
     // The coming year of an irregular monthly calendar, so the person sees exactly what they are setting.
-    val nextDue = if (frequency == Frequency.MONTHLY && every != 1 && schedule != null) {
-        val today = LocalDate.now()
-        val ahead = Scheduler.occurrences(
-            RecurringRule("00000000-0000-4000-8000-000000000000", "", Transaction(id = "", kind = kind, date = today, amountMinor = 0, createdAt = "", clientUpdatedAt = ""),
-                schedule, startDate),
-            today, today.plusMonths(36),
-        )
+    val nextDue = if (previewRule != null && frequency == Frequency.MONTHLY && every != 1) {
+        val ahead = Scheduler.occurrences(previewRule, today.plusDays(1), today.plusMonths(36))
         val year = ahead.filter { it <= today.plusMonths(12) }
         if (year.size >= 3) year.take(6) else ahead.take(3)
     } else emptyList()
@@ -226,6 +259,11 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                 }
                 SwitchRow(stringResource(R.string.write_itself), stringResource(R.string.write_itself_help), auto) { auto = it }
                 if (existing != null) SwitchRow(stringResource(R.string.active), stringResource(R.string.active_help), active) { active = it }
+                if (writeNow.isNotEmpty()) Text(
+                    if (writeNow.size <= 3) stringResource(R.string.write_now, writeNow.joinToString(" · ") { dateFormat.format(it) })
+                    else stringResource(R.string.write_now_many, writeNow.size, dateFormat.format(writeNow.first())),
+                    style = FullaType.secondary, color = FullaTheme.colors.inkMuted,
+                )
             }
         },
         confirmButton = {

@@ -24,6 +24,7 @@ import io.github.sirallap.fulla.data.sync.SyncOutcome
 import io.github.sirallap.fulla.data.sync.SyncScheduler
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -172,10 +173,27 @@ class AppContainer(private val context: Context) {
 
     private val syncLock = Mutex()
 
+    /**
+     * Writes the fixed costs that came due, in every household on this phone,
+     * phone-only ones too: nothing here needs a network or a sync. It looks
+     * whenever the app is opened or comes back, once a day while it stays
+     * open, every few hours in the background, and as soon as a fixed cost is
+     * saved. Safe to call as often as you like; it never throws, because the
+     * screen has to open whatever happens here.
+     */
+    suspend fun generateRecurring(): Int = try {
+        ledger.generateRecurringEverywhere(LocalDate.now())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        0
+    }
+
     /** Syncs every shared household on this phone. Called by the worker and by pull-to-refresh. */
     suspend fun syncAll(): SyncOutcome = syncLock.withLock {
+        // First, so what is due goes out in this very sync, shared household or not.
+        generateRecurring()
         val shared = db.households().all().filter { it.mode == Ledger.CONNECTED }
-        shared.forEach { ledger.generateRecurring(it.id, LocalDate.now()) }
         if (shared.isEmpty()) return@withLock SyncOutcome.NOTHING_TO_DO
         val api = api() ?: return@withLock SyncOutcome.NOTHING_TO_DO
         // Trips' one-time re-pull, before this pass's sync: a household still
@@ -208,6 +226,8 @@ class AppContainer(private val context: Context) {
             SyncStatus(running = false, lastError = error, needsSignIn = outcome == SyncOutcome.NEEDS_SIGN_IN,
                 lastFinishedAt = System.currentTimeMillis())
         }
+        // A fixed cost another phone just made is known now: it is written, and goes out with the next sync.
+        generateRecurring()
         outcome
     }
 

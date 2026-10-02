@@ -89,25 +89,107 @@ class LedgerTest {
         assertEquals(Status.ACTIVE, ledger.transaction(t.id)!!.transaction.status)
     }
 
+    /** A monthly fixed cost that writes itself, in the household's own first expense category and account. */
+    private fun rentRule(config: io.github.sirallap.fulla.core.model.Config, start: String, day: Int = 1, auto: Boolean = true, ruleId: String = UUID.randomUUID().toString()) =
+        buildJsonObject {
+            put("id", ruleId); put("name", "Rent"); put("start_date", start); put("auto_create", auto); put("active", true)
+            put("schedule", buildJsonObject { put("freq", "monthly"); put("interval", 1); put("by_month_day", day) })
+            put("template", buildJsonObject {
+                put("kind", "expense"); put("amount_minor", 50000); put("recurrence", "fixed"); put("note", "RENT")
+                put("category_id", config.categories.first { it.appliesTo.allows(TransactionKind.EXPENSE) }.id)
+                put("account_id", config.accounts.first().id)
+                put("paid_by_member_id", config.meMemberId)
+            })
+        }
+
     @Test
     fun `recurring items are written once, however often generation runs`() = runTest {
         val h = household()
         val config = ledger.household(h)!!.config
-        val rule = buildJsonObject {
-            put("id", UUID.randomUUID().toString()); put("name", "Rent"); put("start_date", "2030-01-01"); put("auto_create", true); put("active", true)
-            put("schedule", buildJsonObject { put("freq", "monthly"); put("interval", 1); put("by_month_day", 1) })
-            put("template", buildJsonObject {
-                put("kind", "expense"); put("amount_minor", 50000); put("recurrence", "fixed"); put("note", "RENT")
-                put("category_id", config.categories.first().id); put("account_id", config.accounts.first().id)
-                put("paid_by_member_id", config.meMemberId)
-            })
-        }
-        ledger.upsert(h, Structure.RECURRING, rule, api = null)
+        ledger.upsert(h, Structure.RECURRING, rentRule(config, "2030-01-01"), api = null)
         repeat(3) { ledger.generateRecurring(h, LocalDate.of(2030, 3, 10)) }
+        // A rule that never wrote a row starts with the current period: March, not the months before it.
+        assertEquals(listOf(LocalDate.of(2030, 3, 1)), ledger.transactions(h).first().map { it.transaction.date })
+        // Once it has written, it catches up whatever it missed (up to two months back).
+        ledger.generateRecurring(h, LocalDate.of(2030, 5, 20))
         val rows = ledger.transactions(h).first()
-        // February and March: January is further back than generation ever catches up.
-        assertEquals(2, rows.size)
+        assertEquals(listOf("2030-03-01", "2030-04-01", "2030-05-01"), rows.map { it.transaction.date.toString() }.sorted())
         assertTrue(rows.all { it.transaction.recurringRuleId != null })
+    }
+
+    @Test
+    fun `a phone-only household writes its fixed costs too, with nothing owed to a server`() = runTest {
+        val first = household()
+        val second = ledger.createLocal("Second household", "EUR", "en-GB", "Alice", "A", 0)
+        ledger.upsert(first, Structure.RECURRING, rentRule(ledger.household(first)!!.config, "2030-01-01"), api = null)
+        ledger.upsert(second, Structure.RECURRING, rentRule(ledger.household(second)!!.config, "2030-01-01", day = 5), api = null)
+        assertEquals(2, ledger.generateRecurringEverywhere(LocalDate.of(2030, 3, 10)), "each household's own")
+        assertEquals(0, ledger.generateRecurringEverywhere(LocalDate.of(2030, 3, 10)), "and not again")
+        val rows = ledger.transactions(first).first() + ledger.transactions(second).first()
+        assertTrue(rows.all { it.state == SyncState.LOCAL_ONLY })
+        assertEquals(0, syncs)
+    }
+
+    @Test
+    fun `a fixed cost that is saved is written at once if its day has already come this period`() = runTest {
+        val h = household()
+        val config = ledger.household(h)!!.config
+        val firstOfMonth = LocalDate.now().withDayOfMonth(1)
+        ledger.upsert(h, Structure.RECURRING, rentRule(config, firstOfMonth.toString()), api = null)
+        // No sync, no waiting for the app to be opened again: the first of this month has come.
+        assertEquals(listOf(firstOfMonth), ledger.transactions(h).first().map { it.transaction.date })
+    }
+
+    @Test
+    fun `what is written by hand is not written again, and a connected household owes what it writes`() = runTest {
+        val h = household()
+        val config = ledger.household(h)!!.config
+        val mine = expense(h, 50000, config).copy(date = LocalDate.of(2030, 3, 2))
+        ledger.save(h, mine)
+        ledger.upsert(h, Structure.RECURRING, rentRule(config, "2030-01-01"), api = null)
+        assertEquals(0, ledger.generateRecurring(h, LocalDate.of(2030, 3, 10)), "the rent of March is on the books already")
+        assertEquals(1, ledger.transactions(h).first().size)
+
+        // The same household, shared: what it writes is owed to the server and asks for a sync.
+        val fresh = io.github.sirallap.fulla.client.local.LocalHousehold.create("Shared household", "EUR", "en-GB", "Alice", "A", 0)
+        val bundle = io.github.sirallap.fulla.client.local.LocalHousehold.upsert(fresh, Structure.RECURRING, rentRule(Wire.config(fresh), "2030-01-01"))
+        val id = Wire.config(bundle).household.id
+        db.households().upsert(io.github.sirallap.fulla.data.local.HouseholdEntity(id, Ledger.CONNECTED, bundle.toString(),
+            io.github.sirallap.fulla.client.local.LocalHousehold.version(bundle)))
+        val before = syncs
+        assertEquals(1, ledger.generateRecurring(id, LocalDate.of(2030, 3, 10)))
+        assertEquals(SyncState.PENDING, ledger.transactions(id).first().single().state)
+        assertEquals(before + 1, syncs)
+    }
+
+    @Test
+    fun `applying a charge that has come writes it once, and only if it is one`() = runTest {
+        val h = household()
+        val config = ledger.household(h)!!.config
+        val ruleId = UUID.randomUUID().toString()
+        ledger.upsert(h, Structure.RECURRING, rentRule(config, "2030-01-01", ruleId = ruleId), api = null)
+        val march = LocalDate.of(2030, 3, 1)
+        assertTrue(ledger.applyRecurring(h, ruleId, march))
+        assertFalse("twice", ledger.applyRecurring(h, ruleId, march))
+        assertFalse("not a day of the rule", ledger.applyRecurring(h, ruleId, LocalDate.of(2030, 3, 2)))
+        assertFalse("not a rule", ledger.applyRecurring(h, UUID.randomUUID().toString(), march))
+        val row = ledger.transactions(h).first().single()
+        assertEquals(io.github.sirallap.fulla.core.recurring.DeterministicId.occurrence(ruleId, march), row.id)
+        // What the phone writes by itself afterwards is that very row, not a second one.
+        ledger.generateRecurring(h, LocalDate.of(2030, 3, 10))
+        assertEquals(1, ledger.transactions(h).first().count { it.transaction.date == march })
+        // A charge somebody deleted stays deleted, and applying it does not bring it back.
+        ledger.delete(h, row.id)
+        assertFalse(ledger.applyRecurring(h, ruleId, march))
+        assertEquals(Status.DELETED, ledger.transaction(row.id)!!.transaction.status)
+        // Letting one go writes it already deleted: the phone never writes that occurrence on its own.
+        val april = LocalDate.of(2030, 4, 1)
+        assertTrue(ledger.skipRecurring(h, ruleId, april))
+        assertFalse("twice", ledger.skipRecurring(h, ruleId, april))
+        val skipped = ledger.transaction(io.github.sirallap.fulla.core.recurring.DeterministicId.occurrence(ruleId, april))!!
+        assertEquals(Status.DELETED, skipped.transaction.status)
+        assertEquals(0, ledger.generateRecurring(h, LocalDate.of(2030, 4, 10)))
+        assertFalse("and it cannot be applied after", ledger.applyRecurring(h, ruleId, april))
     }
 
     @Test

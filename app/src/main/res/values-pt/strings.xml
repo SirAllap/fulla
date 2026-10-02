@@ -373,7 +373,7 @@
     <string name="weekly">Semanal</string>
     <string name="weekly_on">Toda semana, na %1$s</string>
     <string name="write_itself">Registrar sozinha</string>
-    <string name="write_itself_help">No dia certo, aparece sozinha no histórico.</string>
+    <string name="write_itself_help">No dia certo, aparece sozinha no histórico. Se você não abrir o app nesse dia, ela é registrada quando abrir.</string>
     <string name="yearly">Anual</string>
     <string name="yearly_on">Todo ano, em %1$d de %2$s</string>
     <string name="delete_account">Apagar minha conta</string>
@@ -622,6 +622,17 @@
     <string name="per_day_text">O que sobra depois de cobrados os fixos que faltam, em %1$d dias</string>
     <string name="fixed_paid_on">Cobrado em %1$s</string>
     <string name="fixed_due_on">Previsto em %1$s</string>
+    <string name="fixed_overdue">Atrasado · era para %1$s</string>
+    <string name="fixed_apply">Aplicar</string>
+    <string name="fixed_by_hand">Registrado à mão · %1$s</string>
+    <string name="write_now">Ao salvar, registra agora: %1$s</string>
+    <string name="write_now_many">Ao salvar, registram-se agora %1$d cobranças, desde %2$s</string>
+    <string name="fixed_missed">Não registrados de antes</string>
+    <string name="fixed_missed_text">Estes gastos fixos venceram antes deste período e nunca foram registrados. Registre-os se quiser que contem, ou deixe passar.</string>
+    <string name="fixed_missed_apply">Registrar (%1$d)</string>
+    <string name="fixed_missed_skip">Deixar passar</string>
+    <string name="fixed_missed_hint">Gastos fixos anteriores não registrados: %1$d</string>
+    <string name="fixed_missed_hint_text">Toque para registrá-los ou deixá-los passar.</string>
     <string name="fixed_skipped">Ignorado</string>
     <string name="fixed_empty_title">Ainda não há gastos fixos</string>
     <string name="fixed_empty_text">Adicione aluguel, carro, assinaturas… Eles se registram sozinhos no dia, e a previsão sabe o que vem.</string>

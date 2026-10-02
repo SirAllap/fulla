@@ -80,6 +80,47 @@ class ForecastTest {
     }
 
     @Test
+    fun `a charge written by hand stands for the occurrence, paid and not charged twice`() {
+        val a = analytics(rent)
+        val mine = plain(80_000, d(2), category = Fixtures.GROCERIES) // the rent, typed in a day late
+        val f = a.forecast(listOf(mine), jan, today = d(10))!!
+        val item = f.fixed.single()
+        assertEquals(FixedStatus.PAID, item.status)
+        assertTrue(item.byHand)
+        assertEquals(false, item.overdue)
+        assertEquals(0, f.fixedToComeMinor, "it is on the books already")
+        assertEquals(80_000, f.fixedPaidMinor)
+        assertEquals(80_000, f.spentMinor, "and counted once")
+        // Another category is another payment: the rent is still to come.
+        val other = a.forecast(listOf(plain(80_000, d(2), category = Fixtures.LEISURE)), jan, today = d(10))!!
+        assertEquals(FixedStatus.PENDING, other.fixed.single().status)
+        assertEquals(80_000, other.fixedToComeMinor)
+    }
+
+    @Test
+    fun `a charge whose day has come and that nothing has written is overdue, one that has not come is not`() {
+        val f = analytics(rent, car).forecast(emptyList(), jan, today = d(5))!!
+        assertEquals(listOf(true, false), f.fixed.map { it.overdue })
+        assertEquals(listOf(FixedStatus.PENDING, FixedStatus.PENDING), f.fixed.map { it.status })
+        assertEquals(115_000, f.fixedToComeMinor, "overdue or not, it is still to be charged")
+        // Written, it is neither.
+        val written = analytics(rent, car).forecast(listOf(written(rent, d(1))), jan, today = d(5))!!
+        assertEquals(listOf(FixedStatus.PAID, FixedStatus.PENDING), written.fixed.map { it.status })
+        assertEquals(listOf(false, false), written.fixed.map { it.overdue })
+        // A charge somebody deleted is skipped, whatever is near it.
+        val skipped = analytics(rent).forecast(listOf(plain(80_000, d(2))), jan, today = d(5), deleted = setOf(DeterministicId.occurrence(rent.id, d(1))))!!
+        assertEquals(FixedStatus.SKIPPED, skipped.fixed.single().status)
+    }
+
+    @Test
+    fun `income somebody wrote down by hand is not expected a second time`() {
+        val a = analytics(pay)
+        assertEquals(300_000, a.forecast(emptyList(), jan, today = d(10))!!.expectedIncomeMinor)
+        val mine = Fixtures.income(300_000, d(24)).copy(categoryId = Fixtures.SALARY)
+        assertEquals(0, a.forecast(listOf(mine), jan, today = d(26))!!.expectedIncomeMinor)
+    }
+
+    @Test
     fun `without an earlier period the everyday part is left out, and the fixed part stays exact`() {
         val f = analytics(car).forecast(listOf(plain(4_000, d(2))), jan, today = d(3))!!
         assertNull(f.everydayRestMinor)

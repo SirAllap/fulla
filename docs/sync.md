@@ -118,3 +118,12 @@ the rule id and the occurrence date, so two phones generating the same
 occurrence produce the same row, and a unique index on
 `(rule, occurrence date)` backs that up in the database. An occurrence that was
 deleted keeps its id and is never generated again.
+
+A phone looks for occurrences that came due whenever the app opens or comes
+back, at midnight if it stays open, every six hours in the background, after
+each sync and when a recurring item is saved, in phone-only households as well
+as shared ones: nothing about it needs a network. It writes an occurrence for
+each day up to today (never for a day to come), looking back at most 62 days;
+a rule that has never written starts with the current period, and an occurrence
+somebody already wrote down by hand (same kind and category, an amount within
+5 %, a date within 3 days) is not written again.

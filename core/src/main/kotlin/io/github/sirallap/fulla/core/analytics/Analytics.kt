@@ -6,7 +6,8 @@ import io.github.sirallap.fulla.core.model.Config
 import io.github.sirallap.fulla.core.model.Recurrence
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
-import io.github.sirallap.fulla.core.recurring.DeterministicId
+import io.github.sirallap.fulla.core.recurring.Coverage
+import io.github.sirallap.fulla.core.recurring.Occurrence
 import io.github.sirallap.fulla.core.recurring.Scheduler
 import io.github.sirallap.fulla.core.rules.PeriodRule
 import io.github.sirallap.fulla.core.split.Allocator
@@ -76,7 +77,13 @@ data class PeriodReport(
 
 enum class FixedStatus { PAID, PENDING, SKIPPED }
 
-/** One charge of a recurring expense that writes itself: [amountMinor] is what was charged once [PAID], what is expected otherwise. */
+/**
+ * One charge of a recurring expense that writes itself: [amountMinor] is what
+ * was charged once [PAID], what is expected otherwise. [byHand] is a charge
+ * somebody wrote down themselves, which stands for the occurrence (Coverage).
+ * [overdue] is a charge whose day has come and which nothing has written
+ * yet: the phone writes it the next time it looks, or the person applies it.
+ */
 data class FixedItem(
     val ruleId: String,
     val name: String,
@@ -84,6 +91,8 @@ data class FixedItem(
     val amountMinor: Long,
     val date: LocalDate,
     val status: FixedStatus,
+    val byHand: Boolean = false,
+    val overdue: Boolean = false,
 )
 
 /**
@@ -346,22 +355,25 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val byId = list.associateBy { it.id }
 
         val rules = config.recurringRules.filter { it.active && it.autoCreate }
+        val slots = rules.flatMap { r -> Scheduler.occurrences(r, range.start, if (waiting) today else range.endInclusive).map { Occurrence(r, it) } }
+        // What nothing has written yet may still be on the books: somebody wrote it down by hand.
+        val byHand = Coverage.byHand(slots.filter { byId[it.id] == null && it.id !in deleted }, list)
         val fixed = mutableListOf<FixedItem>()
         var expectedIncome = 0L
-        for (r in rules) {
-            for (date in Scheduler.occurrences(r, range.start, if (waiting) today else range.endInclusive)) {
-                val id = DeterministicId.occurrence(r.id, date)
-                val written = byId[id]
-                if (r.template.kind == TransactionKind.INCOME) {
-                    if (written == null && id !in deleted) expectedIncome += r.template.amountMinor
-                    continue
-                }
-                if (r.template.kind != TransactionKind.EXPENSE) continue
-                fixed += when {
-                    written != null && written.isActive -> FixedItem(r.id, r.name, r.template.categoryId, written.amountMinor, date, FixedStatus.PAID)
-                    id in deleted || written != null -> FixedItem(r.id, r.name, r.template.categoryId, r.template.amountMinor, date, FixedStatus.SKIPPED)
-                    else -> FixedItem(r.id, r.name, r.template.categoryId, r.template.amountMinor, date, FixedStatus.PENDING)
-                }
+        for (o in slots) {
+            val r = o.rule
+            val written = byId[o.id]
+            val covering = byHand[o]
+            if (r.template.kind == TransactionKind.INCOME) {
+                if (written == null && o.id !in deleted && covering == null) expectedIncome += r.template.amountMinor
+                continue
+            }
+            if (r.template.kind != TransactionKind.EXPENSE) continue
+            fixed += when {
+                written != null && written.isActive -> FixedItem(r.id, r.name, r.template.categoryId, written.amountMinor, o.date, FixedStatus.PAID)
+                o.id in deleted || written != null -> FixedItem(r.id, r.name, r.template.categoryId, r.template.amountMinor, o.date, FixedStatus.SKIPPED)
+                covering != null -> FixedItem(r.id, r.name, r.template.categoryId, covering.amountMinor, o.date, FixedStatus.PAID, byHand = true)
+                else -> FixedItem(r.id, r.name, r.template.categoryId, r.template.amountMinor, o.date, FixedStatus.PENDING, overdue = o.date <= today)
             }
         }
 

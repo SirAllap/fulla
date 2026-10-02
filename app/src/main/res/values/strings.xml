@@ -374,7 +374,7 @@
     <string name="weekly">Weekly</string>
     <string name="weekly_on">Weekly, on %1$s</string>
     <string name="write_itself">Write itself down</string>
-    <string name="write_itself_help">On its day, it appears in History by itself.</string>
+    <string name="write_itself_help">On its day, it appears in History by itself. If you don’t open the app that day, it is written when you do.</string>
     <string name="yearly">Yearly</string>
     <string name="yearly_on">Yearly, on %1$d %2$s</string>
     <string name="delete_account">Delete my account</string>
@@ -672,6 +672,17 @@
     <string name="per_day_text">What is left once the fixed costs to come are charged, over %1$d days</string>
     <string name="fixed_paid_on">Charged on %1$s</string>
     <string name="fixed_due_on">Due on %1$s</string>
+    <string name="fixed_overdue">Overdue · was due on %1$s</string>
+    <string name="fixed_apply">Apply</string>
+    <string name="fixed_by_hand">Written by hand · %1$s</string>
+    <string name="write_now">Saving writes it now: %1$s</string>
+    <string name="write_now_many">Saving writes %1$d charges now, from %2$s</string>
+    <string name="fixed_missed">Not written from before</string>
+    <string name="fixed_missed_text">These fixed costs fell due before this period and were never written. Write them if you want them to count, or let them go.</string>
+    <string name="fixed_missed_apply">Write them (%1$d)</string>
+    <string name="fixed_missed_skip">Let them go</string>
+    <string name="fixed_missed_hint">Earlier fixed costs not written: %1$d</string>
+    <string name="fixed_missed_hint_text">Tap to write them or let them go.</string>
     <string name="fixed_skipped">Skipped</string>
     <string name="fixed_empty_title">No fixed costs yet</string>
     <string name="fixed_empty_text">Add rent, car, subscriptions… They write themselves on their day, and the forecast knows what is coming.</string>

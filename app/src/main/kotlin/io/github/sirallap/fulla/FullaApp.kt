@@ -3,6 +3,7 @@ package io.github.sirallap.fulla
 
 import android.app.Application
 import androidx.work.Configuration
+import io.github.sirallap.fulla.data.sync.RecurringScheduler
 import io.github.sirallap.fulla.data.sync.SyncScheduler
 
 class FullaApp : Application(), Configuration.Provider {
@@ -13,6 +14,7 @@ class FullaApp : Application(), Configuration.Provider {
         super.onCreate()
         container = AppContainer(this)
         SyncScheduler.schedulePeriodic(this)
+        RecurringScheduler.schedulePeriodic(this)
     }
 
     override val workManagerConfiguration: Configuration

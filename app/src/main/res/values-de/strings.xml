@@ -373,7 +373,7 @@
     <string name="weekly">Wöchentlich</string>
     <string name="weekly_on">Wöchentlich, am %1$s</string>
     <string name="write_itself">Selbst eintragen</string>
-    <string name="write_itself_help">An seinem Tag erscheint er von selbst im Verlauf.</string>
+    <string name="write_itself_help">An seinem Tag erscheint er von selbst im Verlauf. Öffnest du die App an dem Tag nicht, wird er beim nächsten Öffnen eingetragen.</string>
     <string name="yearly">Jährlich</string>
     <string name="yearly_on">Jährlich, am %1$d. %2$s</string>
     <string name="delete_account">Mein Konto löschen</string>
@@ -622,6 +622,17 @@
     <string name="per_day_text">Was bleibt, wenn die noch fälligen Fixkosten abgebucht sind, über %1$d Tage</string>
     <string name="fixed_paid_on">Abgebucht am %1$s</string>
     <string name="fixed_due_on">Fällig am %1$s</string>
+    <string name="fixed_overdue">Überfällig · war am %1$s fällig</string>
+    <string name="fixed_apply">Eintragen</string>
+    <string name="fixed_by_hand">Von Hand eingetragen · %1$s</string>
+    <string name="write_now">Beim Speichern wird jetzt eingetragen: %1$s</string>
+    <string name="write_now_many">Beim Speichern werden jetzt %1$d Abbuchungen eingetragen, ab %2$s</string>
+    <string name="fixed_missed">Davor nicht eingetragen</string>
+    <string name="fixed_missed_text">Diese Fixkosten waren vor diesem Zeitraum fällig und wurden nie eingetragen. Trage sie ein, wenn sie zählen sollen, oder lass sie verfallen.</string>
+    <string name="fixed_missed_apply">Eintragen (%1$d)</string>
+    <string name="fixed_missed_skip">Verfallen lassen</string>
+    <string name="fixed_missed_hint">Frühere Fixkosten nicht eingetragen: %1$d</string>
+    <string name="fixed_missed_hint_text">Tippen, um sie einzutragen oder verfallen zu lassen.</string>
     <string name="fixed_skipped">Übersprungen</string>
     <string name="fixed_empty_title">Noch keine Fixkosten</string>
     <string name="fixed_empty_text">Füge Miete, Auto, Abos hinzu … Sie werden am Tag selbst eingetragen, und die Vorhersage weiß, was kommt.</string>
