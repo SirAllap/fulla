@@ -145,7 +145,7 @@ object RecurringPlanner {
         today: LocalDate,
     ): LocalDate {
         val cycle = schedule.frequency == Frequency.MONTHLY && schedule.interval > 1 && cycleMonth != null
-        fun onCycle(date: LocalDate) = Math.floorMod(date.monthValue - cycleMonth!!, schedule.interval) == 0
+        fun onCycle(date: LocalDate) = (date.monthValue - cycleMonth!!).mod(schedule.interval) == 0
         val base = when {
             existing == null -> minOf(periodStart, today)
             (!existing.active && active) || existing.schedule != schedule || (cycle && !onCycle(existing.startDate)) -> maxOf(existing.startDate, today)

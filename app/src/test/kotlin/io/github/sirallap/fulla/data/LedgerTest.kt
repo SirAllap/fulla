@@ -123,8 +123,9 @@ class LedgerTest {
         val second = ledger.createLocal("Second household", "EUR", "en-GB", "Alice", "A", 0)
         ledger.upsert(first, Structure.RECURRING, rentRule(ledger.household(first)!!.config, "2030-01-01"), api = null)
         ledger.upsert(second, Structure.RECURRING, rentRule(ledger.household(second)!!.config, "2030-01-01", day = 5), api = null)
-        assertEquals(2, ledger.generateRecurringEverywhere(LocalDate.of(2030, 3, 10)), "each household's own")
-        assertEquals(0, ledger.generateRecurringEverywhere(LocalDate.of(2030, 3, 10)), "and not again")
+        // each household's own, and not again
+        assertEquals(2, ledger.generateRecurringEverywhere(LocalDate.of(2030, 3, 10)))
+        assertEquals(0, ledger.generateRecurringEverywhere(LocalDate.of(2030, 3, 10)))
         val rows = ledger.transactions(first).first() + ledger.transactions(second).first()
         assertTrue(rows.all { it.state == SyncState.LOCAL_ONLY })
         assertEquals(0, syncs)
@@ -147,7 +148,8 @@ class LedgerTest {
         val mine = expense(h, 50000, config).copy(date = LocalDate.of(2030, 3, 2))
         ledger.save(h, mine)
         ledger.upsert(h, Structure.RECURRING, rentRule(config, "2030-01-01"), api = null)
-        assertEquals(0, ledger.generateRecurring(h, LocalDate.of(2030, 3, 10)), "the rent of March is on the books already")
+        // the rent of March is on the books already
+        assertEquals(0, ledger.generateRecurring(h, LocalDate.of(2030, 3, 10)))
         assertEquals(1, ledger.transactions(h).first().size)
 
         // The same household, shared: what it writes is owed to the server and asks for a sync.
@@ -160,6 +162,27 @@ class LedgerTest {
         assertEquals(1, ledger.generateRecurring(id, LocalDate.of(2030, 3, 10)))
         assertEquals(SyncState.PENDING, ledger.transactions(id).first().single().state)
         assertEquals(before + 1, syncs)
+    }
+
+    @Test
+    fun `looking at the fixed costs changes nothing that was already there`() = runTest {
+        val h = household()
+        val config = ledger.household(h)!!.config
+        val kept = expense(h, 1234, config)
+        val edited = expense(h, 5678, config).copy(date = LocalDate.of(2030, 3, 3))
+        val gone = expense(h, 4321, config)
+        ledger.save(h, kept); ledger.save(h, edited); ledger.save(h, gone)
+        clock = clock.plusSeconds(60)
+        ledger.save(h, edited.copy(amountMinor = 999))
+        ledger.delete(h, gone.id)
+        ledger.upsert(h, Structure.RECURRING, rentRule(config, "2030-01-01"), api = null)
+        val before = db.transactions().all(h)
+        repeat(3) { ledger.generateRecurring(h, LocalDate.of(2030, 3, 10)) }
+        val after = db.transactions().all(h)
+        // Every row that was there is exactly as it was, stamps and states included; the only news is the rent.
+        for (row in before) assertEquals(row, after.single { it.id == row.id })
+        assertEquals(before.size + 1, after.size)
+        assertEquals(1, ledger.transactions(h).first().count { it.transaction.recurringRuleId != null })
     }
 
     @Test

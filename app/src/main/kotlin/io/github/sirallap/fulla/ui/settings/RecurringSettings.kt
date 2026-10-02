@@ -96,8 +96,10 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     // What fell due before this period and was never written: offered, not written behind the person's back.
     val leftOut = remember(view) {
         val today = LocalDate.now()
-        RecurringPlanner.leftOut(view.config, view.rows.map { it.transaction.id }.toSet(), view.active, today,
-            RecurringPlanner.currentPeriodStart(view.config, view.active, today))
+        runCatching {
+            RecurringPlanner.leftOut(view.config, view.rows.map { it.transaction.id }.toSet(), view.active, today,
+                RecurringPlanner.currentPeriodStart(view.config, view.active, today))
+        }.getOrDefault(emptyList())
     }
     Column {
         Text(stringResource(R.string.recurring_text), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
@@ -185,7 +187,9 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     val writeNow = if (previewRule != null && auto && active && minor != null && minor > 0) {
         val rule = previewRule.copy(autoCreate = true, active = true)
         val config = view.config.copy(recurringRules = view.config.recurringRules.filter { it.id != rule.id } + rule)
-        RecurringPlanner.due(config, held, today, view.active, periodStart).filter { it.recurringRuleId == rule.id }.map { it.date }
+        runCatching {
+            RecurringPlanner.due(config, held, today, view.active, periodStart).filter { it.recurringRuleId == rule.id }.map { it.date }
+        }.getOrDefault(emptyList())
     } else emptyList()
     // The coming year of an irregular monthly calendar, so the person sees exactly what they are setting.
     val nextDue = if (previewRule != null && frequency == Frequency.MONTHLY && every != 1) {

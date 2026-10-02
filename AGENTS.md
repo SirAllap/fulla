@@ -220,7 +220,13 @@ the `LEAKCHECK_DENYLIST` secret in CI) and is never committed.
 `Ledger` is the only thing screens write through: every edit goes through
 `client`'s `Edits`, so stamps and sync states are decided in one tested place.
 `AppContainer.syncAll` is the only way a sync starts: the worker, pull to
-refresh and coming back to the app all call it.
+refresh and coming back to the app all call it. It moves rows and nothing
+else: a feature must never depend on the household being shared. The first
+version of fixed costs wrote them from inside the sync, so a phone-only
+household never got them; `AppContainer.generateRecurring` is where that work
+lives now, and `syncAll` merely calls it first. Anything that has to happen
+on its own (on a day, when the app opens) gets its own entry point like that
+one, for every household, and a test with a phone-only household.
 
 Four tabs (Add, Overview, History, Balances); everything else hangs off the
 gear. Screens are built from `ui/components/Pieces.kt`; if two screens need

@@ -87,7 +87,7 @@ fun HomeScreen(
     val summary = remember(view, period) { view.analytics.summary(view.active, period) }
     val hero = remember(view, period) { view.analytics.hero(view.active, period) }
     val categories = remember(view, period) { view.analytics.byCategory(view.active, period) }
-    val forecast = remember(view, period) { if (period == current) view.analytics.forecast(view.active, period, LocalDate.now(), view.deletedIds) else null }
+    val forecast = remember(view, period) { if (period == current) runCatching { view.analytics.forecast(view.active, period, LocalDate.now(), view.deletedIds) }.getOrNull() else null }
     val budgets = remember(view, period) { Budgets.forPeriod(view.config, period) }
     val budgetSpend = remember(view, period) {
         view.analytics.budgetSpend(view.active, period, view.config.trips).associate { it.categoryId to it.amountMinor }

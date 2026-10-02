@@ -25,6 +25,7 @@ import io.github.sirallap.fulla.data.local.FullaDatabase
 import io.github.sirallap.fulla.data.local.HouseholdEntity
 import io.github.sirallap.fulla.data.local.Rows
 import io.github.sirallap.fulla.data.prefs.SettingsStore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -310,7 +311,16 @@ class Ledger(
             if (api == null) LocalHousehold.upsert(bundle, kind, item) else api.upsert(householdId, kind, item)
         }
         // A fixed cost that was just saved may already have come due this period: it is written now, not at the next sync.
-        if (kind == Structure.RECURRING) generateRecurring(householdId)
+        // It is already saved: nothing that goes wrong here may make the save look as if it failed (the next look writes it).
+        if (kind == Structure.RECURRING) {
+            try {
+                generateRecurring(householdId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // left for the next look
+            }
+        }
     }
 
     /** A money_mode in [patch] is the choice from now on: a pot still waiting from before sharing is dropped. */

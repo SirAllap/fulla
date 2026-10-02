@@ -65,6 +65,21 @@ class CoverageTest {
     }
 
     @Test
+    fun `the rent typed under another category is still the rent, when its note reads like the item's name`() {
+        val rent = rule(1, monthly)                       // named "Rent"
+        val elsewhere = byHand(80_000, d(1), category = Fixtures.LEISURE)
+        assertTrue(cover(rent, d(1), elsewhere.copy(note = "rent")).isNotEmpty(), "case does not matter")
+        assertTrue(cover(rent, d(1), elsewhere.copy(note = "  RENT ")).isNotEmpty(), "nor spaces")
+        assertTrue(cover(rent, d(1), elsewhere.copy(note = "Rent of the flat")).isEmpty(), "a note that only contains it is not the same thing")
+        assertTrue(cover(rent, d(1), elsewhere.copy(note = "")).isEmpty(), "no note, no name to go by")
+        assertTrue(cover(rent, d(1), elsewhere.copy(note = "Rent", amountMinor = 90_000)).isEmpty(), "the amount has to be about the same too")
+        assertTrue(cover(rent, d(1), elsewhere.copy(note = "Rent", date = d(9))).isEmpty(), "and so does the day")
+        // And an item without a category can be recognised by its name alone.
+        val noCategory = rule(2, monthly, category = null)
+        assertTrue(cover(noCategory, d(1), byHand(80_000, d(1)).copy(note = "Rent")).isNotEmpty())
+    }
+
+    @Test
     fun `rows a recurring item wrote, a trip's, and deleted ones do not stand for anything`() {
         val rent = rule(1, monthly)
         assertTrue(cover(rent, d(1), byHand(80_000, d(1)).copy(recurringRuleId = rent.id, occurrenceDate = d(1))).isEmpty())

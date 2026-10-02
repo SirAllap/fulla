@@ -20,6 +20,7 @@ import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.random.asKotlinRandom
 
 /**
  * What a phone writes for the fixed costs that came due: every day it looks,
@@ -187,6 +188,107 @@ class RecurringPlannerTest {
         val away = RecurringPlanner.due(c, held(everyDay.filter { it.date < d(3, 1) }), d(3, 31))
         assertEquals(everyDay.filter { it.date >= d(3, 1) }.map { it.id }.toSet(), away.map { it.id }.toSet())
         assertEquals(everyDay.filter { it.date >= d(3, 1) }.associateBy { it.id }, away.associateBy { it.id })
+    }
+
+    private fun weekly(day: Int) = buildJsonObject {
+        put("freq", "weekly"); put("interval", 1)
+        put("by_weekday", kotlinx.serialization.json.JsonArray(listOf(kotlinx.serialization.json.JsonPrimitive(day))))
+    }
+    private fun quarterly(day: Int) = buildJsonObject { put("freq", "monthly"); put("interval", 3); put("by_month_day", day) }
+    private fun daily() = buildJsonObject { put("freq", "daily"); put("interval", 1) }
+
+    @Test
+    fun `looking only ever adds rows, never ahead of the day, never twice, never over what is held`() = runTest {
+        var written = 0
+        for (seed in 1..60) {
+            val random = java.util.Random(seed.toLong())
+            val rules = (0 until 1 + random.nextInt(4)).map { i ->
+                val schedule = when (random.nextInt(5)) {
+                    0, 1 -> monthly(1 + random.nextInt(31))
+                    2 -> weekly(1 + random.nextInt(7))
+                    3 -> quarterly(1 + random.nextInt(28))
+                    else -> daily()
+                }
+                rule("00000000-0000-4000-8000-0000000006%02d".format(i), "Item $i", schedule,
+                    start = d(1, 1).minusDays(random.nextInt(200).toLong()), amount = 1_000L * (1 + random.nextInt(90)),
+                    auto = random.nextInt(6) != 0)
+            }
+            val c = config(*rules.toTypedArray())
+            // What the person wrote by hand, some of it looking like a fixed cost, some of it deleted.
+            val held = ArrayList<Transaction>()
+            repeat(random.nextInt(25)) {
+                val like = c.recurringRules.randomOrNull(random.asKotlinRandom())
+                held += Fixtures.expense(like?.template?.amountMinor ?: 1_234, id = Fixtures.newId())
+                    .copy(date = d(1, 1).plusDays(random.nextInt(120).toLong()), categoryId = category,
+                        note = if (random.nextBoolean()) like?.name ?: "" else "GROCERY STORE 01",
+                        status = if (random.nextInt(8) == 0) io.github.sirallap.fulla.core.model.Status.DELETED else io.github.sirallap.fulla.core.model.Status.ACTIVE)
+            }
+            val before = held.toList()
+            var day = d(1, 1)
+            while (day <= d(5, 1)) {
+                val new = RecurringPlanner.plan(c, held(held), day) { held.toList() }
+                for (row in new) {
+                    assertTrue(row.id !in held(held), "seed $seed: never over what is held")
+                    assertTrue(row.date <= day, "seed $seed: never ahead of the day ($day): ${row.date}")
+                    assertTrue(row.date >= day.minusDays(RecurringPlanner.LOOKBACK_DAYS), "seed $seed: never further back than the catch-up")
+                    assertEquals(DeterministicId.occurrence(row.recurringRuleId!!, row.date), row.id, "seed $seed: the id every phone derives")
+                    assertEquals(io.github.sirallap.fulla.core.model.Status.ACTIVE, row.status)
+                    assertEquals(row.date, row.occurrenceDate)
+                }
+                held += new
+                assertEquals(emptyList(), RecurringPlanner.plan(c, held(held), day) { held.toList() }, "seed $seed: looking twice writes once")
+                day = day.plusDays(1)
+            }
+            assertEquals(held.size, held.map { it.id }.toSet().size, "seed $seed: no id twice")
+            assertEquals(before, held.take(before.size), "seed $seed: what was there is exactly as it was")
+            val generated = held.drop(before.size)
+            assertEquals(generated.size, generated.map { it.recurringRuleId to it.occurrenceDate }.toSet().size, "seed $seed: an occurrence once")
+            assertTrue(generated.all { g -> c.recurringRules.single { it.id == g.recurringRuleId }.let { it.active && it.autoCreate } },
+                "seed $seed: only rules that write themselves")
+            written += generated.size
+        }
+        assertTrue(written > 500, "the scenarios do write things ($written)")
+    }
+
+    @Test
+    fun `a rule that has already written keeps exactly the catch-up it always had`() = runTest {
+        // What every phone did before this version: every day of the last 62 that nothing wrote. For a rule that has written
+        // before (the households where fixed costs already worked) the answer must not have changed, however rarely the app is opened.
+        var total = 0
+        for (seed in 1..60) {
+            val random = java.util.Random(seed.toLong())
+            val rules = (0 until 1 + random.nextInt(4)).map { i ->
+                val schedule = when (random.nextInt(4)) {
+                    0 -> monthly(1 + random.nextInt(31))
+                    1 -> weekly(1 + random.nextInt(7))
+                    2 -> quarterly(1 + random.nextInt(28))
+                    else -> monthly(1 + random.nextInt(31))
+                }
+                rule("00000000-0000-4000-8000-0000000007%02d".format(i), "Item $i", schedule, start = d(1, 1).minusDays(random.nextInt(120).toLong()))
+            }
+            val c = config(*rules.toTypedArray())
+            val held = ArrayList<Transaction>()
+            var day = d(1, 1)
+            var compared = 0
+            while (day <= d(9, 30)) {
+                val new = RecurringPlanner.plan(c, held(held), day) { held.toList() }
+                val wrote = held.mapNotNull { it.recurringRuleId }.toSet()
+                val old = c.recurringRules.flatMap { r ->
+                    io.github.sirallap.fulla.core.recurring.Scheduler.occurrences(r, day.minusDays(RecurringPlanner.LOOKBACK_DAYS), day)
+                        .map { DeterministicId.occurrence(r.id, it) to r.id }
+                }.filter { it.first !in held(held) && it.second in wrote }
+                assertEquals(old.map { it.first }.toSet(), new.filter { it.recurringRuleId in wrote }.map { it.id }.toSet(), "seed $seed, $day")
+                compared += old.size
+                // The household's history is what the old version wrote: every rule's whole catch-up, the first time too.
+                held += c.recurringRules.flatMap { r ->
+                    io.github.sirallap.fulla.core.recurring.Scheduler.occurrences(r, day.minusDays(RecurringPlanner.LOOKBACK_DAYS), day)
+                        .filter { DeterministicId.occurrence(r.id, it) !in held(held) }.map { RecurringPlanner.occurrence(r, it, c) }
+                }
+                day = day.plusDays(1L + random.nextInt(25))
+            }
+            total += compared
+        }
+        assertTrue(total > 200, "the scenarios do compare things ($total)")
     }
 
     @Test

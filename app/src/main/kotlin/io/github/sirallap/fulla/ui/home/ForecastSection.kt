@@ -178,8 +178,10 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
     // What fell due before this period and was never written: the person is told, and decides in Fixed costs.
     val leftOut = remember(view) {
         val today = LocalDate.now()
-        RecurringPlanner.leftOut(view.config, view.rows.map { it.transaction.id }.toSet(), view.active, today,
-            RecurringPlanner.currentPeriodStart(view.config, view.active, today))
+        runCatching {
+            RecurringPlanner.leftOut(view.config, view.rows.map { it.transaction.id }.toSet(), view.active, today,
+                RecurringPlanner.currentPeriodStart(view.config, view.active, today))
+        }.getOrDefault(emptyList())
     }
     if (leftOut.isNotEmpty()) {
         ListRow(stringResource(R.string.fixed_missed_hint, leftOut.size), context = stringResource(R.string.fixed_missed_hint_text),

@@ -2,6 +2,7 @@
 package io.github.sirallap.fulla.core.recurring
 
 import io.github.sirallap.fulla.core.model.Transaction
+import io.github.sirallap.fulla.core.text.normalizeName
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import kotlin.math.abs
@@ -17,9 +18,11 @@ data class Occurrence(val rule: RecurringRule, val date: LocalDate) {
  * A person who tracked their rent by hand and then adds it as a recurring
  * item that writes itself must not be charged twice for the same month. An
  * occurrence counts as written by hand when a row nobody generated stands for
- * it: same kind, same category, an amount within [AMOUNT_PERCENT] % and a
- * date within [toleranceDays] of the day it falls due. Each such row stands
- * for one occurrence at most, the nearest in time.
+ * it: same kind, an amount within [AMOUNT_PERCENT] % and a date within
+ * [toleranceDays] of the day it falls due, and it is the same thing, by its
+ * category or by its name (a note that reads like the recurring item's name:
+ * "Rent" typed under another category is still the rent). Each such row
+ * stands for one occurrence at most, the nearest in time.
  *
  * The phone's planner (what to write) and the forecast (what is still to be
  * charged) both ask here, so they always agree.
@@ -44,9 +47,11 @@ object Coverage {
     /** Whether [row] could be the hand-written version of an occurrence of [rule]: everything but the date. */
     fun looksLike(rule: RecurringRule, row: Transaction): Boolean {
         val template = rule.template
-        return row.isActive && row.recurringRuleId == null && row.tripId == null &&
-            row.kind == template.kind && template.categoryId != null && row.categoryId == template.categoryId &&
-            abs(row.amountMinor - template.amountMinor) * 100 <= template.amountMinor * AMOUNT_PERCENT
+        if (!row.isActive || row.recurringRuleId != null || row.tripId != null || row.kind != template.kind) return false
+        if (template.amountMinor <= 0 || abs(row.amountMinor - template.amountMinor) * 100 > template.amountMinor * AMOUNT_PERCENT) return false
+        val sameCategory = template.categoryId != null && row.categoryId == template.categoryId
+        val sameName = row.note.isNotBlank() && row.note.normalizeName() == rule.name.normalizeName()
+        return sameCategory || sameName
     }
 
     /**
@@ -56,8 +61,7 @@ object Coverage {
      */
     fun byHand(occurrences: List<Occurrence>, rows: Iterable<Transaction>): Map<Occurrence, Transaction> {
         if (occurrences.isEmpty()) return emptyMap()
-        val candidates = rows.filter { it.isActive && it.recurringRuleId == null && it.tripId == null && it.categoryId != null }
-            .groupBy { it.kind to it.categoryId }
+        val candidates = rows.filter { it.isActive && it.recurringRuleId == null && it.tripId == null }.groupBy { it.kind }
         if (candidates.isEmpty()) return emptyMap()
         val taken = HashSet<String>()
         val out = LinkedHashMap<Occurrence, Transaction>()
@@ -65,7 +69,7 @@ object Coverage {
         for (o in occurrences.sortedWith(compareBy({ it.date }, { it.rule.id }))) {
             val template = o.rule.template
             val tolerance = toleranceDays(o.rule.schedule)
-            val best = candidates[template.kind to template.categoryId].orEmpty()
+            val best = candidates[template.kind].orEmpty()
                 .filter { it.id !in taken && looksLike(o.rule, it) }
                 .map { it to abs(ChronoUnit.DAYS.between(it.date, o.date)) }
                 .filter { (_, days) -> days <= tolerance }

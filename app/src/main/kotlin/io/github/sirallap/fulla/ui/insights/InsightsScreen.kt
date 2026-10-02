@@ -52,7 +52,7 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
     var periodText by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(current.toString()) }
     val period = java.time.YearMonth.parse(periodText)
     val report = remember(view, period) { a.report(view.active, period, today, view.config.trips) }
-    val forecast = remember(view, period) { if (period == current) a.forecast(view.active, period, today, view.deletedIds) else null }
+    val forecast = remember(view, period) { if (period == current) runCatching { a.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null }
     val series = remember(view, period) { a.series(view.active, period, 12).reversed().filter { it.incomeMinor != 0L || it.expenseMinor != 0L } }
     val unit = remember(view) { (0 until f.currency.minorUnits).fold(1L) { acc, _ -> acc * 10 } }
     val trends = remember(view, period) { a.trends(view.active, period, minimumMinor = 10 * unit) }
