@@ -351,9 +351,6 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                     if (missing.isNotEmpty()) Text(stringResource(R.string.still_needed, missing.joinToString(" · ")),
                         style = FullaType.secondary, color = FullaTheme.colors.warning)
                 }
-                if (existing != null) TextButton(onClick = { confirmingDelete = true }) {
-                    Text(stringResource(R.string.delete), color = FullaTheme.colors.danger)
-                }
                 if (writeNow.isNotEmpty()) Text(
                     if (writeNow.size <= 3) stringResource(R.string.write_now, writeNow.joinToString(" · ") { dateFormat.format(it) })
                     else stringResource(R.string.write_now_many, writeNow.size, dateFormat.format(writeNow.first())),
@@ -380,6 +377,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
             }) { Text(stringResource(R.string.save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        neutralButton = if (existing != null) ({ io.github.sirallap.fulla.ui.components.DeleteButton(onClick = { confirmingDelete = true }) }) else null,
     )
     if (confirmingDelete && existing != null) {
         val wrote = view.rows.count { it.transaction.recurringRuleId == existing.id && it.transaction.isActive }
@@ -389,12 +387,16 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.delete_fixed_text), style = FullaType.secondary)
-                    if (wrote > 0) TextButton(onClick = { onDelete(existing, true); confirmingDelete = false; onDismiss() }) {
-                        Text(stringResource(R.string.delete_fixed_and_rows, wrote), color = FullaTheme.colors.danger)
-                    }
+                    if (wrote > 0) io.github.sirallap.fulla.ui.components.DeleteButton(
+                        onClick = { onDelete(existing, true); confirmingDelete = false; onDismiss() },
+                        label = stringResource(R.string.delete_fixed_and_rows, wrote),
+                    )
                 }
             },
-            confirmButton = { TextButton(onClick = { onDelete(existing, false); confirmingDelete = false; onDismiss() }) { Text(stringResource(R.string.delete)) } },
+            confirmButton = {
+                TextButton(onClick = { onDelete(existing, false); confirmingDelete = false; onDismiss() },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = FullaTheme.colors.danger)) { Text(stringResource(R.string.delete)) }
+            },
             dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }

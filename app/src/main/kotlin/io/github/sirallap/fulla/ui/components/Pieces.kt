@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.ChevronLeft
@@ -683,19 +684,41 @@ fun FullaDialog(
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
+    /** An action that is neither of the two (deleting what is being edited): fixed at the left of the bottom row, never at the end of the scrolling form. */
+    neutralButton: (@Composable () -> Unit)? = null,
 ) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismissRequest,
-        confirmButton = confirmButton,
+        confirmButton = if (neutralButton == null) confirmButton else ({
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                neutralButton()
+                Spacer(Modifier.weight(1f))
+                dismissButton?.invoke()
+                confirmButton()
+            }
+        }),
         modifier = modifier
             .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing)
             .padding(vertical = 32.dp)
             .fillMaxWidth(0.94f),
-        dismissButton = dismissButton,
+        dismissButton = if (neutralButton == null) dismissButton else null,
         title = title,
         text = text,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     )
+}
+
+/** Deleting what a dialog edits: a bin and the word, in the colour of danger. Goes in [FullaDialog]'s `neutralButton`. */
+@Composable
+fun DeleteButton(onClick: () -> Unit, label: String = stringResource(R.string.delete)) {
+    androidx.compose.material3.TextButton(
+        onClick = onClick,
+        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = FullaTheme.colors.danger),
+    ) {
+        Icon(Icons.Outlined.DeleteOutline, null, Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(label)
+    }
 }
 
 /**

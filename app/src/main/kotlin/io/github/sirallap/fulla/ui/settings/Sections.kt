@@ -115,7 +115,7 @@ internal fun EditDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
               androidx.compose.runtime.CompositionLocalProvider(io.github.sirallap.fulla.ui.components.LocalRowInset provides 0.dp) {
                 OutlinedTextField(text, { text = it }, label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = if (number) KeyboardType.Decimal else KeyboardType.Text))
@@ -464,7 +464,8 @@ private fun StructureDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Scrolls: the icons of a category are many, and the buttons stay where they are.
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(name, { name = it.take(40) }, label = { Text(stringResource(R.string.name)) }, singleLine = true)
                 if (formats != null) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -493,8 +494,6 @@ private fun StructureDialog(
                 SwitchRow(stringResource(R.string.archive), stringResource(R.string.archive_help), archived) { archived = it }
                 if (deleteBlockedText != null) {
                     Text(deleteBlockedText, style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
-                } else if (onDeleteClick != null) {
-                    TextButton(onClick = { onDeleteClick(); onDismiss() }) { Text(stringResource(R.string.delete), color = FullaTheme.colors.danger) }
                 }
             }
         },
@@ -511,6 +510,9 @@ private fun StructureDialog(
             }) { Text(stringResource(R.string.save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        neutralButton = if (onDeleteClick != null && deleteBlockedText == null) ({
+            io.github.sirallap.fulla.ui.components.DeleteButton(onClick = { onDeleteClick(); onDismiss() })
+        }) else null,
     )
     if (pickingBalanceDate) {
         val state = androidx.compose.material3.rememberDatePickerState(
@@ -755,7 +757,8 @@ private fun DeleteCategoryDialog(
             }
         },
         confirmButton = {
-            TextButton(enabled = use.rows == 0 || target != null, onClick = { onConfirm(target); onDismiss() }) {
+            TextButton(enabled = use.rows == 0 || target != null, onClick = { onConfirm(target); onDismiss() },
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = if (others > 0 && use.rows == 0) c.accent else c.danger)) {
                 Text(stringResource(when {
                     use.rows > 0 -> R.string.delete_and_move
                     others > 0 -> R.string.archive
