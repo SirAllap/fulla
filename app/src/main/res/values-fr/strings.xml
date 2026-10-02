@@ -649,4 +649,9 @@
     <string name="delete_fixed_title">Supprimer « %1$s » ?</string>
     <string name="delete_fixed_text">Il n’écrit plus rien et quitte la liste. Ce qu’il a déjà écrit reste dans l’historique.</string>
     <string name="delete_fixed_and_rows">Le supprimer avec ses %1$d écritures</string>
+    <string name="category">Catégorie</string>
+    <string name="still_needed">Il manque : %1$s</string>
+    <string name="until_date">jusqu’au %1$s</string>
+    <string name="summary_writes_itself">s’écrit tout seul</string>
+    <string name="summary_reminder_only">ne s’écrit pas tout seul</string>
 </resources>

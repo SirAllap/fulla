@@ -53,6 +53,7 @@ import io.github.sirallap.fulla.ui.components.EmptyState
 import io.github.sirallap.fulla.ui.components.ListRow
 import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.SwitchRow
+import io.github.sirallap.fulla.ui.entry.CategoryTiles
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import java.time.DayOfWeek
@@ -184,6 +185,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     var paymentsText by remember { mutableStateOf("6") }
     var pickingEnd by remember { mutableStateOf(false) }
     var confirmingDelete by remember { mutableStateOf(false) }
+    var allCategories by remember { mutableStateOf(false) }
     var auto by remember { mutableStateOf(existing?.autoCreate ?: true) }
     var active by remember { mutableStateOf(existing?.active ?: true) }
     val minor = MoneyParser.parse(amount, f.currency, f.decimalStyle)
@@ -250,8 +252,15 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                 }
                 OutlinedTextField(amount, { amount = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.amount)) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), suffix = { Text(f.currency.code) })
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    for (cat in view.config.categories.filter { !it.archived && it.appliesTo.allows(kind) }) Chip(cat.name, cat.id == category, { category = cat.id })
+                // The same tiles as the entry screen: icon and colour of each category, the most used first, and its subcategories below.
+                Text(stringResource(R.string.category), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                val topCategory = view.config.category(category)?.let { it.parentId ?: it.id }
+                CategoryTiles(view, kind, topCategory, showAll = allCategories, onPick = { category = it }, onMore = { allCategories = !allCategories },
+                    columns = 3, sidePadding = 0.dp)
+                val subcategories = view.config.categories.filter { it.parentId == topCategory && topCategory != null && !it.archived && it.appliesTo.allows(kind) }.sortedBy { it.sort }
+                if (subcategories.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Chip(stringResource(R.string.subcategory_general), category == topCategory, { category = topCategory })
+                    for (sub in subcategories) Chip(sub.name, category == sub.id, { category = sub.id })
                 }
                 val accounts = view.config.accounts.filter { !it.archived || it.id == account }
                 if (accounts.size > 1) {
@@ -324,6 +333,24 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
                 }
                 SwitchRow(stringResource(R.string.write_itself), stringResource(R.string.write_itself_help), auto) { auto = it }
                 if (existing != null) SwitchRow(stringResource(R.string.active), stringResource(R.string.active_help), active) { active = it }
+                if (schedule != null) Text(
+                    listOfNotNull(
+                        scheduleText(schedule, startDate),
+                        view.accountName(account),
+                        if (ends != 0 && endDate != null && !endProblem) stringResource(R.string.until_date, dateFormat.format(endDate)) else null,
+                        stringResource(if (auto) R.string.summary_writes_itself else R.string.summary_reminder_only),
+                    ).joinToString(" · "),
+                    style = FullaType.secondary, color = FullaTheme.colors.ink,
+                )
+                if (!valid) {
+                    val missing = listOfNotNull(
+                        if (name.isBlank()) stringResource(R.string.name) else null,
+                        if (minor == null || minor <= 0) stringResource(R.string.amount) else null,
+                        if (category == null) stringResource(R.string.category) else null,
+                    )
+                    if (missing.isNotEmpty()) Text(stringResource(R.string.still_needed, missing.joinToString(" · ")),
+                        style = FullaType.secondary, color = FullaTheme.colors.warning)
+                }
                 if (existing != null) TextButton(onClick = { confirmingDelete = true }) {
                     Text(stringResource(R.string.delete), color = FullaTheme.colors.danger)
                 }

@@ -699,4 +699,9 @@
     <string name="delete_fixed_title">Delete “%1$s”?</string>
     <string name="delete_fixed_text">It stops writing and leaves the list. What it already wrote stays in History.</string>
     <string name="delete_fixed_and_rows">Delete it and its %1$d written entries</string>
+    <string name="category">Category</string>
+    <string name="still_needed">Still needed: %1$s</string>
+    <string name="until_date">until %1$s</string>
+    <string name="summary_writes_itself">writes itself</string>
+    <string name="summary_reminder_only">not written by itself</string>
 </resources>

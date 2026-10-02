@@ -649,4 +649,9 @@
     <string name="delete_fixed_title">Eliminar «%1$s»?</string>
     <string name="delete_fixed_text">Deixa de escrever e sai da lista. O que já escreveu fica no Histórico.</string>
     <string name="delete_fixed_and_rows">Eliminá-la com os seus %1$d movimentos escritos</string>
+    <string name="category">Categoria</string>
+    <string name="still_needed">Falta: %1$s</string>
+    <string name="until_date">até %1$s</string>
+    <string name="summary_writes_itself">escreve-se sozinha</string>
+    <string name="summary_reminder_only">não se escreve sozinha</string>
 </resources>

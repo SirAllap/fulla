@@ -649,4 +649,9 @@
     <string name="delete_fixed_title">„%1$s“ löschen?</string>
     <string name="delete_fixed_text">Es schreibt nichts mehr und verschwindet aus der Liste. Was es schon geschrieben hat, bleibt im Verlauf.</string>
     <string name="delete_fixed_and_rows">Löschen samt seiner %1$d geschriebenen Einträge</string>
+    <string name="category">Kategorie</string>
+    <string name="still_needed">Es fehlt: %1$s</string>
+    <string name="until_date">bis %1$s</string>
+    <string name="summary_writes_itself">schreibt sich selbst</string>
+    <string name="summary_reminder_only">schreibt sich nicht selbst</string>
 </resources>

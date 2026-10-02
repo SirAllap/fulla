@@ -649,4 +649,9 @@
     <string name="delete_fixed_title">¿Eliminar «%1$s»?</string>
     <string name="delete_fixed_text">Deja de anotarse y desaparece de la lista. Lo que ya anotó se queda en el Historial.</string>
     <string name="delete_fixed_and_rows">Eliminarlo y sus %1$d movimientos anotados</string>
+    <string name="category">Categoría</string>
+    <string name="still_needed">Falta: %1$s</string>
+    <string name="until_date">hasta el %1$s</string>
+    <string name="summary_writes_itself">se anota solo</string>
+    <string name="summary_reminder_only">no se anota solo</string>
 </resources>

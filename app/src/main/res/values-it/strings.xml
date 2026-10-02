@@ -649,4 +649,9 @@
     <string name="delete_fixed_title">Eliminare «%1$s»?</string>
     <string name="delete_fixed_text">Non scrive più e sparisce dall’elenco. Quello che ha già scritto resta nella cronologia.</string>
     <string name="delete_fixed_and_rows">Eliminarla con i suoi %1$d movimenti scritti</string>
+    <string name="category">Categoria</string>
+    <string name="still_needed">Manca: %1$s</string>
+    <string name="until_date">fino al %1$s</string>
+    <string name="summary_writes_itself">si scrive da sola</string>
+    <string name="summary_reminder_only">non si scrive da sola</string>
 </resources>

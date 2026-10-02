@@ -345,7 +345,10 @@ private fun KindRow(kind: TransactionKind, onPick: (TransactionKind) -> Unit) {
 }
 
 @Composable
-private fun CategoryTiles(view: HouseholdView, kind: TransactionKind, selected: String?, showAll: Boolean, onPick: (String) -> Unit, onMore: () -> Unit) {
+internal fun CategoryTiles(
+    view: HouseholdView, kind: TransactionKind, selected: String?, showAll: Boolean, onPick: (String) -> Unit, onMore: () -> Unit,
+    columns: Int = 4, sidePadding: androidx.compose.ui.unit.Dp = 16.dp,
+) {
     val c = FullaTheme.colors
     // Only top-level categories: a subcategory is picked on the line below, once its category is.
     val usable = view.config.categories.filter { !it.archived && it.appliesTo.allows(kind) && it.parentId == null }
@@ -354,19 +357,20 @@ private fun CategoryTiles(view: HouseholdView, kind: TransactionKind, selected: 
     val use = view.active.filter { it.date >= since && it.kind == kind }
         .groupingBy { view.config.category(it.categoryId)?.parentId ?: it.categoryId }.eachCount()
     val ordered = usable.sortedWith(compareByDescending<Category> { use[it.id] ?: 0 }.thenBy { it.sort })
-    val shown = if (showAll || ordered.size <= 8) ordered else ordered.take(7).let { top ->
+    val limit = columns * 2
+    val shown = if (showAll || ordered.size <= limit) ordered else ordered.take(limit - 1).let { top ->
         if (selected != null && top.none { it.id == selected }) top.dropLast(1) + ordered.first { it.id == selected } else top
     }
     FlowRow(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(horizontal = sidePadding, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        maxItemsInEachRow = 4,
+        maxItemsInEachRow = columns,
     ) {
         for (cat in shown) {
             Tile(cat.name, CategoryIcons.of(cat.icon), selected = cat.id == selected, tint = c.category(cat.colorIndex)) { onPick(cat.id) }
         }
-        if (ordered.size > 8) {
+        if (ordered.size > limit) {
             Tile(stringResource(if (showAll) R.string.fewer else R.string.more), Icons.Outlined.ExpandMore, selected = false, tint = c.inkMuted, onClick = onMore)
         }
     }
@@ -410,7 +414,7 @@ private fun CategoryFieldChips(view: HouseholdView, draft: Draft) {
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.FlowRowScope.Tile(label: String, icon: ImageVector, selected: Boolean, tint: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
+internal fun androidx.compose.foundation.layout.FlowRowScope.Tile(label: String, icon: ImageVector, selected: Boolean, tint: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
     val c = FullaTheme.colors
     Column(
         Modifier.weight(1f).heightIn(min = 72.dp).clip(RoundedCornerShape(16.dp))
