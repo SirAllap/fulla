@@ -13,4 +13,7 @@
     <string name="web_forget_text">Removes the household from this browser.</string>
     <string name="web_forget_confirm">This household only exists in this browser. Forgetting it deletes it for good, unless you saved a backup. Continue?</string>
     <string name="invite_link_or_code">Paste the invite link, or type the code</string>
+    <string name="setup_manual_help">In your project: Project Settings → API. The URL looks like https://abcdefghijklmnopqrst.supabase.co. The database must already have Fulla\'s setup installed.</string>
+    <string name="setup_back_to_guide">Set it up for me instead</string>
+    <string name="setup_browser_blocked">Supabase would not answer this page. Try again; if it keeps failing, use the Fulla app on a phone to set the project up, or tap “I already have a project”.</string>
 </resources>

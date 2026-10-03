@@ -13,4 +13,7 @@
     <string name="web_forget_text">Retire le foyer de ce navigateur.</string>
     <string name="web_forget_confirm">Ce foyer n’existe que dans ce navigateur. L’oublier le supprime définitivement, sauf si vous avez enregistré une sauvegarde. Continuer ?</string>
     <string name="invite_link_or_code">Colle le lien d’invitation ou saisis le code</string>
+    <string name="setup_manual_help">Dans ton projet : Project Settings → API. L’URL ressemble à https://abcdefghijklmnopqrst.supabase.co. La base doit déjà avoir Fulla installé.</string>
+    <string name="setup_back_to_guide">Le configurer pour moi plutôt</string>
+    <string name="setup_browser_blocked">Supabase n’a pas répondu à cette page. Réessaie ; si cela échoue encore, configure le projet avec l’app Fulla sur un téléphone ou touche « J’ai déjà un projet ».</string>
 </resources>

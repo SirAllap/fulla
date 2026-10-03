@@ -55,6 +55,9 @@ object Remote {
     var api: FullaApi? = null
         private set
 
+    /** Sets up a project in the person's own Supabase account with their access token (used for these calls only, never kept). */
+    fun setup(token: String) = io.github.sirallap.fulla.client.remote.ProjectSetup(http, token)
+
     fun use(endpoint: Endpoint) {
         if (this.endpoint == endpoint) return
         this.endpoint = endpoint

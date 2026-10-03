@@ -277,6 +277,9 @@ if (process.env.FULLA_SKIP_DB !== '1') {
 
     await gear(a.page);
     await row(a.page, 'Sync').click();
+    ok(await a.page.locator('.setup-step').count() === 3 && await a.page.locator('input[type=password]').count() === 1, 'without a project of its own, Sync explains the three steps and asks for the access token');
+    await a.shot('19-setup-guide');
+    await a.page.click('.btn.quiet:has-text("I already have a project")');
     await a.page.fill('input[type=url]', fakeUrl);
     await a.page.fill('input >> nth=1', 'anon-key-for-tests');
     await a.page.fill('input[type=email]', 'alice@example.com');
@@ -338,7 +341,7 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     ok(a.errors.length === 0 && b.errors.length === 0, 'no console errors on either phone' + [...a.errors, ...b.errors].join(' | '));
     await a.ctx.close(); await b.ctx.close();
   } catch (e) {
-    ok(false, 'two people through the project: ' + e.message.split('\n')[0]);
+    ok(false, 'two people through the project: ' + e.message.split('\n').slice(0, 4).join(' / '));
   } finally {
     fake.stop();
   }

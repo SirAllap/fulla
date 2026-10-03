@@ -40,6 +40,17 @@ val generateHosted by tasks.registering {
     }
 }
 
+// Fulla's database, every migration in one file, served beside the page: "set up my project" runs it in the person's
+// own Supabase project (the Android app bundles the same file).
+val generatedSetupSql = layout.buildDirectory.dir("generated/setupsql")
+val generateSetupSql by tasks.registering(Exec::class) {
+    inputs.dir(rootProject.file("supabase/migrations"))
+    inputs.file(rootProject.file("supabase/scripts/bundle.js"))
+    outputs.dir(generatedSetupSql)
+    workingDir = rootProject.projectDir
+    commandLine("node", "supabase/scripts/bundle.js", generatedSetupSql.get().file("setup.sql").asFile.absolutePath)
+}
+
 kotlin {
     js(IR) {
         browser {
@@ -54,6 +65,7 @@ kotlin {
         jsMain {
             kotlin.srcDir(generatedStrings)
             kotlin.srcDir(generatedHosted)
+            resources.srcDir(generatedSetupSql)
             dependencies {
                 implementation(project(":client"))
                 implementation(libs.ktor.client.js)
@@ -66,4 +78,8 @@ kotlin {
 
 tasks.matching { it.name.startsWith("compileKotlinJs") || it.name.endsWith("SourcesJar") || it.name == "compileProductionExecutableKotlinJs" || it.name == "compileDevelopmentExecutableKotlinJs" }.configureEach {
     dependsOn(generateStrings, generateHosted)
+}
+
+tasks.matching { it.name.endsWith("ProcessResources") || it.name.contains("Distribution") || it.name.contains("Webpack") }.configureEach {
+    dependsOn(generateSetupSql)
 }

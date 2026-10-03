@@ -91,12 +91,8 @@ object SyncPage {
     }
 
     private fun HTMLElement.form(view: HouseholdView, connected: Boolean) {
-        if (!connected && Hosted.endpoint == null) {
-            val u = field(t("project_url"), url, "url") { attr("autocapitalize", "none"); attr("autocorrect", "off"); attr("inputmode", "url") }
-            u.on("input") { url = u.value }
-            val k = field(t("anon_key"), key) { attr("autocapitalize", "none"); attr("autocorrect", "off") }
-            k.on("input") { key = k.value }
-        }
+        if (!connected) ProjectGuide.build(this) { App.render() }
+        if (!connected && ProjectGuide.needed()) return
         val e = field(t("email"), email, "email") { attr("autocapitalize", "none"); attr("autocomplete", "email") }
         e.on("input") { email = e.value.trim() }
         val p = field(t("password"), password, "password") { attr("autocomplete", if (create) "new-password" else "current-password") }
@@ -115,7 +111,7 @@ object SyncPage {
                 if (connected) {
                     if (!Ledger.signInAgain(email, password)) error = t("confirm_email")
                 } else {
-                    val endpoint = Hosted.endpoint ?: Endpoint.parse(url, key) ?: throw IllegalArgumentException(t("something_failed"))
+                    val endpoint = ProjectGuide.current() ?: throw IllegalArgumentException(t("something_failed"))
                     if (!Ledger.share(endpoint, email, password, create)) error = t("confirm_email")
                 }
                 if (error == null) { password = ""; checked = null }

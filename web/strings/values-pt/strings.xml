@@ -13,4 +13,7 @@
     <string name="web_forget_text">Remove a casa deste navegador.</string>
     <string name="web_forget_confirm">Esta casa só existe neste navegador. Esquecê-la apaga-a para sempre, a menos que tenha guardado uma cópia. Continuar?</string>
     <string name="invite_link_or_code">Cola o link do convite ou escreve o código</string>
+    <string name="setup_manual_help">No teu projeto: Project Settings → API. O URL é como https://abcdefghijklmnopqrst.supabase.co. A base de dados já deve ter o Fulla instalado.</string>
+    <string name="setup_back_to_guide">Configurar por mim</string>
+    <string name="setup_browser_blocked">O Supabase não respondeu a esta página. Tenta de novo; se continuar a falhar, configura o projeto com a app Fulla num telemóvel ou toca em «Já tenho um projeto».</string>
 </resources>
