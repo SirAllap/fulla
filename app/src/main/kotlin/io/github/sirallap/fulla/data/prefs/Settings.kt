@@ -97,11 +97,13 @@ class SettingsStore(context: Context) {
             languageChosen = p[Keys.languageChosen] ?: false,
             checkForUpdates = p[Keys.checkForUpdates] ?: true,
             dbNeedsUpdate = p[Keys.dbNeedsUpdate] ?: false,
+            // Only an update that is newer than what is installed: the one stored before installing it is not offered again,
+            // whenever the next check gets to clear it.
             pendingUpdate = p[Keys.updateVersion]?.let { version ->
                 p[Keys.updateApkUrl]?.let { url ->
                     Update(version, p[Keys.updateNotes] ?: "", url, p[Keys.updateSizeBytes] ?: 0L, p[Keys.updateSha256])
                 }
-            },
+            }?.takeIf { io.github.sirallap.fulla.core.version.Versions.isNewer(io.github.sirallap.fulla.BuildConfig.VERSION_NAME, it.version) },
             updateAnnouncedVersion = p[Keys.updateAnnouncedVersion],
             updateAnnouncedAt = p[Keys.updateAnnouncedAt] ?: 0L,
             guideHousehold = p[Keys.guideHousehold],
