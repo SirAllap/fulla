@@ -20,6 +20,6 @@
     <string name="setup_manual_sql_text">Copia o script, abre o editor SQL do teu projeto, cola e carrega em Run. Pode correr-se outra vez sem problema.</string>
     <string name="setup_copy_script">Copiar script</string>
     <string name="setup_manual_keys">Copia o endereço e a chave</string>
-    <string name="setup_manual_keys_text">No teu projeto: Project Settings → API. Cola abaixo a Project URL e a chave anon public.</string>
+    <string name="setup_manual_keys_text">URL: o endereço do teu projeto, https://XXXX.supabase.co, onde XXXX é o código na barra do navegador (…/project/XXXX). Chave: Project Settings → API Keys, copia a «anon» (longa, começa por eyJ) ou a «Publishable» (começa por sb_publishable_). Nunca a secreta.</string>
     <string name="setup_script_copied">Script copiado. Cola-o no editor SQL e carrega em Run.</string>
 </resources>

@@ -20,6 +20,6 @@
     <string name="setup_manual_sql_text">Kopiere das Skript, öffne den SQL-Editor deines Projekts, füge es ein und drücke Run. Es kann bedenkenlos erneut ausgeführt werden.</string>
     <string name="setup_copy_script">Skript kopieren</string>
     <string name="setup_manual_keys">Adresse und Schlüssel kopieren</string>
-    <string name="setup_manual_keys_text">In deinem Projekt: Project Settings → API. Füge unten die Project URL und den anon public Key ein.</string>
+    <string name="setup_manual_keys_text">URL: die Adresse deines Projekts, https://XXXX.supabase.co, wobei XXXX der Code in der Adressleiste ist (…/project/XXXX). Schlüssel: Project Settings → API Keys, kopiere „anon“ (lang, beginnt mit eyJ) oder „Publishable“ (beginnt mit sb_publishable_). Nie den geheimen.</string>
     <string name="setup_script_copied">Skript kopiert. Füge es im SQL-Editor ein und drücke Run.</string>
 </resources>

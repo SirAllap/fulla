@@ -38,7 +38,7 @@ object ProjectGuide {
                 child("button", "text-btn") { attr("type", "button"); text(t("setup_open")); click { open("https://supabase.com/dashboard/project/_/sql/new") } }
             }
         }
-        step(4, t("setup_manual_keys"), t("setup_manual_keys_text"), t("setup_open")) { open("https://supabase.com/dashboard/project/_/settings/api") }
+        step(4, t("setup_manual_keys"), t("setup_manual_keys_text"), t("setup_open")) { open("https://supabase.com/dashboard/project/_/settings/api-keys") }
         val u = field(t("project_url"), url, "url") { attr("autocapitalize", "none"); attr("autocorrect", "off"); attr("inputmode", "url") }
         u.on("input") { url = u.value }
         val k = field(t("anon_key"), key, help = t("anon_key_help")) { attr("autocapitalize", "none"); attr("autocorrect", "off") }
