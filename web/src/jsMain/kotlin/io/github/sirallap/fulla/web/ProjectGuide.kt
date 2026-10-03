@@ -25,6 +25,7 @@ object ProjectGuide {
     private var error: String? = null
     private var choices: List<ProjectSetup.Project>? = null
     private var justDone = false
+    private var detail: String? = null
     var url = ""
     var key = ""
 
@@ -78,7 +79,7 @@ object ProjectGuide {
                     onClick = if (busy) null else ({ run(onChange) { setup, sql -> setup.connect(p.ref, sql, ownProject = false) { reached = it; onChange() } } }))
             }
         }
-        error?.let { child("p", "problem") { attr("role", "alert"); text(it) } }
+        error?.let { child("p", "problem") { attr("role", "alert"); text(it) }; detail?.let { d -> child("p", "muted pad detail") { text(d) } } }
         actionButton = null
         div("actions") {
             actionButton = primaryButton(t(if (choices == null) "setup_action" else "setup_create_new"), enabled = token.length >= 20 && !busy) {
@@ -117,14 +118,17 @@ object ProjectGuide {
 
     /** Runs one setup call with the token, and connects when it hands back an endpoint (null: a choice to make first). */
     private fun run(onChange: () -> Unit, work: suspend (ProjectSetup, String) -> Endpoint?) {
-        busy = true; error = null; onChange()
+        busy = true; error = null; detail = null; onChange()
         App.launch {
             try {
                 val sql = (window.fetch("setup.sql").await().text() as Promise<String>).await()
                 val found = work(Remote.setup(token.trim()), sql)
                 if (found != null) { token = ""; endpoint = found; justDone = true }
             } catch (e: Throwable) {
+                console.error("Fulla: setup failed: " + e.stackTraceToString())
                 val code = (e as? FullaError)?.code
+                // What Supabase (or the page) really said, for the person who has to tell somebody about it.
+                detail = listOfNotNull(code, (e as? FullaError)?.status?.takeIf { it > 0 }?.toString(), e.message?.take(160)).joinToString(" · ")
                 error = when (code) {
                     ProjectSetup.PROJECT_PAUSED -> t("setup_project_paused")
                     ProjectSetup.TOKEN_REFUSED -> t("setup_token_refused")
