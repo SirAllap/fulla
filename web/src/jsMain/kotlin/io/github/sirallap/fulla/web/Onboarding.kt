@@ -50,7 +50,7 @@ object Onboarding {
         return when (step) {
             Step.WELCOME -> welcome()
             Step.CREATE -> form(t("get_started")) { createFields() }
-            Step.SHARED -> form(t("shared")) { ProjectGuide.build(this) { App.render() }; if (!ProjectGuide.needed()) { accountFields(); createFields() } }
+            Step.SHARED -> form(t("shared")) { ProjectGuide.build(this) { App.render() }; accountFields(); createFields() }
             Step.JOIN -> form(t("join_household")) { joinFields() }
         }
     }
@@ -125,7 +125,7 @@ object Onboarding {
             fields()
             problem?.let { child("p", "problem") { attr("role", "alert"); text(it) } }
         }
-        if (!(step == Step.SHARED && ProjectGuide.needed())) div("actionbar no-tabs") {
+        div("actionbar no-tabs") {
             div("actions") {
                 primaryButton(t(when (step) { Step.SHARED -> "connect"; Step.JOIN -> "join_household"; else -> "create" }), enabled = !busy) { submit() }
             }

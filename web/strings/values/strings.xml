@@ -13,7 +13,13 @@
     <string name="web_forget_text">Removes the household from this browser.</string>
     <string name="web_forget_confirm">This household only exists in this browser. Forgetting it deletes it for good, unless you saved a backup. Continue?</string>
     <string name="invite_link_or_code">Paste the invite link, or type the code</string>
-    <string name="setup_manual_help">In your project: Project Settings → API. The URL looks like https://abcdefghijklmnopqrst.supabase.co. The database must already have Fulla\'s setup installed.</string>
-    <string name="setup_back_to_guide">Set it up for me instead</string>
-    <string name="setup_browser_blocked">Supabase would not answer this page. Try again; if it keeps failing, use the Fulla app on a phone to set the project up, or tap “I already have a project”.</string>
+    <string name="setup_manual_intro">Fulla keeps a shared household in a Supabase project that belongs to you, on Supabase\'s free plan. From a browser you set it up by hand, once (about five minutes). The Fulla app on a phone can do it for you in one tap.</string>
+    <string name="setup_manual_project">Create a project</string>
+    <string name="setup_manual_project_text">Any name, a region near you, and a database password you will not need again.</string>
+    <string name="setup_manual_sql">Install Fulla\'s database</string>
+    <string name="setup_manual_sql_text">Copy the script, open the SQL editor of your project, paste it and press Run. It is safe to run again.</string>
+    <string name="setup_copy_script">Copy script</string>
+    <string name="setup_manual_keys">Copy the address and the key</string>
+    <string name="setup_manual_keys_text">In your project: Project Settings → API. Paste the Project URL and the anon public key below.</string>
+    <string name="setup_script_copied">Script copied. Paste it in the SQL editor and press Run.</string>
 </resources>

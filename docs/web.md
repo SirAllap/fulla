@@ -30,7 +30,7 @@ rules, backup, appearance, sync, about; and the getting-started guide.
 **Several people**: a household can be shared through Supabase and joined with an invite (link,
 code or QR), from the browser or from the Android app. The project's address and key are the
 Android build's (the CI secrets `FULLA_PROJECT_URL` and `FULLA_ANON_KEY`), so people only sign
-in; without them the page does what the Android app does: a guide (create a Supabase account, create an access token, paste it) and Fulla creates the project, installs `setup.sql` (served beside the page) and connects; "I already have a project" takes the URL and key instead. The token is used for these calls only (the CSP allows `api.supabase.com` for this) and never kept. If Supabase refuses calls from a browser page, the guide says so and the manual way remains. An iPhone syncs while the
+in; without them the page walks the person through setting a project up by hand (a browser page may not call Supabase's management API, so the Android app's token flow is not possible here): account, project, Fulla's database (`setup.sql` is served beside the page and copied to the clipboard), then the project's URL and public key. An iPhone syncs while the
 page is open. `web/e2e` shares a household between two browsers through the project's real
 migrations in a throwaway PostgreSQL behind a fake Supabase (`web/e2e/fake-supabase.cjs`).
 

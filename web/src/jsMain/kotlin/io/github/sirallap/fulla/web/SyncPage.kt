@@ -92,7 +92,6 @@ object SyncPage {
 
     private fun HTMLElement.form(view: HouseholdView, connected: Boolean) {
         if (!connected) ProjectGuide.build(this) { App.render() }
-        if (!connected && ProjectGuide.needed()) return
         val e = field(t("email"), email, "email") { attr("autocapitalize", "none"); attr("autocomplete", "email") }
         e.on("input") { email = e.value.trim() }
         val p = field(t("password"), password, "password") { attr("autocomplete", if (create) "new-password" else "current-password") }

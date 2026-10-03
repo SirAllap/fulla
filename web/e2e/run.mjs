@@ -277,9 +277,8 @@ if (process.env.FULLA_SKIP_DB !== '1') {
 
     await gear(a.page);
     await row(a.page, 'Sync').click();
-    ok(await a.page.locator('.setup-step').count() === 3 && await a.page.locator('input[type=password]').count() === 1, 'without a project of its own, Sync explains the three steps and asks for the access token');
+    ok(await a.page.locator('.setup-step').count() === 4 && await a.page.locator('input[type=url]').count() === 1, 'without a project of its own, Sync explains the four steps and asks for the address and the key');
     await a.shot('19-setup-guide');
-    await a.page.click('.btn.quiet:has-text("I already have a project")');
     await a.page.fill('input[type=url]', fakeUrl);
     await a.page.fill('input >> nth=1', 'anon-key-for-tests');
     await a.page.fill('input[type=email]', 'alice@example.com');

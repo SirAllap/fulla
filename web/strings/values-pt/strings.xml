@@ -13,7 +13,13 @@
     <string name="web_forget_text">Remove a casa deste navegador.</string>
     <string name="web_forget_confirm">Esta casa só existe neste navegador. Esquecê-la apaga-a para sempre, a menos que tenha guardado uma cópia. Continuar?</string>
     <string name="invite_link_or_code">Cola o link do convite ou escreve o código</string>
-    <string name="setup_manual_help">No teu projeto: Project Settings → API. O URL é como https://abcdefghijklmnopqrst.supabase.co. A base de dados já deve ter o Fulla instalado.</string>
-    <string name="setup_back_to_guide">Configurar por mim</string>
-    <string name="setup_browser_blocked">O Supabase não respondeu a esta página. Tenta de novo; se continuar a falhar, configura o projeto com a app Fulla num telemóvel ou toca em «Já tenho um projeto».</string>
+    <string name="setup_manual_intro">O Fulla guarda uma casa partilhada num projeto Supabase que é teu, no plano gratuito. Num navegador preparas à mão, uma só vez (uns cinco minutos). A app Fulla num telemóvel faz isso por ti com um toque.</string>
+    <string name="setup_manual_project">Cria um projeto</string>
+    <string name="setup_manual_project_text">Qualquer nome, uma região perto de ti e uma palavra-passe da base de dados que não voltarás a precisar.</string>
+    <string name="setup_manual_sql">Instala a base de dados do Fulla</string>
+    <string name="setup_manual_sql_text">Copia o script, abre o editor SQL do teu projeto, cola e carrega em Run. Pode correr-se outra vez sem problema.</string>
+    <string name="setup_copy_script">Copiar script</string>
+    <string name="setup_manual_keys">Copia o endereço e a chave</string>
+    <string name="setup_manual_keys_text">No teu projeto: Project Settings → API. Cola abaixo a Project URL e a chave anon public.</string>
+    <string name="setup_script_copied">Script copiado. Cola-o no editor SQL e carrega em Run.</string>
 </resources>
