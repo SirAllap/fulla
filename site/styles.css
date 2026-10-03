@@ -123,10 +123,7 @@ h1, h2, p, ol, ul, dl, dd, figure { margin: 0; }
 .bar-links { display: flex; align-items: center; gap: 6px; }
 .bar-link { display: inline-flex; align-items: center; min-height: 48px; padding: 0 12px; text-decoration: none; font-weight: 500; }
 .bar-link:hover { text-decoration: underline; }
-@media (max-width: 359px) {
-  .bar-links { gap: 0; }
-  .bar-link { padding: 0 8px; }
-  .bar-cta { padding: 0 12px; }
+html, body { overflow-x: clip; }
 }
 .bar-cta {
   display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px;
@@ -696,3 +693,14 @@ h1, h2, p, ol, ul, dl, dd, figure { margin: 0; }
   overflow: hidden;
 }
 .rail-progress span { display: block; height: 100%; width: 20%; background: #E9B949; border-radius: 2px; transform-origin: left; }
+
+/* Very narrow, or zoomed far in: one button under another. */
+@media (max-width: 400px) {
+  .hero-actions { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 359px) {
+  .bar-cta { display: none; }
+  .bar-links { gap: 0; }
+  .bar-link { padding: 0 8px; }
+  .bar-cta { padding: 0 12px; }
