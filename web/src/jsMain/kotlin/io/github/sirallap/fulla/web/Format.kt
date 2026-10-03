@@ -26,6 +26,34 @@ class Format(val config: Config) {
 
     fun longDay(d: LocalDate): String = date(d, "weekday" to "long", "day" to "numeric", "month" to "long", "year" to "numeric")
 
+    /** A whole amount, no decimals: the label above a vial. */
+    fun whole(minor: Long): String {
+        var divisor = 1.0
+        repeat(currency.minorUnits) { divisor *= 10 }
+        val units = kotlin.math.round(minor / divisor)
+        val code = currency.code
+        val tag = I18n.language
+        return try {
+            val options = js("({ style: 'currency', maximumFractionDigits: 0, minimumFractionDigits: 0 })")
+            options.currency = code
+            js("new Intl.NumberFormat(tag, options)").format(units) as String
+        } catch (e: Throwable) { units.toLong().toString() }
+    }
+
+    /** The short name of a period's month: "Oct". */
+    fun shortPeriod(p: YearMonth): String {
+        val month = p.monthValue - 1
+        return (js("new Date(2024, month, 1)").toLocaleDateString(I18n.language, js("({ month: 'short' })")) as String).replaceFirstChar { it.titlecase() }.trimEnd('.')
+    }
+
+    /** The days a period covers, when they are not a calendar month: "1 Oct – 31 Oct", or "from 25 Sep" while it is open. */
+    fun periodRange(view: HouseholdView, p: YearMonth): String? {
+        if (view.config.household.periodStartDay == 1 && !view.rule.anchored) return null
+        val days = view.rule.daysOf(p)
+        fun d(x: LocalDate) = date(x, "day" to "numeric", "month" to "short")
+        return if (view.rule.isOpen(p)) t("period_open_from", d(days.start)) else "${d(days.start)} – ${d(days.endInclusive)}"
+    }
+
     /** A month for a title: "October", with the year when it is not this one. */
     fun period(p: YearMonth): String {
         val year = p.year

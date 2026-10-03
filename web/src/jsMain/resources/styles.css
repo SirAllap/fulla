@@ -200,8 +200,6 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .searchbox input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 16px; color: var(--ink); }
 .searchbox:focus-within { outline: 2px solid var(--highlight); outline-offset: -1px; border-color: transparent; }
 .row .icon-btn { width: 40px; height: 40px; margin: -8px -8px -8px 0; color: var(--ink-muted); }
-.jar { display: flex; justify-content: center; padding: 8px 0; }
-.jar svg { width: min(56vw, 240px); height: auto; }
 .pad { padding: 0 var(--inset) 8px; }
 .period .icon-btn[disabled] { color: var(--line); }
 .row .text .meter { margin: 6px 0 2px; }
@@ -240,3 +238,40 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .toggle-option { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border: 0; border-radius: 10px; background: var(--paper); color: var(--ink); font-size: 16px; line-height: 22px; transition: background 160ms var(--ease), color 160ms var(--ease); }
 .toggle-option span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .toggle-option.selected { background: var(--highlight); color: var(--on-highlight); }
+
+/* the jar and the liquid behind tiles and bars */
+.jar { position: relative; margin: 8px 8px; }
+.liquid-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.jar-figure { position: absolute; left: 24px; right: 24px; text-align: center; font-size: 52px; line-height: 56px; font-weight: 500; font-stretch: 75%; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink); }
+.jar-figure.on-liquid { color: var(--paper); }
+.tiles-row { display: flex; gap: 10px; padding: 5px 16px; }
+.lq-tile { position: relative; overflow: hidden; flex: 1; min-width: 0; min-height: 104px; padding: 12px 14px; border-radius: 20px; background: var(--paper-high); display: flex; flex-direction: column; gap: 2px; border: 0; text-align: left; color: var(--ink); }
+.lq-tile > *:not(canvas) { position: relative; }
+.lq-tile .t-label { color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lq-tile .value { font-size: 20px; line-height: 26px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lq-tile .value.in { color: var(--in); } .lq-tile .value.out { color: var(--out); }
+.lq-tile .ctx { font-size: 12px; line-height: 15px; font-weight: 500; }
+.lq-bar { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; margin: 4px 16px; padding: 10px 14px; min-height: 56px; border-radius: 16px; background: var(--paper-high); width: calc(100% - 32px); border: 0; text-align: left; color: var(--ink); }
+.lq-bar > *:not(canvas) { position: relative; }
+.lq-bar .text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lq-bar .title { font-size: 16px; line-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lq-bar .ctx { font-size: 12px; line-height: 15px; font-weight: 500; color: var(--ink-muted); }
+.lq-bar .detail { font-size: 12px; line-height: 15px; font-weight: 500; }
+.lq-bar .amount { white-space: nowrap; }
+.lq-bar .lead.in { color: var(--in); } .lq-bar .lead.warn { color: var(--warning); } .lq-bar .lead { color: var(--ink-muted); display: inline-flex; }
+.progress { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.progress > div { height: 100%; border-radius: 2px; background: var(--out-surface); }
+.progress.over > div { background: var(--danger); }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; margin-right: 4px; border: 0; border-radius: 20px; background: var(--highlight); color: var(--on-highlight); font-size: 16px; }
+.row.indent1 { padding-left: calc(var(--inset) + 18px); } .row.indent2 { padding-left: calc(var(--inset) + 36px); }
+.lq-tile.spacer { background: none; min-height: 0; }
+.vials { display: flex; align-items: flex-end; gap: 8px; padding: 12px 16px; }
+.vial { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.vial .top { color: var(--ink); white-space: nowrap; }
+.vial-glass { position: relative; width: 100%; height: 132px; }
+.vial-icon { display: inline-flex; width: 18px; height: 18px; color: var(--ink-muted); }
+.vial .name { color: var(--ink-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+.plain-btn { border: 0; background: none; text-align: left; width: 100%; }
+.range { margin-top: -4px; }
+.pill-label { font-size: 16px; line-height: 22px; }
+@media (max-width: 359px) { .pill-label { display: none; } }

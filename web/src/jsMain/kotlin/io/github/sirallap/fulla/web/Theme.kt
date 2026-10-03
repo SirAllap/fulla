@@ -21,6 +21,7 @@ object Theme {
             append("--paper:${hex(c.paper)};--paper-high:${hex(c.paperHigh)};--ink:${hex(c.ink)};--ink-muted:${hex(c.inkMuted)};")
             append("--line:${hex(c.line)};--accent:${hex(c.accent)};--on-accent:${hex(c.onAccent)};--warning:${hex(c.warning)};")
             append("--danger:${hex(c.danger)};--highlight:${hex(c.highlight)};--on-highlight:${hex(c.onHighlight)};")
+            append("--in-body:${hex(money.inBody)};--out-body:${hex(money.outBody)};")
             append("--in:${hex(money.inText)};--out:${hex(money.outText)};--in-surface:${hex(money.inSurface)};--out-surface:${hex(money.outSurface)};")
             for (i in 0 until 12) append("--cat-$i:${hex(IdentityColors.category(i, dark))};")
             for (i in 0 until 10) append("--member-$i:${hex(IdentityColors.member(i, dark))};")

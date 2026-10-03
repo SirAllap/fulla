@@ -149,7 +149,8 @@ object TripScreen {
         val left = totals.leftMinor ?: 0
         if (budget != null) {
             val hero = io.github.sirallap.fulla.core.analytics.Hero(budget, totals.spentMinor)
-            appendChild(Jar.build(hero.incomeFraction, hero.expenseFraction))
+            appendChild(Jar.build(hero.incomeFraction, hero.expenseFraction, format.money(left), left,
+                t("trip_left", format.money(left), format.money(budget))))
         }
         div("figures trip") {
             div("figure out") { span("t-label") { text(t("money_out")) }; div("v") { text(format.money(totals.spentMinor)) } }

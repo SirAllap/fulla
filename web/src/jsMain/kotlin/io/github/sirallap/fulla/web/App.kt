@@ -23,6 +23,7 @@ object App {
     var settingsOpen: Boolean = false
     /** The settings page being looked at, or null for the list. */
     var settingsPage: SettingsPage? = null
+    var insightsOpen: Boolean = false
     /** The trip being looked at, or null. */
     var tripId: String? = null
     /** A row being edited from History, or null. */
@@ -47,6 +48,8 @@ object App {
         window.scrollTo(0.0, 0.0)
     }
 
+    fun openInsights() { insightsOpen = true; render(); window.scrollTo(0.0, 0.0) }
+    fun closeInsights() { insightsOpen = false; render() }
     fun openTrip(id: String) { tripId = id; render(); window.scrollTo(0.0, 0.0) }
     fun closeTrip() { tripId = null; render() }
 
@@ -73,7 +76,9 @@ object App {
             return
         }
         val format = Format(view.config)
-        if (tripId != null) {
+        if (insightsOpen) {
+            root.appendChild(InsightsScreen.build(view, format))
+        } else if (tripId != null) {
             root.appendChild(TripScreen.build(view, format, tripId!!))
         } else if (settingsOpen) {
             root.appendChild(SettingsScreen.build(view, format))

@@ -55,6 +55,7 @@ fun HTMLElement.listRow(
     end: (HTMLElement.() -> Unit)? = null,
     divider: Boolean = true,
     dim: Boolean = false,
+    below: (HTMLElement.() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ): HTMLElement = child("div", buildString {
     append("row")
@@ -77,6 +78,7 @@ fun HTMLElement.listRow(
         span("title") { text(title) }
         if (!context.isNullOrBlank()) span("sub") { text(context) }
         if (!detail.isNullOrBlank()) span("sub") { text(detail) }
+        below?.invoke(this)
     }
     end?.invoke(this)
 }
