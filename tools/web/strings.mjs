@@ -28,6 +28,7 @@ for (const file of walk(sourcesDir)) {
   if (file.endsWith('GeneratedStrings.kt')) continue;
   const text = readFileSync(file, 'utf8');
   for (const m of text.matchAll(/\bt\("([a-z0-9_]+)"/g)) asked.add(m[1]);
+  for (const m of text.matchAll(/\btp\("([a-z0-9_]+)"/g)) { asked.add(m[1] + '#one'); asked.add(m[1] + '#other'); }
   for (const m of text.matchAll(/"([a-z][a-z0-9_]*)"/g)) literals.add(m[1]);
 }
 
@@ -41,6 +42,9 @@ const read = (dir) => {
   const xml = readFileSync(join(RES, dir, 'strings.xml'), 'utf8');
   const out = new Map();
   for (const m of xml.matchAll(/<string name="([^"]+)"[^>]*>([\s\S]*?)<\/string>/g)) out.set(m[1], unescape(m[2]));
+  // Plurals are kept as name#quantity; tp() in I18n.kt picks one.
+  for (const m of xml.matchAll(/<plurals name="([^"]+)"[^>]*>([\s\S]*?)<\/plurals>/g))
+    for (const i of m[2].matchAll(/<item quantity="([a-z]+)"[^>]*>([\s\S]*?)<\/item>/g)) out.set(`${m[1]}#${i[1]}`, unescape(i[2]));
   return out;
 };
 

@@ -234,3 +234,9 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .welcome { gap: 0; }
 .welcome .buttons .rows { margin: 0 calc(var(--inset) * -1); width: calc(100% + var(--inset) * 2); }
 .sheet .rows { margin: 0; }
+
+/* TripToggle: "Everyday / trip", a pill of two options */
+.toggle { display: flex; gap: 4px; margin: 8px var(--inset); padding: 4px; border-radius: 14px; background: var(--paper-high); }
+.toggle-option { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border: 0; border-radius: 10px; background: var(--paper); color: var(--ink); font-size: 16px; line-height: 22px; transition: background 160ms var(--ease), color 160ms var(--ease); }
+.toggle-option span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toggle-option.selected { background: var(--highlight); color: var(--on-highlight); }

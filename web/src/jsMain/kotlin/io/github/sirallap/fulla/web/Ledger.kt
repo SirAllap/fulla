@@ -335,6 +335,24 @@ object Ledger {
     /** Writes several rows at once, such as the settlements that start a shared pot. */
     suspend fun saveAll(list: List<Transaction>) { for (t in list) save(t) }
 
+    /** Limits a field to some categories, or lifts the limit (empty). */
+    suspend fun setFieldCategories(fieldId: String, categoryIds: Set<String>) {
+        val b = bundle ?: return
+        if (connected) storeConfig(Remote.api!!.setFieldCategories(householdId!!, fieldId, categoryIds))
+        else { bundle = LocalHousehold.setFieldCategories(b, fieldId, categoryIds); persist() }
+    }
+
+    /** Removes a trip. Its expenses stay, as everyday expenses. */
+    suspend fun deleteTrip(tripId: String) {
+        val b = bundle ?: return
+        if (connected) { storeConfig(Remote.api!!.tripDelete(householdId!!, tripId)); requestSync() }
+        else {
+            bundle = LocalHousehold.deleteTrip(b, tripId)
+            rows = rows.map { r -> if (r.transaction.tripId == tripId) r.copy(transaction = r.transaction.copy(tripId = null, tripKnown = true)) else r }
+            persist()
+        }
+    }
+
     suspend fun updateHousehold(patch: JsonObject) {
         val b = bundle ?: return
         if (connected) storeConfig(Remote.api!!.householdUpdate(householdId!!, patch))

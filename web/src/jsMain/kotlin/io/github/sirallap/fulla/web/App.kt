@@ -23,6 +23,8 @@ object App {
     var settingsOpen: Boolean = false
     /** The settings page being looked at, or null for the list. */
     var settingsPage: SettingsPage? = null
+    /** The trip being looked at, or null. */
+    var tripId: String? = null
     /** A row being edited from History, or null. */
     var editing: String? = null
 
@@ -44,6 +46,9 @@ object App {
         render()
         window.scrollTo(0.0, 0.0)
     }
+
+    fun openTrip(id: String) { tripId = id; render(); window.scrollTo(0.0, 0.0) }
+    fun closeTrip() { tripId = null; render() }
 
     fun closeSettings() {
         settingsOpen = false
@@ -68,7 +73,9 @@ object App {
             return
         }
         val format = Format(view.config)
-        if (settingsOpen) {
+        if (tripId != null) {
+            root.appendChild(TripScreen.build(view, format, tripId!!))
+        } else if (settingsOpen) {
             root.appendChild(SettingsScreen.build(view, format))
         } else {
             root.appendChild(when (tab) {

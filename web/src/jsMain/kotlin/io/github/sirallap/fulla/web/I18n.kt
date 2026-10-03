@@ -26,3 +26,6 @@ fun t(key: String, vararg args: Any?): String {
     val template = table[key] ?: GENERATED_STRINGS.getValue("en")[key] ?: key
     return I18n.format(template, args)
 }
+
+/** The plural of [key] for [count] (the Android app's plurals, one or other), with [args] filled in. */
+fun tp(key: String, count: Int, vararg args: Any?): String = t(key + if (count == 1) "#one" else "#other", *args)

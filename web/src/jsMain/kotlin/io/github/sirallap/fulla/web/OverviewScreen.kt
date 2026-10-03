@@ -27,11 +27,11 @@ object OverviewScreen {
             tabHeader(t("tab_overview"))
             InstallHint.card()?.let { appendChild(it) }
             div("period") {
-                iconButton("chevron_left", t("previous_period"), "accent") { chosen = period.minusMonths(1); App.render() }
+                appendChild(iconButton("chevron_left", t("previous_period"), "accent") { chosen = period.minusMonths(1); App.render() })
                 span("t-amount label") { text(format.period(period)) }
-                iconButton("chevron_right", t("next_period"), "accent") {
+                appendChild(iconButton("chevron_right", t("next_period"), "accent") {
                     chosen = if (period.plusMonths(1) == current) null else period.plusMonths(1); App.render()
-                }.also { if (period == current) it.setAttribute("disabled", "") }
+                }.also { if (period == current) it.setAttribute("disabled", "") })
             }
             if (summary.incomeMinor == 0L && summary.expenseMinor == 0L && rows.isEmpty()) {
                 div("empty") {
