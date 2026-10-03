@@ -39,6 +39,7 @@ kotlin {
             resources.srcDir(rootProject.file("site/fonts"))
             dependencies {
                 implementation(project(":client"))
+                implementation(libs.ktor.client.js)
             }
         }
     }
