@@ -69,7 +69,8 @@ object ProjectGuide {
         App.launch {
             try {
                 val sql = (window.fetch("setup.sql").await().text() as Promise<String>).await()
-                (window.navigator.asDynamic().clipboard.writeText(sql) as Promise<dynamic>).await()
+                val extra = (window.fetch("autoconfirm.sql").await().text() as Promise<String>).await()
+                (window.navigator.asDynamic().clipboard.writeText(sql + "\n" + extra) as Promise<dynamic>).await()
                 App.toast(t("setup_script_copied"))
             } catch (e: Throwable) {
                 App.toast(t("something_failed"))

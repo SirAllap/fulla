@@ -72,8 +72,10 @@ object Remote {
     suspend fun signIn(email: String, password: String, create: Boolean): Boolean {
         val s = supabase ?: error("No project chosen")
         if (create) {
-            val session = s.signUp(email, password)
-            if (session == null) return false
+            if (s.signUp(email, password) == null) {
+                // The project wants the email confirmed. Fulla's script confirms accounts itself, so signing in works.
+                try { s.signIn(email, password) } catch (e: Exception) { return false }
+            }
         } else s.signIn(email, password)
         return true
     }
