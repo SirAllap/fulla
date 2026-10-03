@@ -171,11 +171,15 @@ fun OverflowMenu(items: List<MenuItem>) {
 }
 
 @Composable
-fun Hairline(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().height(1.dp).background(FullaTheme.colors.line))
+fun Hairline(modifier: Modifier = Modifier, inset: Dp = 0.dp) {
+    Box(modifier.fillMaxWidth().padding(start = inset).height(1.dp).background(FullaTheme.colors.line))
 }
 
-/** The name of a group of rows. Rows draw their own line underneath. */
+/**
+ * The name of a group of rows: small capitals with room above and below, and no
+ * line of its own (a line under the title and another under the row above made
+ * a title between two lines). Rows draw a line underneath, indented to their text.
+ */
 /** Side inset of rows and section titles: 20 dp on a screen, 0 inside a dialog that already pads its content. */
 val LocalRowInset = androidx.compose.runtime.staticCompositionLocalOf { 20.dp }
 
@@ -183,14 +187,13 @@ val LocalRowInset = androidx.compose.runtime.staticCompositionLocalOf { 20.dp }
 fun Section(text: String, modifier: Modifier = Modifier, top: Dp = 24.dp, trailing: (@Composable RowScope.() -> Unit)? = null) {
     Column(modifier.fillMaxWidth()) {
         Row(
-            Modifier.fillMaxWidth().padding(start = LocalRowInset.current, end = LocalRowInset.current, top = top, bottom = 6.dp),
+            Modifier.fillMaxWidth().padding(start = LocalRowInset.current, end = LocalRowInset.current, top = top, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text.uppercase(), style = FullaType.section, color = FullaTheme.colors.inkMuted,
                 modifier = Modifier.weight(1f).semantics { heading() })
             trailing?.invoke(this)
         }
-        Hairline()
     }
 }
 
@@ -247,7 +250,7 @@ fun ListRow(
             }
             end?.invoke(this)
         }
-        if (divider) Hairline()
+        if (divider) Hairline(inset = 20.dp + indent)
     }
 }
 
@@ -275,7 +278,7 @@ fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boo
             // The row takes the tap, so TalkBack reads one control, not two.
             Switch(checked = checked, onCheckedChange = null)
         }
-        Hairline()
+        Hairline(inset = LocalRowInset.current)
     }
 }
 
