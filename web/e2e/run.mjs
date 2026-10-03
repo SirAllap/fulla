@@ -79,8 +79,8 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   ok(/1234,56/.test(figures) && /12,50/.test(figures), 'the overview adds up what came in and what went out: ' + figures.replace(/\s+/g, ' ').trim());
   await shot('03-overview');
   await page.click('.tab:has-text("Historial")');
-  await page.waitForSelector('.wrap-row');
-  ok(await page.locator('.wrap-row').count() === 2, 'History lists both entries');
+  await page.waitForSelector('.history .row');
+  ok(await page.locator('.history .row').count() === 2, 'History lists both entries');
   await shot('04-history');
   await gear(page);
   await shot('05-settings');
@@ -112,7 +112,7 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   ok((await page.textContent('main')).includes('Alquiler'), 'the fixed cost is listed, with how far it is');
   await back(page); await back(page);
   await page.click('.tab:has-text("Historial")');
-  await page.waitForSelector('.wrap-row');
+  await page.waitForSelector('.history .row');
   ok((await page.textContent('main')).includes('Alquiler'), 'and it wrote itself into History');
 
   // what is stored survives closing the page
@@ -137,7 +137,7 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await (await page.$('#restore-file')).setInputFiles(file);
   await page.waitForSelector('.tabbar');
   await page.click('.tab:has-text("Historial")');
-  ok((await page.textContent('main')).includes('Alquiler') && await page.locator('.wrap-row').count() >= 3, 'restoring that file brings everything back');
+  ok((await page.textContent('main')).includes('Alquiler') && await page.locator('.history .row').count() >= 3, 'restoring that file brings everything back');
   ok(errors.length === 0, 'no console errors under the page\'s Content Security Policy' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
@@ -153,25 +153,27 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.waitForSelector('.figures');
   await shot('10-dark-overview');
   await page.click('.tab:has-text("History")');
-  await page.waitForSelector('.wrap-row');
+  await page.waitForSelector('.history .row');
   await shot('11-dark-history');
 
-  await page.locator('.wrap-row .row.tap').first().click();
+  await page.locator('.history .row.tap').first().click();
   await page.waitForSelector('.keypad');
   await page.click('.key[aria-label="Delete a digit"]');
   await type(page, '9');
   await page.click('.key.save');
-  await page.waitForSelector('.wrap-row');
-  ok((await page.locator('.wrap-row').first().textContent()).includes('9'), 'an entry can be opened, changed and saved');
+  await page.waitForSelector('.history .row');
+  ok((await page.locator('.history .row').first().textContent()).includes('9'), 'an entry can be opened, changed and saved');
 
-  const entryBefore = await page.locator('.wrap-row').first().textContent();
-  await page.locator('.wrap-row .icon-btn').first().click();
+  const entryBefore = await page.locator('.history .row').first().textContent();
+  await page.locator('.history .row.tap').first().click();
+  await page.waitForSelector('.keypad');
+  await page.click('.header .icon-btn[aria-label="Delete"]');
   await page.waitForSelector('.toast-action');
-  const gone = await page.locator('.wrap-row').first().textContent();
+  const gone = await page.locator('.history .row').first().textContent();
   ok(gone !== entryBefore, 'delete takes the entry out of the list');
   await page.click('.toast-action');
   await page.waitForTimeout(300);
-  ok((await page.locator('.wrap-row').first().textContent()) !== gone, 'and undo brings it back');
+  ok((await page.locator('.history .row').first().textContent()) !== gone, 'and undo brings it back');
 
   // with no connection at all, the app still opens, with its data
   await page.reload();
@@ -181,7 +183,7 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.reload();
   await page.waitForSelector('.tabbar', { timeout: 8000 });
   await page.click('.tab:has-text("History")');
-  ok(await page.locator('.wrap-row').count() > 0, 'offline, the app opens and its history is there');
+  ok(await page.locator('.history .row').count() > 0, 'offline, the app opens and its history is there');
   await ctx.setOffline(false);
 
   // a bank statement: read here, listed, imported once, and the same file again adds nothing
@@ -267,8 +269,8 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     await b.page.click('main .btn.primary');
     await b.page.waitForSelector('.tabbar', { timeout: 30000 });
     await b.page.click('.tab:has-text("History")');
-    await b.page.waitForSelector('.wrap-row', { timeout: 30000 });
-    ok(await b.page.locator('.wrap-row').count() === 1, 'Bob joins with the invite and finds what Alice wrote down');
+    await b.page.waitForSelector('.history .row', { timeout: 30000 });
+    ok(await b.page.locator('.history .row').count() === 1, 'Bob joins with the invite and finds what Alice wrote down');
 
     await b.page.click('.tab:has-text("Add")');
     await type(b.page, '30');
@@ -287,7 +289,7 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     await back(a.page);
     await a.page.click('.header .icon-btn[aria-label="Back"]');
     await a.page.click('.tab:has-text("History")');
-    await a.page.waitForFunction(() => document.querySelectorAll('.wrap-row').length === 2, null, { timeout: 15000 });
+    await a.page.waitForFunction(() => document.querySelectorAll('.history .row').length === 2, null, { timeout: 15000 });
     ok(true, 'what Bob writes reaches Alice');
     await a.shot('22-alice-history');
     ok(a.errors.length === 0 && b.errors.length === 0, 'no console errors on either phone' + [...a.errors, ...b.errors].join(' | '));
