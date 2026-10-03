@@ -1,0 +1,163 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.sirallap.fulla.core.trips
+
+import io.github.sirallap.fulla.core.model.Transaction
+import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.time.LocalDate
+import io.github.sirallap.fulla.core.time.ChronoUnit
+
+/**
+ * A trip or event with its own budget (docs/data-model.md). Structure, like a
+ * category or an account: it changes rarely and only with a connection, and
+ * arrives in the config bundle. `budgetMinor` null means "track only, no
+ * jar". `inCategoryBudgets` off (the default) keeps the trip's spending out
+ * of category budgets, which already has its own jar; the money still counts
+ * in the month's totals either way (Analytics.summary never looks at trips).
+ *
+ * Example (invented): "Porto", 2030-08-12 to 2030-08-19, 300.00 EUR.
+ */
+data class Trip(
+    val id: String,
+    val name: String,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val budgetMinor: Long? = null,
+    val inCategoryBudgets: Boolean = false,
+    val archived: Boolean = false,
+    /**
+     * Household members this trip is for, chosen when it was created or
+     * edited. Empty means a trip saved before this field existed: the
+     * creator is unknown, so [defaultFor] never auto-selects it (guessing
+     * "everyone" or "just me" would be a worse wrong answer than none).
+     * Anyone can still assign any trip explicitly; this only narrows the
+     * *default* on a new entry, which is the whole point (an owner's spouse,
+     * a household member but not on his work trip, must not have a personal
+     * grocery run silently land on it).
+     */
+    val memberIds: List<String> = emptyList(),
+    val kind: TripKind = TripKind.HOLIDAY,
+)
+
+/**
+ * Cosmetic only (which icon a trip shows), never a rule: nothing in [Trips]
+ * or the sync reads it. `of` never fails — a value this build does not
+ * recognise (a kind a newer app added, read by an older one) becomes
+ * [OTHER], the same forward-compatible fallback as an unrecognised
+ * [io.github.sirallap.fulla.core.model.TransactionKind] elsewhere.
+ */
+enum class TripKind(val wire: String) {
+    HOLIDAY("holiday"), WORK("work"), EVENT("event"), FAMILY("family"), OTHER("other");
+
+    companion object {
+        fun of(value: String?): TripKind = entries.firstOrNull { it.wire == value } ?: OTHER
+    }
+}
+
+enum class TripPhase { UPCOMING, ACTIVE, FINISHED }
+
+data class TripTotals(
+    val spentMinor: Long,
+    /** Null when the trip has no budget: there is nothing to be "left". */
+    val leftMinor: Long?,
+    /** How far spending went past the budget, 0 when within it or untracked. */
+    val overMinor: Long,
+)
+
+data class TripPerDay(val amountMinor: Long, val over: Boolean, val days: Int)
+
+/**
+ * Everything a trip's own screen needs, computed from the phone's rows. No
+ * rule here exists twice: there is no SQL trip report view in v1, so totals
+ * live only on the phone.
+ */
+object Trips {
+
+    /**
+     * The trip a row starts with: a brand new expense or refund picks up
+     * whatever [defaultFor] gives [me] on its date (only a trip [me] is
+     * actually on, never "whichever trip happens to cover the date"), but an
+     * edit always keeps the row's own trip, even none, so re-saving a row
+     * dated inside a trip never adds one behind the person's back.
+     */
+    fun initialTripId(isNew: Boolean, existingTripId: String?, trips: List<Trip>, date: LocalDate, me: String?): String? =
+        if (!isNew) existingTripId else defaultFor(trips, date, me)?.id
+
+    /** The trip [date] falls in, or null. Overlaps are allowed: the latest start wins, ties go to the lowest id. */
+    fun activeOn(trips: List<Trip>, date: LocalDate): Trip? = trips
+        .filter { !it.archived && it.startDate <= date && date <= it.endDate }
+        .sortedWith(compareByDescending<Trip> { it.startDate }.thenBy { it.id })
+        .firstOrNull()
+
+    /**
+     * The trip a brand new expense or refund on [date] should be
+     * pre-selected with, for the person entering it ([me], a member id) —
+     * or null when nothing should be auto-picked and it starts as
+     * "Everyday". Unlike [activeOn], a trip only counts here when [me] is
+     * one of its [Trip.memberIds]: a household member who isn't on a trip
+     * must never have a new row silently default onto it. A trip with no
+     * recorded members (saved before that field existed) never auto-selects,
+     * even for the person who actually created it — the alternative,
+     * guessing "everyone" or "whoever asks", is exactly the accidental
+     * misassignment this exists to prevent. Among several trips that do
+     * include [me] on this date, the same tie-break as [activeOn] applies.
+     * This must only ever run for a NEW row; an edit keeps its own trip
+     * (see [initialTripId], which already enforces that).
+     */
+    fun defaultFor(trips: List<Trip>, date: LocalDate, me: String?): Trip? {
+        if (me == null) return null
+        return trips
+            .filter { !it.archived && it.startDate <= date && date <= it.endDate && me in it.memberIds }
+            .sortedWith(compareByDescending<Trip> { it.startDate }.thenBy { it.id })
+            .firstOrNull()
+    }
+
+    /**
+     * Whether an edited row should carry an explicit trip_id key on its next
+     * push. A row this phone never learned a trip for ([templateTripKnown]
+     * false: an old app version's own row, re-encoded without ever having
+     * heard of the column) must keep that unknown state unless the person
+     * touched the trip chip in this very edit ([chipTouched]): otherwise the
+     * edit would push an explicit "trip_id": null and clear a trip another
+     * phone set, the same trap `fulla.merge_extras` avoids for custom fields.
+     * [templateTripKnown] is null for a brand new row, which always knows.
+     */
+    fun tripKnownForEdit(templateTripKnown: Boolean?, chipTouched: Boolean, tripId: String?): Boolean =
+        !(templateTripKnown == false && !chipTouched && tripId == null)
+
+    fun phase(trip: Trip, today: LocalDate): TripPhase = when {
+        today < trip.startDate -> TripPhase.UPCOMING
+        today > trip.endDate -> TripPhase.FINISHED
+        else -> TripPhase.ACTIVE
+    }
+
+    /** Spending contribution: expenses count positive, refunds negative. Same rule as Analytics. */
+    private fun spend(t: Transaction): Long = when (t.kind) {
+        TransactionKind.EXPENSE -> t.amountMinor
+        TransactionKind.REFUND -> -t.amountMinor
+        else -> 0
+    }
+
+    /** Active rows of [trip] only; deleted rows never count. */
+    fun totals(trip: Trip, txs: Iterable<Transaction>): TripTotals {
+        val spent = txs.filter { it.isActive && it.tripId == trip.id }.sumOf(::spend)
+        val budget = trip.budgetMinor ?: return TripTotals(spent, null, 0)
+        val diff = budget - spent
+        return TripTotals(spent, maxOf(diff, 0), maxOf(-diff, 0))
+    }
+
+    /**
+     * A daily figure for the trip's card, or null once it is over or with no
+     * budget: before it starts, the plain average; during it, what is left
+     * divided by the days remaining, today included; once spending has
+     * passed the budget, 0 and `over`.
+     */
+    fun perDay(trip: Trip, totals: TripTotals, today: LocalDate): TripPerDay? {
+        val budget = trip.budgetMinor ?: return null
+        if (today > trip.endDate) return null
+        val totalDays = (ChronoUnit.DAYS.between(trip.startDate, trip.endDate) + 1).toInt()
+        if (today < trip.startDate) return TripPerDay(budget / totalDays, false, totalDays)
+        val daysRemaining = (ChronoUnit.DAYS.between(today, trip.endDate) + 1).toInt()
+        if ((totals.leftMinor ?: 0) <= 0) return TripPerDay(0, true, daysRemaining)
+        return TripPerDay((totals.leftMinor ?: 0) / daysRemaining, false, daysRemaining)
+    }
+}

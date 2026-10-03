@@ -1,0 +1,135 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.sirallap.fulla.core
+
+import io.github.sirallap.fulla.core.recurring.DeterministicId
+import io.github.sirallap.fulla.core.recurring.Frequency
+import io.github.sirallap.fulla.core.recurring.RecurringRule
+import io.github.sirallap.fulla.core.recurring.Schedule
+import io.github.sirallap.fulla.core.recurring.Scheduler
+import io.github.sirallap.fulla.core.time.LocalDate
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+
+class RecurringTest {
+    private fun rule(schedule: Schedule, start: String = "2030-01-01", end: String? = null) = RecurringRule(
+        id = "00000000-0000-4000-8000-00000000abcd", name = "Rent", template = Fixtures.expense(),
+        schedule = schedule, startDate = LocalDate.parse(start), endDate = end?.let(LocalDate::parse),
+    )
+    private fun dates(r: RecurringRule, from: String, to: String) =
+        Scheduler.occurrences(r, LocalDate.parse(from), LocalDate.parse(to)).map { it.toString() }
+
+    @Test
+    fun the_last_day_of_the_month_is_the_last_day_of_every_month() {
+        assertEquals(listOf("2030-01-31", "2030-02-28", "2030-03-31", "2030-04-30"),
+            dates(rule(Schedule(Frequency.MONTHLY, byMonthDay = -1)), "2030-01-01", "2030-04-30"))
+    }
+
+    @Test
+    fun a_day_past_the_end_of_a_month_falls_on_its_last_day() {
+        assertEquals(listOf("2032-01-31", "2032-02-29", "2032-03-31"),
+            dates(rule(Schedule(Frequency.MONTHLY, byMonthDay = 31), "2032-01-01"), "2032-01-01", "2032-03-31"))
+    }
+
+    @Test
+    fun every_other_week_on_two_days() {
+        val r = rule(Schedule(Frequency.WEEKLY, interval = 2, byWeekday = listOf(1, 5)), start = "2030-01-07")
+        assertEquals(listOf("2030-01-07", "2030-01-11", "2030-01-21", "2030-01-25"), dates(r, "2030-01-01", "2030-01-31"))
+    }
+
+    @Test
+    fun every_three_months_yearly_and_daily() {
+        assertEquals(listOf("2030-01-15", "2030-04-15", "2030-07-15", "2030-10-15"),
+            dates(rule(Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 15)), "2030-01-01", "2030-12-31"))
+        assertEquals(listOf("2030-06-01", "2031-06-01"),
+            dates(rule(Schedule(Frequency.YEARLY, byMonthDay = 1, byMonth = 6)), "2030-01-01", "2031-12-31"))
+        assertEquals(listOf("2030-01-01", "2030-01-04", "2030-01-07"),
+            dates(rule(Schedule(Frequency.DAILY, interval = 3)), "2030-01-01", "2030-01-08"))
+    }
+
+    @Test
+    fun a_monthly_item_can_name_its_months() {
+        val quarterly = rule(Schedule(Frequency.MONTHLY, byMonthDay = 15, byMonths = listOf(1, 4, 7, 10)))
+        assertEquals(listOf("2030-01-15", "2030-04-15", "2030-07-15", "2030-10-15", "2031-01-15"), dates(quarterly, "2030-01-01", "2031-01-31"))
+        val twice = rule(Schedule(Frequency.MONTHLY, byMonthDay = -1, byMonths = listOf(10, 12)), start = "2030-03-01")
+        assertEquals(listOf("2030-10-31", "2030-12-31"), dates(twice, "2030-01-01", "2030-12-31"))
+        assertEquals(emptyList(), dates(twice, "2030-11-01", "2030-11-30"))
+    }
+
+    @Test
+    fun every_three_months_counts_from_the_start_month_and_a_list_of_months_has_no_interval() {
+        val r = rule(Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 20), start = "2030-02-01")
+        assertEquals(listOf("2030-02-20", "2030-05-20", "2030-08-20", "2030-11-20"), dates(r, "2030-01-01", "2030-12-31"))
+        assertFailsWith<IllegalArgumentException> { Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 1, byMonths = listOf(1)) }
+        assertFailsWith<IllegalArgumentException> { Schedule(Frequency.MONTHLY, byMonthDay = 1, byMonths = listOf(13)) }
+        assertFailsWith<IllegalArgumentException> { Schedule(Frequency.MONTHLY, byMonthDay = 1, byMonths = listOf(2, 2)) }
+        assertFailsWith<IllegalArgumentException> { Schedule(Frequency.YEARLY, byMonthDay = 1, byMonth = 3, byMonths = listOf(3)) }
+    }
+
+    @Test
+    fun a_cycle_started_today_charges_from_here_on_not_the_days_already_gone() {
+        val r = rule(Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 15), start = "2030-09-29")
+        assertEquals(listOf("2030-12-15", "2031-03-15", "2031-06-15"), dates(r, "2030-09-29", "2031-06-30"))
+        assertEquals(emptyList(), dates(r, "2030-09-01", "2030-09-28"))
+    }
+
+    @Test
+    fun nothing_before_the_start_after_the_end_or_while_paused() {
+        val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 10), start = "2030-03-01", end = "2030-05-10")
+        assertEquals(listOf("2030-03-10", "2030-04-10", "2030-05-10"), dates(r, "2030-01-01", "2030-12-31"))
+        assertTrue(dates(r.copy(active = false), "2030-01-01", "2030-12-31").isEmpty())
+    }
+
+    @Test
+    fun an_end_is_chosen_by_date_or_by_the_number_of_payments_and_both_land_on_the_same_last_day() {
+        val monthly = rule(Schedule(Frequency.MONTHLY, byMonthDay = 27), start = "2030-01-01")
+        assertEquals(LocalDate.parse("2030-06-27"), Scheduler.endAfter(monthly, 6))
+        val quarterly = rule(Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 5), start = "2030-01-01")
+        assertEquals(LocalDate.parse("2030-10-05"), Scheduler.endAfter(quarterly, 4))
+        val calendar = rule(Schedule(Frequency.MONTHLY, byMonthDay = 10, byMonths = listOf(3, 10)), start = "2030-01-01")
+        assertEquals(LocalDate.parse("2031-03-10"), Scheduler.endAfter(calendar, 3))
+        val weekly = rule(Schedule(Frequency.WEEKLY, byWeekday = listOf(1)), start = "2030-01-07")
+        assertEquals(LocalDate.parse("2030-01-28"), Scheduler.endAfter(weekly, 4))
+        // The date it gives is a real day of the schedule: ended there, it writes exactly that many.
+        for (n in listOf(1, 2, 6, 12)) {
+            val end = Scheduler.endAfter(monthly, n)!!
+            assertEquals(n, dates(monthly.copy(endDate = end), "2030-01-01", "2040-01-01").size)
+        }
+        assertEquals(null, Scheduler.endAfter(monthly, 0))
+        assertEquals(LocalDate.parse("2030-06-27"), Scheduler.endAfter(monthly.copy(active = false, endDate = LocalDate.parse("2030-02-01")), 6), "a pause or an old end does not change what a count means")
+    }
+
+    @Test
+    fun progress_says_how_many_payments_have_come_of_how_many_there_are() {
+        val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 27), start = "2030-01-01", end = "2030-06-27")
+        assertEquals(0 to 6, Scheduler.progress(r, LocalDate.parse("2030-01-26")))
+        assertEquals(3 to 6, Scheduler.progress(r, LocalDate.parse("2030-03-30")))
+        assertEquals(6 to 6, Scheduler.progress(r, LocalDate.parse("2031-01-01")))
+        assertEquals(null, Scheduler.progress(rule(Schedule(Frequency.MONTHLY, byMonthDay = 27)), LocalDate.parse("2030-03-30")), "never ends")
+        assertEquals(null, Scheduler.progress(r.copy(endDate = LocalDate.parse("2030-01-02")), LocalDate.parse("2030-03-30")), "ends before it falls due once")
+    }
+
+    @Test
+    fun an_archived_item_never_falls_due_and_an_end_can_still_be_worked_out_for_the_one_it_was() {
+        val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 27), start = "2030-01-01")
+        assertEquals(6, dates(r, "2030-01-01", "2030-06-30").size)
+        assertTrue(dates(r.copy(archived = true), "2030-01-01", "2030-06-30").isEmpty())
+        assertEquals(LocalDate.parse("2030-06-27"), Scheduler.endAfter(r.copy(archived = true), 6))
+    }
+
+    @Test
+    fun which_payment_of_the_run_a_day_is() {
+        val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 13), start = "2030-09-27", end = "2030-12-13")
+        assertEquals(1 to 3, Scheduler.installment(r, LocalDate.parse("2030-10-13")))
+        assertEquals(3 to 3, Scheduler.installment(r, LocalDate.parse("2030-12-13")))
+        assertEquals(null, Scheduler.installment(r, LocalDate.parse("2030-10-14")), "not a day it falls due")
+        assertEquals(null, Scheduler.installment(rule(Schedule(Frequency.MONTHLY, byMonthDay = 13)), LocalDate.parse("2030-10-13")), "never ends")
+    }
+
+    @Test
+    fun uuid5_matches_the_RFC_example() {
+        val dns = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+        assertEquals("2ed6657d-e927-568b-95e1-2665a8aea6a2", DeterministicId.uuid5(dns, "www.example.com"))
+    }
+}
