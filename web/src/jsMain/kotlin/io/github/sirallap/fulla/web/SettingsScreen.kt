@@ -16,6 +16,7 @@ enum class SettingsPage(val title: String, val icon: String) {
     BUDGETS("settings_budgets", "pie_chart"),
     TRIPS("settings_trips", "luggage"),
     RECURRING("settings_recurring", "event"),
+    IMPORT("import_statement", "file_upload"),
     RULES("settings_rules", "rule"),
     BACKUP("settings_backup", "save_alt"),
     APPEARANCE("settings_appearance", "palette"),
@@ -40,6 +41,7 @@ object SettingsScreen {
             SettingsPage.MEMBERS -> MembersPage.build(this, view)
             SettingsPage.CATEGORIES -> CategoriesPage.build(this, view, canEdit)
             SettingsPage.FIELDS -> FieldsPage.build(this, view, canEdit)
+            SettingsPage.IMPORT -> ImportPage.build(this, view, format)
             SettingsPage.RULES -> RulesPage.build(this, view, canEdit)
             SettingsPage.ACCOUNTS -> AccountsPage.build(this, view, format, canEdit)
             SettingsPage.BUDGETS -> BudgetsPage.build(this, view, format, canEdit)

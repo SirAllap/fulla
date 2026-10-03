@@ -7,6 +7,14 @@ import org.w3c.dom.HTMLAnchorElement
 import org.w3c.files.File
 import kotlin.js.Promise
 
+/** The bytes of a file the person chose. */
+suspend fun readBytes(file: File): ByteArray {
+    val buffer = (file.asDynamic().arrayBuffer() as Promise<dynamic>).await()
+    val view = js("new Uint8Array(buffer)")
+    val length = view.length as Int
+    return ByteArray(length) { i -> (view[i] as Int).toByte() }
+}
+
 /** The text of a file the person chose. */
 suspend fun readText(file: File): String = (file.asDynamic().text() as Promise<String>).await()
 

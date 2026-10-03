@@ -184,7 +184,20 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   ok(await page.locator('.wrap-row').count() > 0, 'offline, the app opens and its history is there');
   await ctx.setOffline(false);
 
+  // a bank statement: read here, listed, imported once, and the same file again adds nothing
+  const today = new Date().toISOString().slice(0, 10);
+  const csv = `Date,Amount,Description\n${today},-12.50,GROCERY STORE 01\n${today},-30.00,POWER UTILITY\n`;
   await gear(page);
+  await row(page, 'Import').click();
+  await page.setInputFiles('input[type=file]', { name: 'statement.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await page.waitForSelector('text=Import 2');
+  ok(await page.locator('.row:has-text("GROCERY STORE 01")').count() >= 1, 'a statement file is read and its lines are listed');
+  await page.click('button:has-text("Import 2")');
+  await page.waitForSelector('.empty');
+  await page.setInputFiles('input[type=file]', { name: 'statement.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await page.waitForSelector('text=Import 0');
+  ok(true, 'the same file again has nothing new to import');
+  await back(page);
   await row(page, 'Appearance').click();
   await page.selectOption('select', 'de');
   await page.waitForTimeout(300);
