@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Words only the web app uses; every other string is the Android app's (tools/web/strings.mjs). -->
+<resources>
+    <string name="web_storage_note">This browser keeps the household in its own storage. If the site\'s data is cleared, or the browser runs short of room, it can disappear: save a backup now and then.</string>
+    <string name="web_storage_missing">This browser does not let Fulla keep anything once the page is closed (a private window?). Open Fulla in a normal window, and save a backup before you leave.</string>
+    <string name="web_install_title">Add Fulla to your home screen</string>
+    <string name="web_install_text">On an iPhone: tap the Share button in Safari, then “Add to Home Screen”. Fulla then opens like an app, works without a connection, and the browser is less likely to clear its data.</string>
+    <string name="web_saved">Saved</string>
+    <string name="web_local_only">Everything stays in this browser. Nothing is sent anywhere.</string>
+    <string name="web_backup_text">This household lives only in this browser, so a backup file is its only other copy. Save one now and then, and keep it somewhere that is not this device.</string>
+    <string name="web_backup_due_text">No backup has been saved in a while. A backup protects the household if the browser\'s data is ever cleared.</string>
+    <string name="web_forget_text">Removes the household from this browser.</string>
+    <string name="web_forget_confirm">This household only exists in this browser. Forgetting it deletes it for good, unless you saved a backup. Continue?</string>
+    <string name="invite_link_or_code">Paste the invite link, or type the code</string>
+</resources>

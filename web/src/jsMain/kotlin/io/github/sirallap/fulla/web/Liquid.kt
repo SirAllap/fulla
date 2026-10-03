@@ -17,7 +17,7 @@ internal object Liquids {
 
     fun css(name: String): String = window.getComputedStyle(document.documentElement!!).getPropertyValue(name).trim()
     fun reduced(): Boolean = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    fun dark(): Boolean = window.matchMedia("(prefers-color-scheme: dark)").matches
+    fun dark(): Boolean = when (Theme.mode) { "dark" -> true; "light" -> false; else -> window.matchMedia("(prefers-color-scheme: dark)").matches }
 
     /**
      * A canvas that fills [host] (which must be positioned) and draws [draw] once it has a size, over [duration] ms the

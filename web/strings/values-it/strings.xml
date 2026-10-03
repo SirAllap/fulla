@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Words only the web app uses; every other string is the Android app's (tools/web/strings.mjs). -->
+<resources>
+    <string name="web_storage_note">Questo browser conserva la famiglia nel proprio archivio. Se i dati del sito vengono cancellati, o al browser manca spazio, può sparire: salva ogni tanto un backup.</string>
+    <string name="web_storage_missing">Questo browser non lascia che Fulla conservi nulla alla chiusura della pagina (una finestra privata?). Apri Fulla in una finestra normale e salva un backup prima di andare via.</string>
+    <string name="web_install_title">Aggiungi Fulla alla schermata Home</string>
+    <string name="web_install_text">Su iPhone: tocca il pulsante Condividi di Safari, poi «Aggiungi alla schermata Home». Fulla si apre allora come un’app, funziona senza connessione e il browser cancella più raramente i suoi dati.</string>
+    <string name="web_saved">Salvato</string>
+    <string name="web_local_only">Tutto resta in questo browser. Non viene inviato nulla da nessuna parte.</string>
+    <string name="web_backup_text">Questa famiglia vive solo in questo browser, quindi un file di backup è la sua unica altra copia. Salvane uno ogni tanto, in un posto che non sia questo dispositivo.</string>
+    <string name="web_backup_due_text">Da un po’ non viene salvato nessun backup. Un backup protegge la famiglia se i dati del browser venissero cancellati.</string>
+    <string name="web_forget_text">Rimuove la famiglia da questo browser.</string>
+    <string name="web_forget_confirm">Questa famiglia esiste solo in questo browser. Dimenticarla la elimina per sempre, a meno che tu non abbia salvato un backup. Continuare?</string>
+    <string name="invite_link_or_code">Incolla il link d’invito o scrivi il codice</string>
+</resources>

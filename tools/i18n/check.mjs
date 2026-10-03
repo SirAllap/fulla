@@ -9,8 +9,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const RES = 'app/src/main/res';
+// The Android app's strings, and the few only the web app uses (web/strings): each set complete in every language.
+const ROOTS = ['app/src/main/res', 'web/strings'];
 const problems = [];
+let total = 0;
+for (const RES of ROOTS) {
 const read = (dir) => {
   const xml = readFileSync(join(RES, dir, 'strings.xml'), 'utf8');
   const out = new Map();
@@ -33,8 +36,10 @@ for (const dir of readdirSync(RES).filter((d) => /^values-[a-z]{2}(-r[A-Z]{2})?$
   }
   for (const key of other.keys()) if (!en.has(key)) problems.push(`${dir}: ${key} is not in English`);
 }
+total += en.size;
+}
 if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
 }
-console.log(`i18n: ${en.size} strings, every language complete.`);
+console.log(`i18n: ${total} strings, every language complete.`);

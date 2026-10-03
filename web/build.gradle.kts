@@ -16,6 +16,7 @@ val generatedStrings = layout.buildDirectory.dir("generated/strings")
 val generateStrings by tasks.registering(Exec::class) {
     inputs.dir("src/jsMain/kotlin")
     inputs.dir(rootProject.file("app/src/main/res"))
+    inputs.dir(rootProject.file("web/strings"))
     inputs.file(rootProject.file("tools/web/strings.mjs"))
     outputs.dir(generatedStrings)
     workingDir = rootProject.projectDir

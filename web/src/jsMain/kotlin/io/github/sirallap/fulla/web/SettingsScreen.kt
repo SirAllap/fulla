@@ -75,53 +75,108 @@ object SettingsScreen {
     }
 
     private fun HTMLElement.appearance() {
-        section(t("language"), first = true)
-        div("field") {
-            val select = child("select", "select") {
-                attr("aria-label", t("language"))
-                for ((code, name) in I18n.languages) child("option") {
-                    attr("value", code); text(name)
-                    if (code == I18n.language) attr("selected", "selected")
+        section(t("theme"), first = true)
+        chipRow {
+            for ((m, label) in listOf("system" to "theme_system", "light" to "theme_light", "dark" to "theme_dark")) chip(t(label), Theme.mode == m) { Theme.choose(mode = m) }
+        }
+        section(t("language"))
+        div("rows") {
+            listRow(t("app_language"), context = I18n.languages.first { it.first == I18n.language }.second, detail = t("app_language_text"), end = { chevron() }) {
+                sheet(t("app_language")) { close ->
+                    div("rows") {
+                        for ((code, name) in I18n.languages) listRow(name, end = { if (code == I18n.language) span("check") { ui("check") } }) { close(); App.setLanguage(code) }
+                    }
                 }
-            } as HTMLSelectElement
-            select.on("change") { App.setLanguage(select.value) }
+            }
+        }
+        section(t("accent"))
+        note(t("accent_text"))
+        div("swatches") {
+            for (a in io.github.sirallap.fulla.core.design.Accent.entries) {
+                val name = t(when (a) {
+                    io.github.sirallap.fulla.core.design.Accent.GOLD -> "accent_gold"; io.github.sirallap.fulla.core.design.Accent.LAVENDER -> "accent_lavender"
+                    io.github.sirallap.fulla.core.design.Accent.SEA -> "accent_sea"; io.github.sirallap.fulla.core.design.Accent.SAGE -> "accent_sage"
+                    io.github.sirallap.fulla.core.design.Accent.ROSE -> "accent_rose"; io.github.sirallap.fulla.core.design.Accent.EMBER -> "accent_ember"
+                    io.github.sirallap.fulla.core.design.Accent.PLATINUM -> "accent_platinum"
+                })
+                child("button", "swatch") {
+                    attr("type", "button"); attr("aria-label", name); attr("aria-pressed", (Theme.accent == a).toString())
+                    span("swatch-dot") {
+                        style.background = "#" + (a.fill and 0xFFFFFF).toString(16).padStart(6, '0')
+                        if (Theme.accent == a) { style.color = "#" + (a.onFill and 0xFFFFFF).toString(16).padStart(6, '0'); ui("check", 20) }
+                    }
+                    click { Theme.choose(accent = a) }
+                }
+            }
+        }
+        section(t("money_colours"))
+        note(t("money_colours_text"))
+        div("rows") {
+            val dark = Liquids.dark()
+            for (p in io.github.sirallap.fulla.core.design.MoneyPalette.entries) {
+                val colors = p.of(dark)
+                fun hex(c: Long) = "#" + (c and 0xFFFFFF).toString(16).padStart(6, '0')
+                listRow(t(when (p.name) { "INK" -> "palette_ink"; "AMBER" -> "palette_amber"; "SEA" -> "palette_sea"; "FOREST" -> "palette_forest"; else -> "palette_classic" }),
+                    start = {
+                        span("dots") {
+                            span("dot-c") { style.background = hex(colors.inSurface) }
+                            span("dot-c") { style.background = hex(colors.outSurface) }
+                        }
+                    },
+                    end = { if (Theme.palette == p) span("check") { ui("check") } }) { Theme.choose(palette = p) }
+            }
         }
     }
 
     private fun HTMLElement.backup(view: HouseholdView, format: Format) {
-        child("p", "muted pad") { text(t("web_backup_text")) }
-        if (backupDue()) child("p", "warn pad") { text(t("web_backup_due_text")) }
-        div("actions") {
-            primaryButton(t("backup_save")) {
+        note(t(if (view.connected) "backup_text_shared" else "backup_text_local"))
+        if (!view.connected && backupDue()) note(t("web_backup_due_text"), "warn")
+        div("rows") {
+            listRow(t("backup_save"), context = t("backup_save_text"), start = leadIcon("file_download")) {
                 App.launch {
                     val name = "fulla-${view.config.household.name.filter { it.isLetterOrDigit() }.lowercase()}-${io.github.sirallap.fulla.core.time.LocalDate.now()}.json"
-                    if (shareOrDownload(name, "application/json", Ledger.backupText())) {
-                        Ledger.noteBackupSaved()
-                        App.toast(t("backup_saved"))
+                    if (shareOrDownload(name, "application/json", Ledger.backupText())) { Ledger.noteBackupSaved(); App.toast(t("backup_saved")) }
+                }
+            }
+            val picker = input("file", cls = "hidden") { accept = ".json,application/json" }
+            picker.on("change") {
+                val file = picker.files?.item(0)
+                if (file != null) App.launch {
+                    when (Ledger.restore(readText(file))) {
+                        RestoreResult.RESTORED -> App.toast(t("backup_restored"))
+                        RestoreResult.ALREADY_HERE -> App.toast(t("backup_already_here"))
+                        RestoreResult.NOT_A_BACKUP -> App.toast(t("backup_not_a_backup"))
+                        RestoreResult.NEWER -> App.toast(t("backup_newer"))
+                        RestoreResult.DAMAGED -> App.toast(t("backup_damaged"))
+                        RestoreResult.CSV -> App.toast(t("backup_is_csv"))
                     }
                 }
             }
-            secondaryButton(t("export_csv")) {
-                App.launch {
-                    val name = "fulla-${io.github.sirallap.fulla.core.time.LocalDate.now()}.csv"
-                    shareOrDownload(name, "text/csv", io.github.sirallap.fulla.client.local.CsvExport.write(view.stored, view.rows.map { it.transaction }))
-                }
+            listRow(t("backup_restore"), context = t("backup_restore_text"), start = leadIcon("file_upload")) { picker.click() }
+            listRow(t("export_csv"), start = leadIcon("description")) {
+                App.launch { shareOrDownload("fulla-${io.github.sirallap.fulla.core.time.LocalDate.now()}.csv", "text/csv", io.github.sirallap.fulla.client.local.CsvExport.write(view.stored, view.rows.map { it.transaction })) }
             }
         }
-        child("p", "muted pad") { text(t("backup_save_text")) }
         val persisted = Idb.available
-        child("p", if (persisted) "muted pad" else "problem") { text(if (persisted) t("web_storage_note") else t("web_storage_missing")) }
+        note(if (persisted) t("web_storage_note") else t("web_storage_missing"), if (persisted) "muted" else "problem")
     }
 
     private fun HTMLElement.about() {
-        child("p", "pad") { text(t("privacy_text")) }
-        child("p", "muted pad") { text(t("licence_text")) }
-        child("p", "muted pad") { text(t("third_party_licences_text")) }
-        child("p", "pad") {
-            val link = child("a") {
-                attr("href", "https://github.com/SirAllap/fulla"); attr("rel", "noopener"); text("github.com/SirAllap/fulla")
+        div("rows") {
+            listRow(t("app_name"), context = t("version", "web"))
+            listRow(t("licence"), context = t("licence_text"))
+            listRow(t("privacy"), context = t("privacy_text"))
+            listRow(t("third_party_licences"), context = t("third_party_licences_text"), end = { chevron() }) {
+                sheet(t("third_party_licences")) { _ ->
+                    for ((name, text) in listOf(
+                        "Archivo (SIL Open Font License 1.1)" to "© The Archivo Project Authors. https://github.com/Omnibus-Type/Archivo",
+                        "Material Icons (Apache License 2.0)" to "© Google. https://github.com/marella/material-design-icons",
+                        "Kotlin, kotlinx (Apache License 2.0)" to "© JetBrains s.r.o. and Kotlin Programming Language contributors.",
+                        "Ktor (Apache License 2.0)" to "© JetBrains s.r.o.",
+                    )) { child("p", "t-secondary pad") { text("── $name ──") }; child("p", "muted pad") { text(text) } }
+                }
             }
-            link.attr("target", "_blank")
+            listRow("github.com/SirAllap/fulla", start = leadIcon("link"), end = { chevron() }) { window.open("https://github.com/SirAllap/fulla", "_blank", "noopener") }
         }
     }
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.web
 
+import io.github.sirallap.fulla.core.design.Accent
 import io.github.sirallap.fulla.core.design.BaseColors
 import io.github.sirallap.fulla.core.design.IdentityColors
 import io.github.sirallap.fulla.core.design.MoneyPalette
@@ -16,7 +17,7 @@ object Theme {
     private fun hex(argb: Long): String = "#" + (argb and 0xFFFFFF).toString(16).padStart(6, '0')
 
     private fun variables(c: ThemeColors, dark: Boolean): String {
-        val money = MoneyPalette.DEFAULT.of(dark)
+        val money = palette.of(dark)
         return buildString {
             append("--paper:${hex(c.paper)};--paper-high:${hex(c.paperHigh)};--ink:${hex(c.ink)};--ink-muted:${hex(c.inkMuted)};")
             append("--line:${hex(c.line)};--accent:${hex(c.accent)};--on-accent:${hex(c.onAccent)};--warning:${hex(c.warning)};")
@@ -28,17 +29,41 @@ object Theme {
         }
     }
 
+    /** What the person chose in Settings › Appearance, kept in this browser. */
+    var mode: String = pref("theme") ?: "system"
+    var accent: Accent = Accent.of(pref("accent"))
+    var palette: MoneyPalette = MoneyPalette.entries.firstOrNull { it.name == pref("palette") } ?: MoneyPalette.DEFAULT
+
+    private fun pref(key: String): String? = runCatching { kotlinx.browser.localStorage.getItem("fulla.$key") }.getOrNull()
+
+    fun choose(mode: String? = null, accent: Accent? = null, palette: MoneyPalette? = null) {
+        mode?.let { this.mode = it; runCatching { kotlinx.browser.localStorage.setItem("fulla.theme", it) } }
+        accent?.let { this.accent = it; runCatching { kotlinx.browser.localStorage.setItem("fulla.accent", it.name) } }
+        palette?.let { this.palette = it; runCatching { kotlinx.browser.localStorage.setItem("fulla.palette", it.name) } }
+        install()
+        App.render()
+    }
+
     fun install() {
-        val css = ":root{${variables(BaseColors.LIGHT, false)}color-scheme:light dark}" +
-            "@media (prefers-color-scheme: dark){:root{${variables(BaseColors.DARK, true)}}}"
+        val light = variables(BaseColors.of(false, accent), false)
+        val dark = variables(BaseColors.of(true, accent), true)
+        val css = when (mode) {
+            "light" -> ":root{$light color-scheme:light}"
+            "dark" -> ":root{$dark color-scheme:dark}"
+            else -> ":root{$light color-scheme:light dark}@media (prefers-color-scheme: dark){:root{$dark}}"
+        }
+        document.getElementById("theme")?.let { it.parentNode?.removeChild(it) }
         val style = document.createElement("style")
         style.id = "theme"
         style.textContent = css
         document.head?.appendChild(style)
         // The colour of the browser's own bar, to match the page.
-        val light = hex(BaseColors.LIGHT.paper)
-        val dark = hex(BaseColors.DARK.paper)
-        for ((media, color) in listOf("(prefers-color-scheme: light)" to light, "(prefers-color-scheme: dark)" to dark)) {
+        val olds = document.querySelectorAll("meta[name=theme-color]")
+        for (i in 0 until olds.length) olds.item(i)?.let { it.parentNode?.removeChild(it) }
+        val lightBar = hex(BaseColors.LIGHT.paper)
+        val darkBar = hex(BaseColors.DARK.paper)
+        val bars = when (mode) { "light" -> listOf("all" to lightBar); "dark" -> listOf("all" to darkBar); else -> listOf("(prefers-color-scheme: light)" to lightBar, "(prefers-color-scheme: dark)" to darkBar) }
+        for ((media, color) in bars) {
             val meta = document.createElement("meta")
             meta.setAttribute("name", "theme-color")
             meta.setAttribute("media", media)

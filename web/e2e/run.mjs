@@ -124,7 +124,7 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   // backup, forget, restore
   await gear(page);
   await row(page, 'Copia de seguridad').click();
-  const [download] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Guardar una copia")')]);
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('.row:has-text("Guardar una copia")')]);
   const file = await download.path();
   const backup = JSON.parse(readFileSync(file, 'utf8'));
   ok(backup.format === 'fulla-backup' && backup.version === 1 && backup.transactions.length >= 3, 'the backup is a fulla-backup file with every row');
@@ -199,7 +199,8 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   ok(true, 'the same file again has nothing new to import');
   await back(page);
   await row(page, 'Appearance').click();
-  await page.selectOption('select', 'de');
+  await row(page, 'language').click();
+  await page.click('.sheet .row:has-text("Deutsch")');
   await page.waitForTimeout(300);
   ok((await page.textContent('main')).includes('Sprache'), 'the language can be changed, and sticks');
   await shot('12-dark-settings-de');

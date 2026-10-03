@@ -39,12 +39,15 @@ const unescape = (s) => s
   .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
 
 const read = (dir) => {
-  const xml = readFileSync(join(RES, dir, 'strings.xml'), 'utf8');
   const out = new Map();
+  // The Android app's words, then the few only the web app uses (web/strings), which add to them and never replace one.
+  for (const file of [join(RES, dir, 'strings.xml'), join('web/strings', dir, 'strings.xml')]) {
+  const xml = readFileSync(file, 'utf8');
   for (const m of xml.matchAll(/<string name="([^"]+)"[^>]*>([\s\S]*?)<\/string>/g)) out.set(m[1], unescape(m[2]));
   // Plurals are kept as name#quantity; tp() in I18n.kt picks one.
   for (const m of xml.matchAll(/<plurals name="([^"]+)"[^>]*>([\s\S]*?)<\/plurals>/g))
     for (const i of m[2].matchAll(/<item quantity="([a-z]+)"[^>]*>([\s\S]*?)<\/item>/g)) out.set(`${m[1]}#${i[1]}`, unescape(i[2]));
+  }
   return out;
 };
 

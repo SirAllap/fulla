@@ -674,15 +674,4 @@
     <string name="db_update_copied">Atualização copiada. Cola-a no editor SQL e prime Run.</string>
     <string name="fixed_charged_group">Já cobradas (%1$d)</string>
     <string name="fixed_charged_skipped_group">Cobradas e ignoradas (%1$d)</string>
-    <string name="web_storage_note">Este navegador guarda a casa no seu próprio armazenamento. Se os dados do site forem apagados, ou faltar espaço ao navegador, ela pode desaparecer: guarde uma cópia de vez em quando.</string>
-    <string name="web_storage_missing">Este navegador não deixa o Fulla guardar nada depois de fechar a página (uma janela privada?). Abra o Fulla numa janela normal e guarde uma cópia antes de sair.</string>
-    <string name="web_install_title">Adicione o Fulla ao ecrã principal</string>
-    <string name="web_install_text">No iPhone: toque no botão Partilhar do Safari e depois em «Adicionar ao ecrã principal». O Fulla abre então como uma app, funciona sem ligação e é menos provável que o navegador apague os seus dados.</string>
-    <string name="web_saved">Guardado</string>
-    <string name="web_local_only">Tudo fica neste navegador. Nada é enviado para lado nenhum.</string>
-    <string name="web_backup_text">Esta casa vive apenas neste navegador, por isso um ficheiro de cópia é a sua única outra cópia. Guarde uma de vez em quando, num sítio que não seja este dispositivo.</string>
-    <string name="web_backup_due_text">Há algum tempo que nenhuma cópia é guardada. Uma cópia protege a casa se os dados do navegador forem alguma vez apagados.</string>
-    <string name="web_forget_text">Remove a casa deste navegador.</string>
-    <string name="web_forget_confirm">Esta casa só existe neste navegador. Esquecê-la apaga-a para sempre, a menos que tenha guardado uma cópia. Continuar?</string>
-    <string name="invite_link_or_code">Cola o link do convite ou escreve o código</string>
 </resources>
