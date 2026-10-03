@@ -23,7 +23,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "fulla"
 
-include(":core", ":client")
+include(":core", ":client", ":web")
 
 // The Android app joins the build only where an Android SDK exists. Declaring
 // the Android plugins unconditionally makes Gradle resolve them at

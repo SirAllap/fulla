@@ -674,4 +674,14 @@
     <string name="db_update_copied">Mise à jour copiée. Collez-la dans l’éditeur SQL et appuyez sur Run.</string>
     <string name="fixed_charged_group">Déjà prélevés (%1$d)</string>
     <string name="fixed_charged_skipped_group">Prélevés et ignorés (%1$d)</string>
+    <string name="web_storage_note">Ce navigateur garde le foyer dans son propre stockage. Si les données du site sont effacées, ou si le navigateur manque de place, il peut disparaître : enregistrez une sauvegarde de temps en temps.</string>
+    <string name="web_storage_missing">Ce navigateur ne laisse Fulla rien conserver une fois la page fermée (une fenêtre privée ?). Ouvrez Fulla dans une fenêtre normale et enregistrez une sauvegarde avant de partir.</string>
+    <string name="web_install_title">Ajoutez Fulla à votre écran d’accueil</string>
+    <string name="web_install_text">Sur un iPhone : touchez le bouton Partager de Safari, puis « Sur l’écran d’accueil ». Fulla s’ouvre alors comme une app, fonctionne sans connexion, et le navigateur efface moins volontiers ses données.</string>
+    <string name="web_saved">Enregistré</string>
+    <string name="web_local_only">Tout reste dans ce navigateur. Rien n’est envoyé nulle part.</string>
+    <string name="web_backup_text">Ce foyer ne vit que dans ce navigateur : un fichier de sauvegarde est donc sa seule autre copie. Enregistrez-en un de temps en temps, ailleurs que sur cet appareil.</string>
+    <string name="web_backup_due_text">Aucune sauvegarde n’a été enregistrée depuis un moment. Une sauvegarde protège le foyer si les données du navigateur sont un jour effacées.</string>
+    <string name="web_forget_text">Retire le foyer de ce navigateur.</string>
+    <string name="web_forget_confirm">Ce foyer n’existe que dans ce navigateur. L’oublier le supprime définitivement, sauf si vous avez enregistré une sauvegarde. Continuer ?</string>
 </resources>

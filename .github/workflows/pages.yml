@@ -1,12 +1,21 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# The landing page: site/ published to GitHub Pages as it is, no build step.
+# The landing page (site/, as it is) with the web app built into /app/.
 name: Pages
 
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    paths:
+      - 'site/**'
+      - 'web/**'
+      - 'core/**'
+      - 'client/**'
+      - 'tools/web/**'
+      - 'app/src/main/res/values*/strings.xml'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -26,9 +35,27 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+      - name: Build the web app
+        run: ./gradlew :web:jsBrowserDistribution
+      - name: Put the web app under /app/
+        run: |
+          mkdir _site
+          cp -R site/. _site/
+          mkdir _site/app
+          cp -R web/build/dist/js/productionExecutable/. _site/app/
+          rm -f _site/app/*.map
+          ls _site _site/app
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: site
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -16,17 +16,23 @@ to this file.
   the app.
 - `tools/leakcheck/`: the secret and personal-data scanner.
 
-- `core/`: pure Kotlin on the JVM, no Android. Money, the model, the period
+- `core/`: pure Kotlin, common to the JVM and JavaScript (Kotlin Multiplatform), no Android. Money, the model, the period
   rule, splits and balances, recurring schedules, custom fields, the sync
   engine, analytics, the keypad, importers (CSV with a column mapping, OFX,
   QIF), permissions and demo data. Every decision the app makes lives here,
   with tests; the Android app will only call it.
 
-- `client/`: the phone's side of the protocol, still plain Kotlin on the JVM.
+- `client/`: the phone's side of the protocol, plain Kotlin common to the JVM and JavaScript.
   The wire format, the Supabase transport (auth and `rpc`, written by hand,
   refusing any host but the project's), the sync loop over a storage
   interface, the rules for local edits, local-mode households and recurring
   generation. Tested against a mocked HTTP engine and an in-memory store.
+- `web/`: Fulla in a browser, a progressive web app for iPhones and anything else: Kotlin/JS on
+  `core` and `client`, with the household kept in the browser's IndexedDB as a backup file's
+  text. It is published under `/app/` of the landing page (`.github/workflows/pages.yml`).
+  `web/e2e` drives the built bundle in Chromium with an iPhone's screen. Its strings are
+  Android's, generated from `app/src/main/res` by `tools/web/strings.mjs`: a string the web
+  needs is added to `strings.xml` in all six languages, never written in the web sources.
 - `app/`: the Android app. Storage (Room), background work, screens. It
   implements `client`'s `SyncStore` and calls the rest; it decides nothing
   that a test in `core` or `client` could hold instead.
@@ -43,6 +49,8 @@ npm run db:bundle              # write dist/setup.sql
 ./gradlew :core:jvmTest :core:jsNodeTest   # domain tests on the JVM and in JavaScript (needs a JDK 17+ and Node, no Android SDK)
 ./gradlew :core:koverVerify    # coverage of core must stay at 90 % or more
 ./gradlew :client:jvmTest :client:jsNodeTest   # transport and sync loop, on both
+./gradlew :web:jsBrowserDistribution           # the web app, into web/build/dist/js/productionExecutable
+(cd web/e2e && npm ci && node run.mjs)         # and its browser tests (needs the bundle above)
 ```
 
 Everything must be green before a commit.
@@ -50,6 +58,24 @@ Everything must be green before a commit.
 ## The rules the code depends on
 
 These look simplifiable. They are not. Each has a test.
+
+### core and client are common code
+
+`core/src/commonMain` and `client/src/commonMain` use no `java.*`, no `android.*`: they compile
+for the JVM and for JavaScript, and the tests run on both (`commonTest`, with the vectors read
+through `readRepoFile`). What differs by platform is `expect`/`actual`, kept small and with a
+test (number formatting, text decoding, randomness, the clock). Dates are `core.time`'s own
+`LocalDate`, `YearMonth` and `Instant` (with java.time's names, checked against java.time over
+20,000 random days in `TimeAgainstJavaTest`); the Android app converts with `toJava()` where it
+formats or picks a date. Things that bit once:
+
+- a test in `commonTest` is a function with an identifier for a name: `ten_phones_converge`,
+  not a backticked sentence (Kotlin/JS refuses spaces);
+- `js("...")` sees a *local* by its name and never a property or a constructor parameter;
+- a `Long` is software in a browser: days are counted in `Int` (`LocalDate` stores its epoch day
+  as one), or the simulations take ten times as long;
+- a platform call that only the browser makes (Intl, TextDecoder, `crypto`) has no JVM test to
+  catch it: give it one in `commonTest`.
 
 ### Money is integers
 

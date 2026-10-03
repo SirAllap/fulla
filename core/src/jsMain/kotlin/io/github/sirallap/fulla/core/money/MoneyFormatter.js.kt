@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.core.money
 
-actual class MoneyFormatter actual constructor(private val languageTag: String, private val money: Currency) {
+actual class MoneyFormatter actual constructor(languageTag: String, private val money: Currency) {
+
+    // Plain locals: js() sees a local by its own name, never a property.
+    private val tag: String = languageTag
 
     private val withSymbol: dynamic = try {
+        val languageTag = tag
         val options = js("({})")
         options.style = "currency"
         options.currency = money.code
@@ -15,6 +19,7 @@ actual class MoneyFormatter actual constructor(private val languageTag: String, 
     }
 
     private val plain: dynamic = run {
+        val languageTag = tag
         val options = js("({})")
         options.minimumFractionDigits = money.minorUnits
         options.maximumFractionDigits = money.minorUnits

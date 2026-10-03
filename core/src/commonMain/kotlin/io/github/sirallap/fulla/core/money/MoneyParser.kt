@@ -29,6 +29,23 @@ object MoneyParser {
     private val CLEAN = Regex("[\\s  '’\\p{Sc}A-Za-z]")
     private val NUMBER = Regex("^\\d+(\\.\\d+)?$")
 
+    /**
+     * What a person typed on a phone's keyboard, whose decimal key follows the
+     * phone's region and not the app's language: the separator is whichever of
+     * `.` and `,` comes last with one or two digits after it ("12,5", "1.234,56",
+     * "1,234.5"). When nothing says ("1.234", "1,234": a thousand, or one and a
+     * bit?), [fallback] decides.
+     */
+    fun parseTyped(text: String, currency: Currency, fallback: DecimalStyle): Long? {
+        val trimmed = text.trim()
+        val s = if (trimmed.startsWith(".") || trimmed.startsWith(",")) "0$trimmed" else trimmed
+        val at = s.lastIndexOfAny(charArrayOf('.', ','))
+        val style = if (at >= 0 && s.length - at - 1 in 1..2 && s.substring(at + 1).all { it in '0'..'9' }) {
+            if (s[at] == ',') DecimalStyle.COMMA else DecimalStyle.DOT
+        } else fallback
+        return parse(s, currency, style)
+    }
+
     /** Minor units, or null if the text is not an amount. */
     fun parse(text: String, currency: Currency, style: DecimalStyle): Long? {
         var s = text.trim()
