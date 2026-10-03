@@ -57,6 +57,8 @@ kotlin {
             dependencies {
                 implementation(project(":client"))
                 implementation(libs.ktor.client.js)
+                // The invite's QR code (MIT).
+                implementation(npm("qrcode-generator", "1.4.4"))
             }
         }
     }

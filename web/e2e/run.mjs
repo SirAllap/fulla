@@ -251,7 +251,7 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     await a.page.click('.sheet .row >> nth=0');
     await a.page.waitForSelector('.code', { timeout: 20000 });
     const code = (await a.page.textContent('.code')).trim();
-    ok(code.length >= 6, 'and invites someone: ' + code);
+    ok(code.length >= 6 && await a.page.locator('.qr svg path').count() === 1, 'and invites someone, with a code and a QR: ' + code);
 
     const b = await open({ locale: 'en-GB' });
     await b.page.goto(BASE);

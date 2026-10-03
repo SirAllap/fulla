@@ -173,6 +173,7 @@ object SettingsScreen {
                         "Material Icons (Apache License 2.0)" to "© Google. https://github.com/marella/material-design-icons",
                         "Kotlin, kotlinx (Apache License 2.0)" to "© JetBrains s.r.o. and Kotlin Programming Language contributors.",
                         "Ktor (Apache License 2.0)" to "© JetBrains s.r.o.",
+                        "qrcode-generator (MIT)" to "© Kazuhiko Arase. https://github.com/kazuhikoarase/qrcode-generator",
                     )) { child("p", "t-secondary pad") { text("── $name ──") }; child("p", "muted pad") { text(text) } }
                 }
             }

@@ -279,3 +279,5 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .swatch { flex: none; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border: 0; background: none; border-radius: 50%; }
 .swatch-dot { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
 .dots { display: inline-flex; gap: 4px; } .dot-c { width: 20px; height: 20px; border-radius: 50%; display: inline-block; }
+.qr { margin: 8px 48px; padding: 16px; border-radius: 16px; background: #fff; color: #000; }
+.qr svg { display: block; width: 100%; height: auto; }

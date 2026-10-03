@@ -199,6 +199,7 @@ object MembersPage {
 
     private fun HTMLElement.invitePanel(link: String, code: String, forName: String?) {
         forName?.let { child("p", "pad") { text(t("invite_for", it)) } }
+        qrCode(link, t("invite_qr_description"))
         note(t("invite_scan_hint"))
         child("p", "t-title pad code") { text(code) }
         div("actions") {
@@ -293,6 +294,48 @@ object CategoriesPage {
         }
     }
 
+    /** Deleting archives it, once its entries have somewhere to go; what nothing refers to any more leaves the list. */
+    private fun delete(view: HouseholdView, category: Category) {
+        val use = CategoryUse.of(view.config, view.active, category.id)
+        val targets = CategoryUse.targetsFor(view.config, view.active, category.id)
+        val others = use.budgets + use.recurring + use.fields
+        var target: String? = if (use.rows > 0) targets.firstOrNull { it.id == category.parentId }?.id else null
+        sheet(t(if (others > 0) "archive_item_title" else "delete_item_title", category.name)) { close ->
+            lateinit var body: HTMLElement
+            body = div("") {
+                fun paint() {
+                    body.clear()
+                    body.run {
+                        if (use.rows == 0 && others == 0) note(t("delete_category_unused"))
+                        if (use.rows > 0) {
+                            note(t("delete_category_move", use.rows))
+                            chipRow(wrap = true) { for (tg in targets) chip(tg.name, tg.id == target) { target = tg.id; paint() } }
+                            if (targets.isEmpty()) note(t("delete_category_no_target"), "warn")
+                        }
+                        if (others > 0) note(t("delete_category_kept"))
+                        div("actions") {
+                            val label = when { use.rows > 0 -> "delete_and_move"; others > 0 -> "archive"; else -> "delete" }
+                            val go: () -> Unit = {
+                                close()
+                                val moveTo = target
+                                App.launch {
+                                    try {
+                                        // Its entries go first, then it is archived: one without entries, budgets, fixed costs or fields leaves the list.
+                                        if (moveTo != null) Ledger.saveAll(CategoryUse.move(view.active, category.id, moveTo))
+                                        Ledger.upsert(Structure.CATEGORY, io.github.sirallap.fulla.client.wire.Wire.category(category.copy(archived = true)))
+                                    } catch (e: Throwable) { App.toast(Remote.message(e)) }
+                                }
+                            }
+                            if (others > 0 && use.rows == 0) primaryButton(t(label), true, go) else if (use.rows == 0 || target != null) dangerButton(t(label), go)
+                            quietButton(t("cancel")) { close() }
+                        }
+                    }
+                }
+                paint()
+            }
+        }
+    }
+
     private fun edit(view: HouseholdView, id: String, existing: Category?, applies: AppliesTo = AppliesTo.EXPENSE, parent: Category? = null) {
         var icon = existing?.icon ?: parent?.icon ?: "label"
         var archived = existing?.archived ?: false
@@ -315,6 +358,7 @@ object CategoriesPage {
             val use = existing?.let { runCatching { CategoryUse.of(view.config, view.active, it.id) }.getOrNull() }
             if (use != null && use.children > 0) note(t("delete_category_children"))
             div("actions") {
+                if (existing != null && use != null && use.children == 0) dangerButton(t("delete")) { close(); delete(view, existing) }
                 primaryButton(t("save")) {
                     val title = name.value.trim()
                     if (title.isEmpty()) return@primaryButton
