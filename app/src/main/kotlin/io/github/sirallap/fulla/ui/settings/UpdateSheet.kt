@@ -21,10 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.client.remote.FullaError
 import io.github.sirallap.fulla.client.remote.Update
+import io.github.sirallap.fulla.core.version.ReleaseNotes
 import io.github.sirallap.fulla.data.update.InstallOutcome
 import io.github.sirallap.fulla.data.update.InstallStatus
 import io.github.sirallap.fulla.data.update.Installer
@@ -99,7 +101,7 @@ fun UpdateSheet(update: Update, onDismiss: () -> Unit) {
                 Text(megabytes(update.sizeBytes), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(top = 4.dp))
             }
             if (update.notes.isNotBlank()) {
-                Text(update.notes, style = FullaType.body, color = c.ink, modifier = Modifier.padding(top = 16.dp))
+                androidx.compose.foundation.layout.Box(Modifier.padding(top = 16.dp)) { ReleaseNotesText(update.notes) }
             }
             error?.let { Text(it, style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(top = 16.dp)) }
             if (needsPermission) {
@@ -117,6 +119,47 @@ fun UpdateSheet(update: Update, onDismiss: () -> Unit) {
                 // Not now: it stays in Settings (the gear's dot and the banner), and the app mentions it again tomorrow.
                 if (progress == null) androidx.compose.material3.TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.update_later))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * A release's notes with their formatting (bold, bullets, headings) and in the
+ * phone's language when the notes have one (see ReleaseNotes), instead of the
+ * raw Markdown the release is written in.
+ */
+@Composable
+private fun ReleaseNotesText(notes: String) {
+    val c = FullaTheme.colors
+    val language = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
+    val blocks = remember(notes, language) {
+        runCatching { ReleaseNotes.parse(ReleaseNotes.forLanguage(notes, language)) }.getOrNull()
+    }
+    if (blocks == null) {
+        Text(notes, style = FullaType.body, color = c.ink)
+        return
+    }
+    Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+        for (block in blocks) {
+            val text = androidx.compose.ui.text.buildAnnotatedString {
+                for (span in block.spans) {
+                    withStyle(androidx.compose.ui.text.SpanStyle(
+                        fontWeight = if (span.bold) androidx.compose.ui.text.font.FontWeight.SemiBold else null,
+                        fontStyle = if (span.italic) androidx.compose.ui.text.font.FontStyle.Italic else null,
+                        fontFamily = if (span.code) androidx.compose.ui.text.font.FontFamily.Monospace else null,
+                    )) { append(span.text) }
+                }
+            }
+            when (block) {
+                is ReleaseNotes.Block.Heading -> Text(text, style = FullaType.title, color = c.ink)
+                is ReleaseNotes.Block.Paragraph -> Text(text, style = FullaType.body, color = c.ink)
+                is ReleaseNotes.Block.Bullet -> androidx.compose.foundation.layout.Row(
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("•", style = FullaType.body, color = c.inkMuted)
+                    Text(text, style = FullaType.body, color = c.ink, modifier = Modifier.weight(1f))
                 }
             }
         }

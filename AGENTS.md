@@ -239,3 +239,12 @@ The APK is built by CI only (no Android SDK is assumed locally). A debug
 build of every push to `main` is published to the `latest-debug` prerelease.
 
 Every Room version bump ships a migration test.
+
+## Release notes
+
+`docs/releases/<version>.md` is the text of the GitHub release, and the update
+sheet in the app shows it. Write it in Spanish and English, Spanish first:
+a `## Español` section and a `## English` section (`ReleaseNotes.forLanguage`
+shows the one in the phone's language, English when there is none for it).
+Plain Markdown only: bold, italic, `code`, `-` bullets and headings are
+rendered (`ReleaseNotes.parse`); anything else shows as text.
