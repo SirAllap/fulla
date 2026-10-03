@@ -9,7 +9,7 @@
 [![CI](https://github.com/SirAllap/fulla/actions/workflows/ci.yml/badge.svg)](https://github.com/SirAllap/fulla/actions/workflows/ci.yml)
 [![Licence: GPL-3.0-or-later](https://img.shields.io/badge/licence-GPL--3.0--or--later-E9B949)](LICENSE)
 
-**[sirallap.github.io/fulla](https://sirallap.github.io/fulla/)** · [Download](https://github.com/SirAllap/fulla/releases/latest) · [Get started](#get-started)
+**[sirallap.github.io/fulla](https://sirallap.github.io/fulla/)** · [Download](https://github.com/SirAllap/fulla/releases/latest) · [Use it in your browser](https://sirallap.github.io/fulla/app/) · [Get started](#get-started)
 
 Fulla keeps a household's money straight: what came in, what went out, what
 is left, and who owes whom. It is an Android app for one person or a whole
@@ -19,6 +19,11 @@ phone or in a database you own.
 It is named after Fulla, the Norse goddess of plenty, whose name means
 *full* and who wore a golden band. The app draws your month as a vessel that
 fills; the golden band is its icon.
+
+> **On an iPhone, or any browser:** [sirallap.github.io/fulla/app](https://sirallap.github.io/fulla/app/)
+> runs the same rules in a page you can add to your home screen. Your household stays in the
+> browser, and a backup file moves it between there and the Android app
+> ([how it works](docs/web.md)).
 
 > **0.1 — first public release.** The backend, the domain logic and the sync
 > are complete and tested, and the app is in daily use on real phones. Expect

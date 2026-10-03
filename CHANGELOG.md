@@ -8,6 +8,9 @@ All notable changes to Fulla are recorded here. The format follows
 
 ### Added
 
+- A web app, installable on an iPhone's home screen (`web/`, `docs/web.md`): the same rules
+  and the same backup format as the Android app, in a browser, offline, with the household
+  kept in the browser. `core` and `client` are now Kotlin Multiplatform (JVM and JavaScript).
 - Database schema for households, members, invites, accounts, categories,
   custom fields, budgets, recurring rules, categorisation rules, import
   profiles and transactions.
