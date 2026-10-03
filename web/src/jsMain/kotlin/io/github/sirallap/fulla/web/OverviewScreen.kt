@@ -96,7 +96,6 @@ object OverviewScreen {
                 }
             }
             if (forecast != null) {
-                forecastSection(view, forecast, format)
                 fixedCosts(view, forecast, format, today)
             }
             if (categories.isEmpty()) emptyState("opacity", t("empty_period_title"), t("empty_period_text"))
@@ -178,60 +177,6 @@ object OverviewScreen {
         for (tx in list) listRow(tx.note.ifBlank { view.config.category(tx.categoryId)?.name ?: "" }, context = format.day(tx.date),
             end = { amountText(format.money(if (tx.kind == TransactionKind.REFUND) -tx.amountMinor else tx.amountMinor), "muted") }) { App.editing = tx.id; App.go(Tab.ADD) }
             .classList.add("indent${minOf(level, 2)}")
-    }
-
-    // ── forecast ─────────────────────────────────────────────────────────────
-
-    private fun tile(parent: HTMLElement, title: String, value: String, context: String?, level: Double?, tone: String, valueTone: String = "", phase: Double = 0.0, onClick: (() -> Unit)? = null) {
-        parent.child(if (onClick != null) "button" else "div", "lq-tile") {
-            if (onClick != null) { attr("type", "button"); click(onClick) }
-            span("t-label") { text(title) }
-            div("value $valueTone") { text(value) }
-            if (context != null) span("ctx") { text(context) }
-            if (level != null) Liquids.sheet(this, level, tone, vertical = true, phase = phase)
-        }
-    }
-
-    private fun HTMLElement.forecastSection(view: HouseholdView, f: PeriodForecast, format: Format) {
-        section(t("forecast"))
-        when {
-            f.known && f.early -> note(t("forecast_too_early", f.day, f.length))
-            f.known -> {
-                note(t("forecast_day", f.day, f.length))
-                val spendEnd = f.spentEndMinor!!
-                div("tiles-row") {
-                    tile(this, t("forecast_spend"), "≈ " + format.money(spendEnd), t("forecast_between", format.money(f.spentEndLowMinor!!), format.money(f.spentEndHighMinor!!)),
-                        if (spendEnd > 0) (f.spentMinor.toDouble() / spendEnd).coerceIn(0.0, 1.0) else null, "out", phase = 0.4) { explain(view, f, format) }
-                    val kept = f.keptMinor
-                    if (kept != null) tile(this, t("forecast_kept"), "≈ " + format.money(kept), t("forecast_between", format.money(f.keptLowMinor!!), format.money(f.keptHighMinor!!)),
-                        (kept.toDouble() / f.totalIncomeMinor).coerceIn(0.0, 1.0), "in", if (kept < 0) "out" else "in", 1.6) { explain(view, f, format) }
-                    else tile(this, t("forecast_kept"), "—", t("forecast_add_income"), null, "in") { explain(view, f, format) }
-                }
-            }
-            f.waiting -> div("rows") { listRow(t("forecast_waiting"), context = t("forecast_waiting_text"), divider = false) }
-            else -> child("button", "plain-btn pad muted") { attr("type", "button"); text(t("forecast_no_history")); click { explain(view, f, format) } }
-        }
-    }
-
-    /** How the forecast is worked out, line by line, so every figure can be checked. */
-    private fun explain(view: HouseholdView, f: PeriodForecast, format: Format) {
-        sheet(t("forecast_how")) { _ ->
-            div("rows") {
-                listRow(t("forecast_income"), context = if (f.expectedIncomeMinor > 0) t("forecast_income_context", format.money(f.incomeMinor), format.money(f.expectedIncomeMinor)) else null,
-                    end = { amountText(format.money(f.totalIncomeMinor), "in") })
-                listRow(t("forecast_spent_so_far"), end = { amountText(format.money(-f.spentMinor)) })
-                val pending = f.fixed.filter { it.status == FixedStatus.PENDING }
-                listRow(t("forecast_fixed_to_come"), context = pending.take(4).joinToString(" · ") { it.name + " " + format.day(it.date) }.ifBlank { null }, end = { amountText(format.money(-f.fixedToComeMinor)) })
-                val rest = f.everydayRestMinor
-                if (rest != null) {
-                    listRow(t("forecast_everyday"), context = t("forecast_between", format.money(f.everydayLowMinor!!), format.money(f.everydayHighMinor!!)), end = { amountText(format.money(-rest)) })
-                    val kept = f.keptMinor
-                    listRow(t(if (kept != null) "forecast_kept" else "forecast_spend"), divider = false,
-                        end = { amountText("≈ " + format.money(kept ?: f.spentEndMinor!!), if (kept != null && kept < 0) "" else "") })
-                } else note(t("forecast_no_history"))
-            }
-            note(t("forecast_note"))
-        }
     }
 
     // ── fixed costs ──────────────────────────────────────────────────────────

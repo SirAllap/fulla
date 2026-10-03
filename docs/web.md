@@ -17,15 +17,26 @@ JavaScript, and the web app decides nothing they could.
 - **A backup moves both ways**: the file the web app saves is the one the Android app saves
   (`Backup.kt`), and each restores the other's.
 
-## What it does, and what it does not (yet)
+## What it does, and what it does not
 
-Local households only. Add (expense, income, refund), Overview (the period, where it went,
-fixed costs and what is left to spend), History (search, filter, edit, delete with undo),
-fixed costs, categories, accounts, backup and restore, CSV, six languages, light and dark.
+The screens are the Android app's, built from its own measures (`ui/theme/Type.kt`,
+`ui/components/Pieces.kt`), its icons (Material Outlined) and its words (the same strings, six
+languages). Add (kinds, categories and subcategories, trips, custom fields, fixed, "starts the
+month"), Overview (the jar, the fixed costs' bars, where it went), Analysis, History, Balances,
+and everything under the gear: households, household, people, categories, custom fields,
+accounts, budgets, trips, fixed costs (ends, financing), importing a statement (CSV, OFX, QIF),
+rules, backup, appearance, sync, about; and the getting-started guide.
 
-Not yet: sharing a household through Supabase (the `client` transport is common code and
-ready), trips, custom fields, budgets, importing a bank statement, salary-started months,
-people and balances.
+**Several people**: a household can be shared through Supabase and joined with an invite (link,
+code or QR), from the browser or from the Android app. The project's address and key are the
+Android build's (the CI secrets `FULLA_PROJECT_URL` and `FULLA_ANON_KEY`), so people only sign
+in; without them the page asks for a project of the person's own. An iPhone syncs while the
+page is open. `web/e2e` shares a household between two browsers through the project's real
+migrations in a throwaway PostgreSQL behind a fake Supabase (`web/e2e/fake-supabase.cjs`).
+
+Not in a browser: the biometric lock, widgets, background work, Google sign-in. Words only the
+web uses live in `web/strings` (merged by `tools/web/strings.mjs`); the Android resources are
+not touched.
 
 ## Building and testing
 
