@@ -672,4 +672,6 @@
     <string name="undo">Annulla</string>
     <string name="fixed_missed_skip_confirm">Lasciar passare %1$d addebiti? Non verranno scritti né riproposti.</string>
     <string name="db_update_copied">Aggiornamento copiato. Incollalo nell’editor SQL e premi Run.</string>
+    <string name="fixed_charged_group">Già addebitate (%1$d)</string>
+    <string name="fixed_charged_skipped_group">Addebitate e saltate (%1$d)</string>
 </resources>

@@ -672,4 +672,6 @@
     <string name="undo">Deshacer</string>
     <string name="fixed_missed_skip_confirm">¿Dejar pasar %1$d cargos? No se anotarán y no se volverán a ofrecer.</string>
     <string name="db_update_copied">Actualización copiada. Pégala en el editor SQL y pulsa Run.</string>
+    <string name="fixed_charged_group">Ya cobrados (%1$d)</string>
+    <string name="fixed_charged_skipped_group">Cobrados y omitidos (%1$d)</string>
 </resources>

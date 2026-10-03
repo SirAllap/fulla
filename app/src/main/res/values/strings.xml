@@ -722,4 +722,6 @@
     <string name="undo">Undo</string>
     <string name="fixed_missed_skip_confirm">Let %1$d charges pass? They will not be written, and will not be offered again.</string>
     <string name="db_update_copied">Update copied. Paste it in the SQL editor and press Run.</string>
+    <string name="fixed_charged_group">Already charged (%1$d)</string>
+    <string name="fixed_charged_skipped_group">Charged and skipped (%1$d)</string>
 </resources>

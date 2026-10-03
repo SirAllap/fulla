@@ -12,6 +12,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
+import io.github.sirallap.fulla.core.analytics.FixedItem
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Warning
@@ -145,8 +149,6 @@ fun FixedTotalsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCos
 fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCosts: () -> Unit) {
     val c = FullaTheme.colors
     val f = view.formats
-    val ledger = LocalContainer.current.ledger
-    val scope = rememberCoroutineScope()
     val fixed = forecast.fixed
     // The period is open past its length: the one thing the person can do about it is to note the salary, so the overview still says so.
     if (forecast.waiting) {
@@ -157,50 +159,23 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
         Text(stringResource(R.string.fixed_bars_help), style = FullaType.secondary, color = c.inkMuted,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
         val today = java.time.LocalDate.now()
-        for (item in fixed) {
-            val installmentText = item.installment?.let { n -> item.installments?.let { total -> stringResource(R.string.installment_of, n, total) } }
-            val daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, item.date).toInt()
-            val daysText = if (item.status == FixedStatus.PENDING && !item.overdue && daysLeft > 0) stringResource(R.string.in_days, daysLeft) else null
-            LiquidBarRow(
-                title = item.name,
-                amount = f.money(item.amountMinor),
-                // The bar fills as the day comes closer, over the length of the period; once paid it is full and takes the colour of money in.
-                fraction = item.countdown(today, forecast.length),
-                tone = if (item.status == FixedStatus.PAID) LiquidTone.IN else LiquidTone.OUT,
-                context = when {
-                    item.status == FixedStatus.PAID && item.byHand -> stringResource(R.string.fixed_by_hand, f.day(item.date))
-                    item.status == FixedStatus.PAID -> stringResource(R.string.fixed_paid_on, f.day(item.date))
-                    item.status == FixedStatus.PENDING && item.overdue -> stringResource(R.string.fixed_overdue, f.day(item.date))
-                    item.status == FixedStatus.PENDING -> stringResource(R.string.fixed_due_on, f.day(item.date))
-                    else -> stringResource(R.string.fixed_skipped)
-                }.let { base -> listOfNotNull(base, daysText).joinToString(" · ") },
-                detail = installmentText,
-                phase = item.date.dayOfMonth * 0.7f,
-                start = {
-                    Icon(
-                        when {
-                            item.status == FixedStatus.PAID -> Icons.Outlined.CheckCircle
-                            item.status == FixedStatus.PENDING && item.overdue -> Icons.Outlined.Warning
-                            item.status == FixedStatus.PENDING -> Icons.Outlined.Schedule
-                            else -> Icons.Outlined.RemoveCircleOutline
-                        },
-                        null,
-                        tint = when {
-                            item.status == FixedStatus.PAID -> c.moneyIn
-                            item.status == FixedStatus.PENDING && item.overdue -> c.warning
-                            else -> c.inkMuted
-                        },
-                        modifier = Modifier.size(20.dp),
-                    )
+        // What is still to come stays in sight; what was already charged this period is one tap away, folded.
+        val coming = fixed.filter { it.status == FixedStatus.PENDING }
+        val done = fixed.filter { it.status != FixedStatus.PENDING }
+        for (item in coming) FixedBarRow(view, item, today, forecast.length, onFixedCosts)
+        if (done.isNotEmpty()) {
+            var open by rememberSaveable { mutableStateOf(false) }
+            val charged = done.filter { it.status == FixedStatus.PAID }
+            ListRow(
+                stringResource(if (charged.size == done.size) R.string.fixed_charged_group else R.string.fixed_charged_skipped_group, done.size),
+                icon = Icons.Outlined.CheckCircle, iconTint = c.moneyIn,
+                onClick = { open = !open },
+                end = {
+                    AmountText(f.money(charged.sumOf { it.amountMinor }), color = c.inkMuted)
+                    Icon(if (open) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, tint = c.inkMuted)
                 },
-                // A charge whose day has come and that nothing has written: the phone writes it by itself the next time it looks, and this does it now.
-                below = if (item.status == FixedStatus.PENDING && item.overdue) ({
-                    TextButton(onClick = { scope.launch { ledger.applyRecurring(view.id, item.ruleId, item.date) } }) {
-                        Text(stringResource(R.string.fixed_apply))
-                    }
-                }) else null,
-                onClick = onFixedCosts,
             )
+            if (open) for (item in done) FixedBarRow(view, item, today, forecast.length, onFixedCosts)
         }
     } else if (view.config.recurringRules.none { it.active }) {
         ListRow(stringResource(R.string.fixed_empty_title), context = stringResource(R.string.fixed_empty_text), onClick = onFixedCosts)
@@ -217,6 +192,58 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
         ListRow(stringResource(R.string.fixed_missed_hint, leftOut.size), context = stringResource(R.string.fixed_missed_hint_text),
             icon = Icons.Outlined.Warning, iconTint = c.warning, onClick = onFixedCosts)
     }
+}
+
+/** One fixed cost of the period: its bar, when it is due or was charged, which instalment it is. */
+@Composable
+private fun FixedBarRow(view: HouseholdView, item: FixedItem, today: LocalDate, periodLength: Int, onFixedCosts: () -> Unit) {
+    val c = FullaTheme.colors
+    val f = view.formats
+    val ledger = LocalContainer.current.ledger
+    val scope = rememberCoroutineScope()
+    val installmentText = item.installment?.let { n -> item.installments?.let { total -> stringResource(R.string.installment_of, n, total) } }
+    val daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, item.date).toInt()
+    val daysText = if (item.status == FixedStatus.PENDING && !item.overdue && daysLeft > 0) stringResource(R.string.in_days, daysLeft) else null
+    LiquidBarRow(
+        title = item.name,
+        amount = f.money(item.amountMinor),
+        // The bar fills as the day comes closer, over the length of the period; once paid it is full and takes the colour of money in.
+        fraction = item.countdown(today, periodLength),
+        tone = if (item.status == FixedStatus.PAID) LiquidTone.IN else LiquidTone.OUT,
+        context = when {
+            item.status == FixedStatus.PAID && item.byHand -> stringResource(R.string.fixed_by_hand, f.day(item.date))
+            item.status == FixedStatus.PAID -> stringResource(R.string.fixed_paid_on, f.day(item.date))
+            item.status == FixedStatus.PENDING && item.overdue -> stringResource(R.string.fixed_overdue, f.day(item.date))
+            item.status == FixedStatus.PENDING -> stringResource(R.string.fixed_due_on, f.day(item.date))
+            else -> stringResource(R.string.fixed_skipped)
+        }.let { base -> listOfNotNull(base, daysText).joinToString(" · ") },
+        detail = installmentText,
+        phase = item.date.dayOfMonth * 0.7f,
+        start = {
+            Icon(
+                when {
+                    item.status == FixedStatus.PAID -> Icons.Outlined.CheckCircle
+                    item.status == FixedStatus.PENDING && item.overdue -> Icons.Outlined.Warning
+                    item.status == FixedStatus.PENDING -> Icons.Outlined.Schedule
+                    else -> Icons.Outlined.RemoveCircleOutline
+                },
+                null,
+                tint = when {
+                    item.status == FixedStatus.PAID -> c.moneyIn
+                    item.status == FixedStatus.PENDING && item.overdue -> c.warning
+                    else -> c.inkMuted
+                },
+                modifier = Modifier.size(20.dp),
+            )
+        },
+        // A charge whose day has come and that nothing has written: the phone writes it by itself the next time it looks, and this does it now.
+        below = if (item.status == FixedStatus.PENDING && item.overdue) ({
+            TextButton(onClick = { scope.launch { ledger.applyRecurring(view.id, item.ruleId, item.date) } }) {
+                Text(stringResource(R.string.fixed_apply))
+            }
+        }) else null,
+        onClick = onFixedCosts,
+    )
 }
 
 /** How the forecast is worked out, line by line, so every figure can be checked. */

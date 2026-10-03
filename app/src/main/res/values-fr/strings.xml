@@ -672,4 +672,6 @@
     <string name="undo">Annuler</string>
     <string name="fixed_missed_skip_confirm">Laisser passer %1$d prélèvements ? Ils ne seront pas écrits ni proposés de nouveau.</string>
     <string name="db_update_copied">Mise à jour copiée. Collez-la dans l’éditeur SQL et appuyez sur Run.</string>
+    <string name="fixed_charged_group">Déjà prélevés (%1$d)</string>
+    <string name="fixed_charged_skipped_group">Prélevés et ignorés (%1$d)</string>
 </resources>
