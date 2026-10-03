@@ -23,6 +23,7 @@ object Theme {
             append("--danger:${hex(c.danger)};--highlight:${hex(c.highlight)};--on-highlight:${hex(c.onHighlight)};")
             append("--in:${hex(money.inText)};--out:${hex(money.outText)};--in-surface:${hex(money.inSurface)};--out-surface:${hex(money.outSurface)};")
             for (i in 0 until 12) append("--cat-$i:${hex(IdentityColors.category(i, dark))};")
+            for (i in 0 until 10) append("--member-$i:${hex(IdentityColors.member(i, dark))};")
         }
     }
 

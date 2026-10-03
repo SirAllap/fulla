@@ -684,4 +684,5 @@
     <string name="web_backup_due_text">Há algum tempo que nenhuma cópia é guardada. Uma cópia protege a casa se os dados do navegador forem alguma vez apagados.</string>
     <string name="web_forget_text">Remove a casa deste navegador.</string>
     <string name="web_forget_confirm">Esta casa só existe neste navegador. Esquecê-la apaga-a para sempre, a menos que tenha guardado uma cópia. Continuar?</string>
+    <string name="invite_link_or_code">Cola o link do convite ou escreve o código</string>
 </resources>

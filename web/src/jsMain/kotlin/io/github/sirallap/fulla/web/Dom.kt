@@ -63,7 +63,7 @@ fun HTMLElement.input(type: String, value: String = "", cls: String = "", build:
     return i
 }
 
-/** Inline SVG from a path, in the page's current colour. */
+/** A Material icon (outlined, 24 dp grid) from its path, in the current text colour. */
 fun HTMLElement.icon(path: String, size: Int = 24, cls: String = "icon"): Element {
     val ns = "http://www.w3.org/2000/svg"
     val svg = document.createElementNS(ns, "svg")
@@ -74,12 +74,10 @@ fun HTMLElement.icon(path: String, size: Int = 24, cls: String = "icon"): Elemen
     svg.setAttribute("class", cls)
     val p = document.createElementNS(ns, "path")
     p.setAttribute("d", path)
-    p.setAttribute("fill", "none")
-    p.setAttribute("stroke", "currentColor")
-    p.setAttribute("stroke-width", "2")
-    p.setAttribute("stroke-linecap", "round")
-    p.setAttribute("stroke-linejoin", "round")
     svg.appendChild(p)
     appendChild(svg)
     return svg
 }
+
+fun HTMLElement.ui(name: String, size: Int = 24): Element = icon(MaterialPaths.ui.getValue(name), size)
+fun HTMLElement.categoryIcon(name: String, size: Int = 24): Element = icon(MaterialPaths.category[name] ?: MaterialPaths.category.getValue("label"), size)

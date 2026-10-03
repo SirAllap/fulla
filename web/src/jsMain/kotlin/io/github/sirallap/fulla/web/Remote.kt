@@ -65,6 +65,9 @@ object Remote {
 
     suspend fun hasSession(): Boolean = supabase?.currentSession() != null
 
+    /** The person signed in here, or null. */
+    suspend fun session(): Session? = supabase?.currentSession()
+
     /** Signs in, or creates the account first. Null from sign-up means the project wants the email confirmed. */
     suspend fun signIn(email: String, password: String, create: Boolean): Boolean {
         val s = supabase ?: error("No project chosen")

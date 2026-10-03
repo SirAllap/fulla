@@ -684,4 +684,5 @@
     <string name="web_backup_due_text">Aucune sauvegarde n’a été enregistrée depuis un moment. Une sauvegarde protège le foyer si les données du navigateur sont un jour effacées.</string>
     <string name="web_forget_text">Retire le foyer de ce navigateur.</string>
     <string name="web_forget_confirm">Ce foyer n’existe que dans ce navigateur. L’oublier le supprime définitivement, sauf si vous avez enregistré une sauvegarde. Continuer ?</string>
+    <string name="invite_link_or_code">Colle le lien d’invitation ou saisis le code</string>
 </resources>

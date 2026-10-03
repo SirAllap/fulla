@@ -118,6 +118,10 @@ object Ledger {
 
     val view: HouseholdView? get() = bundle?.let { HouseholdView(it, rows, I18n.language, meta) }
 
+    /** Every household this browser holds, as of the last change. */
+    var households: List<HouseholdSummary> = emptyList()
+        private set
+
     private fun now(): Instant = Instant.now()
     private val connected: Boolean get() = meta.mode == CONNECTED
     private val householdId: String? get() = bundle?.let { Wire.config(it).household.id }
@@ -128,7 +132,8 @@ object Ledger {
     suspend fun load(): Boolean {
         Idb.open()
         migrateOld()
-        val id = Idb.get(ACTIVE_KEY) ?: summaries().firstOrNull()?.id ?: return false
+        households = summaries()
+        val id = Idb.get(ACTIVE_KEY) ?: households.firstOrNull()?.id ?: return false
         return open(id)
     }
 
@@ -209,7 +214,8 @@ object Ledger {
         Idb.put(ACTIVE_KEY, id)
         val others = summaries().filter { it.id != id }
         val mine = HouseholdSummary(id, Wire.config(b).household.name, meta.mode)
-        Idb.put(INDEX_KEY, JsonArray((others + mine).map { s ->
+        households = others + mine
+        Idb.put(INDEX_KEY, JsonArray(households.map { s ->
             buildJsonObject { put("id", s.id); put("name", s.name); put("mode", s.mode) }
         }).toString())
         onChange()
@@ -280,7 +286,8 @@ object Ledger {
             buildJsonObject { put("id", s.id); put("name", s.name); put("mode", s.mode) }
         }).toString())
         bundle = null; rows = emptyList(); meta = Meta(); lastBackupAt = null
-        val next = summaries().firstOrNull()
+        households = summaries()
+        val next = households.firstOrNull()
         if (next != null) { open(next.id); Idb.put(ACTIVE_KEY, next.id) } else Idb.remove(ACTIVE_KEY)
         onChange()
     }
@@ -317,6 +324,16 @@ object Ledger {
         else { bundle = LocalHousehold.upsert(b, kind, item); persist() }
         if (kind == Structure.RECURRING) generateRecurring()
     }
+
+    /** Copies one month's budgets into another. */
+    suspend fun copyBudgets(from: String, to: String) {
+        val b = bundle ?: return
+        if (connected) storeConfig(Remote.api!!.budgetCopy(householdId!!, from, to))
+        else { bundle = LocalHousehold.copyBudgets(b, from, to); persist() }
+    }
+
+    /** Writes several rows at once, such as the settlements that start a shared pot. */
+    suspend fun saveAll(list: List<Transaction>) { for (t in list) save(t) }
 
     suspend fun updateHousehold(patch: JsonObject) {
         val b = bundle ?: return
@@ -359,7 +376,10 @@ object Ledger {
     }
 
     suspend fun setRole(memberId: String, role: String) = storeConfig(Remote.api!!.memberSetRole(householdId!!, memberId, role))
-    suspend fun removeMember(memberId: String) = storeConfig(Remote.api!!.memberRemove(householdId!!, memberId))
+    suspend fun removeMember(memberId: String) {
+        if (connected) storeConfig(Remote.api!!.memberRemove(householdId!!, memberId))
+        else { bundle = LocalHousehold.upsertMember(bundle ?: return, buildJsonObject { put("id", memberId); put("status", "archived") }); persist() }
+    }
     suspend fun transferOwnership(memberId: String) = storeConfig(Remote.api!!.ownerTransfer(householdId!!, memberId))
 
     suspend fun leave() {

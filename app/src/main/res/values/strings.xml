@@ -734,4 +734,5 @@
     <string name="web_backup_due_text">No backup has been saved in a while. A backup protects the household if the browser\'s data is ever cleared.</string>
     <string name="web_forget_text">Removes the household from this browser.</string>
     <string name="web_forget_confirm">This household only exists in this browser. Forgetting it deletes it for good, unless you saved a backup. Continue?</string>
+    <string name="invite_link_or_code">Paste the invite link, or type the code</string>
 </resources>

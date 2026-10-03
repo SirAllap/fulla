@@ -3,6 +3,7 @@ package io.github.sirallap.fulla.web
 
 import io.github.sirallap.fulla.core.analytics.FixedItem
 import io.github.sirallap.fulla.core.analytics.FixedStatus
+import io.github.sirallap.fulla.core.analytics.PeriodForecast
 import io.github.sirallap.fulla.core.time.LocalDate
 import io.github.sirallap.fulla.core.time.YearMonth
 import org.w3c.dom.HTMLElement
@@ -23,47 +24,42 @@ object OverviewScreen {
         val forecast = if (period == current) runCatching { view.analytics.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null
 
         return el("main", "screen overview") {
-            div("header") {
-                button("‹", "btn icon") { chosen = period.minusMonths(1); App.render() }.attr("aria-label", t("previous_period"))
-                div("period") {
-                    child("h1", "title") { text(format.period(period)) }
-                    if (period != current) button(t("today"), "btn quiet small") { chosen = null; App.render() }
-                }
-                button("›", "btn icon") { chosen = if (period.plusMonths(1) == current) null else period.plusMonths(1); App.render() }.attr("aria-label", t("next_period"))
+            tabHeader(t("tab_overview"))
+            InstallHint.card()?.let { appendChild(it) }
+            div("period") {
+                iconButton("chevron_left", t("previous_period"), "accent") { chosen = period.minusMonths(1); App.render() }
+                span("t-amount label") { text(format.period(period)) }
+                iconButton("chevron_right", t("next_period"), "accent") {
+                    chosen = if (period.plusMonths(1) == current) null else period.plusMonths(1); App.render()
+                }.also { if (period == current) it.setAttribute("disabled", "") }
             }
             if (summary.incomeMinor == 0L && summary.expenseMinor == 0L && rows.isEmpty()) {
                 div("empty") {
-                    child("h2") { text(t("empty_period_title")) }
+                    child("h2", "t-title") { text(t("empty_period_title")) }
                     child("p", "muted") { text(t("empty_period_text")) }
                 }
             } else {
-                div("card hero") {
-                    div("figures") {
-                        figure(t("money_in"), format.money(summary.incomeMinor), "in")
-                        figure(t("money_out"), format.money(summary.expenseMinor), "out")
-                        figure(t("savings"), format.money(hero.savingsMinor, signed = true), if (hero.savingsMinor < 0) "warn" else "")
-                    }
-                    div("bars") {
-                        bar("in", hero.incomeFraction)
-                        bar("out", hero.expenseFraction)
-                    }
+                appendChild(Jar.build(hero.incomeFraction, hero.expenseFraction))
+                div("figures") {
+                    figure(t("money_in"), format.money(summary.incomeMinor), "in")
+                    figure(t("money_out"), format.money(summary.expenseMinor), "out")
+                    figure(t("savings"), format.money(hero.savingsMinor, signed = true), "")
                 }
             }
-            if (forecast != null && forecast.waiting.not()) forecastCard(forecast, format)
+            if (forecast != null && !forecast.waiting) forecastRows(forecast, format)
             if (forecast != null && forecast.fixed.isNotEmpty()) fixedCosts(forecast, format, today)
-            if (rows.isNotEmpty()) div("card") {
-                child("h2", "card-title") { text(t("where_it_went")) }
+            if (rows.isNotEmpty()) {
+                section(t("where_it_went"))
                 for (row in rows.sortedByDescending { it.amountMinor }) {
                     val category = view.config.category(row.categoryId)
-                    div("cat-row") {
-                        style.setProperty("--tile", "var(--cat-${(category?.colorIndex ?: 0) % 12})")
-                        span("tile-icon small") { text(Icons.of(category?.icon ?: "label")) }
-                        div("cat-main") {
-                            div("cat-line") {
-                                span("name") { text(category?.name ?: t("uncategorized")) }
-                                span("amount") { text(format.money(row.amountMinor)) }
-                            }
-                            div("meter") { div("fill") { style.width = "${(row.share * 100).coerceIn(1.0, 100.0)}%" } }
+                    listRow(
+                        title = category?.name ?: t("uncategorized"),
+                        start = { span("glyph") { style.setProperty("--tile", "var(--cat-${(category?.colorIndex ?: 0).mod(12)})"); categoryIcon(category?.icon ?: "label", 22) } },
+                        end = { amountText(format.money(row.amountMinor)) },
+                    ).also { r ->
+                        r.querySelector(".text")?.let { text ->
+                            val m = el("div", "meter") { style.setProperty("--tile", "var(--cat-${(category?.colorIndex ?: 0).mod(12)})"); div("") { style.width = "${(row.share * 100).coerceIn(1.0, 100.0)}%" } }
+                            text.appendChild(m)
                         }
                     }
                 }
@@ -72,64 +68,49 @@ object OverviewScreen {
     }
 
     private fun HTMLElement.figure(label: String, value: String, tone: String) = div("figure $tone") {
-        span("figure-label") { text(label) }
-        span("figure-value") { text(value) }
+        span("t-label") { text(label) }
+        div("v") { text(value) }
     }
 
-    private fun HTMLElement.bar(tone: String, fraction: Double) = div("hero-bar") {
-        div("hero-fill $tone") { style.width = "${(fraction * 100).coerceIn(0.0, 100.0)}%" }
-    }
-
-    private fun HTMLElement.forecastCard(f: io.github.sirallap.fulla.core.analytics.PeriodForecast, format: Format) {
+    private fun HTMLElement.forecastRows(f: PeriodForecast, format: Format) {
         val left = f.leftToSpendMinor ?: return
         if (f.early) return
-        div("card") {
-            child("h2", "card-title") { text(t("left_to_spend")) }
-            div("big") { text(format.money(left)) }
-            f.perDayMinor?.let { perDay ->
-                if (perDay > 0) child("p", "muted") { text(t("per_day_text", f.length - f.day) + " — " + format.money(perDay)) }
-            }
-            child("p", "muted small") { text(t("left_to_spend_text", format.money(f.totalIncomeMinor), format.money(f.spentMinor), format.money(f.fixedToComeMinor))) }
-        }
+        section(t("left_to_spend"))
+        listRow(format.money(left), context = t("left_to_spend_text", format.money(f.totalIncomeMinor), format.money(f.spentMinor), format.money(f.fixedToComeMinor)),
+            detail = f.perDayMinor?.takeIf { it > 0 }?.let { t("per_day_text", f.length - f.day) + " · " + format.money(it) })
     }
 
-    private fun HTMLElement.fixedCosts(f: io.github.sirallap.fulla.core.analytics.PeriodForecast, format: Format, today: LocalDate) {
+    private fun HTMLElement.fixedCosts(f: PeriodForecast, format: Format, today: LocalDate) {
         val pending = f.fixed.filter { it.status == FixedStatus.PENDING }
         val charged = f.fixed.filter { it.status != FixedStatus.PENDING }
-        div("card") {
-            child("h2", "card-title") { text(t("fixed_costs")) }
-            child("p", "muted small") { text(t("fixed_progress", format.money(f.fixedPaidMinor), format.money(f.fixedToComeMinor))) }
-            for (item in pending) fixedRow(item, format, today, f.length)
-            if (charged.isNotEmpty()) {
-                button(t("fixed_charged_group", charged.size) + if (chargedOpen) " ▴" else " ▾", "btn quiet small") { chargedOpen = !chargedOpen; App.render() }
-                if (chargedOpen) for (item in charged) fixedRow(item, format, today, f.length)
-            }
+        section(t("fixed_costs"))
+        child("p", "muted t-secondary pad") { text(t("fixed_progress", format.money(f.fixedPaidMinor), format.money(f.fixedToComeMinor))) }
+        for (item in pending) fixedRow(item, format, today, f.length)
+        if (charged.isNotEmpty()) {
+            listRow(t("fixed_charged_group", charged.size), end = { span("chev") { ui(if (chargedOpen) "expand_less" else "expand_more") } }) { chargedOpen = !chargedOpen; App.render() }
+            if (chargedOpen) for (item in charged) fixedRow(item, format, today, f.length)
         }
     }
 
     private fun HTMLElement.fixedRow(item: FixedItem, format: Format, today: LocalDate, length: Int) {
         val paid = item.status == FixedStatus.PAID
         val skipped = item.status == FixedStatus.SKIPPED
-        div("fixed-row") {
-            div("cat-line") {
-                span("name") {
-                    text(item.name)
-                    if (item.installment != null && item.installments != null) text(" · " + t("installment_of", item.installment, item.installments))
-                }
-                span("amount") { text(format.money(item.amountMinor)) }
-            }
-            div("meter ${if (paid) "paid" else ""}") { div("fill") { style.width = "${(item.countdown(today, length) * 100).toInt()}%" } }
-            child("small", "muted") {
-                text(when {
-                    skipped -> t("fixed_skipped")
-                    paid -> t("fixed_paid_on", format.day(item.date))
-                    item.overdue -> t("fixed_overdue", format.day(item.date))
-                    else -> t("fixed_due_on", format.day(item.date))
-                })
-            }
-            if (item.overdue && !paid) button(t("fixed_apply"), "btn small secondary") {
-                App.launch { Ledger.applyRecurring(item.ruleId, item.date) }
-            }
+        val r = listRow(
+            title = item.name + if (item.installment != null && item.installments != null) " · " + t("installment_of", item.installment, item.installments) else "",
+            detail = when {
+                skipped -> t("fixed_skipped")
+                paid -> t("fixed_paid_on", format.day(item.date))
+                item.overdue -> t("fixed_overdue", format.day(item.date))
+                else -> t("fixed_due_on", format.day(item.date))
+            },
+            end = {
+                amountText(format.money(item.amountMinor))
+                if (item.overdue && !paid) button(t("fixed_apply"), "chip") { App.launch { Ledger.applyRecurring(item.ruleId, item.date) } }
+            },
+        )
+        r.querySelector(".text")?.let { text ->
+            val bar = el("div", if (paid) "meter paid" else "meter") { div("") { style.width = "${(item.countdown(today, length) * 100).toInt()}%" } }
+            text.insertBefore(bar, text.querySelector(".sub"))
         }
     }
 }

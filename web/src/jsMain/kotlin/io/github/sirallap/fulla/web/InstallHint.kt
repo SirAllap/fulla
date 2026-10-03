@@ -24,11 +24,11 @@ object InstallHint {
 
     fun card(): HTMLElement? {
         if (!onIos() || installed() || dismissed()) return null
-        return el("div", "card hint") {
+        return el("div", "hint") {
             attr("role", "note")
-            child("h2", "card-title") { text(t("web_install_title")) }
-            child("p") { text(t("web_install_text")) }
-            button(t("done"), "btn secondary small") {
+            child("h2", "t-title") { text(t("web_install_title")) }
+            child("p", "muted") { text(t("web_install_text")) }
+            secondaryButton(t("done")) {
                 runCatching { localStorage.setItem(KEY, "1") }
                 App.render()
             }

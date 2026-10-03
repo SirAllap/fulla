@@ -684,4 +684,5 @@
     <string name="web_backup_due_text">Da un po’ non viene salvato nessun backup. Un backup protegge la famiglia se i dati del browser venissero cancellati.</string>
     <string name="web_forget_text">Rimuove la famiglia da questo browser.</string>
     <string name="web_forget_confirm">Questa famiglia esiste solo in questo browser. Dimenticarla la elimina per sempre, a meno che tu non abbia salvato un backup. Continuare?</string>
+    <string name="invite_link_or_code">Incolla il link d’invito o scrivi il codice</string>
 </resources>

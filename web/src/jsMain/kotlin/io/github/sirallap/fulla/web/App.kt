@@ -7,17 +7,20 @@ import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import org.w3c.dom.HTMLElement
 
-enum class Tab(val label: String, val iconPath: String) {
-    ADD("tab_add", "M12 5v14M5 12h14"),
-    OVERVIEW("tab_overview", "M4 19V9m6 10V5m6 14v-7m4 7H2"),
-    HISTORY("tab_history", "M4 6h16M4 12h16M4 18h10"),
-    SETTINGS("settings", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"),
+/** The four tabs of the Android app, with its icons. Everything else hangs off the gear. */
+enum class Tab(val label: String, val icon: String) {
+    ADD("tab_add", "add_circle_outline"),
+    OVERVIEW("tab_overview", "opacity"),
+    HISTORY("tab_history", "receipt_long"),
+    BALANCES("tab_balances", "account_balance_wallet"),
 }
 
 /** The page: what is on it, and drawing it again whenever something changes. */
 object App {
     private lateinit var root: HTMLElement
     var tab: Tab = Tab.ADD
+    /** Settings is a screen of its own over the tabs, reached by the gear. */
+    var settingsOpen: Boolean = false
     /** The settings page being looked at, or null for the list. */
     var settingsPage: SettingsPage? = null
     /** A row being edited from History, or null. */
@@ -30,9 +33,23 @@ object App {
 
     fun go(to: Tab) {
         tab = to
-        if (to != Tab.SETTINGS) settingsPage = null
+        settingsOpen = false
         render()
         window.scrollTo(0.0, 0.0)
+    }
+
+    fun openSettings(page: SettingsPage? = null) {
+        settingsOpen = true
+        settingsPage = page
+        render()
+        window.scrollTo(0.0, 0.0)
+    }
+
+    fun closeSettings() {
+        settingsOpen = false
+        settingsPage = null
+        FixedForm.close()
+        render()
     }
 
     fun setLanguage(code: String) {
@@ -46,31 +63,36 @@ object App {
         val scrollY = window.scrollY
         root.clear()
         val view = Ledger.view
-        if (view == null) {
+        if (view == null || Onboarding.adding) {
             root.appendChild(Onboarding.screen())
             return
         }
         val format = Format(view.config)
-        val content = when (tab) {
-            Tab.ADD -> AddScreen.build(view, format)
-            Tab.OVERVIEW -> OverviewScreen.build(view, format)
-            Tab.HISTORY -> HistoryScreen.build(view, format)
-            Tab.SETTINGS -> SettingsScreen.build(view, format)
+        if (settingsOpen) {
+            root.appendChild(SettingsScreen.build(view, format))
+        } else {
+            root.appendChild(when (tab) {
+                Tab.ADD -> AddScreen.build(view, format)
+                Tab.OVERVIEW -> OverviewScreen.build(view, format)
+                Tab.HISTORY -> HistoryScreen.build(view, format)
+                Tab.BALANCES -> BalancesScreen.build(view, format)
+            })
+            root.appendChild(tabBar())
         }
-        root.appendChild(content)
-        root.appendChild(tabBar())
         window.scrollTo(0.0, scrollY)
     }
 
     private fun tabBar(): HTMLElement = el("nav", "tabbar") {
         attr("aria-label", "Fulla")
-        for (entry in Tab.entries) {
-            child("button", if (entry == tab) "tab selected" else "tab") {
-                attr("type", "button")
-                if (entry == tab) attr("aria-current", "page")
-                icon(entry.iconPath)
-                span("tab-label") { text(t(entry.label)) }
-                click { go(entry) }
+        div("tabbar-inner") {
+            for (entry in Tab.entries) {
+                child("button", if (entry == tab) "tab selected" else "tab") {
+                    attr("type", "button")
+                    if (entry == tab) attr("aria-current", "page")
+                    ui(entry.icon, 22)
+                    span("") { text(t(entry.label)) }
+                    click { go(entry) }
+                }
             }
         }
     }
@@ -78,7 +100,7 @@ object App {
     /** A short message at the bottom, with an optional way back. */
     fun toast(message: String, actionLabel: String? = null, onAction: () -> Unit = {}) {
         document.getElementById("toast")?.let { it.parentNode?.removeChild(it) }
-        val toast = el("div", "toast") {
+        val toast = el("div", if (settingsOpen) "toast no-tabs" else "toast") {
             id = "toast"
             attr("role", "status")
             span { text(message) }

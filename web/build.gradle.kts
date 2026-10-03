@@ -35,8 +35,6 @@ kotlin {
     sourceSets {
         jsMain {
             kotlin.srcDir(generatedStrings)
-            // The landing page's typeface, and its licence, travel with the app.
-            resources.srcDir(rootProject.file("site/fonts"))
             dependencies {
                 implementation(project(":client"))
                 implementation(libs.ktor.client.js)
