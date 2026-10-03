@@ -123,6 +123,11 @@ h1, h2, p, ol, ul, dl, dd, figure { margin: 0; }
 .bar-links { display: flex; align-items: center; gap: 6px; }
 .bar-link { display: inline-flex; align-items: center; min-height: 48px; padding: 0 12px; text-decoration: none; font-weight: 500; }
 .bar-link:hover { text-decoration: underline; }
+@media (max-width: 359px) {
+  .bar-links { gap: 0; }
+  .bar-link { padding: 0 8px; }
+  .bar-cta { padding: 0 12px; }
+}
 .bar-cta {
   display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px;
   border-radius: 12px; background: var(--accent); color: var(--on-accent);
@@ -207,6 +212,8 @@ h1, h2, p, ol, ul, dl, dd, figure { margin: 0; }
 @media (hover: hover) and (pointer: fine) {
   .btn-outline:hover { border-color: var(--ring); }
 }
+.lbl-short { display: none; }
+.foot-note { flex-basis: 100%; margin-top: 0; }
 .hero-note { margin: 14px 0 0; max-width: 44ch; color: var(--ink-muted); font-size: 0.9375rem; line-height: 1.5; }
 .btn-quiet { padding: 0 6px; min-height: 48px; text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 2px; }
 @media (hover: hover) and (pointer: fine) {
@@ -615,6 +622,25 @@ h1, h2, p, ol, ul, dl, dd, figure { margin: 0; }
   .name-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
 }
 
+
+/* The hero is pinned to the screen and clipped to it: on a phone it has to fit, with the scroll cue and the
+   tilt button underneath. Two short buttons side by side, a smaller jar, and the words a little tighter. */
+@media (max-width: 720px) {
+  .hero { padding: 72px var(--gutter) 92px; gap: 14px; }
+  .band-slot { width: min(52vw, 30svh, 300px); }
+  .hero-name { font-size: clamp(3rem, 14vw, 4.5rem); }
+  .hero-tagline { margin-top: 12px; font-size: clamp(1.25rem, 5vw, 1.75rem); }
+  .hero-sub { margin-top: 10px; font-size: 1rem; }
+  .hero-actions { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hero-actions .btn { min-height: 50px; padding: 0 12px; }
+  .hero-actions .lbl-long { display: none; }
+  .hero-actions .lbl-short { display: inline; }
+  .hero-actions .btn-github, .hero .hero-note { display: none; }
+}
+@media (max-width: 720px) and (max-height: 700px) {
+  .hero-sub { display: none; }
+  .band-slot { width: min(44vw, 24svh, 300px); }
+}
 
 @media (min-width: 900px) {
   :root { --gutter: 40px; }
