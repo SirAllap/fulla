@@ -50,7 +50,7 @@ object Onboarding {
         return when (step) {
             Step.WELCOME -> welcome()
             Step.CREATE -> form(t("get_started")) { createFields() }
-            Step.SHARED -> form(t("shared")) { projectFields(); accountFields(); createFields() }
+            Step.SHARED -> form(t("shared")) { if (Hosted.endpoint == null) projectFields(); accountFields(); createFields() }
             Step.JOIN -> form(t("join_household")) { joinFields() }
         }
     }
@@ -163,7 +163,7 @@ object Onboarding {
             if (link != null) { linked = link; code = link.code; url = link.endpoint.url; key = link.endpoint.anonKey; App.render() }
             else { linked = null; code = text.uppercase().take(20) }
         }
-        if (linked == null) projectFields()
+        if (linked == null && Hosted.endpoint == null) projectFields()
         else child("p", "muted pad") { text(t("invite_confirm_host", linked!!.endpoint.host)) }
         val you = field(t("your_name"), yourName) { attr("maxlength", "40"); attr("autocomplete", "name") }
         you.on("input") { yourName = you.value }
@@ -174,7 +174,7 @@ object Onboarding {
         if (yourName.isBlank()) { problem = t("your_name"); App.render(); return }
         val currencyOk = Currency.of(currency.trim().uppercase()) != null
         if (step != Step.JOIN && (householdName.isBlank() || !currencyOk)) { problem = t("household_name"); App.render(); return }
-        val endpoint = if (step == Step.CREATE) null else Endpoint.parse(url, key)
+        val endpoint = if (step == Step.CREATE) null else (linked?.endpoint ?: Hosted.endpoint ?: Endpoint.parse(url, key))
         if (step != Step.CREATE && endpoint == null) { problem = t("url_not_supabase"); App.render(); return }
         busy = true; problem = null; App.render()
         App.launch {

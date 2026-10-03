@@ -91,7 +91,7 @@ object SyncPage {
     }
 
     private fun HTMLElement.form(view: HouseholdView, connected: Boolean) {
-        if (!connected) {
+        if (!connected && Hosted.endpoint == null) {
             val u = field(t("project_url"), url, "url") { attr("autocapitalize", "none"); attr("autocorrect", "off"); attr("inputmode", "url") }
             u.on("input") { url = u.value }
             val k = field(t("anon_key"), key) { attr("autocapitalize", "none"); attr("autocorrect", "off") }
@@ -115,7 +115,7 @@ object SyncPage {
                 if (connected) {
                     if (!Ledger.signInAgain(email, password)) error = t("confirm_email")
                 } else {
-                    val endpoint = Endpoint.parse(url, key) ?: throw IllegalArgumentException(t("something_failed"))
+                    val endpoint = Hosted.endpoint ?: Endpoint.parse(url, key) ?: throw IllegalArgumentException(t("something_failed"))
                     if (!Ledger.share(endpoint, email, password, create)) error = t("confirm_email")
                 }
                 if (error == null) { password = ""; checked = null }

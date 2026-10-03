@@ -98,6 +98,9 @@ jobs:
         with:
           node-version: 20
       - name: Build
+        env:
+          FULLA_PROJECT_URL: ${{ secrets.FULLA_PROJECT_URL }}
+          FULLA_ANON_KEY: ${{ secrets.FULLA_ANON_KEY }}
         run: ./gradlew :web:jsBrowserDistribution
       # The built bundle in Chromium with an iPhone's screen, under the page's own
       # Content Security Policy: write, sum, list, back up, restore, work offline.

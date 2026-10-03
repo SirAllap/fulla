@@ -44,6 +44,9 @@ jobs:
         with:
           node-version: 20
       - name: Build the web app
+        env:
+          FULLA_PROJECT_URL: ${{ secrets.FULLA_PROJECT_URL }}
+          FULLA_ANON_KEY: ${{ secrets.FULLA_ANON_KEY }}
         run: ./gradlew :web:jsBrowserDistribution
       - name: Put the web app under /app/
         run: |
