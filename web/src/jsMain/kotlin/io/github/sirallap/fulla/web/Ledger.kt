@@ -416,7 +416,8 @@ object Ledger {
         meta = Meta(CONNECTED, endpoint.url, endpoint.anonKey, 0, LocalHousehold.version(joined.config))
         rows = rows.map { r -> Edits.connect(listOf(r)).firstOrNull() ?: r }
         persist()
-        requestSync()
+        // At once, not soon: a person may invite somebody before a timer fires, and what was written alone must reach the server first.
+        sync()
         return true
     }
 

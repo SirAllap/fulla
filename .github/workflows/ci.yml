@@ -97,13 +97,18 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 20
+      # Built without the project's address: the tests bring their own (a throwaway PostgreSQL behind a fake Supabase).
       - name: Build
-        env:
-          FULLA_PROJECT_URL: ${{ secrets.FULLA_PROJECT_URL }}
-          FULLA_ANON_KEY: ${{ secrets.FULLA_ANON_KEY }}
         run: ./gradlew :web:jsBrowserDistribution
+      - name: PostgreSQL, for the two-person test
+        run: |
+          if ! ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql
+          fi
       # The built bundle in Chromium with an iPhone's screen, under the page's own
-      # Content Security Policy: write, sum, list, back up, restore, work offline.
+      # Content Security Policy: write, sum, list, back up, restore, work offline,
+      # and two people sharing one household through the real migrations.
       - name: Browser tests
         working-directory: web/e2e
         run: |

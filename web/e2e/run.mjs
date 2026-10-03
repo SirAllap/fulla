@@ -194,6 +194,97 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await ctx.close();
 }
 
+// ── 3. two people, one household, through a Supabase project (the real migrations, in a throwaway PostgreSQL) ──
+if (process.env.FULLA_SKIP_DB !== '1') {
+  const { createRequire } = await import('node:module');
+  const fake = createRequire(import.meta.url)('./fake-supabase.cjs').start();
+  const open = async (opts) => {
+    const p = await phone(opts);
+    await p.ctx.route('https://abcdefghijklmnopqrst.supabase.co/**', (route) => fake.handle(route));
+    return p;
+  };
+  const fakeUrl = 'https://abcdefghijklmnopqrst.supabase.co';
+  try {
+    const a = await open({ locale: 'en-GB' });
+    await a.page.goto(BASE);
+    await a.page.click('text=Get started');
+    await a.page.fill('input >> nth=0', 'Casa');
+    await a.page.fill('input >> nth=1', 'Alice Example');
+    await a.page.click('button:has-text("Create")');
+    await a.page.waitForSelector('.tabbar');
+    await type(a.page, '12,5'.replace(',', '.'));
+    await a.page.click('.tile >> nth=1');
+    await a.page.click('.key.save');
+    await a.page.waitForSelector('.toast');
+
+    await gear(a.page);
+    await row(a.page, 'Sync').click();
+    await a.page.fill('input[type=url]', fakeUrl);
+    await a.page.fill('input >> nth=1', 'anon-key-for-tests');
+    await a.page.fill('input[type=email]', 'alice@example.com');
+    await a.page.fill('input[type=password]', 'correct horse battery');
+    await a.page.click('.switch');
+    await a.shot('20-share');
+    await a.page.click('main .btn.primary');
+    await a.page.waitForSelector('.row:has-text("Signed in as")', { timeout: 20000 });
+    ok(true, 'Alice shares her household through the project, with an account she creates');
+
+    await back(a.page);
+    await row(a.page, 'People').click();
+    await a.page.click('button:has-text("Create an invite")');
+    // An admin whose household has not chosen how money works is asked first.
+    await a.page.waitForSelector('.sheet .row');
+    await a.page.click('.sheet .row >> nth=0');
+    await a.page.waitForSelector('.code', { timeout: 20000 });
+    const code = (await a.page.textContent('.code')).trim();
+    ok(code.length >= 6, 'and invites someone: ' + code);
+
+    const b = await open({ locale: 'en-GB' });
+    await b.page.goto(BASE);
+    await b.page.click('text=I have an invite');
+    await b.page.fill('input >> nth=0', code);
+    await b.page.fill('input[type=url]', fakeUrl);
+    await b.page.fill('input >> nth=2', 'anon-key-for-tests');
+    await b.page.fill('input >> nth=3', 'Bob Example');
+    await b.page.fill('input[type=email]', 'bob@example.com');
+    await b.page.fill('input[type=password]', 'another long phrase');
+    await b.page.click('.switch');
+    await b.shot('21-join');
+    await b.page.click('main .btn.primary');
+    await b.page.waitForSelector('.tabbar', { timeout: 30000 });
+    await b.page.click('.tab:has-text("History")');
+    await b.page.waitForSelector('.wrap-row', { timeout: 30000 });
+    ok(await b.page.locator('.wrap-row').count() === 1, 'Bob joins with the invite and finds what Alice wrote down');
+
+    await b.page.click('.tab:has-text("Add")');
+    await type(b.page, '30');
+    await b.page.click('.tile >> nth=0');
+    await b.page.click('.key.save');
+    await b.page.waitForSelector('.toast');
+    await b.page.waitForTimeout(3500);
+    await a.page.click('.header .icon-btn[aria-label="Back"]');
+    await a.page.click('.header .icon-btn[aria-label="Back"]');
+    await a.page.click('.tab:has-text("Balances")');
+    await a.page.click('.tab:has-text("History")');
+    await gear(a.page);
+    await row(a.page, 'Sync').click();
+    await row(a.page, 'Sync now').click();
+    await a.page.waitForTimeout(2500);
+    await back(a.page);
+    await a.page.click('.header .icon-btn[aria-label="Back"]');
+    await a.page.click('.tab:has-text("History")');
+    await a.page.waitForFunction(() => document.querySelectorAll('.wrap-row').length === 2, null, { timeout: 15000 });
+    ok(true, 'what Bob writes reaches Alice');
+    await a.shot('22-alice-history');
+    ok(a.errors.length === 0 && b.errors.length === 0, 'no console errors on either phone' + [...a.errors, ...b.errors].join(' | '));
+    await a.ctx.close(); await b.ctx.close();
+  } catch (e) {
+    ok(false, 'two people through the project: ' + e.message.split('\n')[0]);
+  } finally {
+    fake.stop();
+  }
+}
+
 await browser.close();
 server.close();
 console.log(failures === 0 ? '\nweb e2e: all passed' : `\nweb e2e: ${failures} failed`);
