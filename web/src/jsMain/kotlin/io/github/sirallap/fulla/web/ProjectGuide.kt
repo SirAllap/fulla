@@ -20,7 +20,16 @@ object ProjectGuide {
     var key = ""
 
     /** The project to use: the build's, or what the person typed. */
-    fun current(): Endpoint? = Hosted.endpoint ?: Endpoint.parse(url, key)
+    fun current(): Endpoint? = Hosted.endpoint ?: parse(url, key)
+
+    private val REF = Regex("[a-z0-9]{20}")
+
+    /** The address as people find it: the project's own, its 20-letter code alone, or a dashboard page of it. */
+    fun parse(rawUrl: String, anonKey: String): Endpoint? {
+        val t = rawUrl.trim()
+        val ref = if (REF.matches(t)) t else Regex("/project/([a-z0-9]{20})").find(t)?.groupValues?.get(1)
+        return Endpoint.parse(if (ref != null) "https://$ref.supabase.co" else t, anonKey)
+    }
 
     /** Kept so the forms ask for the account only once there is a project to sign in to. */
     fun needed(): Boolean = false
@@ -38,7 +47,7 @@ object ProjectGuide {
                 child("button", "text-btn") { attr("type", "button"); text(t("setup_open")); click { open("https://supabase.com/dashboard/project/_/sql/new") } }
             }
         }
-        step(4, t("setup_manual_keys"), t("setup_manual_keys_text"), t("setup_open")) { open("https://supabase.com/dashboard/project/_/settings/api-keys") }
+        step(4, t("setup_manual_keys"), t("setup_manual_keys_text"), t("setup_open")) { open("https://supabase.com/dashboard/project/_/settings/general") }
         val u = field(t("project_url"), url, "url") { attr("autocapitalize", "none"); attr("autocorrect", "off"); attr("inputmode", "url") }
         u.on("input") { url = u.value }
         val k = field(t("anon_key"), key, help = t("anon_key_help")) { attr("autocapitalize", "none"); attr("autocorrect", "off") }

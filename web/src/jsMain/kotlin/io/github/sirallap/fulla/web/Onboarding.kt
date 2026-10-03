@@ -174,7 +174,7 @@ object Onboarding {
         if (yourName.isBlank()) { problem = t("your_name"); App.render(); return }
         val currencyOk = Currency.of(currency.trim().uppercase()) != null
         if (step != Step.JOIN && (householdName.isBlank() || !currencyOk)) { problem = t("household_name"); App.render(); return }
-        val endpoint = if (step == Step.CREATE) null else (linked?.endpoint ?: ProjectGuide.current() ?: Endpoint.parse(url, key))
+        val endpoint = if (step == Step.CREATE) null else (linked?.endpoint ?: ProjectGuide.current() ?: ProjectGuide.parse(url, key))
         if (step != Step.CREATE && endpoint == null) { problem = t("url_not_supabase"); App.render(); return }
         busy = true; problem = null; App.render()
         App.launch {
