@@ -92,6 +92,7 @@ object App {
             root.appendChild(tabBar())
         }
         window.scrollTo(0.0, scrollY)
+        GuideHost.show(view, format)
     }
 
     private fun tabBar(): HTMLElement = el("nav", "tabbar") {

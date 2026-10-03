@@ -71,6 +71,7 @@ object SettingsScreen {
                     }) { App.settingsPage = p; App.render(); window.scrollTo(0.0, 0.0) }
             }
         }
+        div("rows") { listRow(t("settings_show_guide"), start = leadIcon("info")) { App.closeSettings(); GuideHost.start(view.id, io.github.sirallap.fulla.core.guide.GuideOrigin.REPLAY) } }
         if (!Idb.available) child("p", "problem") { text(t("web_storage_missing")) }
     }
 

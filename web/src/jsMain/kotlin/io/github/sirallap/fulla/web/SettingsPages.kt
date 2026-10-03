@@ -301,8 +301,8 @@ object CategoriesPage {
         val others = use.budgets + use.recurring + use.fields
         var target: String? = if (use.rows > 0) targets.firstOrNull { it.id == category.parentId }?.id else null
         sheet(t(if (others > 0) "archive_item_title" else "delete_item_title", category.name)) { close ->
-            lateinit var body: HTMLElement
-            body = div("") {
+            val body = div("")
+            body.run {
                 fun paint() {
                     body.clear()
                     body.run {

@@ -42,6 +42,17 @@ async function phone(options = {}) {
 async function type(page, digits) {
   for (const ch of digits) await page.locator('.keys .key', { hasText: new RegExp('^' + ch.replace(/[+.,]/g, '\\$&') + '$') }).first().click();
 }
+// The getting-started guide: setup sheets, then a tour. Leaves it by its Skip button.
+async function skipGuide(page) {
+  for (let i = 0; i < 5; i++) {
+    const skip = page.locator('.sheet .btn.quiet:last-child, .tour-skip');
+    try { await skip.first().waitFor({ timeout: 1500 }); } catch { break; }
+    await skip.first().click();
+    await page.waitForTimeout(150);
+  }
+  // The tour leaves the app on whichever tab it last named.
+  await page.click('.tabbar .tab:first-child');
+}
 const gear = (page) => page.click('.header .icon-btn[aria-label]:last-child');
 const back = (page) => page.click('.header.back .icon-btn');
 const row = (page, text) => page.locator('.row', { hasText: text }).first();
@@ -58,6 +69,19 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await shot('01b-create');
   await page.click('button:has-text("Crear")');
   await page.waitForSelector('.tabbar');
+  await page.waitForSelector('.sheet');
+  ok(await page.locator('.sheet .row').count() >= 3, 'a new household starts with the setup guide: when does the month start');
+  await shot('02a-guide-month');
+  await page.click('.sheet .btn.primary');
+  await page.waitForSelector('.sheet input');
+  await shot('02b-guide-accounts');
+  await page.click('.sheet .btn.quiet:last-child');
+  await page.waitForSelector('.tour-card');
+  ok(await page.locator('.tour-hole').count() === 1, 'then a tour, with a hole over the part it names');
+  await shot('02c-guide-tour');
+  await page.click('.tour-skip');
+  await page.waitForSelector('.tour', { state: 'detached' });
+  await page.click('.tabbar .tab:first-child');
   await shot('02-add');
 
   await type(page, '12,5');
@@ -95,6 +119,22 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.click('.sheet button:has-text("Guardar")');
   await page.waitForSelector('.glyph.sub');
   ok((await page.textContent('main')).includes('Fruta'), 'a subcategory can be added under a category');
+  await back(page);
+
+  // a custom field, a trip: forms made of sheets
+  await row(page, 'Campos').click();
+  await page.click('text=Añadir un campo');
+  await page.fill('.sheet input >> nth=0', 'Tienda');
+  await page.click('.sheet .btn.primary');
+  await page.waitForSelector('.row:has-text("Tienda")');
+  ok(true, 'a custom field can be added');
+  await back(page);
+  await row(page, 'Viajes').click();
+  await page.click('main .btn.primary');
+  await page.fill('.sheet input >> nth=0', 'Lisboa');
+  await page.click('.sheet .btn.primary');
+  await page.waitForSelector('.row:has-text("Lisboa")');
+  ok(true, 'a trip can be added');
   await back(page);
 
   // fixed cost with an end: it writes itself on its day, and stops
@@ -149,6 +189,7 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.click('text=More options');
   await page.click('text=Look around first');
   await page.waitForSelector('.tabbar');
+  await skipGuide(page);
   await page.click('.tab:has-text("Overview")');
   await page.waitForSelector('.figures');
   await shot('10-dark-overview');
@@ -228,6 +269,7 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     await a.page.fill('input >> nth=1', 'Alice Example');
     await a.page.click('button:has-text("Create")');
     await a.page.waitForSelector('.tabbar');
+    await skipGuide(a.page);
     await type(a.page, '12,5'.replace(',', '.'));
     await a.page.click('.tile >> nth=1');
     await a.page.click('.key.save');
@@ -268,6 +310,7 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     await b.shot('21-join');
     await b.page.click('main .btn.primary');
     await b.page.waitForSelector('.tabbar', { timeout: 30000 });
+    await skipGuide(b.page);
     await b.page.click('.tab:has-text("History")');
     await b.page.waitForSelector('.history .row', { timeout: 30000 });
     ok(await b.page.locator('.history .row').count() === 1, 'Bob joins with the invite and finds what Alice wrote down');

@@ -257,8 +257,8 @@ object ImportPage {
         var keep = true
         var chosen = overrides[p.transaction.id] ?: p.transaction.categoryId
         sheet(p.transaction.note) { close ->
-            lateinit var body: HTMLElement
-            body = div("") {
+            val body = div("")
+            body.run {
                 fun paint() {
                     body.clear()
                     body.run {

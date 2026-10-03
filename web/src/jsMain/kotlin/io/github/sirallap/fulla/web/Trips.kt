@@ -69,14 +69,15 @@ object TripsPage {
         // A brand new trip starts with just its creator on it: who else is going is an explicit choice.
         var members = existing?.memberIds?.toSet() ?: setOfNotNull(view.config.meMemberId)
         var kind = existing?.kind ?: TripKind.HOLIDAY
+        var saveButton: HTMLElement? = null
         sheet(existing?.name ?: t("trip_new")) { close ->
-            lateinit var body: HTMLElement
-            body = div("") {
+            val body = div("")
+            body.run {
                 fun paint() {
                     body.clear()
                     body.run {
                         val n = field(t("trip_name"), name) { attr("maxlength", "40") }
-                        n.on("input") { name = n.value }
+                        n.on("input") { name = n.value; saveButton?.let { b -> if (name.isNotBlank()) b.removeAttribute("disabled") else b.setAttribute("disabled", "") } }
                         section(t("trip_dates"))
                         val s = field(t("trip_dates"), start.toString(), "date"); s.on("change") { runCatching { LocalDate.parse(s.value) }.getOrNull()?.let { start = it; paint() } }
                         val e = field("→", end.toString(), "date"); e.on("change") { runCatching { LocalDate.parse(e.value) }.getOrNull()?.let { end = it; paint() } }
@@ -100,7 +101,7 @@ object TripsPage {
                         overlap?.let { child("p", "warn pad") { text(t("trip_overlaps", it.name)) } }
                         problem?.let { child("p", "problem") { text(it) } }
                         div("actions") {
-                            primaryButton(t("save"), enabled = name.isNotBlank() && problem == null) {
+                            saveButton = primaryButton(t("save"), enabled = name.isNotBlank() && problem == null) {
                                 close()
                                 val item = buildJsonObject {
                                     put("id", existing?.id ?: randomUuid()); put("name", name.trim())

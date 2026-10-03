@@ -34,7 +34,7 @@ object BalancesScreen {
                         title = m?.displayName ?: "?",
                         context = when { b.balanceMinor > 0 -> t("is_owed"); b.balanceMinor < 0 -> t("owes"); else -> t("settled") },
                         start = { badge(m?.initials ?: "?", m?.colorIndex ?: 0) },
-                        end = { amountText(format.money(b.balanceMinor, signed = true), if (b.balanceMinor > 0) "in" else "") },
+                        end = { amountText(format.money(b.balanceMinor, signed = true), when { b.balanceMinor > 0 -> "in"; b.balanceMinor < 0 -> "neg"; else -> "muted" }) },
                     )
                 }
                 section(t("to_settle"))
@@ -51,7 +51,11 @@ object BalancesScreen {
             section(t("accounts"), first = !shared && members.size < 2)
             for (a in config.accounts.filter { !it.archived }) {
                 val amount = accountBalances[a.id] ?: 0L
-                listRow(a.name, end = { amountText(format.money(amount), if (amount < 0) "" else "") })
+                listRow(a.name, end = { amountText(format.money(amount), if (amount < 0) "neg" else "") })
+            }
+            if (shared) {
+                val total = config.accounts.filter { !it.archived }.sumOf { accountBalances[it.id] ?: 0L }
+                listRow(t("household_total"), divider = false, end = { amountText(format.money(total), if (total < 0) "neg" else "") })
             }
         }
     }

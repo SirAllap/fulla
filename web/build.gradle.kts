@@ -34,7 +34,7 @@ val generateHosted by tasks.registering {
     outputs.dir(generatedHosted)
     doLast {
         fun lit(s: String) = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$") + "\""
-        val file = generatedHosted.get().file("Hosted.kt").asFile
+        val file = generatedHosted.get().file("HostedConfig.kt").asFile
         file.parentFile.mkdirs()
         file.writeText("package io.github.sirallap.fulla.web\n\ninternal object HostedConfig {\n    const val URL = ${lit(url.get())}\n    const val KEY = ${lit(key.get())}\n}\n")
     }

@@ -130,7 +130,7 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .switch:checked::after { top: 2px; left: 22px; width: 24px; height: 24px; background: var(--on-accent); }
 
 /* ── Add ────────────────────────────────────────────────────────────────── */
-.add { height: 100dvh; }
+.add { flex: none; height: 100dvh; min-height: 0; overflow: hidden; }
 .add .body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .entry-amount { padding: 8px var(--inset); text-align: right; font-size: 44px; line-height: 48px; font-weight: 500; font-stretch: 75%; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .entry-amount.in { color: var(--in); }
@@ -281,3 +281,14 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .dots { display: inline-flex; gap: 4px; } .dot-c { width: 20px; height: 20px; border-radius: 50%; display: inline-block; }
 .qr { margin: 8px 48px; padding: 16px; border-radius: 16px; background: #fff; color: #000; }
 .qr svg { display: block; width: 100%; height: auto; }
+.amount.neg { color: var(--out); } .amount.muted { color: var(--ink-muted); }
+
+/* the tour: a dimmed screen with a hole over the part being named */
+.tour { position: fixed; inset: 0; z-index: 60; }
+.tour-dim { position: absolute; inset: 0; background: color-mix(in srgb, var(--ink) 60%, transparent); }
+.tour-hole { position: absolute; border-radius: 16px; box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--ink) 60%, transparent); }
+.tour-card { position: absolute; left: 16px; right: 16px; max-width: 608px; margin: 0 auto; padding: 20px; border-radius: 20px; background: var(--paper); display: flex; flex-direction: column; gap: 4px; }
+.tour-card.bottom { bottom: calc(16px + env(safe-area-inset-bottom)); } .tour-card.top { top: calc(16px + env(safe-area-inset-top)); } .tour-card.mid { top: 50%; transform: translateY(-50%); }
+.tour-text { margin-bottom: 8px; }
+.tour-buttons { display: flex; gap: 8px; } .tour-buttons .btn { flex: 1; }
+.tour-skip { align-self: flex-end; margin-top: 4px; }

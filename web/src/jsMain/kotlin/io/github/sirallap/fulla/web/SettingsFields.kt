@@ -48,21 +48,27 @@ object FieldsPage {
         var archived = existing?.archived ?: false
         var label = existing?.label(language) ?: ""
         var options = existing?.options?.joinToString(", ") ?: ""
+        var saveButton: HTMLElement? = null
+        fun valid(): Boolean {
+            val list = options.split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+            return label.isNotBlank() && kinds.isNotEmpty() && ((type != FieldType.SELECT && type != FieldType.MULTISELECT) || list.isNotEmpty())
+        }
+        fun refresh() { saveButton?.let { if (valid()) it.removeAttribute("disabled") else it.setAttribute("disabled", "") } }
         sheet(t(if (existing == null) "add_field" else "edit")) { close ->
-            lateinit var body: HTMLElement
-            body = div("") {
+            val body = div("")
+            body.run {
                 fun paint() {
                     body.clear()
                     body.run {
                         val name = field(t("name"), label) { attr("maxlength", "40") }
-                        name.on("input") { label = name.value }
+                        name.on("input") { label = name.value; refresh() }
                         if (existing == null) {
                             formLabel(t("field_type"))
                             chipRow(wrap = true) { for (ty in FieldType.entries) chip(fieldTypeName(ty), ty == type) { type = ty; paint() } }
                         } else note(t("field_type_fixed", fieldTypeName(type)))
                         if (type == FieldType.SELECT || type == FieldType.MULTISELECT) {
                             val o = field(t("field_options"), options, help = t("field_options_help"))
-                            o.on("input") { options = o.value }
+                            o.on("input") { options = o.value; refresh() }
                         }
                         formLabel(t("field_applies_to"))
                         chipRow(wrap = true) {
@@ -85,7 +91,7 @@ object FieldsPage {
                         val needsOptions = type == FieldType.SELECT || type == FieldType.MULTISELECT
                         val valid = label.isNotBlank() && kinds.isNotEmpty() && (!needsOptions || optionList.isNotEmpty())
                         div("actions") {
-                            primaryButton(t("save"), enabled = valid) {
+                            saveButton = primaryButton(t("save"), enabled = valid) {
                                 close()
                                 val key = existing?.key ?: FieldKeys.from(label, view.config.fields.map { it.key }.toSet())
                                 val labels = (existing?.labels ?: emptyMap()) + (language to label.trim())

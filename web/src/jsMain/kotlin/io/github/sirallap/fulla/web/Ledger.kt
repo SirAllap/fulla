@@ -238,6 +238,7 @@ object Ledger {
         rows = emptyList()
         meta = Meta()
         persist()
+        householdId?.let { GuideHost.start(it, io.github.sirallap.fulla.core.guide.GuideOrigin.CREATED) }
     }
 
     private fun initialsOf(name: String): String =
@@ -250,6 +251,7 @@ object Ledger {
         rows = demo.transactions.map { Edits.create(it, connected = false, now = now()) }
         meta = Meta()
         persist()
+        householdId?.let { GuideHost.start(it, io.github.sirallap.fulla.core.guide.GuideOrigin.DEMO) }
     }
 
     /** Restores a backup file's text, as a household that lives in this browser. One already here is never overwritten. */
@@ -455,6 +457,7 @@ object Ledger {
         rows = emptyList()
         meta = Meta(CONNECTED, endpoint.url, endpoint.anonKey, 0, LocalHousehold.version(joined.config))
         persist()
+        householdId?.let { GuideHost.start(it, io.github.sirallap.fulla.core.guide.GuideOrigin.JOINED) }
         sync()
     }
 

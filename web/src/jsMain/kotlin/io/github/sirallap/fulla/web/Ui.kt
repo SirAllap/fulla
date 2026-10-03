@@ -143,11 +143,11 @@ fun HTMLElement.labelled(title: String, help: String? = null, build: HTMLElement
 }
 
 /** Something that rises from the bottom: the details of an entry, an invite. */
-fun sheet(title: String?, build: HTMLElement.(close: () -> Unit) -> Unit) {
+fun sheet(title: String?, dismissable: Boolean = true, build: HTMLElement.(close: () -> Unit) -> Unit) {
     lateinit var scrim: HTMLElement
     val close: () -> Unit = { scrim.parentNode?.removeChild(scrim); Unit }
     scrim = el("div", "scrim") {
-        on("click") { e -> if (e.target === this) close() }
+        on("click") { e -> if (dismissable && e.target === this) close() }
         div("sheet") {
             attr("role", "dialog")
             div("grab")

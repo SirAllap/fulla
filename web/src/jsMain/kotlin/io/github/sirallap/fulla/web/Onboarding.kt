@@ -191,6 +191,7 @@ object Onboarding {
                 }
                 if (problem == null) { password = ""; adding = false; step = Step.WELCOME; linked = null }
             } catch (e: Throwable) {
+                console.error("Fulla: " + e.stackTraceToString())
                 problem = Remote.message(e)
             } finally {
                 busy = false
