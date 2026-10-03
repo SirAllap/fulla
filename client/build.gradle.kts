@@ -1,41 +1,57 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The phone's side of the protocol, on the plain JVM: the wire format, the
-// Supabase transport and the sync loop. The Android app provides storage and
-// calls it. It lives outside the app so that it compiles and is tested on any
-// machine with a JDK, like core.
+// The phone's side of the protocol, in plain Kotlin shared by the JVM and
+// JavaScript: the wire format, the Supabase transport and the sync loop. The
+// Android app and the web app each provide storage and call it. It lives
+// outside the apps so that it compiles and is tested on any machine with a
+// JDK, like core.
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kover)
 }
 
 kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    jvm {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+    js(IR) {
+        browser()
+        nodejs {
+            // The simulations take seconds, not milliseconds.
+            testTask { useMocha { timeout = "180s" } }
+        }
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            api(project(":core"))
+            api(libs.ktor.client.core)
+            api(libs.kotlinx.serialization.json)
+            api(libs.kotlinx.coroutines.core)
+        }
+        jvmMain.dependencies {
+            implementation(libs.zxing.core)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.ktor.client.mock)
+            implementation(libs.kotlinx.coroutines.test)
+        }
+        jvmTest.dependencies {
+            implementation(libs.junit.jupiter)
+            implementation(libs.zxing.core)
+            runtimeOnly(libs.junit.platform.launcher)
+        }
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+tasks.withType<org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest>().configureEach {
+    environment("FULLA_ROOT", rootProject.projectDir.absolutePath)
 }
 
-dependencies {
-    api(project(":core"))
-    api(libs.ktor.client.core)
-    api(libs.kotlinx.serialization.json)
-    api(libs.kotlinx.coroutines.core)
-    implementation(libs.zxing.core)
-
-    testImplementation(kotlin("test"))
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.ktor.client.mock)
-    testImplementation(libs.zxing.core)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testRuntimeOnly(libs.junit.platform.launcher)
-}
-
-tasks.test {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     testLogging { events("failed") }
     // For SchemaVersionTest, which reads the migration SQL straight off disk

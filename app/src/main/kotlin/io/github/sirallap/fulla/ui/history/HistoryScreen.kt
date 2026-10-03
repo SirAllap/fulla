@@ -105,7 +105,7 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
             menu = listOf(
                 MenuItem(stringResource(R.string.import_statement), Icons.Outlined.FileUpload, onClick = onImport),
                 MenuItem(stringResource(R.string.export_csv), Icons.Outlined.FileDownload) {
-                    export.launch("fulla-${java.time.LocalDate.now()}.csv")
+                    export.launch("fulla-${io.github.sirallap.fulla.core.time.LocalDate.now()}.csv")
                 },
             ))
         OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),

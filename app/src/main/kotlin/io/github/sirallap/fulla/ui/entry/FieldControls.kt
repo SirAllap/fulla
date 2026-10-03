@@ -29,9 +29,8 @@ import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.components.Chip
 import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.SwitchRow
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
+import io.github.sirallap.fulla.core.time.Instant
+import io.github.sirallap.fulla.core.time.LocalDate
 import java.util.Locale
 
 /**
@@ -76,7 +75,7 @@ fun FieldControl(view: HouseholdView, field: CustomField, value: Any?, onChange:
                 DatePickerDialog(onDismissRequest = { picking = false },
                     confirmButton = {
                         TextButton(onClick = {
-                            state.selectedDateMillis?.let { onChange(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().toString()) }
+                            state.selectedDateMillis?.let { onChange(Instant.ofEpochMilli(it).toLocalDate().toString()) }
                             picking = false
                         }) { Text(stringResource(R.string.done)) }
                     }) { DatePicker(state) }

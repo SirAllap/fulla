@@ -32,7 +32,7 @@ import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 
 /** Reads a backup file and restores it; the message to show, or null on success. */
 suspend fun restoreBackup(context: Context, ledger: Ledger, uri: Uri): Int? {

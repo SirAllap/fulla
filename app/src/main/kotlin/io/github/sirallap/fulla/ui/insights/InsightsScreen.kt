@@ -30,7 +30,7 @@ import io.github.sirallap.fulla.ui.components.ProgressLine
 import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.entry.fieldText
 import io.github.sirallap.fulla.ui.theme.FullaTheme
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.abs
@@ -50,7 +50,7 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
     val today = LocalDate.now()
     val current = remember(view) { f.currentPeriod(today) }
     var periodText by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(current.toString()) }
-    val period = java.time.YearMonth.parse(periodText)
+    val period = io.github.sirallap.fulla.core.time.YearMonth.parse(periodText)
     val report = remember(view, period) { a.report(view.active, period, today, view.config.trips) }
     val forecast = remember(view, period) { if (period == current) runCatching { a.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null }
     val series = remember(view, period) { a.series(view.active, period, 12).reversed().filter { it.incomeMinor != 0L || it.expenseMinor != 0L } }
@@ -224,14 +224,14 @@ private fun Int.dp() = androidx.compose.ui.unit.Dp(toFloat())
 @Composable
 private fun FigureTiles(
     view: HouseholdView,
-    period: java.time.YearMonth,
+    period: io.github.sirallap.fulla.core.time.YearMonth,
     report: io.github.sirallap.fulla.core.analytics.PeriodReport,
     noSpend: Int,
 ) {
     val c = FullaTheme.colors
     val f = view.formats
     val range = f.periodRule.daysOf(period)
-    val length = (java.time.temporal.ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt().coerceAtLeast(1)
+    val length = (io.github.sirallap.fulla.core.time.ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt().coerceAtLeast(1)
     val tiles = mutableListOf<@Composable (Modifier) -> Unit>()
 
     val previous = report.previousSpentMinor

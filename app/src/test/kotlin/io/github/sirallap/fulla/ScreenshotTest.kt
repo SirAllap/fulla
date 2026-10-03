@@ -34,7 +34,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 
 /**
  * Every main screen with the demo household, light and dark, on a

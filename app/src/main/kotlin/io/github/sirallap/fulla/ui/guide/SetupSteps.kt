@@ -41,7 +41,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 
 /**
  * [patch] as `updateHousehold` wants it: only ints and explicit nulls, per
@@ -165,7 +165,7 @@ fun OpeningBalancesStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () 
                                 // account holds today": the date it was measured
                                 // is today, same as a brand new account in the
                                 // settings dialog.
-                                "opening_balance_date" to JsonPrimitive(java.time.LocalDate.now().toString()),
+                                "opening_balance_date" to JsonPrimitive(io.github.sirallap.fulla.core.time.LocalDate.now().toString()),
                             )), api)
                     }.isSuccess
                     if (!ok) failed = true

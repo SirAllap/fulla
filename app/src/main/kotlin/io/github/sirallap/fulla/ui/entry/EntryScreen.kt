@@ -86,9 +86,8 @@ import io.github.sirallap.fulla.ui.components.TabHeader
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
+import io.github.sirallap.fulla.core.time.Instant
+import io.github.sirallap.fulla.core.time.LocalDate
 import java.util.UUID
 
 /** What is being written down, while it is being written. */
@@ -524,12 +523,12 @@ private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Uni
         }
     }
     if (pickingDate) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = draft.date.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli())
+        val state = rememberDatePickerState(initialSelectedDateMillis = draft.date.atStartOfDayUtcMillis())
         DatePickerDialog(
             onDismissRequest = { pickingDate = false },
             confirmButton = {
                 TextButton(onClick = {
-                    state.selectedDateMillis?.let { draft.pickDate(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
+                    state.selectedDateMillis?.let { draft.pickDate(Instant.ofEpochMilli(it).toLocalDate()) }
                     pickingDate = false
                 }) { Text(stringResource(R.string.done)) }
             },

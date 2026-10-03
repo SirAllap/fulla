@@ -48,7 +48,7 @@ import io.github.sirallap.fulla.ui.components.TileRow
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 
 /**
  * How the period is likely to end, then the fixed costs it is made of, both
@@ -158,7 +158,7 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
         Section(stringResource(R.string.fixed_costs), top = 16.dp)
         Text(stringResource(R.string.fixed_bars_help), style = FullaType.secondary, color = c.inkMuted,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
-        val today = java.time.LocalDate.now()
+        val today = io.github.sirallap.fulla.core.time.LocalDate.now()
         // What is still to come stays in sight; what was already charged this period is one tap away, folded.
         val coming = fixed.filter { it.status == FixedStatus.PENDING }
         val done = fixed.filter { it.status != FixedStatus.PENDING }
@@ -202,7 +202,7 @@ private fun FixedBarRow(view: HouseholdView, item: FixedItem, today: LocalDate, 
     val ledger = LocalContainer.current.ledger
     val scope = rememberCoroutineScope()
     val installmentText = item.installment?.let { n -> item.installments?.let { total -> stringResource(R.string.installment_of, n, total) } }
-    val daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, item.date).toInt()
+    val daysLeft = io.github.sirallap.fulla.core.time.ChronoUnit.DAYS.between(today, item.date).toInt()
     val daysText = if (item.status == FixedStatus.PENDING && !item.overdue && daysLeft > 0) stringResource(R.string.in_days, daysLeft) else null
     LiquidBarRow(
         title = item.name,

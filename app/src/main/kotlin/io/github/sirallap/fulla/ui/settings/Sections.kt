@@ -92,7 +92,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 import java.util.UUID
 
 typealias Change = (suspend (FullaApi?) -> Unit) -> Unit
@@ -518,11 +518,11 @@ private fun StructureDialog(
     )
     if (pickingBalanceDate) {
         val state = androidx.compose.material3.rememberDatePickerState(
-            initialSelectedDateMillis = balanceDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli())
+            initialSelectedDateMillis = balanceDate.atStartOfDayUtcMillis())
         androidx.compose.material3.DatePickerDialog(onDismissRequest = { pickingBalanceDate = false }, confirmButton = {
             TextButton(onClick = {
                 state.selectedDateMillis?.let { millis ->
-                    balanceDate = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                    balanceDate = io.github.sirallap.fulla.core.time.Instant.ofEpochMilli(millis).toLocalDate()
                     balanceTouched = true
                 }
                 pickingBalanceDate = false
@@ -540,7 +540,7 @@ fun BudgetsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val c = FullaTheme.colors
     val current = remember(view.config.household) { f.currentPeriod() }
     // null: the default for every month; otherwise one particular month.
-    var month by remember { mutableStateOf<java.time.YearMonth?>(null) }
+    var month by remember { mutableStateOf<io.github.sirallap.fulla.core.time.YearMonth?>(null) }
     var editing by remember { mutableStateOf<String?>(null) }
     val defaults = view.config.budgets.filter { it.period == null }.associateBy { it.categoryId }
     val overrides = month?.let { m -> view.config.budgets.filter { it.period == m.toString() }.associateBy { it.categoryId } }.orEmpty()

@@ -40,9 +40,9 @@ npm run leakcheck              # scan the working tree
 npm run i18n                   # every language has every string
 npm run leakcheck:history      # scan every commit, message and identity
 npm run db:bundle              # write dist/setup.sql
-./gradlew :core:test           # domain tests (needs a JDK 17+, no Android SDK)
+./gradlew :core:jvmTest :core:jsNodeTest   # domain tests on the JVM and in JavaScript (needs a JDK 17+ and Node, no Android SDK)
 ./gradlew :core:koverVerify    # coverage of core must stay at 90 % or more
-./gradlew :client:test         # transport and sync loop (JDK only)
+./gradlew :client:jvmTest :client:jsNodeTest   # transport and sync loop, on both
 ```
 
 Everything must be green before a commit.

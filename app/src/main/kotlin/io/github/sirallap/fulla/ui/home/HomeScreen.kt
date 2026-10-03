@@ -60,8 +60,8 @@ import io.github.sirallap.fulla.ui.entry.CategoryIcons
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.YearMonth
+import io.github.sirallap.fulla.core.time.LocalDate
+import io.github.sirallap.fulla.core.time.YearMonth
 
 /**
  * The period at a glance: the jar, then what it is made of. Only the jar is
@@ -174,7 +174,7 @@ fun HomeScreen(
                 // the month's figures above never include money that was already there.
                 val accounts = view.config.accounts.filter { !it.archived }
                 if (accounts.any { it.openingBalanceMinor != 0L }) item {
-                    val total = view.analytics.accountBalances(view.active, accounts, java.time.LocalDate.now()).values.sum()
+                    val total = view.analytics.accountBalances(view.active, accounts, io.github.sirallap.fulla.core.time.LocalDate.now()).values.sum()
                     ListRow(stringResource(R.string.accounts_total), detail = f.money(total),
                         context = stringResource(R.string.accounts_total_help),
                         icon = Icons.Outlined.AccountBalance, onClick = onAccounts)

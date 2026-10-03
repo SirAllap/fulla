@@ -18,7 +18,10 @@ kotlin {
     }
     js(IR) {
         browser()
-        nodejs()
+        nodejs {
+            // The simulations take seconds, not milliseconds.
+            testTask { useMocha { timeout = "180s" } }
+        }
     }
 
     sourceSets {

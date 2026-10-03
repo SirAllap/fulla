@@ -50,7 +50,7 @@ import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 
 /**
  * A trip: the money side of a place or event. The jar (when there is a

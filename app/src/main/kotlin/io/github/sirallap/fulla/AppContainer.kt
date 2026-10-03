@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 import java.util.concurrent.TimeUnit
 
 /** What the header's cloud shows. */

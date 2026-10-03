@@ -4,10 +4,12 @@ package io.github.sirallap.fulla.ui
 import io.github.sirallap.fulla.core.model.Config
 import io.github.sirallap.fulla.core.money.Currency
 import io.github.sirallap.fulla.core.money.DecimalStyle
+import io.github.sirallap.fulla.core.money.of
+import io.github.sirallap.fulla.core.time.toJava
 import io.github.sirallap.fulla.core.money.MoneyFormatter
 import io.github.sirallap.fulla.core.rules.PeriodRule
-import java.time.LocalDate
-import java.time.YearMonth
+import io.github.sirallap.fulla.core.time.LocalDate
+import io.github.sirallap.fulla.core.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
@@ -42,11 +44,11 @@ class Formats(
 
     /** A period's short name, for a label with little room ("Sept"). */
     fun shortPeriod(p: YearMonth): String =
-        p.month.getDisplayName(TextStyle.SHORT_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }.trimEnd('.')
+        p.toJava().month.getDisplayName(TextStyle.SHORT_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }.trimEnd('.')
     fun plain(minor: Long): String = money.formatPlain(minor)
 
     fun period(p: YearMonth): String {
-        val month = p.month.getDisplayName(TextStyle.FULL_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }
+        val month = p.toJava().month.getDisplayName(TextStyle.FULL_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }
         return if (p.year == YearMonth.now().year) month else "$month ${p.year}"
     }
 
@@ -58,12 +60,12 @@ class Formats(
     fun periodRange(p: YearMonth, openFrom: (String) -> String = { it }): String? {
         if (config.household.periodStartDay == 1 && !periodRule.anchored) return null
         val days = periodRule.daysOf(p)
-        if (periodRule.isOpen(p)) return openFrom(dayFormat.format(days.start))
-        return "${dayFormat.format(days.start)} – ${dayFormat.format(days.endInclusive)}"
+        if (periodRule.isOpen(p)) return openFrom(dayFormat.format(days.start.toJava()))
+        return "${dayFormat.format(days.start.toJava())} – ${dayFormat.format(days.endInclusive.toJava())}"
     }
 
-    fun day(d: LocalDate): String = dayFormat.format(d).replaceFirstChar { it.titlecase(locale) }
-    fun longDay(d: LocalDate): String = longDate.format(d)
+    fun day(d: LocalDate): String = dayFormat.format(d.toJava()).replaceFirstChar { it.titlecase(locale) }
+    fun longDay(d: LocalDate): String = longDate.format(d.toJava())
 
     fun currentPeriod(today: LocalDate = LocalDate.now()): YearMonth = periodRule.daysOfContaining(today)
 

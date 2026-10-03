@@ -41,7 +41,7 @@ import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.TabHeader
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.LocalDate
 import java.util.UUID
 
 /**

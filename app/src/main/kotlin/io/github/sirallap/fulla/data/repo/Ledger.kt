@@ -32,8 +32,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
-import java.time.Instant
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.Instant
+import io.github.sirallap.fulla.core.time.LocalDate
 
 /** A household as the screens see it. */
 data class HouseholdState(
@@ -57,7 +57,7 @@ class Ledger(
     private val db: FullaDatabase,
     private val settings: SettingsStore,
     private val requestSync: () -> Unit,
-    private val now: () -> Instant = Instant::now,
+    private val now: () -> Instant = { Instant.now() },
 ) {
     private val households = db.households()
     private val transactions = db.transactions()

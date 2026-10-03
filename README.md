@@ -120,7 +120,7 @@ docs/                  architecture, sync, API, data model, design, decisions
 ```
 
 ```sh
-./gradlew :core:test :client:test   # the domain and the protocol; needs a JDK 17+
+./gradlew :core:jvmTest :core:jsNodeTest :client:jvmTest :client:jsNodeTest   # the domain and the protocol, on the JVM and in JavaScript; needs a JDK 17+ and Node
 npm run test:db                     # the database; needs PostgreSQL installed (not running)
 npm run i18n                        # every language has every string
 npm run leakcheck                   # no secrets or personal data in the working tree

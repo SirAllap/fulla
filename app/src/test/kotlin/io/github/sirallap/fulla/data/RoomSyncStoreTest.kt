@@ -21,8 +21,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.time.Instant
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.Instant
+import io.github.sirallap.fulla.core.time.LocalDate
 
 /** The store contract that client's SyncerTest assumes, held against Room. */
 @RunWith(RobolectricTestRunner::class)

@@ -3,7 +3,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, web-pwa]
   pull_request:
 
 concurrency:
@@ -74,8 +74,14 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      # The Kotlin/JS tests run on the Node every runner already has.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
       - name: Tests and coverage
-        run: ./gradlew :core:test :core:koverVerify :client:test :client:koverVerify
+        run: >-
+          ./gradlew :core:jvmTest :core:jsNodeTest :core:koverVerify
+          :client:jvmTest :client:jsNodeTest :client:koverVerify
 
   android:
     name: Android app

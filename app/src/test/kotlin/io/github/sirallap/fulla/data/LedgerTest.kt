@@ -36,8 +36,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.time.Instant
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.Instant
+import io.github.sirallap.fulla.core.time.LocalDate
 import java.util.UUID
 
 /** The phone-only paths through Ledger, against Room: everything a screen writes goes through these. */

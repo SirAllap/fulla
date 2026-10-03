@@ -26,58 +26,54 @@ enum class ChronoUnit {
     DAYS, WEEKS, MONTHS;
 
     fun between(from: LocalDate, to: LocalDate): Long = when (this) {
-        DAYS -> to.toEpochDay() - from.toEpochDay()
+        DAYS -> (to.toEpochDay() - from.toEpochDay())
         WEEKS -> (to.toEpochDay() - from.toEpochDay()) / 7
         // Whole months, counted toward zero like java.time: month and day packed side by side.
-        MONTHS -> ((YearMonth.from(to).monthIndex * 32 + to.dayOfMonth) - (YearMonth.from(from).monthIndex * 32 + from.dayOfMonth)) / 32
+        MONTHS -> (((YearMonth.from(to).monthIndex * 32 + to.dayOfMonth) - (YearMonth.from(from).monthIndex * 32 + from.dayOfMonth)) / 32).toLong()
     }
 }
 
 class DateTimeException(message: String) : RuntimeException(message)
 
-/** A calendar day: 2030-01-31. */
-class LocalDate private constructor(val year: Int, val monthValue: Int, val dayOfMonth: Int) : Comparable<LocalDate> {
+/**
+ * A calendar day: 2030-01-31.
+ *
+ * Years run -999999..999999 so that every count of days fits an Int: in a
+ * browser a Long is software, and the rules count days in tight loops.
+ */
+class LocalDate private constructor(val year: Int, val monthValue: Int, val dayOfMonth: Int, private val epochDay: Int) : Comparable<LocalDate> {
 
     val month: Int get() = monthValue
     val isLeapYear: Boolean get() = isLeap(year)
-    val dayOfWeek: DayOfWeek get() = DayOfWeek.of((toEpochDay() + 3).mod(7L).toInt() + 1)
+    val dayOfWeek: DayOfWeek get() = DayOfWeek.of((epochDay + 3).mod(7) + 1)
 
     fun lengthOfMonth(): Int = monthLength(year, monthValue)
 
     /** Days since 1970-01-01. */
-    fun toEpochDay(): Long {
-        val y = year.toLong()
-        val m = monthValue.toLong()
-        var total = 365 * y
-        total += if (y >= 0) (y + 3) / 4 - (y + 99) / 100 + (y + 399) / 400 else -(y / -4 - y / -100 + y / -400)
-        total += (367 * m - 362) / 12
-        total += dayOfMonth - 1
-        if (m > 2) {
-            total--
-            if (!isLeapYear) total--
-        }
-        return total - DAYS_0000_TO_1970
-    }
+    fun toEpochDay(): Long = epochDay.toLong()
 
-    fun plusDays(days: Long): LocalDate = if (days == 0L) this else ofEpochDay(toEpochDay() + days)
-    fun plusDays(days: Int): LocalDate = plusDays(days.toLong())
-    fun minusDays(days: Long): LocalDate = plusDays(-days)
-    fun minusDays(days: Int): LocalDate = plusDays(-days.toLong())
-    fun plusWeeks(weeks: Long): LocalDate = plusDays(weeks * 7)
+    /** Midnight at the start of this day in UTC, in milliseconds: what a date picker holds. */
+    fun atStartOfDayUtcMillis(): Long = epochDay * 86_400_000L
+
+    fun plusDays(days: Int): LocalDate = if (days == 0) this else ofEpochDay(epochDay + days)
+    fun plusDays(days: Long): LocalDate = plusDays(intOf(days))
+    fun minusDays(days: Int): LocalDate = plusDays(-days)
+    fun minusDays(days: Long): LocalDate = plusDays(-intOf(days))
+    fun plusWeeks(weeks: Long): LocalDate = plusDays(intOf(weeks) * 7)
 
     /** Months move the month and keep the day, or fall back to the last day of a shorter month. */
-    fun plusMonths(months: Long): LocalDate {
-        if (months == 0L) return this
-        val index = year * 12L + (monthValue - 1) + months
-        val y = index.floorDiv(12L).toInt()
-        val m = index.mod(12L).toInt() + 1
+    fun plusMonths(months: Int): LocalDate {
+        if (months == 0) return this
+        val index = year * 12 + (monthValue - 1) + months
+        val y = index.floorDiv(12)
+        val m = index.mod(12) + 1
         return of(y, m, minOf(dayOfMonth, monthLength(y, m)))
     }
-    fun plusMonths(months: Int): LocalDate = plusMonths(months.toLong())
-    fun minusMonths(months: Long): LocalDate = plusMonths(-months)
-    fun minusMonths(months: Int): LocalDate = plusMonths(-months.toLong())
-    fun plusYears(years: Long): LocalDate = plusMonths(years * 12)
-    fun minusYears(years: Long): LocalDate = plusMonths(-years * 12)
+    fun plusMonths(months: Long): LocalDate = plusMonths(intOf(months))
+    fun minusMonths(months: Int): LocalDate = plusMonths(-months)
+    fun minusMonths(months: Long): LocalDate = plusMonths(-intOf(months))
+    fun plusYears(years: Long): LocalDate = plusMonths(intOf(years) * 12)
+    fun minusYears(years: Long): LocalDate = plusMonths(-intOf(years) * 12)
 
     fun withDayOfMonth(day: Int): LocalDate = of(year, monthValue, day)
     fun withMonth(month: Int): LocalDate = of(year, month, minOf(dayOfMonth, monthLength(year, month)))
@@ -85,31 +81,28 @@ class LocalDate private constructor(val year: Int, val monthValue: Int, val dayO
     /** The same day of the week within this ISO week (Monday to Sunday): `with(MONDAY)` is the week's first day. */
     fun with(day: DayOfWeek): LocalDate = plusDays(day.value - dayOfWeek.value)
 
-    fun isBefore(other: LocalDate): Boolean = compareTo(other) < 0
-    fun isAfter(other: LocalDate): Boolean = compareTo(other) > 0
-    fun isEqual(other: LocalDate): Boolean = compareTo(other) == 0
+    fun isBefore(other: LocalDate): Boolean = epochDay < other.epochDay
+    fun isAfter(other: LocalDate): Boolean = epochDay > other.epochDay
+    fun isEqual(other: LocalDate): Boolean = epochDay == other.epochDay
 
-    override fun compareTo(other: LocalDate): Int {
-        var c = year - other.year
-        if (c == 0) c = monthValue - other.monthValue
-        if (c == 0) c = dayOfMonth - other.dayOfMonth
-        return c
-    }
-
-    override fun equals(other: Any?): Boolean =
-        other is LocalDate && year == other.year && monthValue == other.monthValue && dayOfMonth == other.dayOfMonth
-
-    override fun hashCode(): Int = (year and -2048) xor ((year shl 11) + (monthValue shl 6) + dayOfMonth)
+    override fun compareTo(other: LocalDate): Int = epochDay.compareTo(other.epochDay)
+    override fun equals(other: Any?): Boolean = other is LocalDate && epochDay == other.epochDay
+    override fun hashCode(): Int = epochDay
 
     /** ISO 8601: 2030-01-31. */
-    override fun toString(): String {
-        return "${yearText(year)}-${monthValue.toString().padStart(2, '0')}-${dayOfMonth.toString().padStart(2, '0')}"
-    }
+    override fun toString(): String =
+        "${yearText(year)}-${monthValue.toString().padStart(2, '0')}-${dayOfMonth.toString().padStart(2, '0')}"
 
     companion object {
-        private const val DAYS_0000_TO_1970 = 719528L
+        private const val MAX_YEAR = 999_999
+
+        private fun intOf(n: Long): Int {
+            if (n > 400_000_000L || n < -400_000_000L) throw DateTimeException("Out of range: $n")
+            return n.toInt()
+        }
 
         fun of(year: Int, month: Int, day: Int): LocalDate {
+            if (year < -MAX_YEAR || year > MAX_YEAR) throw DateTimeException("Invalid value for Year: $year")
             if (month !in 1..12) throw DateTimeException("Invalid value for MonthOfYear: $month")
             if (day !in 1..31) throw DateTimeException("Invalid value for DayOfMonth: $day")
             if (day > monthLength(year, month)) {
@@ -117,30 +110,33 @@ class LocalDate private constructor(val year: Int, val monthValue: Int, val dayO
                     if (day == 29) "Invalid date 'February 29' as '$year' is not a leap year" else "Invalid date '$year-$month-$day'",
                 )
             }
-            return LocalDate(year, month, day)
+            return LocalDate(year, month, day, daysFromCivil(year, month, day))
         }
 
-        fun ofEpochDay(epochDay: Long): LocalDate {
-            var zeroDay = epochDay + DAYS_0000_TO_1970 - 60
-            var adjust = 0L
-            if (zeroDay < 0) {
-                val cycles = (zeroDay + 1) / 146097 - 1
-                adjust = cycles * 400
-                zeroDay += -cycles * 146097
-            }
-            var yearEst = (400 * zeroDay + 591) / 146097
-            var doyEst = zeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
-            if (doyEst < 0) {
-                yearEst--
-                doyEst = zeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
-            }
-            yearEst += adjust
-            val marchDoy0 = doyEst.toInt()
-            val marchMonth0 = (marchDoy0 * 5 + 2) / 153
-            val month = (marchMonth0 + 2) % 12 + 1
-            val dom = marchDoy0 - (marchMonth0 * 306 + 5) / 10 + 1
-            yearEst += marchMonth0 / 10
-            return LocalDate(yearEst.toInt(), month, dom)
+        fun ofEpochDay(epochDay: Long): LocalDate = ofEpochDay(intOf(epochDay))
+
+        /** Days since the epoch to a calendar day, with the proleptic Gregorian cycle of 400 years (146097 days). */
+        fun ofEpochDay(epochDay: Int): LocalDate {
+            val z = epochDay + 719_468
+            val era = z.floorDiv(146_097)
+            val doe = z - era * 146_097
+            val yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365
+            val doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+            val mp = (5 * doy + 2) / 153
+            val day = doy - (153 * mp + 2) / 5 + 1
+            val month = if (mp < 10) mp + 3 else mp - 9
+            val year = yoe + era * 400 + if (month <= 2) 1 else 0
+            if (year < -MAX_YEAR || year > MAX_YEAR) throw DateTimeException("Invalid value for Year: $year")
+            return LocalDate(year, month, day, epochDay)
+        }
+
+        private fun daysFromCivil(year: Int, month: Int, day: Int): Int {
+            val y = if (month <= 2) year - 1 else year
+            val era = y.floorDiv(400)
+            val yoe = y - era * 400
+            val doy = (153 * (month + if (month > 2) -3 else 9) + 2) / 5 + day - 1
+            val doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+            return era * 146_097 + doe - 719_468
         }
 
         /** The day in the household's own time zone. */
@@ -169,24 +165,24 @@ class LocalDate private constructor(val year: Int, val monthValue: Int, val dayO
 class YearMonth private constructor(val year: Int, val monthValue: Int) : Comparable<YearMonth> {
 
     /** Months since year 0: lets months be compared and counted. */
-    internal val monthIndex: Long get() = year * 12L + (monthValue - 1)
+    internal val monthIndex: Int get() = year * 12 + (monthValue - 1)
 
     fun lengthOfMonth(): Int = LocalDate.monthLength(year, monthValue)
     fun atDay(day: Int): LocalDate = LocalDate.of(year, monthValue, day)
     fun atEndOfMonth(): LocalDate = LocalDate.of(year, monthValue, lengthOfMonth())
 
-    fun plusMonths(months: Long): YearMonth = if (months == 0L) this else ofIndex(monthIndex + months)
-    fun plusMonths(months: Int): YearMonth = plusMonths(months.toLong())
-    fun minusMonths(months: Long): YearMonth = plusMonths(-months)
-    fun minusMonths(months: Int): YearMonth = plusMonths(-months.toLong())
-    fun plusYears(years: Long): YearMonth = plusMonths(years * 12)
-    fun minusYears(years: Long): YearMonth = plusMonths(-years * 12)
+    fun plusMonths(months: Int): YearMonth = if (months == 0) this else ofIndex(monthIndex + months)
+    fun plusMonths(months: Long): YearMonth = plusMonths(months.toInt())
+    fun minusMonths(months: Int): YearMonth = plusMonths(-months)
+    fun minusMonths(months: Long): YearMonth = plusMonths(-months.toInt())
+    fun plusYears(years: Long): YearMonth = plusMonths(years.toInt() * 12)
+    fun minusYears(years: Long): YearMonth = plusMonths(-years.toInt() * 12)
     fun withMonth(month: Int): YearMonth = of(year, month)
 
     /** Whole months from this month to [end]; only [ChronoUnit.MONTHS] is meaningful for a month. */
     fun until(end: YearMonth, unit: ChronoUnit): Long {
         require(unit == ChronoUnit.MONTHS) { "Unsupported unit: $unit" }
-        return end.monthIndex - monthIndex
+        return (end.monthIndex - monthIndex).toLong()
     }
 
     fun isBefore(other: YearMonth): Boolean = compareTo(other) < 0
@@ -213,7 +209,7 @@ class YearMonth private constructor(val year: Int, val monthValue: Int) : Compar
             return of(m.groupValues[1].toInt(), m.groupValues[2].toInt())
         }
 
-        private fun ofIndex(index: Long): YearMonth = YearMonth(index.floorDiv(12L).toInt(), index.mod(12L).toInt() + 1)
+        private fun ofIndex(index: Int): YearMonth = YearMonth(index.floorDiv(12), index.mod(12) + 1)
     }
 }
 

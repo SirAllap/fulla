@@ -65,7 +65,7 @@ import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.Instant
+import io.github.sirallap.fulla.core.time.Instant
 
 private enum class Format { CSV, OFX, QIF }
 

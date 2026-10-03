@@ -25,7 +25,7 @@ behaviour a reader could not see directly.
 
 ## Consequences
 
-`./gradlew :client:test` runs the transport against a mocked HTTP engine and
+`./gradlew :client:jvmTest :client:jsNodeTest` runs the transport against a mocked HTTP engine and
 the sync loop against the store contract in seconds, on any machine with a
 JDK. The Android code is left with storage, background work and screens.
 A new dependency of the app is visible in one file.

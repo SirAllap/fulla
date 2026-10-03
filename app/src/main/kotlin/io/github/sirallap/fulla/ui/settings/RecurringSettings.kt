@@ -62,10 +62,10 @@ import io.github.sirallap.fulla.ui.entry.CategoryTiles
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import io.github.sirallap.fulla.ui.theme.FullaType
 import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDate
+import io.github.sirallap.fulla.core.time.Instant
+import io.github.sirallap.fulla.core.time.toJava
+import io.github.sirallap.fulla.core.time.LocalDate
 import java.time.Month
-import java.time.ZoneOffset
 import java.time.format.TextStyle
 import java.util.Locale
 import java.util.UUID
@@ -183,7 +183,7 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
 private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDismiss: () -> Unit, onDelete: (RecurringRule, Boolean) -> Unit, onSave: (RecurringRule) -> Unit) {
     val f = view.formats
     val locale = Locale.getDefault()
-    val dateFormat = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale)
+    val dateFormat = DateText(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale))
     val t = existing?.template
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var kind by remember { mutableStateOf(t?.kind ?: TransactionKind.EXPENSE) }
@@ -429,10 +429,10 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
         )
     }
     if (pickingEnd) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = endPick.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        val state = rememberDatePickerState(initialSelectedDateMillis = endPick.atStartOfDayUtcMillis())
         DatePickerDialog(onDismissRequest = { pickingEnd = false }, confirmButton = {
             TextButton(onClick = {
-                state.selectedDateMillis?.let { endPick = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+                state.selectedDateMillis?.let { endPick = Instant.ofEpochMilli(it).toLocalDate() }
                 pickingEnd = false
             }) { Text(stringResource(R.string.done)) }
         }) { DatePicker(state) }
@@ -443,4 +443,9 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
 @Composable
 private fun FormLabel(text: String) {
     Text(text, style = FullaType.label, color = FullaTheme.colors.inkMuted, modifier = Modifier.padding(top = 8.dp))
+}
+
+/** A localized date written from Fulla's own date type. */
+private class DateText(private val formatter: java.time.format.DateTimeFormatter) {
+    fun format(date: LocalDate): String = formatter.format(date.toJava())
 }

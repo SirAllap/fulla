@@ -52,9 +52,8 @@ import androidx.compose.foundation.layout.FlowRow
 import io.github.sirallap.fulla.ui.theme.FullaTheme
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
+import io.github.sirallap.fulla.core.time.Instant
+import io.github.sirallap.fulla.core.time.LocalDate
 import java.util.UUID
 
 /** Settings › Trips: upcoming, active and finished trips, archived ones collapsed under them. */
@@ -222,8 +221,8 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
     }
 }
 
-private fun LocalDate.atStartOfDayMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-private fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
+private fun LocalDate.atStartOfDayMillis(): Long = atStartOfDayUtcMillis()
+private fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).toLocalDate()
 
 internal fun tripKindLabel(kind: TripKind): Int = when (kind) {
     TripKind.HOLIDAY -> R.string.trip_kind_holiday
