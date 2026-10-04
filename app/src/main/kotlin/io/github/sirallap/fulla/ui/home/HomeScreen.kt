@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.SaveAlt
+import androidx.compose.material.icons.outlined.Warning
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.outlined.Opacity
 import androidx.compose.material3.Icon
@@ -84,7 +85,9 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
     val f = view.formats
-    val current = remember(view) { f.currentPeriod() }
+    // The day, kept current: past midnight the figures that depend on it are worked out again.
+    val today = io.github.sirallap.fulla.ui.components.rememberToday()
+    val current = remember(view, today) { f.currentPeriod(today) }
     var periodText by rememberSaveable { mutableStateOf(current.toString()) }
     val period = YearMonth.parse(periodText)
     var expanded by remember { mutableStateOf<String?>(null) }
@@ -93,20 +96,12 @@ fun HomeScreen(
     val summary = remember(view, period) { view.analytics.summary(view.active, period) }
     val hero = remember(view, period) { view.analytics.hero(view.active, period) }
     val categories = remember(view, period) { view.analytics.byCategory(view.active, period) }
-    val forecast = remember(view, period) { if (period == current) runCatching { view.analytics.forecast(view.active, period, LocalDate.now(), view.deletedIds) }.getOrNull() else null }
+    val forecast = remember(view, period, today) { if (period == current) runCatching { view.analytics.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null }
     val budgets = remember(view, period) { Budgets.forPeriod(view.config, period) }
     val budgetSpend = remember(view, period) {
         view.analytics.budgetSpend(view.active, period, view.config.trips).associate { it.categoryId to it.amountMinor }
     }
-    val today = remember { LocalDate.now() }
-    val homeTrip = remember(view, today) {
-        // The active trip always wins; only when none is active do we look ahead
-        // for the soonest one starting within a week (bundle order is start_date
-        // desc, so a plain firstOrNull would show an upcoming trip over an
-        // active one that started earlier).
-        Trips.activeOn(view.config.trips, today)
-            ?: view.config.trips.filter { !it.archived && it.startDate in today..today.plusDays(7) }.minByOrNull { it.startDate }
-    }
+    val homeTrip = remember(view, today) { Trips.forHome(view.config.trips, today) }
     val homeTripTotals = remember(view, homeTrip) { homeTrip?.let { Trips.totals(it, view.active) } }
     val notSalary by remember(view.id) { container.settings.notSalary(view.id) }.collectAsStateWithLifecycle(initialValue = emptySet())
     val lastBackup by remember(view.id) { container.settings.lastBackup(view.id) }.collectAsStateWithLifecycle(initialValue = -1L)
@@ -167,6 +162,11 @@ fun HomeScreen(
                     ListRow(stringResource(R.string.salary_overdue), context = stringResource(R.string.salary_overdue_text, waiting),
                         icon = Icons.Outlined.Payments, iconTint = c.warning)
                 }
+                // Rows the server refused are left out of every figure: said once, here, so a total is never a mystery.
+                if (view.refused > 0) item {
+                    ListRow(stringResource(R.string.refused_notice, view.refused), context = stringResource(R.string.refused_notice_text),
+                        icon = Icons.Outlined.Warning, iconTint = c.warning)
+                }
                 if (backupDue) item {
                     ListRow(stringResource(R.string.backup_due), context = stringResource(R.string.backup_due_text),
                         icon = Icons.Outlined.SaveAlt, iconTint = c.warning, onClick = onBackup)
@@ -175,7 +175,7 @@ fun HomeScreen(
                 // the month's figures above never include money that was already there.
                 val accounts = view.config.accounts.filter { !it.archived }
                 if (accounts.any { it.openingBalanceMinor != 0L }) item {
-                    val total = view.analytics.accountBalances(view.active, accounts, java.time.LocalDate.now()).values.sum()
+                    val total = view.analytics.accountsTotal(view.active, accounts, today)
                     ListRow(stringResource(R.string.accounts_total), detail = f.money(total),
                         context = stringResource(R.string.accounts_total_help),
                         icon = Icons.Outlined.AccountBalance, onClick = onAccounts)

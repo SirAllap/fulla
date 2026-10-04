@@ -183,9 +183,9 @@ class ForecastTest {
         val withRent = a.forecast(base + plain(80_000, d(1)).copy(recurrence = Recurrence.FIXED), jan, today = d(8))!!
         assertEquals(1_000L * 23, withRent.everydayRestMinor)
         assertEquals(1_000, withRent.everydayPerDayMinor, "and the pace shown beside the per-day figure leaves it out too")
-        // One big purchase counts for three usual rows at most.
+        // One big purchase counts for five usual rows at most.
         val big = a.forecast(base + plain(60_000, d(3)), jan, today = d(8))!!
-        assertEquals(31_625, big.everydayRestMinor, "(8 x 1,000 + 3,000) over 8 days, for the 23 that are left")
+        assertEquals(37_375, big.everydayRestMinor, "(8 x 1,000 + 5,000) over 8 days, for the 23 that are left")
         // Two rows are not a pace.
         assertNull(a.forecast(listOf(plain(1_000, d(1)), plain(1_000, d(2))), jan, today = d(8))!!.everydayRestMinor)
     }
@@ -199,6 +199,21 @@ class ForecastTest {
         val last = analytics().forecast(rows, jan, today = d(31))!!
         assertEquals(1, last.daysToGo)
         assertEquals(200_000, last.perDayMinor)
+    }
+
+    @Test
+    fun `spending written down for later is committed not a pace`() {
+        val a = analytics()
+        val base = (1..8).map { plain(1_000, d(it)) } + Fixtures.income(300_000, d(1))
+        val before = a.forecast(base, jan, today = d(8))!!
+        val later = a.forecast(base + plain(40_000, d(20)), jan, today = d(8))!!
+        assertEquals(40_000, later.bookedAheadMinor)
+        assertEquals(before.spentMinor + 40_000, later.spentMinor, "it is spent for the period")
+        assertEquals(before.spentUntilTodayMinor, later.spentUntilTodayMinor, "but not spent as of today")
+        assertEquals(before.everydayRestMinor, later.everydayRestMinor, "and it is not a daily habit")
+        assertEquals(before.everydayPerDayMinor, later.everydayPerDayMinor)
+        assertEquals(before.leftToSpendMinor!! - 40_000, later.leftToSpendMinor, "it comes off what is left")
+        assertEquals(before.keptMinor!! - 40_000, later.keptMinor, "and off what would be kept")
     }
 
     private fun history(perMonth: (YearMonth) -> List<Transaction>) =
@@ -310,6 +325,32 @@ class ForecastTest {
             }
             if (rnd.nextDouble() < 0.35) out += plain(maxOf(3_000L, (25_000 + rnd.nextGaussian() * 10_000).toLong()), m.atDay(1 + rnd.nextInt(m.lengthOfMonth())))
             return out
+        }
+    }
+
+    @Test
+    fun `backtest - a period's own pace, with nothing earlier, holds its range about four in five and its centre is not far off`() {
+        val a = analytics()
+        for (day in listOf(10, 18)) {
+            val ratios = mutableListOf<Double>()
+            var inside = 0
+            var scored = 0
+            for (seed in 1..300) {
+                val all = Household(seed.toLong()).month(jan, emptyList(), { r, date -> written(r, date) }, { amount, date -> plain(amount, date) })
+                val f = a.forecast(all.filter { it.date <= d(day) }, jan, today = d(day))!!
+                val soFar = all.filter { it.date <= d(day) }
+                // Fewer than five expenses by then is not a pace (two rows are not): nothing is claimed, and nothing is scored.
+                if (!f.ownPace) { assertTrue(soFar.size < 5 && f.everydayRestMinor == null, "seed $seed: enough rows for a pace, yet none was read"); continue }
+                scored++
+                val actualRest = all.filter { it.date > d(day) }.sumOf { it.amountMinor }
+                ratios += actualRest.toDouble() / f.everydayRestMinor!!.coerceAtLeast(1)
+                if (actualRest in f.everydayLowMinor!!..f.everydayHighMinor!!) inside++
+            }
+            assertTrue(scored >= 270, "at day $day only $scored of 300 made-up periods had a pace to score")
+            val coverage = inside / scored.toDouble()
+            val median = ratios.sorted()[ratios.size / 2]
+            assertTrue(coverage in 0.75..0.95, "at day $day the range held ${kotlin.math.round(coverage * 100).toInt()} % of the time")
+            assertTrue(median in 0.85..1.30, "at day $day the actual was ${kotlin.math.round(median * 100) / 100.0} times the estimate, at the median")
         }
     }
 

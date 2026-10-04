@@ -78,6 +78,36 @@ class VectorsTest {
         }
     }
 
+    /** Period totals: the same rows, the same household rule, the same totals as the database's fulla.period_summary. */
+    @Test
+    fun `period totals agree with period summary json`() {
+        for (v in vectors("period_summary.json")) {
+            val i = v.jsonObject["input"]!!.jsonObject
+            val rows = i["transactions"]!!.jsonArray.map { e ->
+                val t = e.jsonObject
+                Fixtures.expense(t["amount_minor"]!!.jsonPrimitive.long, LocalDate.parse(t["date"]!!.jsonPrimitive.content)).copy(
+                    kind = TransactionKind.of(t["kind"]!!.jsonPrimitive.content)!!,
+                    recurrence = Recurrence.of(t["recurrence"]?.jsonPrimitive?.contentOrNull),
+                    tags = t["tags"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
+                    status = io.github.sirallap.fulla.core.model.Status.of(t["status"]?.jsonPrimitive?.contentOrNull),
+                )
+            }
+            val config = Fixtures.config().let {
+                it.copy(household = it.household.copy(periodStartDay = i["period_start_day"]!!.jsonPrimitive.int,
+                    incomeShiftDay = i["income_shift_day"]?.jsonPrimitive?.intOrNull))
+            }
+            val rule = PeriodRule.of(config, rows)
+            val analytics = io.github.sirallap.fulla.core.analytics.Analytics(config, rule)
+            val periods = rows.filter { it.isActive && it.kind.countsInTotals }.map { rule.periodOf(it.date, it.kind, it.recurrence) }.toSet().sorted()
+            val got = periods.map { analytics.summary(rows, it) }.map { listOf(it.period.toString(), it.incomeMinor, it.expenseMinor, it.savingsMinor) }
+            val want = v.jsonObject["expected"]!!.jsonArray.map { e ->
+                val o = e.jsonObject
+                listOf(o["period"]!!.jsonPrimitive.content, o["income_minor"]!!.jsonPrimitive.long, o["expense_minor"]!!.jsonPrimitive.long, o["savings_minor"]!!.jsonPrimitive.long)
+            }
+            assertEquals(want, got, v.jsonObject["why"]!!.jsonPrimitive.content)
+        }
+    }
+
     @Test
     fun `allocator agrees with allocate json`() {
         for (v in vectors("allocate.json")) {

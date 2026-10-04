@@ -161,7 +161,7 @@ fun FixedCostsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCost
                 icon = Icons.Outlined.CheckCircle, iconTint = c.moneyIn,
                 onClick = { open = !open },
                 end = {
-                    AmountText(f.money(charged.sumOf { it.amountMinor }), color = c.inkMuted)
+                    AmountText(f.money(forecast.fixedPaidMinor), color = c.inkMuted)
                     Icon(if (open) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, tint = c.inkMuted)
                 },
             )
@@ -245,7 +245,9 @@ private fun ForecastBreakdown(view: HouseholdView, forecast: PeriodForecast) {
     ListRow(stringResource(R.string.forecast_income),
         context = if (forecast.expectedIncomeMinor > 0) stringResource(R.string.forecast_income_context, f.money(forecast.incomeMinor), f.money(forecast.expectedIncomeMinor)) else null,
         end = { AmountText(f.money(forecast.totalIncomeMinor), color = c.moneyIn) })
-    ListRow(stringResource(R.string.forecast_spent_so_far), end = { AmountText(f.money(-forecast.spentMinor)) })
+    ListRow(stringResource(R.string.forecast_spent_so_far), end = { AmountText(f.money(-forecast.spentUntilTodayMinor)) })
+    // What was written down with a later date is not spent yet, but it is already counted: it comes off what is left all the same.
+    if (forecast.bookedAheadMinor != 0L) ListRow(stringResource(R.string.forecast_booked_ahead), end = { AmountText(f.money(-forecast.bookedAheadMinor)) })
     val pending = forecast.fixed.filter { it.status == FixedStatus.PENDING }
     ListRow(stringResource(R.string.forecast_fixed_to_come),
         context = pending.take(4).joinToString(" · ") { it.name + " " + f.day(it.date) }.ifBlank { null },

@@ -112,6 +112,17 @@ object SyncEngine {
     fun iso(instant: Instant): String = instant.truncatedTo(java.time.temporal.ChronoUnit.MILLIS).toString()
         .let { if (it.length == 20) it.dropLast(1) + ".000Z" else it }
 
+    /**
+     * The rows every figure is worked out from: not deleted, and not refused by the server. A row the household does
+     * not hold is not in its totals, so a refused one (kept and shown, never sent again until it is changed) cannot
+     * make this phone add up differently from the others. Pending rows count: they are on their way.
+     */
+    fun counted(rows: List<LocalTransaction>): List<Transaction> =
+        rows.filter { it.transaction.isActive && it.state != SyncState.REJECTED }.map { it.transaction }
+
+    /** How many rows the server refused and that are therefore left out of the figures. */
+    fun refusedCount(rows: List<LocalTransaction>): Int = rows.count { it.transaction.isActive && it.state == SyncState.REJECTED }
+
     /** Everything owed to the server, oldest edit first. */
     fun pending(rows: List<LocalTransaction>): List<LocalTransaction> =
         rows.filter { it.state == SyncState.PENDING }.sortedBy { it.transaction.clientUpdatedAt }

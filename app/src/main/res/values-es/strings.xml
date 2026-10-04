@@ -182,6 +182,8 @@
     <string name="recurring_text">Los gastos fijos que se anotan solos lo hacen en su día. Toca uno para cambiarlo o pausarlo.</string>
     <string name="refused">Rechazado por el servidor</string>
     <string name="rejected_reason">Rechazado: %1$s</string>
+    <string name="refused_notice">Rechazados por el servidor: %1$d</string>
+    <string name="refused_notice_text">No cuentan en los totales, para que todos veáis lo mismo. Corrígelos o bórralos en Historial → Sin enviar.</string>
     <string name="restore">Recuperar</string>
     <string name="role_admin">Admin</string>
     <string name="role_member">Miembro</string>
@@ -614,8 +616,9 @@
     <string name="forecast_no_history">Aún no hay datos para estimar el gasto del día a día. Hace falta un periodo anterior, o una semana de este con al menos cinco gastos.</string>
     <string name="forecast_how">¿Cómo se calcula?</string>
     <string name="forecast_income">Ingresos</string>
-    <string name="forecast_income_context">%1$s entrados, %2$s por entrar</string>
+    <string name="forecast_income_context">%1$s anotados, %2$s por entrar</string>
     <string name="forecast_spent_so_far">Gastado hasta hoy</string>
+    <string name="forecast_booked_ahead">Anotado para más adelante</string>
     <string name="forecast_fixed_to_come">Fijos por cobrar</string>
     <string name="forecast_everyday">Gasto del día a día que falta</string>
     <string name="forecast_note">El gasto del día a día es lo que gastaron los últimos tres periodos por día desde este día, ajustado a cómo va este. Los fijos son exactos: salen de tus gastos fijos.</string>

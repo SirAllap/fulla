@@ -207,7 +207,7 @@ A new figure gets its identity there. The rules it enforces:
   is that month and a month the app was not used is not a month of zero.
 - A day-to-day pace is learnt only from periods that had day-to-day spending; a period of fixed costs only is not a
   pace of zero. Without any, this period's own pace stands in (a week in, five rows at least, only what is marked
-  variable, one big purchase held to three usual rows) with a wider range.
+  variable, one big purchase held to five usual rows) with a wider range.
 - What is left to spend per day counts today (`PeriodForecast.daysToGo`), like a trip's daily figure, and a trip not
   started yet spreads what is left of its budget, not the whole of it (something may be booked ahead).
 - Days without spending count only days that are over: today is not a day without spending until it ends.
@@ -217,6 +217,13 @@ A new figure gets its identity there. The rules it enforces:
 - What already is a recurring item is not suggested again as something that looks recurring.
 - A percentage is rounded the same wherever it is shown, and the percentages of one chart are split by the largest
   remainder (`Percent.split`) so they add up to exactly 100.
+- A row the server refused is in no figure (`SyncEngine.counted`), so every phone adds up the same; the overview says
+  how many there are. A row written down with a future date is committed money, never "spent so far" and never a pace.
+- Screens do no arithmetic on money: a sum, a left, an over or a share is worked out in `core` (with its test) and
+  drawn. Every figure, its definition and its source are in `docs/figures.md`.
+- One amount reads the same on every platform (`MoneyFormatterTest`), the day moves on by itself at midnight on every
+  screen that works from it (`rememberToday` in the app, a tick in the web app), and the own-pace range of the
+  forecast is backtested (`ForecastTest`).
 
 ### Migrations
 

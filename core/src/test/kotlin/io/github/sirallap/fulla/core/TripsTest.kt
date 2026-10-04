@@ -222,4 +222,39 @@ class TripsTest {
         assertEquals(TripKind.OTHER, TripKind.of(""))
         assertEquals(TripKind.OTHER, TripKind.of(null))
     }
+
+    @Test
+    fun `a trip with something booked ahead spreads what is left not the whole budget`() {
+        // 100 of the 300 budget is already spent (a hotel, paid early): the days ahead share the other 200.
+        val totals = Trips.totals(porto, listOf(expense(10_000, porto.id, LocalDate.of(2030, 7, 20))))
+        val before = Trips.perDay(porto, totals, LocalDate.of(2030, 8, 1))!!
+        assertEquals(20_000 / 8, before.amountMinor)
+        assertEquals(false, before.over)
+        // Spent it all before it began: nothing per day, and it says so.
+        val spentAll = Trips.perDay(porto, Trips.totals(porto, listOf(expense(30_000, porto.id, LocalDate.of(2030, 7, 20)))), LocalDate.of(2030, 8, 1))!!
+        assertEquals(0, spentAll.amountMinor)
+        assertEquals(true, spentAll.over)
+    }
+
+    @Test
+    fun `the overview shows the active trip and only without one the next that starts within a week`() {
+        val soon = porto.copy(id = "00000000-0000-4000-8000-000000000502", name = "Soon", startDate = LocalDate.of(2030, 8, 15), endDate = LocalDate.of(2030, 8, 17))
+        val far = porto.copy(id = "00000000-0000-4000-8000-000000000503", name = "Far", startDate = LocalDate.of(2030, 9, 1), endDate = LocalDate.of(2030, 9, 3))
+        val trips = listOf(soon, far, porto)
+        assertEquals("Porto", Trips.forHome(trips, LocalDate.of(2030, 8, 13))?.name, "the one going on wins over one that starts later")
+        assertEquals("Soon", Trips.forHome(listOf(soon, far), LocalDate.of(2030, 8, 10))?.name, "three days away is soon")
+        assertNull(Trips.forHome(listOf(far), LocalDate.of(2030, 8, 10)), "three weeks away is not")
+        assertNull(Trips.forHome(listOf(porto.copy(archived = true)), LocalDate.of(2030, 8, 13)), "an archived one never shows")
+    }
+
+    @Test
+    fun `what each member paid for the trip less refunds in the order they first appear`() {
+        val rows = listOf(
+            expense(10_000, porto.id).copy(paidByMemberId = Fixtures.BOB),
+            expense(5_000, porto.id).copy(paidByMemberId = Fixtures.ALICE),
+            expense(1_500, porto.id, kind = TransactionKind.REFUND).copy(paidByMemberId = Fixtures.BOB),
+            expense(700, porto.id).copy(paidByMemberId = null),
+        )
+        assertEquals(listOf(Fixtures.BOB to 8_500L, Fixtures.ALICE to 5_000L), Trips.paidBy(rows).toList())
+    }
 }

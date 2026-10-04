@@ -182,6 +182,8 @@
     <string name="recurring_text">Fixposten, die sich selbst eintragen, tun das an ihrem Tag. Tippe einen an, um ihn zu ändern oder zu pausieren.</string>
     <string name="refused">Vom Server abgelehnt</string>
     <string name="rejected_reason">Abgelehnt: %1$s</string>
+    <string name="refused_notice">Vom Server abgelehnt: %1$d</string>
+    <string name="refused_notice_text">Sie zählen nicht in den Summen, damit alle dasselbe sehen. Korrigiere oder lösche sie unter Verlauf → Nicht gesendet.</string>
     <string name="restore">Wiederherstellen</string>
     <string name="role_admin">Admin</string>
     <string name="role_member">Mitglied</string>
@@ -614,8 +616,9 @@
     <string name="forecast_no_history">Noch nicht genug, um die Alltagsausgaben zu schätzen. Es braucht einen früheren Zeitraum oder eine Woche von diesem mit mindestens fünf Ausgaben.</string>
     <string name="forecast_how">Wie wird das berechnet?</string>
     <string name="forecast_income">Einnahmen</string>
-    <string name="forecast_income_context">%1$s eingegangen, %2$s noch fällig</string>
+    <string name="forecast_income_context">%1$s erfasst, %2$s noch fällig</string>
     <string name="forecast_spent_so_far">Bisher ausgegeben</string>
+    <string name="forecast_booked_ahead">Für später erfasst</string>
     <string name="forecast_fixed_to_come">Noch fällige Fixkosten</string>
     <string name="forecast_everyday">Noch zu erwartende Alltagsausgaben</string>
     <string name="forecast_note">Die Alltagsausgaben sind das, was die letzten drei Zeiträume ab diesem Tag pro Tag ausgegeben haben, angepasst daran, wie dieser läuft. Fixkosten sind exakt: Sie stammen aus deinen wiederkehrenden Posten.</string>
