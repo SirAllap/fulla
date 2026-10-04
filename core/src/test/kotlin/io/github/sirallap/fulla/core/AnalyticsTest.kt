@@ -12,6 +12,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AnalyticsTest {
@@ -116,7 +117,25 @@ class AnalyticsTest {
             Fixtures.expense(5_000, d(2))
         val t = a.trends(history, jan, minimumMinor = 500).single()
         assertEquals(Fixtures.GROCERIES, t.categoryId)
-        assertEquals(10, a.noSpendDays(listOf(Fixtures.expense(100, d(3))), jan, d(11)))
+        // The 11th is not over yet: ten days are, and one of them had spending.
+        assertEquals(9, a.noSpendDays(listOf(Fixtures.expense(100, d(3))), jan, d(11)))
+        assertEquals(10, a.noSpendDays(emptyList(), jan, d(11)), "a day not spent yet is not a day without spending")
+        assertEquals(0, a.noSpendDays(emptyList(), jan, d(1)), "the first day is not over")
+        assertEquals(30, a.noSpendDays(listOf(Fixtures.expense(100, d(3))), jan, d(15, 2)), "a period that is over counts all of its days")
+    }
+
+    @Test
+    fun `the budgets of a period taken together are left or over never a negative left`() {
+        val limits = mapOf("a" to 30_000L, "b" to 10_000L)
+        assertNull(io.github.sirallap.fulla.core.analytics.Budgets.status(emptyMap(), mapOf("a" to 5L)))
+        val within = io.github.sirallap.fulla.core.analytics.Budgets.status(limits, mapOf("a" to 12_000L, "c" to 99_000L))!!
+        assertEquals(40_000, within.limitMinor)
+        assertEquals(12_000, within.usedMinor, "a category without a budget is not counted against the budgets")
+        assertEquals(28_000, within.leftMinor)
+        assertEquals(0, within.overMinor)
+        val over = io.github.sirallap.fulla.core.analytics.Budgets.status(limits, mapOf("a" to 35_000L, "b" to 10_000L))!!
+        assertEquals(0, over.leftMinor)
+        assertEquals(5_000, over.overMinor)
     }
 
     @Test

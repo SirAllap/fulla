@@ -51,12 +51,10 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 /**
- * How the period is likely to end, then the fixed costs it is made of, both
- * on the jar's liquid. The first says what would be spent and what would be
- * kept, as a range that narrows with the days; a tap opens how it is worked
- * out. The second is the fixed costs that write themselves: the total, what
- * is still to be charged, what is left of the income once they are paid, and
- * what can be spent per day meanwhile.
+ * How the period is likely to end, on the jar's liquid, and the sums behind
+ * it. What a person opens the analysis for comes first: what would be kept,
+ * as a range that narrows with the days, then what would be spent, then the
+ * sums line by line, so every figure can be checked.
  */
 @Composable
 fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
@@ -75,9 +73,7 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
             style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
         val spendEnd = forecast.spentEndMinor!!
         TileRow {
-            LiquidTile(stringResource(R.string.forecast_spend), "≈ " + f.money(spendEnd), Modifier.weight(1f),
-                context = stringResource(R.string.forecast_between, f.money(forecast.spentEndLowMinor!!), f.money(forecast.spentEndHighMinor!!)),
-                level = if (spendEnd > 0) (forecast.spentMinor.toFloat() / spendEnd).coerceIn(0f, 1f) else null, phase = 0.4f)
+            // What would be kept leads: it is the question. What would be spent is the same sum seen from the other side.
             val kept = forecast.keptMinor
             if (kept != null) {
                 LiquidTile(stringResource(R.string.forecast_kept), "≈ " + f.money(kept), Modifier.weight(1f),
@@ -88,6 +84,9 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
                 LiquidTile(stringResource(R.string.forecast_kept), "—", Modifier.weight(1f),
                     context = stringResource(R.string.forecast_add_income), tone = LiquidTone.IN)
             }
+            LiquidTile(stringResource(R.string.forecast_spend), "≈ " + f.money(spendEnd), Modifier.weight(1f),
+                context = stringResource(R.string.forecast_between, f.money(forecast.spentEndLowMinor!!), f.money(forecast.spentEndHighMinor!!)),
+                level = if (spendEnd > 0) (forecast.spentMinor.toFloat() / spendEnd).coerceIn(0f, 1f) else null, phase = 0.4f)
         }
     } else if (forecast.waiting) {
         ListRow(stringResource(R.string.forecast_waiting), context = stringResource(R.string.forecast_waiting_text), divider = false)
@@ -101,8 +100,9 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
 
 /**
  * The numbers of the fixed costs, for the insights: the total and how much of
- * it is charged, what is left to spend and what that is per day. The charges
- * themselves, each with its bar, are on the overview ([FixedCostsSection]).
+ * it is charged, and what can be spent per day once they are paid. The charges
+ * themselves, each with its bar, are on the overview ([FixedCostsSection]);
+ * what is left after them is a line of the sums above, not a figure of its own.
  */
 @Composable
 fun FixedTotalsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCosts: () -> Unit) {
@@ -118,21 +118,11 @@ fun FixedTotalsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCos
         LiquidTile(stringResource(R.string.fixed_total_tile), f.money(total), Modifier.weight(1f).clickable { onFixedCosts() },
             context = stringResource(R.string.fixed_progress, f.money(forecast.fixedPaidMinor), f.money(forecast.fixedToComeMinor)),
             level = if (total > 0) forecast.fixedPaidMinor.toFloat() / total else null, phase = 2.2f)
-        if (left != null) {
-            LiquidTile(stringResource(R.string.left_to_spend), f.money(left), Modifier.weight(1f),
-                context = stringResource(R.string.left_to_spend_text),
-                level = (left.toFloat() / forecast.totalIncomeMinor).coerceIn(0f, 1f), tone = LiquidTone.IN,
-                valueColor = if (left < 0) c.moneyOut else c.moneyIn, phase = 3.8f)
-        } else Spacer(Modifier.weight(1f))
-    }
-    if (left != null && perDay != null) {
-        TileRow {
+        if (left != null && perDay != null) {
             LiquidTile(stringResource(R.string.per_day), f.money(perDay), Modifier.weight(1f),
-                context = forecast.everydayPerDayMinor?.let { stringResource(R.string.per_day_text_pace, forecast.daysToGo, f.money(it)) }
-                    ?: stringResource(R.string.per_day_text, forecast.daysToGo),
+                context = stringResource(R.string.per_day_text, forecast.daysToGo),
                 tone = LiquidTone.IN, valueColor = if (perDay < 0) c.moneyOut else c.moneyIn, phase = 4.6f)
-            Spacer(Modifier.weight(1f))
-        }
+        } else Spacer(Modifier.weight(1f))
     }
     if (left == null) {
         Text(stringResource(R.string.forecast_add_income), style = FullaType.secondary, color = c.inkMuted,

@@ -147,15 +147,17 @@ object Trips {
 
     /**
      * A daily figure for the trip's card, or null once it is over or with no
-     * budget: before it starts, the plain average; during it, what is left
-     * divided by the days remaining, today included; once spending has
-     * passed the budget, 0 and `over`.
+     * budget: before it starts, what is left over all its days (the plain
+     * average while nothing is spent, less once something is booked ahead);
+     * during it, what is left divided by the days remaining, today included;
+     * once spending has passed the budget, 0 and `over`.
      */
     fun perDay(trip: Trip, totals: TripTotals, today: LocalDate): TripPerDay? {
-        val budget = trip.budgetMinor ?: return null
+        if (trip.budgetMinor == null) return null
         if (today > trip.endDate) return null
         val totalDays = (ChronoUnit.DAYS.between(trip.startDate, trip.endDate) + 1).toInt()
-        if (today < trip.startDate) return TripPerDay(budget / totalDays, false, totalDays)
+        // Something already booked for the trip is not there to spend again: what is left, not the whole budget.
+        if (today < trip.startDate) return if ((totals.leftMinor ?: 0) <= 0) TripPerDay(0, true, totalDays) else TripPerDay((totals.leftMinor ?: 0) / totalDays, false, totalDays)
         val daysRemaining = (ChronoUnit.DAYS.between(today, trip.endDate) + 1).toInt()
         if ((totals.leftMinor ?: 0) <= 0) return TripPerDay(0, true, daysRemaining)
         return TripPerDay((totals.leftMinor ?: 0) / daysRemaining, false, daysRemaining)
