@@ -339,15 +339,20 @@ class ForecastTest {
         for (day in listOf(10, 18)) {
             val ratios = mutableListOf<Double>()
             var inside = 0
+            var scored = 0
             for (seed in 1..300) {
                 val all = Household(seed.toLong()).month(jan, emptyList(), { r, date -> written(r, date) }, { amount, date -> plain(amount, date) })
                 val f = a.forecast(all.filter { it.date <= d(day) }, jan, today = d(day))!!
-                assertTrue(f.ownPace, "no earlier period: its own pace stands in")
+                val soFar = all.filter { it.date <= d(day) }
+                // Fewer than five expenses by then is not a pace (two rows are not): nothing is claimed, and nothing is scored.
+                if (!f.ownPace) { assertTrue(soFar.size < 5 && f.everydayRestMinor == null, "seed $seed: enough rows for a pace, yet none was read"); continue }
+                scored++
                 val actualRest = all.filter { it.date > d(day) }.sumOf { it.amountMinor }
                 ratios += actualRest.toDouble() / f.everydayRestMinor!!.coerceAtLeast(1)
                 if (actualRest in f.everydayLowMinor!!..f.everydayHighMinor!!) inside++
             }
-            val coverage = inside / 300.0
+            assertTrue(scored >= 270, "at day $day only $scored of 300 made-up periods had a pace to score")
+            val coverage = inside / scored.toDouble()
             val median = ratios.sorted()[ratios.size / 2]
             assertTrue(coverage in 0.75..0.95, "at day $day the range held ${kotlin.math.round(coverage * 100).toInt()} % of the time")
             assertTrue(median in 0.85..1.30, "at day $day the actual was ${kotlin.math.round(median * 100) / 100.0} times the estimate, at the median")
