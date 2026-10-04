@@ -9,9 +9,9 @@ import io.github.sirallap.fulla.core.guide.GuideOrigin
 import io.github.sirallap.fulla.core.guide.GuidePlan
 import io.github.sirallap.fulla.core.guide.GuideStepState
 import io.github.sirallap.fulla.core.guide.MonthStart
+import io.github.sirallap.fulla.core.guide.OpeningBalances
 import io.github.sirallap.fulla.core.guide.SetupStep
 import io.github.sirallap.fulla.core.guide.TourStop
-import io.github.sirallap.fulla.core.money.MoneyParser
 import io.github.sirallap.fulla.core.time.LocalDate
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
@@ -190,20 +190,29 @@ object GuideHost {
         val accounts = view.config.accounts.filter { !it.archived }.sortedBy { it.sort }
         sheet(t("guide_accounts_title"), dismissable = false) { close ->
             stepHeader(t("guide_accounts_title"), stepOf)
+            var nextButton: HTMLElement? = null
+            val problems = HashMap<String, HTMLElement>()
+            // Text that is not an amount is said so and holds Next back, rather than being skipped as if it had been saved.
+            fun invalid(id: String) = texts[id].orEmpty().let { it.isNotBlank() && OpeningBalances.parse(it, format.currency, format.decimalStyle) == null }
+            fun check() {
+                for ((id, p) in problems) p.style.display = if (invalid(id)) "" else "none"
+                nextButton?.let { b -> if (accounts.none { invalid(it.id) }) b.removeAttribute("disabled") else b.setAttribute("disabled", "") }
+            }
             for (a in accounts) {
                 val f = field(a.name, texts[a.id] ?: "", help = t("opening_balance_help")) { attr("inputmode", "decimal"); attr("placeholder", format.plain(0L)) }
-                f.on("input") { texts[a.id] = f.value }
+                problems[a.id] = child("p", "problem") { text(t("opening_balance_invalid")) }
+                f.on("input") { texts[a.id] = f.value; check() }
             }
             if (savedLater) note(t("guide_save_later"))
             div("actions") {
-                primaryButton(t("guide_next")) {
+                nextButton = primaryButton(t("guide_next")) {
                     if (savedLater) { close(); next(); return@primaryButton }
                     App.launch {
                         var failed = false
                         for (a in accounts) {
                             val text = texts[a.id].orEmpty()
                             if (text.isBlank()) continue
-                            val minor = MoneyParser.parseTyped(text, format.currency, format.decimalStyle)?.takeIf { it >= 0 } ?: continue
+                            val minor = OpeningBalances.parse(text, format.currency, format.decimalStyle) ?: continue
                             val item = (view.bundle["accounts"] as? kotlinx.serialization.json.JsonArray).orEmpty().map { it as JsonObject }.firstOrNull { (it["id"] as? JsonPrimitive)?.content == a.id } ?: continue
                             // Typing a balance here means "this is what the account holds today".
                             val ok = runCatching { Ledger.upsert(Structure.ACCOUNT, JsonObject(item + mapOf("opening_balance_minor" to JsonPrimitive(minor), "opening_balance_date" to JsonPrimitive(LocalDate.now().toString())))) }.isSuccess
@@ -214,6 +223,7 @@ object GuideHost {
                 }
                 quietButton(t("guide_skip")) { close(); next() }
             }
+            check()
         }
     }
 

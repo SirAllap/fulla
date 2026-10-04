@@ -141,7 +141,7 @@ internal fun TripEditDialog(view: HouseholdView, existing: Trip?, onDismiss: () 
     // `validation_failed` would abort the whole household upload (M3).
     val (from, to) = if (end < start) end to start else start to end
     val spanProblem = (to.toEpochDay() - from.toEpochDay() >= 366).let { if (it) stringResource(R.string.trip_span_too_long) else null }
-    val budgetParsed = budgetText.takeIf { it.isNotBlank() }?.let { MoneyParser.parse(it, f.currency, f.decimalStyle) }
+    val budgetParsed = budgetText.takeIf { it.isNotBlank() }?.let { MoneyParser.parseTyped(it, f.currency, f.decimalStyle) }
     val budgetProblem = when {
         budgetText.isBlank() -> null
         budgetParsed == null -> stringResource(R.string.trip_budget_invalid)

@@ -523,6 +523,11 @@
     <string name="opening_balance">Saldo zu Beginn des Tages</string>
     <!-- Under the opening balance field: it is money already there, not income this month. -->
     <string name="opening_balance_help">Was auf dem Konto war, als dieser Tag begann. Bewegungen ab diesem Tag werden dazugerechnet oder abgezogen; frühere sind schon darin enthalten.</string>
+    <!-- Under the opening balance field when what was typed is not an amount -->
+    <string name="opening_balance_invalid">Das ist kein Betrag. Gib Ziffern ein, etwa 250 oder 12,50.</string>
+    <!-- A switch in the account form: the opening balance is money owed (a credit card, an overdraft), so it is below zero -->
+    <string name="opening_balance_debt">Das Konto ist im Minus</string>
+    <string name="opening_balance_debt_help">Eine Kreditkarte oder ein überzogenes Konto: Der Saldo zählt als Schulden.</string>
 
     <string name="tour_jar">Das ist dein Monat. Das Glas füllt sich mit dem, was du behältst; Einnahmen und Ausgaben stehen darunter.</string>
     <string name="tour_overview">Übersicht: dieser Monat auf einen Blick. Mit den Pfeilen zu früheren Monaten zurückgehen.</string>

@@ -8,6 +8,7 @@ import io.github.sirallap.fulla.core.balance.Balances
 import io.github.sirallap.fulla.core.balance.SettlementPlanner
 import io.github.sirallap.fulla.core.categories.CategoryUse
 import io.github.sirallap.fulla.core.guide.MonthStart
+import io.github.sirallap.fulla.core.guide.OpeningBalances
 import io.github.sirallap.fulla.core.model.AppliesTo
 import io.github.sirallap.fulla.core.model.Category
 import io.github.sirallap.fulla.core.model.MoneyMode
@@ -388,23 +389,44 @@ object AccountsPage {
 
     private fun edit(view: HouseholdView, format: Format, existing: io.github.sirallap.fulla.core.model.Account?) {
         var archived = existing?.archived ?: false
+        // The field holds the amount and the switch under it says it is owed: an iPhone's decimal keypad has no minus key either.
+        var debt = (existing?.openingBalanceMinor ?: 0L) < 0
         sheet(t("edit")) { close ->
             val name = field(t("name"), existing?.name ?: "") { attr("maxlength", "40") }
-            val balance = field(t("opening_balance"), existing?.let { format.plain(it.openingBalanceMinor) } ?: "", help = t("opening_balance_help")) { attr("inputmode", "decimal") }
+            val balance = field(t("opening_balance"), existing?.let { format.plain(kotlin.math.abs(it.openingBalanceMinor)) } ?: "", help = t("opening_balance_help")) { attr("inputmode", "decimal") }
+            val problem = child("p", "problem") { text(t("opening_balance_invalid")) }
+            var saveButton: HTMLElement? = null
+            fun amount(): Long? = OpeningBalances.parse(balance.value, format.currency, format.decimalStyle, debt)
+            // Text that is not an amount is said so and stops Save, rather than keeping the old balance as if it had been typed.
+            fun check() {
+                val ok = amount() != null
+                problem.style.display = if (ok) "none" else ""
+                saveButton?.let { if (ok) it.removeAttribute("disabled") else it.setAttribute("disabled", "") }
+            }
+            check()
+            balance.on("input") { check() }
+            switchRow(t("opening_balance_debt"), t("opening_balance_debt_help"), debt) { debt = it; check() }
             switchRow(t("archive"), t("archive_help"), archived) { archived = it }
             div("actions") {
-                primaryButton(t("save")) {
+                saveButton = primaryButton(t("save")) {
                     val title = name.value.trim()
                     if (title.isEmpty()) return@primaryButton
-                    val minor = if (balance.value.isBlank()) 0L else MoneyParser.parseTyped(balance.value, format.currency, format.decimalStyle)?.takeIf { it >= 0 } ?: return@primaryButton
+                    val minor = amount() ?: return@primaryButton
                     close()
+                    val changed = existing == null || minor != existing.openingBalanceMinor
+                    // What is typed as the balance of an account that had no date is what it holds today; an account whose balance is not touched keeps its date, none at all included.
+                    val date = existing?.openingBalanceDate ?: if (changed) LocalDate.now() else null
                     val item = io.github.sirallap.fulla.core.model.Account(
                         existing?.id ?: randomUuid(), title, existing?.type ?: io.github.sirallap.fulla.core.model.AccountType.CHECKING,
-                        minor, existing?.openingBalanceDate ?: LocalDate.now(), existing?.sort ?: view.config.accounts.size, archived)
-                    App.launch { Ledger.upsert(Structure.ACCOUNT, io.github.sirallap.fulla.client.wire.Wire.account(item)) }
+                        minor, date, existing?.sort ?: view.config.accounts.size, archived)
+                    val wire = io.github.sirallap.fulla.client.wire.Wire.account(item)
+                    // Renaming or archiving leaves the balance and its date out, so what is stored is not rewritten (an account without a date counts every movement, and must go on doing so).
+                    val body = if (changed) wire else JsonObject(wire.filterKeys { it != "opening_balance_minor" && it != "opening_balance_date" })
+                    App.launch { Ledger.upsert(Structure.ACCOUNT, body) }
                 }
                 quietButton(t("cancel")) { close() }
             }
+            check()
         }
     }
 }

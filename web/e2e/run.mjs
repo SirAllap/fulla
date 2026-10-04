@@ -138,6 +138,19 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   ok(true, 'a trip can be added');
   await back(page);
 
+  // an account in debt: the amount and a switch (a phone's decimal keypad has no minus key); what is not an amount is said so, not kept
+  await row(page, 'Cuentas').click();
+  await page.click('text=Añadir una cuenta');
+  await page.fill('.sheet input >> nth=0', 'Tarjeta');
+  await page.fill('.sheet input >> nth=1', 'abc');
+  ok(await page.locator('.sheet .problem').first().isVisible() && await page.locator('.sheet .btn.primary[disabled]').count() === 1, 'an opening balance that is not an amount is said so, and Save waits');
+  await page.fill('.sheet input >> nth=1', '300.5');
+  await page.locator('.sheet .row:has-text("en deuda") input').check();
+  ok(await page.locator('.sheet .btn.primary[disabled]').count() === 0 && !(await page.locator('.sheet .problem').first().isVisible()), 'a dot is a decimal on a page that writes commas, and the debt switch lets Save through');
+  await page.click('.sheet .btn.primary');
+  await page.waitForSelector('.row:has-text("Tarjeta")');
+  await back(page);
+
   // fixed cost with an end: it writes itself on its day, and stops
   await row(page, 'Gastos fijos').click();
   await page.click('text=Añadir un gasto fijo');
@@ -155,6 +168,20 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.click('.tab:has-text("Historial")');
   await page.waitForSelector('.history .row');
   ok((await page.textContent('main')).includes('Alquiler'), 'and it wrote itself into History');
+
+  // the card is below zero, and renaming it leaves what it holds alone
+  await page.click('.tab:has-text("Saldos")');
+  const card = await row(page, 'Tarjeta').textContent();
+  ok(/[-−]\s*300,50/.test(card), 'an account in debt holds a negative balance: ' + card.replace(/\s+/g, ' ').trim());
+  await gear(page); await row(page, 'Cuentas').click(); await row(page, 'Tarjeta').click();
+  ok(await page.inputValue('.sheet input >> nth=1') === '300,50' && await page.locator('.sheet .row:has-text("en deuda") input').isChecked(), 'reopened, it shows 300,50 with the debt switch on');
+  await page.fill('.sheet input >> nth=0', 'Tarjeta azul');
+  await page.click('.sheet .btn.primary');
+  await page.waitForSelector('.row:has-text("Tarjeta azul")');
+  await back(page); await back(page);
+  await page.click('.tab:has-text("Saldos")');
+  ok(/[-−]\s*300,50/.test(await row(page, 'Tarjeta azul').textContent()), 'renamed, it still holds minus 300,50');
+  await page.click('.tab:has-text("Historial")');
 
   // what is stored survives closing the page
   await page.reload();
