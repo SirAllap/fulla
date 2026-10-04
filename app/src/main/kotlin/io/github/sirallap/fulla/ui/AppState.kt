@@ -23,7 +23,10 @@ class HouseholdView(
 ) {
     val id: String get() = state.id
     val config = io.github.sirallap.fulla.core.defaults.Defaults.localized(state.config, language)
-    val active: List<Transaction> = rows.map { it.transaction }.filter { it.isActive }
+    /** The rows the figures are worked out from: not deleted, and not refused by the server (see SyncEngine.counted). */
+    val active: List<Transaction> = io.github.sirallap.fulla.core.sync.SyncEngine.counted(rows)
+    /** Rows the server refused: kept and shown in History, left out of every figure. */
+    val refused: Int = io.github.sirallap.fulla.core.sync.SyncEngine.refusedCount(rows)
     /** The periods follow the salaries written down, when the household has chosen a salary category. */
     val formats = Formats(config, periodRule = io.github.sirallap.fulla.core.rules.PeriodRule.of(config, active))
     val analytics = Analytics(config, formats.periodRule)

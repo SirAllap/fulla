@@ -62,8 +62,9 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
     val members = view.config.activeMembers
     val balances = remember(view) { Balances.of(view.active, view.config.members.map { it.id }) }
     val plan = remember(balances) { SettlementPlanner.plan(balances) }
-    val accounts = remember(view) {
-        view.analytics.accountBalances(view.active, view.config.accounts.filter { !it.archived }, LocalDate.now())
+    val today = io.github.sirallap.fulla.ui.components.rememberToday()
+    val accounts = remember(view, today) {
+        view.analytics.accountBalances(view.active, view.config.accounts.filter { !it.archived }, today)
     }
     var confirming by remember { mutableStateOf<Payment?>(null) }
     val shared = SharedPot.isShared(view.config.household)
@@ -119,7 +120,7 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
             }
             if (shared) {
                 item {
-                    val total = view.config.accounts.filter { !it.archived }.sumOf { accounts[it.id] ?: 0L }
+                    val total = view.analytics.accountsTotal(view.active, view.config.accounts, today)
                     ListRow(stringResource(R.string.household_total), divider = false,
                         end = { AmountText(f.money(total), color = if (total < 0) c.moneyOut else c.ink) })
                 }

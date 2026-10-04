@@ -39,8 +39,7 @@ object OverviewScreen {
         val forecast = if (period == current) runCatching { view.analytics.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null
         val budgets = Budgets.forPeriod(config, period)
         val budgetSpend = view.analytics.budgetSpend(view.active, period, config.trips).associate { it.categoryId to it.amountMinor }
-        val homeTrip = Trips.activeOn(config.trips, today)
-            ?: config.trips.filter { !it.archived && it.startDate >= today && it.startDate <= today.plusDays(7) }.minByOrNull { it.startDate }
+        val homeTrip = Trips.forHome(config.trips, today)
 
         return el("main", "screen overview") {
             tabHeader(config.household.name, insightsPill())
@@ -68,10 +67,12 @@ object OverviewScreen {
             }
             val waiting = if (period == current && candidate == null) view.rule.daysWaitingForSalary(today) else null
             if (waiting != null) div("rows") { listRow(t("salary_overdue"), context = t("salary_overdue_text", waiting), start = { span("lead warn") { ui("payments") } }) }
+            // Rows the server refused are left out of every figure: said once, here, so a total is never a mystery.
+            if (view.refused > 0) div("rows") { listRow(t("refused_notice", view.refused), context = t("refused_notice_text"), start = { span("lead warn") { ui("warning") } }) }
             if (backupDue(view)) div("rows") { listRow(t("backup_due"), context = t("backup_due_text"), start = { span("lead warn") { ui("save_alt") } }) { App.openSettings(SettingsPage.BACKUP) } }
             val accounts = config.accounts.filter { !it.archived }
             if (accounts.any { it.openingBalanceMinor != 0L }) div("rows") {
-                val total = view.analytics.accountBalances(view.active, accounts, today).values.sum()
+                val total = view.analytics.accountsTotal(view.active, accounts, today)
                 listRow(t("accounts_total"), context = t("accounts_total_help"), detail = format.money(total), start = leadIcon("account_balance")) { App.go(Tab.BALANCES) }
             }
 
@@ -206,7 +207,7 @@ object OverviewScreen {
                 val charged = done.filter { it.status == FixedStatus.PAID }
                 div("rows") {
                     listRow(t(if (charged.size == done.size) "fixed_charged_group" else "fixed_charged_skipped_group", done.size), start = { span("lead in") { ui("check_circle") } },
-                        end = { amountText(format.money(charged.sumOf { it.amountMinor }), "muted"); span("chev") { ui(if (chargedOpen) "expand_less" else "expand_more") } }) { chargedOpen = !chargedOpen; App.render() }
+                        end = { amountText(format.money(f.fixedPaidMinor), "muted"); span("chev") { ui(if (chargedOpen) "expand_less" else "expand_more") } }) { chargedOpen = !chargedOpen; App.render() }
                 }
                 if (chargedOpen) for (item in done) fixedBar(item, format, today, f.length)
             }

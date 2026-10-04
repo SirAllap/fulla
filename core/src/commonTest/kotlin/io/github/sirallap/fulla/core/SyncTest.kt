@@ -227,6 +227,19 @@ class SyncTest {
     }
 
     @Test
+    fun a_row_the_server_refused_is_left_out_of_the_figures_so_every_phone_adds_up_the_same() {
+        val synced = LocalTransaction(Fixtures.expense(1_000), SyncState.SYNCED)
+        val pending = LocalTransaction(Fixtures.expense(2_000), SyncState.PENDING)
+        val local = LocalTransaction(Fixtures.expense(4_000), SyncState.LOCAL_ONLY)
+        val refused = LocalTransaction(Fixtures.expense(8_000), SyncState.REJECTED, rejectCode = "invalid")
+        val deleted = LocalTransaction(Fixtures.expense(16_000).copy(status = Status.DELETED), SyncState.SYNCED)
+        val rows = listOf(synced, pending, local, refused, deleted)
+        assertEquals(listOf(1_000L, 2_000L, 4_000L), SyncEngine.counted(rows).map { it.amountMinor }, "synced, on its way and local all count")
+        assertEquals(1, SyncEngine.refusedCount(rows))
+        assertEquals(0, SyncEngine.refusedCount(listOf(synced, LocalTransaction(Fixtures.expense(5).copy(status = Status.DELETED), SyncState.REJECTED))), "a refused row that was deleted is nothing to look at")
+    }
+
+    @Test
     fun the_cursor_only_moves_forward_and_only_to_a_value_the_server_issued() {
         assertEquals(10L, SyncEngine.nextCursor(10L, 4L))
         assertEquals(12L, SyncEngine.nextCursor(10L, 12L))

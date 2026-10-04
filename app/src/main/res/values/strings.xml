@@ -183,6 +183,8 @@
     <string name="recurring_text">Items that write themselves down do so on their day. Tap one to change or pause it.</string>
     <string name="refused">Refused by the server</string>
     <string name="rejected_reason">Refused: %1$s</string>
+    <string name="refused_notice">Refused by the server: %1$d</string>
+    <string name="refused_notice_text">They are left out of the totals, so everyone sees the same. Fix or delete them in History → Not sent.</string>
     <string name="restore">Restore</string>
     <string name="role_admin">Admin</string>
     <string name="role_member">Member</string>
@@ -664,8 +666,9 @@
     <string name="forecast_no_history">There is not enough yet to estimate everyday spending. It takes an earlier period, or a week of this one with at least five expenses.</string>
     <string name="forecast_how">How is it worked out?</string>
     <string name="forecast_income">Income</string>
-    <string name="forecast_income_context">%1$s in, %2$s still due</string>
+    <string name="forecast_income_context">%1$s written down, %2$s still due</string>
     <string name="forecast_spent_so_far">Spent so far</string>
+    <string name="forecast_booked_ahead">Written down for later</string>
     <string name="forecast_fixed_to_come">Fixed costs still to charge</string>
     <string name="forecast_everyday">Everyday spending still to come</string>
     <string name="forecast_note">Everyday spending is what the last three periods spent per day from this day on, adjusted to how this period is going. Fixed costs are exact: they come from your recurring items.</string>

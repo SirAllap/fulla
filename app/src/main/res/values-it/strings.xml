@@ -182,6 +182,8 @@
     <string name="recurring_text">Le spese fisse che si registrano da sole lo fanno nel loro giorno. Toccane una per modificarla o metterla in pausa.</string>
     <string name="refused">Rifiutato dal server</string>
     <string name="rejected_reason">Rifiutato: %1$s</string>
+    <string name="refused_notice">Rifiutati dal server: %1$d</string>
+    <string name="refused_notice_text">Non contano nei totali, così tutti vedono lo stesso. Correggili o eliminali in Cronologia → Non inviati.</string>
     <string name="restore">Ripristina</string>
     <string name="role_admin">Admin</string>
     <string name="role_member">Membro</string>
@@ -614,8 +616,9 @@
     <string name="forecast_no_history">Non c\'è ancora abbastanza per stimare le spese di ogni giorno. Serve un periodo precedente, o una settimana di questo con almeno cinque spese.</string>
     <string name="forecast_how">Come si calcola?</string>
     <string name="forecast_income">Entrate</string>
-    <string name="forecast_income_context">%1$s entrati, %2$s ancora attesi</string>
+    <string name="forecast_income_context">%1$s registrati, %2$s ancora attesi</string>
     <string name="forecast_spent_so_far">Speso finora</string>
+    <string name="forecast_booked_ahead">Registrato per dopo</string>
     <string name="forecast_fixed_to_come">Spese fisse ancora da addebitare</string>
     <string name="forecast_everyday">Spese di ogni giorno ancora da fare</string>
     <string name="forecast_note">Le spese di ogni giorno sono quanto hanno speso al giorno gli ultimi tre periodi da questo giorno in poi, adattato a come va questo. Le spese fisse sono esatte: vengono dai tuoi elementi ricorrenti.</string>

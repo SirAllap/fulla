@@ -182,6 +182,8 @@
     <string name="recurring_text">As despesas fixas que se registram sozinhas fazem isso no seu dia. Toque em uma para mudar ou pausar.</string>
     <string name="refused">Recusado pelo servidor</string>
     <string name="rejected_reason">Recusado: %1$s</string>
+    <string name="refused_notice">Rejeitados pelo servidor: %1$d</string>
+    <string name="refused_notice_text">Não contam nos totais, para que todos vejam o mesmo. Corrija-os ou apague-os em Histórico → Não enviados.</string>
     <string name="restore">Restaurar</string>
     <string name="role_admin">Admin</string>
     <string name="role_member">Membro</string>
@@ -614,8 +616,9 @@
     <string name="forecast_no_history">Ainda não há dados para estimar os gastos do dia a dia. É preciso um período anterior, ou uma semana deste com pelo menos cinco gastos.</string>
     <string name="forecast_how">Como é calculado?</string>
     <string name="forecast_income">Receitas</string>
-    <string name="forecast_income_context">%1$s recebidos, %2$s ainda por entrar</string>
+    <string name="forecast_income_context">%1$s registrados, %2$s ainda por entrar</string>
     <string name="forecast_spent_so_far">Gasto até hoje</string>
+    <string name="forecast_booked_ahead">Registrado para depois</string>
     <string name="forecast_fixed_to_come">Fixos a cobrar</string>
     <string name="forecast_everyday">Gastos do dia a dia que faltam</string>
     <string name="forecast_note">Os gastos do dia a dia são o que os últimos três períodos gastaram por dia a partir deste dia, ajustado a como este está indo. Os fixos são exatos: vêm dos seus itens recorrentes.</string>

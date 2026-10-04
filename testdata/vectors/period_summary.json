@@ -1,0 +1,272 @@
+{
+  "rule": "period_summary",
+  "vectors": [
+    {
+      "why": "income, spending and a refund, by calendar month",
+      "input": {
+        "period_start_day": 1,
+        "income_shift_day": null,
+        "transactions": [
+          {
+            "kind": "income",
+            "date": "2030-01-10",
+            "amount_minor": 200000,
+            "recurrence": "fixed"
+          },
+          {
+            "kind": "expense",
+            "date": "2030-01-15",
+            "amount_minor": 50000
+          },
+          {
+            "kind": "refund",
+            "date": "2030-01-20",
+            "amount_minor": 1000
+          },
+          {
+            "kind": "expense",
+            "date": "2030-02-02",
+            "amount_minor": 3000
+          }
+        ]
+      },
+      "expected": [
+        {
+          "period": "2030-01",
+          "income_minor": 200000,
+          "expense_minor": 49000,
+          "savings_minor": 151000
+        },
+        {
+          "period": "2030-02",
+          "income_minor": 0,
+          "expense_minor": 3000,
+          "savings_minor": -3000
+        }
+      ]
+    },
+    {
+      "why": "transfers, settlements and deleted rows are not money in or out",
+      "input": {
+        "period_start_day": 1,
+        "income_shift_day": null,
+        "transactions": [
+          {
+            "kind": "income",
+            "date": "2030-01-10",
+            "amount_minor": 100000,
+            "recurrence": "fixed"
+          },
+          {
+            "kind": "transfer",
+            "date": "2030-01-11",
+            "amount_minor": 10000
+          },
+          {
+            "kind": "settlement",
+            "date": "2030-01-12",
+            "amount_minor": 3000
+          },
+          {
+            "kind": "expense",
+            "date": "2030-01-13",
+            "amount_minor": 7777,
+            "status": "deleted"
+          },
+          {
+            "kind": "expense",
+            "date": "2030-01-14",
+            "amount_minor": 2000
+          }
+        ]
+      },
+      "expected": [
+        {
+          "period": "2030-01",
+          "income_minor": 100000,
+          "expense_minor": 2000,
+          "savings_minor": 98000
+        }
+      ]
+    },
+    {
+      "why": "fixed income from the 25th funds the next month; variable income and spending stay",
+      "input": {
+        "period_start_day": 1,
+        "income_shift_day": 25,
+        "transactions": [
+          {
+            "kind": "income",
+            "date": "2030-01-28",
+            "amount_minor": 100000,
+            "recurrence": "fixed"
+          },
+          {
+            "kind": "income",
+            "date": "2030-01-28",
+            "amount_minor": 5000,
+            "recurrence": "variable"
+          },
+          {
+            "kind": "expense",
+            "date": "2030-01-28",
+            "amount_minor": 2000
+          }
+        ]
+      },
+      "expected": [
+        {
+          "period": "2030-01",
+          "income_minor": 5000,
+          "expense_minor": 2000,
+          "savings_minor": 3000
+        },
+        {
+          "period": "2030-02",
+          "income_minor": 100000,
+          "expense_minor": 0,
+          "savings_minor": 100000
+        }
+      ]
+    },
+    {
+      "why": "a period that starts on the 20th is named after the month it ends in",
+      "input": {
+        "period_start_day": 20,
+        "income_shift_day": null,
+        "transactions": [
+          {
+            "kind": "expense",
+            "date": "2030-01-19",
+            "amount_minor": 1000
+          },
+          {
+            "kind": "expense",
+            "date": "2030-01-20",
+            "amount_minor": 2000
+          },
+          {
+            "kind": "income",
+            "date": "2030-02-19",
+            "amount_minor": 50000,
+            "recurrence": "fixed"
+          },
+          {
+            "kind": "refund",
+            "date": "2030-02-10",
+            "amount_minor": 500
+          }
+        ]
+      },
+      "expected": [
+        {
+          "period": "2030-01",
+          "income_minor": 0,
+          "expense_minor": 1000,
+          "savings_minor": -1000
+        },
+        {
+          "period": "2030-02",
+          "income_minor": 50000,
+          "expense_minor": 1500,
+          "savings_minor": 48500
+        }
+      ]
+    },
+    {
+      "why": "salaries marked as starting the month decide the periods; an unmarked income moves nothing",
+      "input": {
+        "period_start_day": 1,
+        "income_shift_day": null,
+        "transactions": [
+          {
+            "kind": "income",
+            "date": "2030-01-26",
+            "amount_minor": 100000,
+            "recurrence": "fixed",
+            "tags": [
+              "fulla:starts-period"
+            ]
+          },
+          {
+            "kind": "income",
+            "date": "2030-02-03",
+            "amount_minor": 5000,
+            "recurrence": "fixed"
+          },
+          {
+            "kind": "expense",
+            "date": "2030-01-20",
+            "amount_minor": 1000
+          },
+          {
+            "kind": "expense",
+            "date": "2030-01-27",
+            "amount_minor": 2000
+          },
+          {
+            "kind": "expense",
+            "date": "2030-02-20",
+            "amount_minor": 3000
+          },
+          {
+            "kind": "income",
+            "date": "2030-02-25",
+            "amount_minor": 100000,
+            "recurrence": "fixed",
+            "tags": [
+              "fulla:starts-period"
+            ]
+          },
+          {
+            "kind": "expense",
+            "date": "2030-02-26",
+            "amount_minor": 4000
+          }
+        ]
+      },
+      "expected": [
+        {
+          "period": "2030-01",
+          "income_minor": 0,
+          "expense_minor": 1000,
+          "savings_minor": -1000
+        },
+        {
+          "period": "2030-02",
+          "income_minor": 105000,
+          "expense_minor": 5000,
+          "savings_minor": 100000
+        },
+        {
+          "period": "2030-03",
+          "income_minor": 100000,
+          "expense_minor": 4000,
+          "savings_minor": 96000
+        }
+      ]
+    },
+    {
+      "why": "a period with only a refund is negative spending, still listed",
+      "input": {
+        "period_start_day": 1,
+        "income_shift_day": null,
+        "transactions": [
+          {
+            "kind": "refund",
+            "date": "2030-03-05",
+            "amount_minor": 2500
+          }
+        ]
+      },
+      "expected": [
+        {
+          "period": "2030-03",
+          "income_minor": 0,
+          "expense_minor": -2500,
+          "savings_minor": 2500
+        }
+      ]
+    }
+  ]
+}

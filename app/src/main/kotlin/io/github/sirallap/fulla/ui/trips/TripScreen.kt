@@ -118,20 +118,13 @@ fun TripScreen(view: HouseholdView, tripId: String, onBack: () -> Unit, onOpenTr
         }
         error?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
 
-        val today = remember { LocalDate.now() }
+        val today = io.github.sirallap.fulla.ui.components.rememberToday()
         val budget = trip.budgetMinor
         val rows = remember(view, trip) { view.active.filter { it.tripId == trip.id } }
         val totals = remember(trip, rows) { Trips.totals(trip, rows) }
         val perDay = remember(trip, totals, today) { Trips.perDay(trip, totals, today) }
         val left = totals.leftMinor ?: 0
-        val byMember = remember(rows) {
-            val paid = LinkedHashMap<String, Long>()
-            for (t in rows) {
-                val sign = if (t.kind == TransactionKind.REFUND) -1 else 1
-                t.paidByMemberId?.let { paid[it] = (paid[it] ?: 0) + sign * t.amountMinor }
-            }
-            paid
-        }
+        val byMember = remember(rows) { Trips.paidBy(rows) }
 
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = listEndPadding()) {
             if (budget != null) {

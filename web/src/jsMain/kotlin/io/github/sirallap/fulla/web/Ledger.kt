@@ -67,7 +67,10 @@ class HouseholdView(val bundle: JsonObject, val rows: List<LocalTransaction>, la
     val config: Config = Defaults.localized(stored, language)
     val id: String get() = config.household.id
     val connected: Boolean get() = meta.mode == CONNECTED
-    val active: List<Transaction> = rows.map { it.transaction }.filter { it.isActive }
+    /** The rows the figures are worked out from: not deleted, and not refused by the server (see SyncEngine.counted). */
+    val active: List<Transaction> = io.github.sirallap.fulla.core.sync.SyncEngine.counted(rows)
+    /** Rows the server refused: kept and shown in History, left out of every figure. */
+    val refused: Int = io.github.sirallap.fulla.core.sync.SyncEngine.refusedCount(rows)
     val rule: PeriodRule = PeriodRule.of(config, active)
     val analytics = Analytics(config, rule)
     /** Ids of rows written off: a fixed cost skipped for a month is not waited for. */

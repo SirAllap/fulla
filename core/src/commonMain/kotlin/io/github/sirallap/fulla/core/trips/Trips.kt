@@ -137,6 +137,23 @@ object Trips {
         else -> 0
     }
 
+    /**
+     * The trip the overview shows: the active one always wins; only when none is active, the soonest one starting
+     * within a week (a plain first-of-the-list would show an upcoming trip over an active one that started earlier).
+     */
+    fun forHome(trips: List<Trip>, today: LocalDate): Trip? = activeOn(trips, today)
+        ?: trips.filter { !it.archived && it.startDate >= today && it.startDate <= today.plusDays(7) }.minByOrNull { it.startDate }
+
+    /** What each member paid for the rows given (refunds taken off), in the order they first appear. */
+    fun paidBy(rows: Iterable<Transaction>): Map<String, Long> {
+        val paid = LinkedHashMap<String, Long>()
+        for (t in rows) {
+            val member = t.paidByMemberId ?: continue
+            paid[member] = (paid[member] ?: 0) + spend(t)
+        }
+        return paid
+    }
+
     /** Active rows of [trip] only; deleted rows never count. */
     fun totals(trip: Trip, txs: Iterable<Transaction>): TripTotals {
         val spent = txs.filter { it.isActive && it.tripId == trip.id }.sumOf(::spend)

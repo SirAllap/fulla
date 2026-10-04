@@ -95,7 +95,9 @@ object InsightsScreen {
                     section(t("forecast_how"))
                     div("rows") {
                         listRow(t("forecast_income"), context = if (f.expectedIncomeMinor > 0) t("forecast_income_context", format.money(f.incomeMinor), format.money(f.expectedIncomeMinor)) else null, end = { amountText(format.money(f.totalIncomeMinor), "in") })
-                        listRow(t("forecast_spent_so_far"), end = { amountText(format.money(-f.spentMinor)) })
+                        listRow(t("forecast_spent_so_far"), end = { amountText(format.money(-f.spentUntilTodayMinor)) })
+                        // What was written down with a later date is not spent yet, but it is already counted: it comes off what is left all the same.
+                        if (f.bookedAheadMinor != 0L) listRow(t("forecast_booked_ahead"), end = { amountText(format.money(-f.bookedAheadMinor)) })
                         val pending = f.fixed.filter { it.status == io.github.sirallap.fulla.core.analytics.FixedStatus.PENDING }
                         listRow(t("forecast_fixed_to_come"), context = pending.take(4).joinToString(" · ") { it.name + " " + format.day(it.date) }.ifBlank { null }, end = { amountText(format.money(-f.fixedToComeMinor)) })
                         val free = f.leftToSpendMinor

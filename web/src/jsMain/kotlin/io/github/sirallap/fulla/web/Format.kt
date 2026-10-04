@@ -34,7 +34,7 @@ class Format(val config: Config) {
         val code = currency.code
         val tag = I18n.language
         return try {
-            val options = js("({ style: 'currency', maximumFractionDigits: 0, minimumFractionDigits: 0 })")
+            val options = js("({ style: 'currency', maximumFractionDigits: 0, minimumFractionDigits: 0, useGrouping: 'always' })")
             options.currency = code
             js("new Intl.NumberFormat(tag, options)").format(units) as String
         } catch (e: Throwable) { units.toLong().toString() }

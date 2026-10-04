@@ -144,7 +144,15 @@ data class PeriodForecast(
     val everydaySoFarMinor: Long = 0,
     /** The everyday estimate comes from this period's own pace: no earlier period had everyday spending to learn from. */
     val ownPace: Boolean = false,
+    /**
+     * Spending written down with a date after today, already part of [spentMinor]: it is committed, not "so far", and it
+     * never counts towards the everyday pace.
+     */
+    val bookedAheadMinor: Long = 0,
 ) {
+    /** What has been spent as of today: [spentMinor] without what was written down for later. */
+    val spentUntilTodayMinor: Long get() = spentMinor - bookedAheadMinor
+
     /** What the period has spent per day on everyday things so far; the number to set beside [perDayMinor]. */
     val everydayPerDayMinor: Long? get() = if (day > 0 && everydaySoFarMinor > 0) everydaySoFarMinor / day else null
 
@@ -366,6 +374,10 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         return config.members.map { MemberSpending(it.id, paid[it.id] ?: 0, share[it.id] ?: 0) }
     }
 
+    /** What the household's accounts hold together on [asOf]: the balances of the ones that are not archived, added. */
+    fun accountsTotal(txs: Iterable<Transaction>, accounts: List<Account>, asOf: LocalDate): Long =
+        accountBalances(txs, accounts.filter { !it.archived }, asOf).values.sum()
+
     /** Balance of each account on [asOf]: opening balance plus everything through it, transfers included, settlements not. */
     fun accountBalances(txs: Iterable<Transaction>, accounts: List<Account>, asOf: LocalDate): Map<String, Long> {
         val balance = accounts.associate { it.id to it.openingBalanceMinor }.toMutableMap()
@@ -462,9 +474,12 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val now = counted(list, period)
         val spent = now.filter { it.kind != TransactionKind.INCOME }.sumOf { spend(it) }
         val income = now.filter { it.kind == TransactionKind.INCOME }.sumOf { it.amountMinor }
-        val everydaySoFar = now.filter { it.kind != TransactionKind.INCOME && everyday(it) }.sumOf { spend(it) }
+        // What has happened by today: a row written down for later is committed money, not a pace, whichever way it is dated.
+        val sofar = now.filter { it.date <= today }
+        val bookedAhead = now.filter { it.date > today && it.kind != TransactionKind.INCOME }.sumOf { spend(it) }
+        val everydaySoFar = sofar.filter { it.kind != TransactionKind.INCOME && everyday(it) }.sumOf { spend(it) }
         // What the person calls day-to-day spending: marked variable, on top of what everyday() leaves out.
-        val variableRows = now.filter { it.kind != TransactionKind.INCOME && everyday(it) && it.recurrence == Recurrence.VARIABLE }
+        val variableRows = sofar.filter { it.kind != TransactionKind.INCOME && everyday(it) && it.recurrence == Recurrence.VARIABLE }
         val variableSoFar = variableRows.sumOf { spend(it) }
 
         // What earlier periods spent per day from this day on, and up to it.
@@ -510,7 +525,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
                 highRest = (rest * OWN_HIGH_FACTOR).toLong()
             }
         }
-        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest, waiting, variableSoFar, ownPace)
+        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest, waiting, variableSoFar, ownPace, bookedAhead)
     }
 
     private fun median(values: List<Double>): Double {
@@ -701,4 +716,5 @@ private const val MIN_OWN_DAYS = 7
 private const val OWN_LOW_FACTOR = 0.5
 private const val OWN_HIGH_FACTOR = 1.8
 private const val MIN_OWN_ROWS = 5
-private const val OWN_CAP_TIMES = 3.0
+/** One big purchase counts for at most this many usual rows when a period's own pace is read (backtested: lower reads too low, higher reads too wide). */
+private const val OWN_CAP_TIMES = 5.0

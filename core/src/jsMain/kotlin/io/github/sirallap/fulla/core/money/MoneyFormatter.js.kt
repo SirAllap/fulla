@@ -13,6 +13,9 @@ actual class MoneyFormatter actual constructor(languageTag: String, private val 
         options.currency = money.code
         options.minimumFractionDigits = money.minorUnits
         options.maximumFractionDigits = money.minorUnits
+        // Spanish, Italian and European Portuguese leave four-digit numbers ungrouped by default (1467,61); the phone's
+        // formatter groups them (1.467,61), and one amount must read the same on both.
+        options.useGrouping = "always"
         js("new Intl.NumberFormat(languageTag, options)")
     } catch (e: Throwable) {
         null
@@ -23,7 +26,7 @@ actual class MoneyFormatter actual constructor(languageTag: String, private val 
         val options = js("({})")
         options.minimumFractionDigits = money.minorUnits
         options.maximumFractionDigits = money.minorUnits
-        options.useGrouping = true
+        options.useGrouping = "always"
         js("new Intl.NumberFormat(languageTag, options)")
     }
 

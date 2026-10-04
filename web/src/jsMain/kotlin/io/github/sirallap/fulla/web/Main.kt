@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.web
 
+import io.github.sirallap.fulla.core.time.LocalDate
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
@@ -32,6 +33,12 @@ fun main() {
         if (document.asDynamic().visibilityState == "visible") scope.launch { Ledger.generateRecurring(); App.render() }
     })
     window.setInterval({ scope.launch { Ledger.generateRecurring() } }, 60 * 60 * 1000)
+    // A page left open through midnight: the day, and what depends on it (day 10 of 30, what is left per day), move on by themselves.
+    var shownDay = LocalDate.now()
+    window.setInterval({
+        val now = LocalDate.now()
+        if (now != shownDay) { shownDay = now; scope.launch { Ledger.generateRecurring(); App.render() } }
+    }, 30_000)
 }
 
 private fun registerServiceWorker() {

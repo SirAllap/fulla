@@ -222,6 +222,73 @@ class FiguresAddUpTest {
         assertTrue(forecasts > 150 && known > 150 && withKept > 60 && ownPace > 5 && waiting > 10 && running > 150 && onTrips > 40 && pending > 100, seen)
     }
 
+    /** Every number the screens show for one period, as plain values: two runs that agree here show the same screens. */
+    private fun fingerprint(h: Household, rows: List<Transaction>): List<Any?> {
+        val a = Analytics(h.config, h.periodRule)
+        val period = h.periodRule.periodOf(h.today, TransactionKind.EXPENSE, Recurrence.VARIABLE)
+        val summary = a.summary(rows, period)
+        val r = a.report(rows, period, h.today, h.config.trips)
+        val f = a.forecast(rows, period, h.today, rows.filter { !it.isActive }.map { it.id }.toSet())
+        return listOf(
+            summary, r.spentMinor, r.previousSpentMinor, r.incomeMinor, r.savingsRate, r.count, r.averageMinor, r.days, r.dailyMinor, r.fixedMinor, r.variableMinor,
+            r.weekdays, r.budgets, r.budgetsOver, r.noSpendDays, r.noSpendOf, r.partial, r.biggest.map { it.amountMinor }, r.places,
+            a.byCategory(rows, period).associate { it.categoryId to (it.amountMinor to it.previousAverageMinor) },
+            a.topCategories(rows, period).map { it.key to it.amountMinor }.sortedBy { it.first }.toSet(),
+            a.trends(rows, period, 1, h.today).map { Triple(it.categoryId, it.currentMinor, it.averageMinor) }.toSet(),
+            a.byMember(rows, period), a.series(rows, period, 4), a.accountBalances(rows, h.config.accounts, h.today),
+            Balances.of(rows.filter { it.isActive }, h.config.members.map { it.id }).map { Triple(it.memberId, it.paidMinor, it.shareMinor) }.toSet(),
+            a.noSpendDays(rows, period, h.today), a.detectedRecurring(rows, h.today).map { it.note to it.typicalMinor }.toSet(),
+            f?.let {
+                listOf(it.day, it.length, it.incomeMinor, it.expectedIncomeMinor, it.spentMinor, it.bookedAheadMinor, it.fixed.sortedWith(compareBy({ x -> x.date }, { x -> x.ruleId })),
+                    it.everydayLowMinor, it.everydayRestMinor, it.everydayHighMinor, it.waiting, it.everydaySoFarMinor, it.ownPace, it.leftToSpendMinor, it.perDayMinor, it.keptMinor)
+            },
+        )
+    }
+
+    @Test
+    fun the_order_the_rows_come_in_changes_no_figure() {
+        for (seed in 1L..80L) {
+            val h = household(seed)
+            val shuffled = h.rows.shuffled(Random(seed * 7919))
+            assertEquals(fingerprint(h, h.rows), fingerprint(h, shuffled), "seed $seed: the same rows in another order show other figures")
+        }
+    }
+
+    @Test
+    fun a_row_added_and_a_row_deleted_move_the_figures_by_exactly_that_row() {
+        for (seed in 1L..80L) {
+            val h = household(seed)
+            val a = Analytics(h.config, h.periodRule)
+            val period = h.periodRule.periodOf(h.today, TransactionKind.EXPENSE, Recurrence.VARIABLE)
+            fun why(what: String) = "seed $seed ($period, today ${h.today}): $what"
+            val before = a.forecast(h.rows, period, h.today, h.rows.filter { !it.isActive }.map { it.id }.toSet()) ?: continue
+            val base = a.report(h.rows, period, h.today, h.config.trips)
+            val x = Fixtures.expense(4_321, h.today, category = Fixtures.GROCERIES).copy(recurrence = Recurrence.VARIABLE, note = "ONE-OFF")
+            fun forecastOf(rows: List<Transaction>) = a.forecast(rows, period, h.today, rows.filter { !it.isActive }.map { it.id }.toSet())!!
+            val withX = h.rows + x
+            val f = forecastOf(withX)
+            assertEquals(before.spentMinor + 4_321, f.spentMinor, why("spent moves by the amount"))
+            assertEquals(a.report(withX, period, h.today, h.config.trips).spentMinor, base.spentMinor + 4_321, why("so does the report"))
+            assertEquals(before.incomeMinor, f.incomeMinor, why("income does not move"))
+            assertEquals(before.fixedToComeMinor, f.fixedToComeMinor, why("nor the fixed costs to come"))
+            assertEquals(before.bookedAheadMinor, f.bookedAheadMinor, why("nor what is booked ahead"))
+            before.leftToSpendMinor?.let { assertEquals(it - 4_321, f.leftToSpendMinor, why("what is left moves by the amount")) }
+            assertEquals(a.summary(h.rows, period).expenseMinor + 4_321, a.summary(withX, period).expenseMinor, why("the summary too"))
+            assertEquals(a.hero(h.rows, period).savingsMinor - 4_321, a.hero(withX, period).savingsMinor, why("the jar too"))
+            // Written off, it is as if it never was.
+            val gone = h.rows + x.copy(status = Status.DELETED)
+            assertEquals(fingerprint(h, h.rows), fingerprint(h, gone), why("a deleted row changes nothing"))
+            // A refund of the same amount takes the spending back where it was.
+            val refund = x.copy(id = Fixtures.newId(), kind = TransactionKind.REFUND)
+            assertEquals(before.spentMinor, forecastOf(withX + refund).spentMinor, why("a refund of the same amount cancels it"))
+            // Income moves what is left, nothing else.
+            val pay = Fixtures.income(10_000, h.today).copy(recurrence = Recurrence.VARIABLE)
+            val richer = forecastOf(h.rows + pay)
+            assertEquals(before.spentMinor, richer.spentMinor, why("income is not spending"))
+            before.leftToSpendMinor?.let { assertEquals(it + 10_000, richer.leftToSpendMinor, why("income adds to what is left")) }
+        }
+    }
+
     @Test
     fun usual_is_between_the_smallest_and_the_largest_of_the_periods_it_is_the_average_of() {
         for (seed in 1L..240L) {

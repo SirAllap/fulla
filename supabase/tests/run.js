@@ -1224,6 +1224,30 @@ rawTest('normalize_name agrees with testdata/vectors/normalize_name.json', ({ db
   }
 });
 
+// The totals per period the phone computes (core's Analytics.summary) and this view give, for the same rows and the same rules.
+for (const v of vectors('period_summary.json')) {
+  test(`period_summary agrees with period_summary.json: ${v.why}`, (ctx) => {
+    const MAIN = ctx.account('Main account');
+    const bob = virtual(ctx, 'Bob');
+    rpc(ctx.db, ctx.alice, 'fulla_household_update', { p_household_id: ctx.hh,
+      p_patch: { period_start_day: v.input.period_start_day, income_shift_day: v.input.income_shift_day } });
+    const mutations = [];
+    for (const t of v.input.transactions) {
+      const tx = { id: uuid(), kind: t.kind, date: t.date, amount_minor: t.amount_minor, recurrence: t.recurrence || 'variable', tags: t.tags || [] };
+      if (['expense', 'refund'].includes(t.kind)) Object.assign(tx, { category_id: ctx.cat('Groceries'), paid_by_member_id: ctx.aliceMember, split: { mode: 'equal', members: [ctx.aliceMember] } });
+      if (t.kind === 'income') Object.assign(tx, { category_id: ctx.cat('Salary'), paid_by_member_id: ctx.aliceMember });
+      if (t.kind === 'settlement') Object.assign(tx, { paid_by_member_id: bob, to_member_id: ctx.aliceMember });
+      if (t.kind === 'transfer') Object.assign(tx, { account_id: MAIN, to_account_id: ctx.account('Cash') });
+      mutations.push(upsert(tx, iso(0)));
+      if (t.status === 'deleted') mutations.push(del(tx, iso(1)));
+    }
+    const results = push(ctx, ctx.alice, mutations);
+    assert.ok(results.every((r) => r.ok), JSON.stringify(results.filter((r) => !r.ok)));
+    const got = rpc(ctx.db, ctx.alice, 'fulla_period_summary', { p_household_id: ctx.hh, p_from: '2000-01', p_to: '2099-12' });
+    assert.deepEqual(got, v.expected);
+  });
+}
+
 for (const v of vectors('balance.json')) {
   test(`member_balances agrees with balance.json: ${v.why}`, (ctx) => {
     for (const id of v.input.members) virtual(ctx, `M${id.slice(-2)}`, id);

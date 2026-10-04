@@ -101,7 +101,7 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.click('.hint button');
   ok(await page.locator('.hint').count() === 0, 'and stops saying it once dismissed');
   const figures = await page.textContent('.figures');
-  ok(/1234,56/.test(figures) && /12,50/.test(figures), 'the overview adds up what came in and what went out: ' + figures.replace(/\s+/g, ' ').trim());
+  ok(/1\.234,56/.test(figures) && /12,50/.test(figures), 'the overview adds up what came in and what went out: ' + figures.replace(/\s+/g, ' ').trim());
   await shot('03-overview');
   await page.click('.tab:has-text("Historial")');
   await page.waitForSelector('.history .row');
@@ -309,7 +309,7 @@ function periodInProgress() {
   await page.click('.tab:has-text("Resumen")');
   await page.waitForSelector('.figures');
   const figures = (await page.textContent('.figures')).replace(/\s+/g, ' ');
-  ok(/2716,00/.test(figures) && /745,17/.test(figures) && /Te queda/.test(figures) && /73 %/.test(figures),
+  ok(/2\.716,00/.test(figures) && /745,17/.test(figures) && /Te queda/.test(figures) && /73 %/.test(figures),
     'a month still running says "Te queda", not "Ahorro": ' + figures.trim());
   ok(/Al final del periodo/.test(await page.textContent('main')) && /≈/.test(await page.textContent('main')), 'the overview answers how the month will end, in one line');
   await shot('30-overview-running');
@@ -318,8 +318,8 @@ function periodInProgress() {
   const text = (await page.textContent('.insights')).replace(/\s+/g, ' ');
   ok(/Al final del periodo/.test(text) && text.indexOf('Al final del periodo') < text.indexOf('El periodo en cifras'), 'the analysis opens with how the period will end, before what already happened');
   ok(text.indexOf('Te quedarían') < text.indexOf('Gastarías'), 'and what would be kept comes before what would be spent');
-  ok(/Ingresos\s*2716,00/.test(text) && /Gastado hasta hoy\s*−745,17/.test(text) && /Fijos por cobrar[^−]*−503,22/.test(text), 'the sums are in view: income, spent so far, fixed costs still to come');
-  ok(/Te quedaría si no gastas nada más[^0-9]*1467,61/.test(text), 'and what would be left if nothing more is spent adds up: 2716,00 − 745,17 − 503,22 = 1467,61');
+  ok(/Ingresos\s*2\.716,00/.test(text) && /Gastado hasta hoy\s*−745,17/.test(text) && /Fijos por cobrar[^−]*−503,22/.test(text), 'the sums are in view: income, spent so far, fixed costs still to come');
+  ok(/Te quedaría si no gastas nada más[^0-9]*1\.467,61/.test(text), 'and what would be left if nothing more is spent adds up: 2.716,00 − 745,17 − 503,22 = 1.467,61');
   ok(/Media diaria\s*24,51/.test(text) && /Sin los fijos/.test(text), 'the daily average leaves the fixed costs out: 245,17 over 10 days');
   ok(/Te queda\s*73 %/.test(text), 'the share of the income left is not called savings while the period runs');
   ok(!/\b[a-z]+(_[a-z]+)+\b/.test(text), 'no untranslated key shows on the analysis' + (text.match(/\b[a-z]+(_[a-z]+)+\b/) ? ': ' + text.match(/\b[a-z]+(_[a-z]+)+\b/)[0] : ''));

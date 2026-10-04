@@ -47,16 +47,16 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
     val c = FullaTheme.colors
     val f = view.formats
     val a = view.analytics
-    val today = LocalDate.now()
-    val current = remember(view) { f.currentPeriod(today) }
+    val today = io.github.sirallap.fulla.ui.components.rememberToday()
+    val current = remember(view, today) { f.currentPeriod(today) }
     var periodText by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(current.toString()) }
     val period = io.github.sirallap.fulla.core.time.YearMonth.parse(periodText)
-    val report = remember(view, period) { a.report(view.active, period, today, view.config.trips) }
-    val forecast = remember(view, period) { if (period == current) runCatching { a.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null }
+    val report = remember(view, period, today) { a.report(view.active, period, today, view.config.trips) }
+    val forecast = remember(view, period, today) { if (period == current) runCatching { a.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null }
     val series = remember(view, period) { a.series(view.active, period, 12).reversed().filter { it.incomeMinor != 0L || it.expenseMinor != 0L } }
     val unit = remember(view) { (0 until f.currency.minorUnits).fold(1L) { acc, _ -> acc * 10 } }
-    val trends = remember(view, period) { a.trends(view.active, period, minimumMinor = 10 * unit, today = today) }
-    val repeating = remember(view) { a.detectedRecurring(view.active, today) }
+    val trends = remember(view, period, today) { a.trends(view.active, period, minimumMinor = 10 * unit, today = today) }
+    val repeating = remember(view, today) { a.detectedRecurring(view.active, today) }
     val byMember = remember(view, period) { a.byMember(view.active, period).filter { it.paidMinor != 0L || it.shareMinor != 0L } }
     val top = remember(view, period) { a.topCategories(view.active, period) }
     val others = stringResource(R.string.other_categories)

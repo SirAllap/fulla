@@ -159,8 +159,7 @@ object TripScreen {
             perDay?.let { p -> div("figure") { span("t-label") { text(tp("trip_per_day", p.days, format.money(p.amountMinor), p.days)) } } }
         }
         if (!SharedPot.isShared(view.config.household) && view.config.activeMembers.size >= 2) {
-            val paid = LinkedHashMap<String, Long>()
-            for (r in rows) { val sign = if (r.kind == TransactionKind.REFUND) -1 else 1; r.paidByMemberId?.let { paid[it] = (paid[it] ?: 0) + sign * r.amountMinor } }
+            val paid = Trips.paidBy(rows)
             section(t("settings_members"))
             div("rows") { for ((id, amount) in paid) listRow(view.memberName(id), end = { amountText(format.money(amount)) }) }
         }

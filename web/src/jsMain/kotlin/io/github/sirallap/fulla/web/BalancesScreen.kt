@@ -54,7 +54,7 @@ object BalancesScreen {
                 listRow(a.name, end = { amountText(format.money(amount), if (amount < 0) "neg" else "") })
             }
             if (shared) {
-                val total = config.accounts.filter { !it.archived }.sumOf { accountBalances[it.id] ?: 0L }
+                val total = view.analytics.accountsTotal(view.active, config.accounts, LocalDate.now())
                 listRow(t("household_total"), divider = false, end = { amountText(format.money(total), if (total < 0) "neg" else "") })
             }
         }
