@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.web
 
+import kotlin.math.roundToInt
 import io.github.sirallap.fulla.core.analytics.Budgets
 import io.github.sirallap.fulla.core.analytics.FixedItem
 import io.github.sirallap.fulla.core.analytics.FixedStatus
@@ -77,7 +78,7 @@ object OverviewScreen {
             div("figures") {
                 figure(t("money_in"), format.money(summary.incomeMinor, signed = true), "in")
                 figure(t("money_out"), format.money(summary.expenseMinor), "out")
-                figure(t("saved"), summary.savingsRate?.let { "${(it * 100).toInt()} %" } ?: "—", "")
+                figure(t("saved"), summary.savingsRate?.let { "${(it * 100).roundToInt()} %" } ?: "—", "")
             }
             div("rows") {
                 if (budgets.isNotEmpty()) {

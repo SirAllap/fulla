@@ -58,7 +58,7 @@ object InsightsScreen {
         val forecast = if (period == current) runCatching { a.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null
         val series = a.series(view.active, period, 12).reversed().filter { it.incomeMinor != 0L || it.expenseMinor != 0L }
         var unit = 1L; repeat(format.currency.minorUnits) { unit *= 10 }
-        val trends = a.trends(view.active, period, minimumMinor = 10 * unit)
+        val trends = a.trends(view.active, period, minimumMinor = 10 * unit, today = today)
         val repeating = a.detectedRecurring(view.active, today)
         val byMember = a.byMember(view.active, period).filter { it.paidMinor != 0L || it.shareMinor != 0L }
         val noSpend = a.noSpendDays(view.active, period, today)
@@ -115,7 +115,7 @@ object InsightsScreen {
                     val row1 = mutableListOf(Tile(t("fixed_total_tile"), format.money(total), t("fixed_progress", format.money(f.fixedPaidMinor), format.money(f.fixedToComeMinor)), if (total > 0) f.fixedPaidMinor.toDouble() / total else null, "out", phase = 2.2, onClick = { App.closeInsights(); App.openSettings(SettingsPage.RECURRING) }))
                     if (left != null) row1 += Tile(t("left_to_spend"), format.money(left), t("left_to_spend_text"), (left.toDouble() / f.totalIncomeMinor).coerceIn(0.0, 1.0), "in", if (left < 0) "out" else "in", 3.8)
                     tiles(row1)
-                    if (left != null && perDay != null) tiles(listOf(Tile(t("per_day"), format.money(perDay), (f.everydayPerDayMinor?.let { t("per_day_text_pace", f.length - f.day, format.money(it)) } ?: t("per_day_text", f.length - f.day)), null, "in", if (perDay < 0) "out" else "in", 4.6)))
+                    if (left != null && perDay != null) tiles(listOf(Tile(t("per_day"), format.money(perDay), (f.everydayPerDayMinor?.let { t("per_day_text_pace", f.daysToGo, format.money(it)) } ?: t("per_day_text", f.daysToGo)), null, "in", if (perDay < 0) "out" else "in", 4.6)))
                     if (left == null) note(t("forecast_add_income"))
                 }
             }
@@ -157,7 +157,7 @@ object InsightsScreen {
                 for (tr in trends) {
                     val up = tr.currentMinor > tr.averageMinor
                     bar(view.config.category(tr.categoryId)?.name ?: t("uncategorized"), format.money(tr.currentMinor), tr.currentMinor / largest,
-                        t("usually", format.money(tr.averageMinor)) + " · " + t(if (up) "percent_more" else "percent_less", abs(tr.change * 100).roundToInt()), tr.currentMinor % 5 * 1.1)
+                        t(if (report.partial) "usually_so_far" else "usually", format.money(tr.averageMinor)) + " · " + t(if (up) "percent_more" else "percent_less", abs(tr.change * 100).roundToInt()), tr.currentMinor % 5 * 1.1)
                 }
             }
             if (byMember.size > 1 && !SharedPot.isShared(view.config.household)) {
@@ -233,11 +233,11 @@ object InsightsScreen {
         val previous = report.previousSpentMinor
         val vsPrevious = when {
             previous == null || previous <= 0 -> null
-            report.spentMinor == previous -> t("vs_previous_same")
-            else -> t(if (report.spentMinor > previous) "vs_previous_more" else "vs_previous_less", abs((report.spentMinor - previous) * 100.0 / previous).roundToInt())
+            report.spentMinor == previous -> t(if (report.partial) "vs_previous_same_sofar" else "vs_previous_same")
+            else -> t((if (report.spentMinor > previous) "vs_previous_more" else "vs_previous_less") + (if (report.partial) "_sofar" else ""), abs((report.spentMinor - previous) * 100.0 / previous).roundToInt())
         }
         list += Tile(t("spent"), format.money(report.spentMinor), vsPrevious, if (report.incomeMinor > 0) report.spentMinor.toDouble() / report.incomeMinor else null, "out", phase = 0.2)
-        report.savingsRate?.let { r -> list += Tile(t("savings"), "${(r * 100).roundToInt()} %", t("of_income", format.money(report.incomeMinor)), r.coerceIn(0.0, 1.0), "in", if (r < 0) "out" else "in", 1.4) }
+        report.savingsRate?.let { r -> list += Tile(t("savings"), "${(r * 100).roundToInt()} %", t(if (report.partial) "of_income_so_far" else "of_income", format.money(report.incomeMinor)), r.coerceIn(0.0, 1.0), "in", if (r < 0) "out" else "in", 1.4) }
         if (report.days > 0) list += Tile(t("daily_average"), format.money(report.dailyMinor), t("day_of", report.days, length), report.days.toDouble() / length, "out", phase = 2.1)
         if (report.count > 0) list += Tile(t("movements"), "${report.count}", t("movements_text", format.money(report.averageMinor)), null, "out")
         val both = report.fixedMinor + report.variableMinor

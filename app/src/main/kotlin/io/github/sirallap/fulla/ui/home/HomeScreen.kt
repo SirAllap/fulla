@@ -248,7 +248,7 @@ private fun Figures(view: HouseholdView, income: Long, expense: Long, rate: Doub
     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
         Figure(stringResource(R.string.money_in), f.money(income, signed = true), c.moneyIn, Modifier.weight(1f))
         Figure(stringResource(R.string.money_out), f.money(expense), c.moneyOut, Modifier.weight(1f))
-        Figure(stringResource(R.string.saved), rate?.let { "${(it * 100).toInt()} %" } ?: "—", c.ink, Modifier.weight(1f))
+        Figure(stringResource(R.string.saved), rate?.let { "${Math.round(it * 100)} %" } ?: "—", c.ink, Modifier.weight(1f))
     }
 }
 

@@ -244,6 +244,7 @@
     <string name="url_not_https">La URL debe empezar por https://</string>
     <string name="url_not_supabase">Eso no es la URL de un proyecto de Supabase (https://&lt;proyecto&gt;.supabase.co).</string>
     <string name="usually">Normalmente %1$s</string>
+    <string name="usually_so_far">A estas alturas, normalmente %1$s</string>
     <string name="version">Versión %1$s</string>
     <string name="welcome_line">Lo que entra, lo que sale y lo que queda.</string>
     <string name="welcome_text">Para una persona o un hogar entero. Funciona sin conexión y tus datos viven donde tú decidas.</string>
@@ -580,6 +581,9 @@
     <string name="vs_previous_more">%1$d %% más que el periodo anterior</string>
     <string name="vs_previous_less">%1$d %% menos que el periodo anterior</string>
     <string name="vs_previous_same">Igual que el periodo anterior</string>
+    <string name="vs_previous_more_sofar">%1$d %% más que el periodo anterior a estas alturas</string>
+    <string name="vs_previous_less_sofar">%1$d %% menos que el periodo anterior a estas alturas</string>
+    <string name="vs_previous_same_sofar">Igual que el periodo anterior a estas alturas</string>
     <string name="saving_rate">Ahorras el %1$d %%</string>
     <string name="overspending_rate">Gastas un %1$d %% más de lo que entra</string>
     <string name="daily_average">Media diaria</string>
@@ -597,6 +601,7 @@
     <string name="times">%1$d veces</string>
     <string name="savings">Ahorro</string>
     <string name="of_income">De %1$s que entraron</string>
+    <string name="of_income_so_far">De %1$s que han entrado, hasta hoy</string>
     <string name="of_days">De %1$d días</string>
     <string name="forecast_spend">Gastarías</string>
     <string name="forecast_kept">Te quedarían</string>
@@ -619,8 +624,8 @@
     <string name="fixed_total_tile">Fijos del periodo</string>
     <string name="fixed_progress">%1$s cobrados · faltan %2$s</string>
     <string name="per_day">Puedes gastar al día</string>
-    <string name="per_day_text">Lo que te queda, repartido en los %1$d días que faltan</string>
-    <string name="per_day_text_pace">Repartido en los %1$d días que faltan. Hasta hoy gastas %2$s al día en el día a día.</string>
+    <string name="per_day_text">Lo que te queda, repartido en los %1$d días que quedan, hoy incluido</string>
+    <string name="per_day_text_pace">Repartido en los %1$d días que quedan, hoy incluido. Hasta hoy gastas %2$s al día en el día a día.</string>
     <string name="fixed_paid_on">Cobrado el %1$s</string>
     <string name="fixed_due_on">Toca el %1$s</string>
     <string name="fixed_overdue">Vencido · tocaba el %1$s</string>

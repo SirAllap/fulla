@@ -128,8 +128,8 @@ fun FixedTotalsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCos
     if (left != null && perDay != null) {
         TileRow {
             LiquidTile(stringResource(R.string.per_day), f.money(perDay), Modifier.weight(1f),
-                context = forecast.everydayPerDayMinor?.let { stringResource(R.string.per_day_text_pace, forecast.length - forecast.day, f.money(it)) }
-                    ?: stringResource(R.string.per_day_text, forecast.length - forecast.day),
+                context = forecast.everydayPerDayMinor?.let { stringResource(R.string.per_day_text_pace, forecast.daysToGo, f.money(it)) }
+                    ?: stringResource(R.string.per_day_text, forecast.daysToGo),
                 tone = LiquidTone.IN, valueColor = if (perDay < 0) c.moneyOut else c.moneyIn, phase = 4.6f)
             Spacer(Modifier.weight(1f))
         }

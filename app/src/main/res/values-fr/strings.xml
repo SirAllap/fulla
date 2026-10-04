@@ -244,6 +244,7 @@
     <string name="url_not_https">L\'URL doit commencer par https://</string>
     <string name="url_not_supabase">Ce n\'est pas l\'URL d\'un projet Supabase (https://&lt;projet&gt;.supabase.co).</string>
     <string name="usually">D\'habitude %1$s</string>
+    <string name="usually_so_far">À ce stade, d\'habitude %1$s</string>
     <string name="version">Version %1$s</string>
     <string name="welcome_line">Ce qui entre, ce qui sort et ce qui reste.</string>
     <string name="welcome_text">Pour une personne ou tout un foyer. Elle fonctionne hors ligne, et vos données vivent là où vous le décidez.</string>
@@ -580,6 +581,9 @@
     <string name="vs_previous_more">%1$d %% de plus que la période précédente</string>
     <string name="vs_previous_less">%1$d %% de moins que la période précédente</string>
     <string name="vs_previous_same">Autant que la période précédente</string>
+    <string name="vs_previous_more_sofar">%1$d %% de plus que la période précédente à ce stade</string>
+    <string name="vs_previous_less_sofar">%1$d %% de moins que la période précédente à ce stade</string>
+    <string name="vs_previous_same_sofar">Autant que la période précédente à ce stade</string>
     <string name="saving_rate">Vous en gardez %1$d %%</string>
     <string name="overspending_rate">Vous avez dépensé %1$d %% de plus que vos revenus</string>
     <string name="daily_average">Moyenne par jour</string>
@@ -597,6 +601,7 @@
     <string name="times">%1$d fois</string>
     <string name="savings">Épargne</string>
     <string name="of_income">Sur %1$s de revenus</string>
+    <string name="of_income_so_far">Sur %1$s de revenus, jusqu\'à aujourd\'hui</string>
     <string name="of_days">Sur %1$d jours</string>
     <string name="forecast_spend">Vous dépenseriez</string>
     <string name="forecast_kept">Il vous resterait</string>
@@ -619,8 +624,8 @@
     <string name="fixed_total_tile">Fixes de la période</string>
     <string name="fixed_progress">%1$s prélevés · %2$s à venir</string>
     <string name="per_day">Vous pouvez dépenser par jour</string>
-    <string name="per_day_text">Ce qui reste, réparti sur les %1$d jours à venir</string>
-    <string name="per_day_text_pace">Réparti sur les %1$d jours à venir. Jusqu\'ici tu dépenses %2$s par jour pour le quotidien.</string>
+    <string name="per_day_text">Ce qui reste, réparti sur les %1$d jours restants, aujourd\'hui inclus</string>
+    <string name="per_day_text_pace">Réparti sur les %1$d jours restants, aujourd\'hui inclus. Jusqu\'ici tu dépenses %2$s par jour pour le quotidien.</string>
     <string name="fixed_paid_on">Prélevé le %1$s</string>
     <string name="fixed_due_on">Prévu le %1$s</string>
     <string name="fixed_overdue">En retard · prévu le %1$s</string>

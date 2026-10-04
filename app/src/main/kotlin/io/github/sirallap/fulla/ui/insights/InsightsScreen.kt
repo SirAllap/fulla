@@ -55,7 +55,7 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
     val forecast = remember(view, period) { if (period == current) runCatching { a.forecast(view.active, period, today, view.deletedIds) }.getOrNull() else null }
     val series = remember(view, period) { a.series(view.active, period, 12).reversed().filter { it.incomeMinor != 0L || it.expenseMinor != 0L } }
     val unit = remember(view) { (0 until f.currency.minorUnits).fold(1L) { acc, _ -> acc * 10 } }
-    val trends = remember(view, period) { a.trends(view.active, period, minimumMinor = 10 * unit) }
+    val trends = remember(view, period) { a.trends(view.active, period, minimumMinor = 10 * unit, today = today) }
     val repeating = remember(view) { a.detectedRecurring(view.active, today) }
     val byMember = remember(view, period) { a.byMember(view.active, period).filter { it.paidMinor != 0L || it.shareMinor != 0L } }
     val noSpend = remember(view, period) { a.noSpendDays(view.active, period, today) }
@@ -150,7 +150,7 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
                 items(trends, key = { "t-" + it.categoryId }) { t ->
                     val up = t.currentMinor > t.averageMinor
                     LiquidBarRow(view.categoryName(t.categoryId) ?: uncategorized, f.money(t.currentMinor), t.currentMinor / largest,
-                        context = stringResource(R.string.usually, f.money(t.averageMinor)) + " · " +
+                        context = stringResource(if (report.partial) R.string.usually_so_far else R.string.usually, f.money(t.averageMinor)) + " · " +
                             stringResource(if (up) R.string.percent_more else R.string.percent_less, abs(t.change * 100).roundToInt()),
                         phase = t.currentMinor % 5 * 1.1f)
                 }
@@ -237,15 +237,17 @@ private fun FigureTiles(
     val previous = report.previousSpentMinor
     val vsPrevious = when {
         previous == null || previous <= 0 -> null
-        report.spentMinor == previous -> stringResource(R.string.vs_previous_same)
-        else -> stringResource(if (report.spentMinor > previous) R.string.vs_previous_more else R.string.vs_previous_less,
+        report.spentMinor == previous -> stringResource(if (report.partial) R.string.vs_previous_same_sofar else R.string.vs_previous_same)
+        else -> stringResource(
+            if (report.spentMinor > previous) (if (report.partial) R.string.vs_previous_more_sofar else R.string.vs_previous_more)
+            else (if (report.partial) R.string.vs_previous_less_sofar else R.string.vs_previous_less),
             abs((report.spentMinor - previous) * 100.0 / previous).roundToInt())
     }
     tiles.add { m -> LiquidTile(stringResource(R.string.spent), f.money(report.spentMinor), m, context = vsPrevious,
         level = if (report.incomeMinor > 0) report.spentMinor.toFloat() / report.incomeMinor else null, phase = 0.2f) }
     report.savingsRate?.let { rate ->
         tiles.add { m -> LiquidTile(stringResource(R.string.savings), "${(rate * 100).roundToInt()} %", m,
-            context = stringResource(R.string.of_income, f.money(report.incomeMinor)), level = rate.toFloat().coerceIn(0f, 1f),
+            context = stringResource(if (report.partial) R.string.of_income_so_far else R.string.of_income, f.money(report.incomeMinor)), level = rate.toFloat().coerceIn(0f, 1f),
             tone = LiquidTone.IN, valueColor = if (rate < 0) c.moneyOut else c.moneyIn, phase = 1.4f) }
     }
     if (report.days > 0) {
