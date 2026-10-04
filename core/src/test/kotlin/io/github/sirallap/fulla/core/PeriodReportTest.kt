@@ -11,7 +11,9 @@ import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class PeriodReportTest {
     private fun d(day: Int, month: Int = 1) = LocalDate.of(2030, month, day)
@@ -61,5 +63,19 @@ class PeriodReportTest {
         assertEquals(0, a.report(emptyList(), jan, today = d(1)).averageMinor)
         assertNull(a.report(emptyList(), jan, today = d(1)).savingsRate)
         assertEquals(0, a.report(rows, YearMonth.of(2030, 3), today = d(10)).days, "a period not started yet")
+    }
+
+    @Test
+    fun `while the period runs it is held against the same days of the one before`() {
+        // December: 10 a day, all month. January so far: 10 a day too.
+        val dec = (1..31).map { Fixtures.expense(1_000, LocalDate.of(2029, 12, it)) }
+        val jan10 = (1..10).map { Fixtures.expense(1_000, d(it)) }
+        val running = a.report(dec + jan10, jan, today = d(10))
+        assertTrue(running.partial)
+        assertEquals(10_000, running.spentMinor)
+        assertEquals(10_000, running.previousSpentMinor, "December's first ten days: not the whole of December, which would read as 68 % less")
+        val over = a.report(dec + jan10, jan, today = d(1, 3))
+        assertFalse(over.partial)
+        assertEquals(31_000, over.previousSpentMinor, "a period that is over is held against the whole of the one before")
     }
 }

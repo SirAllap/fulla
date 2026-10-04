@@ -244,6 +244,7 @@
     <string name="url_not_https">L\'URL doit commencer par https://</string>
     <string name="url_not_supabase">Ce n\'est pas l\'URL d\'un projet Supabase (https://&lt;projet&gt;.supabase.co).</string>
     <string name="usually">D\'habitude %1$s</string>
+    <string name="usually_so_far">À ce stade, d\'habitude %1$s</string>
     <string name="version">Version %1$s</string>
     <string name="welcome_line">Ce qui entre, ce qui sort et ce qui reste.</string>
     <string name="welcome_text">Pour une personne ou tout un foyer. Elle fonctionne hors ligne, et vos données vivent là où vous le décidez.</string>
@@ -580,6 +581,9 @@
     <string name="vs_previous_more">%1$d %% de plus que la période précédente</string>
     <string name="vs_previous_less">%1$d %% de moins que la période précédente</string>
     <string name="vs_previous_same">Autant que la période précédente</string>
+    <string name="vs_previous_more_sofar">%1$d %% de plus que la période précédente à ce stade</string>
+    <string name="vs_previous_less_sofar">%1$d %% de moins que la période précédente à ce stade</string>
+    <string name="vs_previous_same_sofar">Autant que la période précédente à ce stade</string>
     <string name="saving_rate">Vous en gardez %1$d %%</string>
     <string name="overspending_rate">Vous avez dépensé %1$d %% de plus que vos revenus</string>
     <string name="daily_average">Moyenne par jour</string>
@@ -597,6 +601,7 @@
     <string name="times">%1$d fois</string>
     <string name="savings">Épargne</string>
     <string name="of_income">Sur %1$s de revenus</string>
+    <string name="of_income_so_far">Sur %1$s de revenus, jusqu\'à aujourd\'hui</string>
     <string name="of_days">Sur %1$d jours</string>
     <string name="forecast_spend">Vous dépenseriez</string>
     <string name="forecast_kept">Il vous resterait</string>
@@ -612,11 +617,15 @@
     <string name="forecast_fixed_to_come">Frais fixes à venir</string>
     <string name="forecast_everyday">Dépenses courantes à venir</string>
     <string name="forecast_note">Les dépenses courantes sont ce que les trois dernières périodes ont dépensé par jour à partir de ce jour, ajusté à la marche de celle-ci. Les frais fixes sont exacts : ils viennent de vos éléments récurrents.</string>
+    <string name="forecast_free">Il resterait si tu ne dépenses plus rien</string>
+    <string name="forecast_free_text">Revenus, moins ce qui est dépensé et les frais fixes à venir. Cette partie est exacte.</string>
+    <string name="forecast_note_own">Aucune période précédente n\'a de dépenses courantes dont apprendre, donc on part de la marche de celle-ci : ce que tu dépenses par jour pour le quotidien jusqu\'ici, sur les jours restants. C\'est moins sûr, la fourchette est donc plus large. Les frais fixes sont exacts : ils viennent de tes éléments récurrents.</string>
     <string name="fixed_costs">Frais fixes</string>
     <string name="fixed_total_tile">Fixes de la période</string>
     <string name="fixed_progress">%1$s prélevés · %2$s à venir</string>
     <string name="per_day">Vous pouvez dépenser par jour</string>
-    <string name="per_day_text">Ce qui reste, réparti sur les %1$d jours à venir</string>
+    <string name="per_day_text">Ce qui reste, réparti sur les %1$d jours restants, aujourd\'hui inclus</string>
+    <string name="per_day_text_pace">Réparti sur les %1$d jours restants, aujourd\'hui inclus. Jusqu\'ici tu dépenses %2$s par jour pour le quotidien.</string>
     <string name="fixed_paid_on">Prélevé le %1$s</string>
     <string name="fixed_due_on">Prévu le %1$s</string>
     <string name="fixed_overdue">En retard · prévu le %1$s</string>
@@ -666,7 +675,7 @@
     <string name="update_later">Pas maintenant</string>
     <string name="forecast_day">Jour %1$d sur %2$d de la période. Une estimation : ce qui est déjà dépensé, plus les charges fixes à venir, plus vos dépenses courantes habituelles pour les jours restants.</string>
     <string name="left_to_spend">Reste à dépenser</string>
-    <string name="left_to_spend_text">Revenus %1$s − dépensé %2$s − fixes %3$s</string>
+    <string name="left_to_spend_text">Ce qui rentre, moins ce que tu as dépensé et les frais fixes encore à venir</string>
     <string name="forecast_too_early">Trop tôt pour estimer la fin de la période (jour %1$d sur %2$d). Revenez dans quelques jours.</string>
     <string name="entry_deleted">Écriture supprimée</string>
     <string name="undo">Annuler</string>

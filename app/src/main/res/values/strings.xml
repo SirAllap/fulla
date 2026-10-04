@@ -245,6 +245,7 @@
     <string name="url_not_https">The URL must start with https://</string>
     <string name="url_not_supabase">That is not a Supabase project URL (https://&lt;project&gt;.supabase.co).</string>
     <string name="usually">Usually %1$s</string>
+    <string name="usually_so_far">By now, usually %1$s</string>
     <string name="version">Version %1$s</string>
     <string name="welcome_line">What comes in, what goes out, and what stays.</string>
     <string name="welcome_text">For one person or a whole household. It works offline, and your data lives where you decide.</string>
@@ -630,6 +631,9 @@
     <string name="vs_previous_more">%1$d %% more than the period before</string>
     <string name="vs_previous_less">%1$d %% less than the period before</string>
     <string name="vs_previous_same">The same as the period before</string>
+    <string name="vs_previous_more_sofar">%1$d %% more than the period before at this point</string>
+    <string name="vs_previous_less_sofar">%1$d %% less than the period before at this point</string>
+    <string name="vs_previous_same_sofar">The same as the period before at this point</string>
     <string name="saving_rate">You keep %1$d %% of it</string>
     <string name="overspending_rate">You spent %1$d %% more than came in</string>
     <string name="daily_average">Daily average</string>
@@ -647,6 +651,7 @@
     <string name="times">%1$d times</string>
     <string name="savings">Kept</string>
     <string name="of_income">Of %1$s that came in</string>
+    <string name="of_income_so_far">Of %1$s that came in, so far</string>
     <string name="of_days">Of %1$d days</string>
     <string name="forecast_spend">You would spend</string>
     <string name="forecast_kept">You would keep</string>
@@ -662,11 +667,15 @@
     <string name="forecast_fixed_to_come">Fixed costs still to charge</string>
     <string name="forecast_everyday">Everyday spending still to come</string>
     <string name="forecast_note">Everyday spending is what the last three periods spent per day from this day on, adjusted to how this period is going. Fixed costs are exact: they come from your recurring items.</string>
+    <string name="forecast_free">Left if you spend nothing more</string>
+    <string name="forecast_free_text">Income, less what you spent and the fixed costs still to be charged. This part is exact.</string>
+    <string name="forecast_note_own">No earlier period has everyday spending to learn from, so this uses how this period is going: what you spent on everyday things per day so far, for the days that are left. It is less certain, so the range is wider. Fixed costs are exact: they come from your recurring items.</string>
     <string name="fixed_costs">Fixed costs</string>
     <string name="fixed_total_tile">Fixed this period</string>
     <string name="fixed_progress">%1$s charged · %2$s to go</string>
     <string name="per_day">You can spend per day</string>
-    <string name="per_day_text">What is left, spread over the %1$d days to go</string>
+    <string name="per_day_text">What is left, spread over the %1$d days to go, today included</string>
+    <string name="per_day_text_pace">Spread over the %1$d days to go, today included. So far you spend %2$s a day on everyday things.</string>
     <string name="fixed_paid_on">Charged on %1$s</string>
     <string name="fixed_due_on">Due on %1$s</string>
     <string name="fixed_overdue">Overdue · was due on %1$s</string>
@@ -716,7 +725,7 @@
     <string name="update_later">Not now</string>
     <string name="forecast_day">Day %1$d of %2$d of the period. An estimate: what is already spent, plus the fixed costs still to come, plus your usual everyday spending for the days left.</string>
     <string name="left_to_spend">Left to spend</string>
-    <string name="left_to_spend_text">Income %1$s − spent %2$s − fixed %3$s</string>
+    <string name="left_to_spend_text">What comes in, less what you spent and the fixed costs still to be charged</string>
     <string name="forecast_too_early">Too early to estimate how the period will end (day %1$d of %2$d). Come back in a few days.</string>
     <string name="entry_deleted">Entry deleted</string>
     <string name="undo">Undo</string>

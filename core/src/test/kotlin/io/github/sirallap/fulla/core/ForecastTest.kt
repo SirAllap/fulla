@@ -154,6 +154,53 @@ class ForecastTest {
         assertEquals(4_000, f.spentMinor)
     }
 
+    @Test
+    fun `earlier periods with only fixed costs are not a pace of zero this period's own pace is used`() {
+        // Earlier periods held only the car's charge. This one has spent 100 a day on everyday things for ten days.
+        val rows = history { m -> listOf(written(car, m.atDay(15))) } +
+            (1..10).map { plain(10_000, d(it)) } + written(car, d(15))
+        val f = analytics(car).forecast(rows, jan, today = d(10))!!
+        assertTrue(f.ownPace)
+        assertEquals(10_000, f.everydayPerDayMinor)
+        assertEquals(10_000L * 21, f.everydayRestMinor, "100 a day for the 21 days that are left")
+        assertTrue(f.everydayLowMinor!! < f.everydayRestMinor!! && f.everydayRestMinor!! < f.everydayHighMinor!!, "never a range of one number")
+        assertEquals(f.spentMinor + f.fixedToComeMinor + f.everydayRestMinor!!, f.spentEndMinor)
+    }
+
+    @Test
+    fun `a week has to pass before this period's own pace is used`() {
+        val f = analytics().forecast(listOf(plain(4_000, d(2))), jan, today = d(3))!!
+        assertNull(f.everydayRestMinor)
+        val g = analytics().forecast((1..7).map { plain(1_000, d(it)) }, jan, today = d(7))!!
+        assertEquals(1_000L * 24, g.everydayRestMinor)
+    }
+
+    @Test
+    fun `this period's own pace ignores what is marked fixed caps one big purchase and needs a handful of rows`() {
+        val a = analytics()
+        val base = (1..8).map { plain(1_000, d(it)) }
+        // A rent written by hand and marked fixed is not a daily habit.
+        val withRent = a.forecast(base + plain(80_000, d(1)).copy(recurrence = Recurrence.FIXED), jan, today = d(8))!!
+        assertEquals(1_000L * 23, withRent.everydayRestMinor)
+        assertEquals(1_000, withRent.everydayPerDayMinor, "and the pace shown beside the per-day figure leaves it out too")
+        // One big purchase counts for three usual rows at most.
+        val big = a.forecast(base + plain(60_000, d(3)), jan, today = d(8))!!
+        assertEquals(31_625, big.everydayRestMinor, "(8 x 1,000 + 3,000) over 8 days, for the 23 that are left")
+        // Two rows are not a pace.
+        assertNull(a.forecast(listOf(plain(1_000, d(1)), plain(1_000, d(2))), jan, today = d(8))!!.everydayRestMinor)
+    }
+
+    @Test
+    fun `the per day figure counts today and on the last day it is all that is left for today`() {
+        val rows = listOf(Fixtures.income(300_000, d(1)), plain(100_000, d(5)))
+        val tenth = analytics().forecast(rows, jan, today = d(10))!!
+        assertEquals(22, tenth.daysToGo, "the 10th to the 31st, today included")
+        assertEquals(200_000 / 22, tenth.perDayMinor)
+        val last = analytics().forecast(rows, jan, today = d(31))!!
+        assertEquals(1, last.daysToGo)
+        assertEquals(200_000, last.perDayMinor)
+    }
+
     private fun history(perMonth: (YearMonth) -> List<Transaction>) =
         (1..3).flatMap { perMonth(jan.minusMonths(it.toLong())) }
 
@@ -236,9 +283,9 @@ class ForecastTest {
         assertEquals(85_000, f.spentMinor)
         assertEquals(35_000, f.fixedToComeMinor)
         assertEquals(300_000 - 115_000, f.afterFixedMinor)
-        assertEquals((300_000 - 85_000 - 35_000) / 21, f.perDayMinor)
+        assertEquals((300_000 - 85_000 - 35_000) / 22, f.perDayMinor, "the 10th to the 31st is 22 days, today included")
         assertEquals(300_000 - 85_000 - 35_000, f.leftToSpendMinor, "income, less what was spent, less the fixed costs still to come")
-        assertEquals(f.leftToSpendMinor!! / 21, f.perDayMinor, "and the per day is that over the days left")
+        assertEquals(f.leftToSpendMinor!! / f.daysToGo, f.perDayMinor, "and the per day is that over the days left")
         assertTrue(f.afterFixedMinor!! > f.leftToSpendMinor!!, "after the fixed costs alone it is more: it does not count what was spent")
         assertTrue(!f.early, "the 10th of 31 days is not early")
         assertTrue(analytics(rent).forecast(emptyList(), jan, today = d(5))!!.early, "the 5th is")

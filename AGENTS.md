@@ -192,6 +192,22 @@ begins with the current period, a changed one from today on
 (`RecurringPlanner.startFor`). An occurrence whose day has come and which
 nothing wrote shows as overdue, with "Apply" (`Ledger.applyRecurring`).
 
+### A figure compares like with like
+
+The analysis is read as fact, so a figure must not compare unequal things (`AnalyticsTest`, `PeriodReportTest`,
+`ForecastTest` hold each of these):
+
+- A period that is still running is held against the *same days* of the earlier ones (`Analytics.trends` with
+  `today`, `PeriodReport.previousSpentMinor` with `partial`), never against whole months: ten days against a
+  month always read as "much less".
+- "Usual" is the average of the up to three earlier periods *that have anything written down*, so one month of history
+  is that month and a month the app was not used is not a month of zero.
+- A day-to-day pace is learnt only from periods that had day-to-day spending; a period of fixed costs only is not a
+  pace of zero. Without any, this period's own pace stands in (a week in, five rows at least, only what is marked
+  variable, one big purchase held to three usual rows) with a wider range.
+- What is left to spend per day counts today (`PeriodForecast.daysToGo`), like a trip's daily figure.
+- A percentage is rounded, not cut, wherever it is shown.
+
 ### Migrations
 
 Applied in filename order, each once, recorded in `fulla.schema_migrations`.

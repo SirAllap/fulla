@@ -30,7 +30,7 @@ data class CategoryRow(
     val amountMinor: Long,
     /** This category's part of the period's spending, 0..1. */
     val share: Double,
-    /** Average of the three previous periods, for comparison. */
+    /** Average of the previous periods (up to three) that have anything written down, for comparison; 0 with none. */
     val previousAverageMinor: Long,
 )
 
@@ -50,8 +50,13 @@ data class Place(val name: String, val count: Int, val totalMinor: Long)
  */
 data class PeriodReport(
     val spentMinor: Long,
-    /** The period before, or null when nothing was written down in it: no comparison to make. */
+    /**
+     * The period before, or null when nothing was written down in it: no comparison to make. While the period is
+     * still running ([partial]) it is what the period before had spent by the same day, never the whole of it.
+     */
     val previousSpentMinor: Long?,
+    /** The period is still running: what it is compared with is the same days of the earlier ones. */
+    val partial: Boolean,
     val incomeMinor: Long,
     /** Savings over income, null without income. */
     val savingsRate: Double?,
@@ -131,7 +136,14 @@ data class PeriodForecast(
     val everydayHighMinor: Long?,
     /** The period is open past its length: the next salary has not been noted, so there is no end to forecast. */
     val waiting: Boolean = false,
+    /** What this period has spent on everyday things so far: marked variable, not written by a recurring item, not a trip's. */
+    val everydaySoFarMinor: Long = 0,
+    /** The everyday estimate comes from this period's own pace: no earlier period had everyday spending to learn from. */
+    val ownPace: Boolean = false,
 ) {
+    /** What the period has spent per day on everyday things so far; the number to set beside [perDayMinor]. */
+    val everydayPerDayMinor: Long? get() = if (day > 0 && everydaySoFarMinor > 0) everydaySoFarMinor / day else null
+
     val fixedPaidMinor: Long get() = fixed.filter { it.status == FixedStatus.PAID }.sumOf { it.amountMinor }
     val fixedToComeMinor: Long get() = fixed.filter { it.status == FixedStatus.PENDING }.sumOf { it.amountMinor }
     /** Every fixed cost of the period that is or will be charged: skipped ones are not. */
@@ -158,11 +170,14 @@ data class PeriodForecast(
      */
     val leftToSpendMinor: Long? get() = totalIncomeMinor.takeIf { it > 0 }?.let { it - spentMinor - fixedToComeMinor }
 
+    /** Days left to spend in, today included: what is left covers the rest of today too (a trip's daily figure counts the same way). */
+    val daysToGo: Int get() = length - day + 1
+
     /**
-     * What can be spent per day from tomorrow on: [leftToSpendMinor] over the
-     * days left; null without income or once the period is over.
+     * What can be spent per day over [daysToGo]: [leftToSpendMinor] spread over
+     * the days left, today included; null without income or once the period is over.
      */
-    val perDayMinor: Long? get() = if (length > day) leftToSpendMinor?.let { it / (length - day) } else null
+    val perDayMinor: Long? get() = if (!waiting && day <= length) leftToSpendMinor?.let { it / daysToGo } else null
 
     /** Too early in the period for the estimate to be tight: under a quarter of it has gone. */
     val early: Boolean get() = day * 4 < length
@@ -212,6 +227,29 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         TransactionKind.EXPENSE -> t.amountMinor
         TransactionKind.REFUND -> -t.amountMinor
         else -> 0
+    }
+
+    /**
+     * Days of [period] gone as of [today], today included, while it is still running; null before it starts and once it
+     * is over (then there is nothing partial to compare).
+     */
+    private fun daysGone(period: YearMonth, today: LocalDate): Int? {
+        val range = rule.daysOf(period)
+        if (today < range.start || today > range.endInclusive) return null
+        return (ChronoUnit.DAYS.between(range.start, today) + 1).toInt()
+    }
+
+    /**
+     * The up to three periods before [period] in which anything was written down: what "usual" is learnt from. A
+     * period with nothing in it is a period the app was not used, not a period of zero spending, so it is left out
+     * instead of pulling every average down.
+     */
+    private fun usualPeriods(list: List<Transaction>, period: YearMonth): List<YearMonth> =
+        (1..3).map { period.minusMonths(it.toLong()) }.filter { p -> counted(list, p).isNotEmpty() }
+
+    private fun categoryKey(t: Transaction, rollUp: Boolean): String? {
+        val c = config.category(t.categoryId) ?: return t.categoryId
+        return if (rollUp && c.parentId != null) c.parentId else c.id
     }
 
     fun summary(txs: Iterable<Transaction>, period: YearMonth): PeriodSummary {
@@ -271,23 +309,20 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
 
     fun byCategory(txs: Iterable<Transaction>, period: YearMonth, rollUp: Boolean = true): List<CategoryRow> {
         val list = txs.toList()
-        fun key(t: Transaction): String? {
-            val c = config.category(t.categoryId) ?: return t.categoryId
-            return if (rollUp && c.parentId != null) c.parentId else c.id
-        }
         fun totals(p: YearMonth): Map<String, Long> = counted(list, p)
             .filter { it.kind != TransactionKind.INCOME }
-            .groupBy { key(it) ?: "" }
+            .groupBy { categoryKey(it, rollUp) ?: "" }
             .mapValues { (_, v) -> v.sumOf { spend(it) } }
         val now = totals(period)
-        val previous = (1..3).map { totals(period.minusMonths(it.toLong())) }
+        // "Usual" is over the earlier periods that have anything in them: with one month of history it is that month, not a third of it.
+        val previous = usualPeriods(list, period).map { totals(it) }
         val total = now.values.filter { it > 0 }.sum()
         return now.filter { it.value != 0L }.map { (id, amount) ->
             CategoryRow(
                 categoryId = id,
                 amountMinor = amount,
                 share = if (total > 0) amount.toDouble() / total else 0.0,
-                previousAverageMinor = previous.sumOf { it[id] ?: 0 } / 3,
+                previousAverageMinor = if (previous.isEmpty()) 0 else previous.sumOf { it[id] ?: 0 } / previous.size,
             )
         }.sortedByDescending { it.amountMinor }
     }
@@ -365,8 +400,11 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
      * end to forecast: the fixed costs are still listed, [PeriodForecast.waiting]
      * is set, and nothing about the end is guessed.
      *
-     * With no earlier period to learn from, the everyday part is left out
-     * (null) rather than guessed: the fixed part is still exact.
+     * With no earlier period that had everyday spending to learn from, the
+     * estimate is this period's own pace once a week of it has passed
+     * ([PeriodForecast.ownPace], a wider range); before that, or with nothing
+     * spent, the everyday part is left out (null) rather than guessed: the
+     * fixed part is still exact.
      *
      * [deleted] are the ids of rows written off, so a fixed cost skipped for
      * a month is not waited for.
@@ -414,13 +452,17 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val spent = now.filter { it.kind != TransactionKind.INCOME }.sumOf { spend(it) }
         val income = now.filter { it.kind == TransactionKind.INCOME }.sumOf { it.amountMinor }
         val everydaySoFar = now.filter { it.kind != TransactionKind.INCOME && everyday(it) }.sumOf { spend(it) }
+        // What the person calls day-to-day spending: marked variable, on top of what everyday() leaves out.
+        val variableRows = now.filter { it.kind != TransactionKind.INCOME && everyday(it) && it.recurrence == Recurrence.VARIABLE }
+        val variableSoFar = variableRows.sumOf { spend(it) }
 
         // What earlier periods spent per day from this day on, and up to it.
         val earlier = (1..3).map { period.minusMonths(it.toLong()) }.mapNotNull { p ->
             val r = rule.daysOf(p)
             val rows = counted(list, p).filter { it.kind != TransactionKind.INCOME }
-            if (rows.isEmpty()) return@mapNotNull null
             val everydayRows = rows.filter { everyday(it) }
+            // A period of fixed costs only has nothing to say about everyday spending: it is not a pace of zero.
+            if (everydayRows.isEmpty()) return@mapNotNull null
             val len = (ChronoUnit.DAYS.between(r.start, r.endInclusive) + 1).toInt()
             val cut = r.start.plusDays(day.toLong() - 1)
             val before = everydayRows.filter { it.date <= cut }.sumOf { spend(it) }
@@ -432,6 +474,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         var lowRest: Long? = null
         var midRest: Long? = null
         var highRest: Long? = null
+        var ownPace = false
         if (!waiting && earlier.isNotEmpty() && day <= length) {
             val rate = median(earlier.map { it.first })
             val usualSoFar = median(earlier.map { it.second.toDouble() })
@@ -441,8 +484,22 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
             midRest = rest.toLong()
             lowRest = (rest * LOW_FACTOR).toLong()
             highRest = (rest * HIGH_FACTOR).toLong()
+        } else if (!waiting && day <= length && day >= MIN_OWN_DAYS) {
+            // Nothing earlier to learn from: this period's own pace, with a wider range, because it is only a week or two.
+            // Only what is marked variable counts (a rent written by hand is not a pace), and one big purchase is held
+            // to three times the usual row, so it does not turn into a daily habit.
+            val bought = variableRows.filter { it.kind == TransactionKind.EXPENSE }.map { it.amountMinor.toDouble() }
+            if (bought.size >= MIN_OWN_ROWS) {
+                val cap = median(bought) * OWN_CAP_TIMES
+                val total = variableRows.sumOf { if (it.kind == TransactionKind.EXPENSE) minOf(it.amountMinor.toDouble(), cap) else -it.amountMinor.toDouble() }
+                val rest = (total / day * (length - day)).coerceAtLeast(0.0)
+                ownPace = true
+                midRest = rest.toLong()
+                lowRest = (rest * OWN_LOW_FACTOR).toLong()
+                highRest = (rest * OWN_HIGH_FACTOR).toLong()
+            }
         }
-        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest, waiting)
+        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest, waiting, variableSoFar, ownPace)
     }
 
     private fun median(values: List<Double>): Double {
@@ -452,14 +509,30 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
 
     /**
      * Categories whose spending moved noticeably against the average of the
-     * three previous periods: by at least 20 % and at least [minimumMinor].
+     * earlier periods (up to three, those with anything written down): by at
+     * least 20 % and at least [minimumMinor]. With [today] inside the period
+     * it is still running, so every earlier period is cut at the same day:
+     * eleven days of this month are held against eleven days of the others,
+     * never against whole months.
      */
-    fun trends(txs: Iterable<Transaction>, period: YearMonth, minimumMinor: Long): List<Trend> =
-        byCategory(txs, period).mapNotNull { row ->
-            val t = Trend(row.categoryId, row.amountMinor, row.previousAverageMinor)
+    fun trends(txs: Iterable<Transaction>, period: YearMonth, minimumMinor: Long, today: LocalDate? = null): List<Trend> {
+        val list = txs.toList()
+        val gone = today?.let { daysGone(period, it) }
+        val usual = usualPeriods(list, period)
+        if (usual.isEmpty()) return emptyList()
+        fun totals(p: YearMonth): Map<String, Long> {
+            val cut = gone?.let { rule.daysOf(p).start.plusDays(it - 1L) }
+            return counted(list, p).filter { it.kind != TransactionKind.INCOME && (cut == null || it.date <= cut) }
+                .groupBy { categoryKey(it, true) ?: "" }.mapValues { (_, v) -> v.sumOf { spend(it) } }
+        }
+        val now = totals(period)
+        val before = usual.map { totals(it) }
+        return now.filter { it.value != 0L }.mapNotNull { (id, amount) ->
+            val t = Trend(id, amount, before.sumOf { it[id] ?: 0 } / before.size)
             // No earlier spending is no "usual" to compare with: "100 % more than 0" says nothing.
             if (t.averageMinor > 0 && abs(t.currentMinor - t.averageMinor) >= minimumMinor && abs(t.change) >= 0.2) t else null
         }.sortedByDescending { abs(it.currentMinor - it.averageMinor) }
+    }
 
     /**
      * Where the period's spending went, for a chart: the [top] categories by
@@ -483,6 +556,9 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val spent = out.sumOf { spend(it) }
         val income = rows.filter { it.kind == TransactionKind.INCOME }.sumOf { it.amountMinor }
         val previous = counted(list, period.minusMonths(1)).filter { it.kind != TransactionKind.INCOME }
+        val gone = daysGone(period, today)
+        // While the period runs, the one before is held to the same days: ten days against a whole month say nothing.
+        val previousCut = gone?.let { rule.daysOf(period.minusMonths(1)).start.plusDays(it - 1L) }
         val range = rule.daysOf(period)
         val days = when {
             today < range.start -> 0
@@ -499,7 +575,8 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val used = budgetSpend(list, period, trips).associate { it.categoryId to it.amountMinor }
         return PeriodReport(
             spentMinor = spent,
-            previousSpentMinor = if (previous.isEmpty()) null else previous.sumOf { spend(it) },
+            previousSpentMinor = if (previous.isEmpty()) null else previous.filter { previousCut == null || it.date <= previousCut }.sumOf { spend(it) },
+            partial = gone != null,
             incomeMinor = income,
             savingsRate = if (income > 0) (income - spent).toDouble() / income else null,
             count = expenses.size,
@@ -588,3 +665,8 @@ private const val SHRINK_DAYS = 10
 /** The everyday spending still to come lands between these times the estimate in about four periods of five. */
 private const val LOW_FACTOR = 0.6
 private const val HIGH_FACTOR = 1.6
+private const val MIN_OWN_DAYS = 7
+private const val OWN_LOW_FACTOR = 0.5
+private const val OWN_HIGH_FACTOR = 1.8
+private const val MIN_OWN_ROWS = 5
+private const val OWN_CAP_TIMES = 3.0

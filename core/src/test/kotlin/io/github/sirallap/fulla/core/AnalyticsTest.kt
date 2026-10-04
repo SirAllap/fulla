@@ -120,6 +120,34 @@ class AnalyticsTest {
     }
 
     @Test
+    fun `usual is the average of the earlier periods that have something never a fixed third`() {
+        val a = Analytics(config, PeriodRule())
+        val dec = Fixtures.expense(30_000, LocalDate.of(2029, 12, 10))
+        val now = Fixtures.expense(5_000, d(2))
+        fun usual(rows: List<io.github.sirallap.fulla.core.model.Transaction>) =
+            a.byCategory(rows, jan).single { it.categoryId == Fixtures.GROCERIES }.previousAverageMinor
+        assertEquals(30_000, usual(listOf(dec, now)), "one month of history is that month, not a third of it")
+        val oct = Fixtures.expense(10_000, LocalDate.of(2029, 10, 3))
+        assertEquals(20_000, usual(listOf(dec, oct, now)), "November has nothing in it: the app was not in use, which is not a month of zero")
+        assertEquals(0, usual(listOf(now)), "no history, no usual")
+    }
+
+    @Test
+    fun `trends of a running period hold the same days against each other not whole months`() {
+        val a = Analytics(config, PeriodRule())
+        val dec = (1..31).map { Fixtures.expense(1_000, LocalDate.of(2029, 12, it)) }
+        val same = (1..10).map { Fixtures.expense(1_000, d(it)) }
+        assertEquals(emptyList(), a.trends(dec + same, jan, minimumMinor = 100, today = d(10)), "the same pace as December: nothing moved")
+        val faster = (1..10).map { Fixtures.expense(2_000, d(it)) }
+        val t = a.trends(dec + faster, jan, minimumMinor = 100, today = d(10)).single()
+        assertEquals(20_000, t.currentMinor)
+        assertEquals(10_000, t.averageMinor, "December's first ten days")
+        assertEquals(1.0, t.change, 1e-9)
+        val wholeMonths = a.trends(dec + same, jan, minimumMinor = 100).single()
+        assertTrue(wholeMonths.change < -0.6, "without a day to cut at, ten days read as two thirds below a whole month")
+    }
+
+    @Test
     fun `recurring charges are spotted`() {
         val subs = (0..3).map { Fixtures.expense(1_299, LocalDate.of(2030, 1 + it, 4), split = Split.Equal(listOf(Fixtures.ALICE)))
             .copy(note = "STREAMING SERVICE") }

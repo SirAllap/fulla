@@ -244,6 +244,7 @@
     <string name="url_not_https">L\'URL deve iniziare con https://</string>
     <string name="url_not_supabase">Non è l\'URL di un progetto Supabase (https://&lt;progetto&gt;.supabase.co).</string>
     <string name="usually">Di solito %1$s</string>
+    <string name="usually_so_far">A questo punto, di solito %1$s</string>
     <string name="version">Versione %1$s</string>
     <string name="welcome_line">Ciò che entra, ciò che esce e ciò che resta.</string>
     <string name="welcome_text">Per una persona o per tutta la casa. Funziona offline, e i tuoi dati stanno dove decidi tu.</string>
@@ -580,6 +581,9 @@
     <string name="vs_previous_more">%1$d %% in più del periodo precedente</string>
     <string name="vs_previous_less">%1$d %% in meno del periodo precedente</string>
     <string name="vs_previous_same">Uguale al periodo precedente</string>
+    <string name="vs_previous_more_sofar">%1$d %% in più del periodo precedente a questo punto</string>
+    <string name="vs_previous_less_sofar">%1$d %% in meno del periodo precedente a questo punto</string>
+    <string name="vs_previous_same_sofar">Uguale al periodo precedente a questo punto</string>
     <string name="saving_rate">Ne tieni il %1$d %%</string>
     <string name="overspending_rate">Hai speso il %1$d %% in più di quanto è entrato</string>
     <string name="daily_average">Media giornaliera</string>
@@ -597,6 +601,7 @@
     <string name="times">%1$d volte</string>
     <string name="savings">Risparmio</string>
     <string name="of_income">Su %1$s entrati</string>
+    <string name="of_income_so_far">Su %1$s di entrate, fino a oggi</string>
     <string name="of_days">Su %1$d giorni</string>
     <string name="forecast_spend">Spenderesti</string>
     <string name="forecast_kept">Ti resterebbero</string>
@@ -612,11 +617,15 @@
     <string name="forecast_fixed_to_come">Spese fisse ancora da addebitare</string>
     <string name="forecast_everyday">Spese di ogni giorno ancora da fare</string>
     <string name="forecast_note">Le spese di ogni giorno sono quanto hanno speso al giorno gli ultimi tre periodi da questo giorno in poi, adattato a come va questo. Le spese fisse sono esatte: vengono dai tuoi elementi ricorrenti.</string>
+    <string name="forecast_free">Resterebbe se non spendi altro</string>
+    <string name="forecast_free_text">Entrate, meno quanto speso e le spese fisse ancora da addebitare. Questa parte è esatta.</string>
+    <string name="forecast_note_own">Nessun periodo precedente ha spese di ogni giorno da cui imparare, quindi si usa l\'andamento di questo: quanto spendi al giorno finora per le spese di ogni giorno, per i giorni che mancano. È meno certo, quindi l\'intervallo è più ampio. Le spese fisse sono esatte: vengono dai tuoi elementi ricorrenti.</string>
     <string name="fixed_costs">Spese fisse</string>
     <string name="fixed_total_tile">Fisse del periodo</string>
     <string name="fixed_progress">%1$s addebitati · mancano %2$s</string>
     <string name="per_day">Puoi spendere al giorno</string>
-    <string name="per_day_text">Quello che resta, ripartito sui %1$d giorni che mancano</string>
+    <string name="per_day_text">Quello che resta, ripartito sui %1$d giorni rimasti, oggi incluso</string>
+    <string name="per_day_text_pace">Ripartito sui %1$d giorni rimasti, oggi incluso. Finora spendi %2$s al giorno per le spese di ogni giorno.</string>
     <string name="fixed_paid_on">Addebitato il %1$s</string>
     <string name="fixed_due_on">Previsto il %1$s</string>
     <string name="fixed_overdue">In ritardo · previsto il %1$s</string>
@@ -666,7 +675,7 @@
     <string name="update_later">Non ora</string>
     <string name="forecast_day">Giorno %1$d di %2$d del periodo. Una stima: quanto hai già speso, più le spese fisse ancora da addebitare, più la tua spesa abituale di ogni giorno per i giorni che restano.</string>
     <string name="left_to_spend">Ti resta da spendere</string>
-    <string name="left_to_spend_text">Entrate %1$s − speso %2$s − fisse %3$s</string>
+    <string name="left_to_spend_text">Quello che entra, meno quanto hai speso e le spese fisse ancora da addebitare</string>
     <string name="forecast_too_early">Troppo presto per stimare come finirà il periodo (giorno %1$d di %2$d). Torna tra qualche giorno.</string>
     <string name="entry_deleted">Movimento eliminato</string>
     <string name="undo">Annulla</string>
