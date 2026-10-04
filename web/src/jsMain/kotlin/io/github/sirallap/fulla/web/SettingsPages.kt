@@ -465,7 +465,8 @@ object BudgetsPage {
                     },
                     end = { amountText((own ?: inherited)?.let { format.money(it.amountMinor) } ?: "—", if (own != null) "" else "muted") },
                     onClick = if (canEdit) ({
-                        promptSheet(c.name, t(if (month == null) "monthly_budget" else "budget_for_month"), own?.let { format.plain(it.amountMinor) } ?: "", inputMode = "decimal") { v ->
+                        promptSheet(c.name, t(if (month == null) "monthly_budget" else "budget_for_month"), own?.let { format.plain(it.amountMinor) } ?: "", inputMode = "decimal",
+                            valid = { (MoneyParser.parseTyped(it, format.currency, format.decimalStyle) ?: -1) >= 0 }) { v ->
                             val minor = MoneyParser.parseTyped(v, format.currency, format.decimalStyle) ?: return@promptSheet
                             val item = buildJsonObject {
                                 put("id", own?.id ?: randomUuid()); put("category_id", c.id); put("period", month); put("amount_minor", minor)

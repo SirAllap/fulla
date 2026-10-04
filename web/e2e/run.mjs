@@ -151,6 +151,17 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.waitForSelector('.row:has-text("Tarjeta")');
   await back(page);
 
+  // a budget typed with a dot is twelve and a half; what is not an amount waits
+  await row(page, 'Presupuestos').click();
+  await page.locator('.rows .row').first().click();
+  await page.fill('.sheet input >> nth=0', 'abc');
+  ok(await page.locator('.sheet .btn.primary[disabled]').count() === 1, 'a budget that is not an amount cannot be saved');
+  await page.fill('.sheet input >> nth=0', '12.5');
+  await page.click('.sheet .btn.primary');
+  await page.waitForSelector('.rows .row:has-text("12,50")');
+  ok(true, 'a budget typed with a dot is twelve and a half');
+  await back(page);
+
   // fixed cost with an end: it writes itself on its day, and stops
   await row(page, 'Gastos fijos').click();
   await page.click('text=Añadir un gasto fijo');

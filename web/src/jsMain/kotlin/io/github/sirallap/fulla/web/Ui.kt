@@ -210,12 +210,13 @@ fun confirmSheet(title: String?, message: String, confirmLabel: String, danger: 
     }
 }
 
-/** One text value to change: the Android app's EditDialog. */
-fun promptSheet(title: String, label: String, initial: String, type: String = "text", inputMode: String? = null, onSave: (String) -> Unit) {
+/** One text value to change: the Android app's EditDialog. [valid] holds Save back while what is typed is not worth keeping. */
+fun promptSheet(title: String, label: String, initial: String, type: String = "text", inputMode: String? = null, valid: (String) -> Boolean = { true }, onSave: (String) -> Unit) {
     sheet(title) { close ->
         val input = field(label, initial, type) { if (inputMode != null) attr("inputmode", inputMode) }
         div("actions") {
-            primaryButton(t("save")) { val v = input.value.trim(); close(); onSave(v) }
+            val save = primaryButton(t("save"), enabled = valid(initial.trim())) { val v = input.value.trim(); if (!valid(v)) return@primaryButton; close(); onSave(v) }
+            input.on("input") { if (valid(input.value.trim())) save.removeAttribute("disabled") else save.setAttribute("disabled", "") }
             quietButton(t("cancel")) { close() }
         }
         input.focus()
