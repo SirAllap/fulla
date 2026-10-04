@@ -89,13 +89,33 @@ object InsightsScreen {
                             ?: Tile(t("forecast_kept"), "—", t("forecast_add_income"), null, "in"),
                     ))
                 } else if (f.known) { section(t("forecast")); note(t("forecast_too_early", f.day, f.length)) }
+                if (!f.waiting) {
+                    // The sum behind it, in view: only the everyday spending still to come is a guess.
+                    section(t("forecast_how"))
+                    div("rows") {
+                        listRow(t("forecast_income"), context = if (f.expectedIncomeMinor > 0) t("forecast_income_context", format.money(f.incomeMinor), format.money(f.expectedIncomeMinor)) else null, end = { amountText(format.money(f.totalIncomeMinor), "in") })
+                        listRow(t("forecast_spent_so_far"), end = { amountText(format.money(-f.spentMinor)) })
+                        val pending = f.fixed.filter { it.status == io.github.sirallap.fulla.core.analytics.FixedStatus.PENDING }
+                        listRow(t("forecast_fixed_to_come"), context = pending.take(4).joinToString(" · ") { it.name + " " + format.day(it.date) }.ifBlank { null }, end = { amountText(format.money(-f.fixedToComeMinor)) })
+                        val free = f.leftToSpendMinor
+                        if (free != null) listRow(t("forecast_free"), context = t("forecast_free_text"), end = { amountText(format.money(free), if (free < 0) "neg" else "in") })
+                        val rest = f.everydayRestMinor
+                        if (rest != null && !f.early) {
+                            listRow(t("forecast_everyday"), context = t("forecast_between", format.money(f.everydayLowMinor!!), format.money(f.everydayHighMinor!!)), end = { amountText(format.money(-rest)) })
+                            val kept = f.keptMinor
+                            listRow(t(if (kept != null) "forecast_kept" else "forecast_spend"), divider = false, end = { amountText("≈ " + format.money(kept ?: f.spentEndMinor!!), if (kept != null && kept < 0) "neg" else "") })
+                        }
+                    }
+                    if (f.leftToSpendMinor == null) note(t("forecast_add_income"))
+                    note(t(if (f.ownPace) "forecast_note_own" else "forecast_note"))
+                }
                 if (f.fixed.isNotEmpty()) {
                     section(t("fixed_costs"))
                     val total = f.fixedTotalMinor; val left = f.leftToSpendMinor; val perDay = f.perDayMinor
                     val row1 = mutableListOf(Tile(t("fixed_total_tile"), format.money(total), t("fixed_progress", format.money(f.fixedPaidMinor), format.money(f.fixedToComeMinor)), if (total > 0) f.fixedPaidMinor.toDouble() / total else null, "out", phase = 2.2, onClick = { App.closeInsights(); App.openSettings(SettingsPage.RECURRING) }))
-                    if (left != null) row1 += Tile(t("left_to_spend"), format.money(left), t("left_to_spend_text", format.money(f.totalIncomeMinor), format.money(f.spentMinor), format.money(f.fixedToComeMinor)), (left.toDouble() / f.totalIncomeMinor).coerceIn(0.0, 1.0), "in", if (left < 0) "out" else "in", 3.8)
+                    if (left != null) row1 += Tile(t("left_to_spend"), format.money(left), t("left_to_spend_text"), (left.toDouble() / f.totalIncomeMinor).coerceIn(0.0, 1.0), "in", if (left < 0) "out" else "in", 3.8)
                     tiles(row1)
-                    if (left != null && perDay != null) tiles(listOf(Tile(t("per_day"), format.money(perDay), t("per_day_text", f.length - f.day), null, "in", if (perDay < 0) "out" else "in", 4.6)))
+                    if (left != null && perDay != null) tiles(listOf(Tile(t("per_day"), format.money(perDay), (f.everydayPerDayMinor?.let { t("per_day_text_pace", f.length - f.day, format.money(it)) } ?: t("per_day_text", f.length - f.day)), null, "in", if (perDay < 0) "out" else "in", 4.6)))
                     if (left == null) note(t("forecast_add_income"))
                 }
             }

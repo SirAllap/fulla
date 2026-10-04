@@ -131,7 +131,14 @@ data class PeriodForecast(
     val everydayHighMinor: Long?,
     /** The period is open past its length: the next salary has not been noted, so there is no end to forecast. */
     val waiting: Boolean = false,
+    /** What this period has spent on everyday things so far (not fixed costs, trips or one-offs like them). */
+    val everydaySoFarMinor: Long = 0,
+    /** The everyday estimate comes from this period's own pace: no earlier period had everyday spending to learn from. */
+    val ownPace: Boolean = false,
 ) {
+    /** What the period has spent per day on everyday things so far; the number to set beside [perDayMinor]. */
+    val everydayPerDayMinor: Long? get() = if (day > 0 && everydaySoFarMinor > 0) everydaySoFarMinor / day else null
+
     val fixedPaidMinor: Long get() = fixed.filter { it.status == FixedStatus.PAID }.sumOf { it.amountMinor }
     val fixedToComeMinor: Long get() = fixed.filter { it.status == FixedStatus.PENDING }.sumOf { it.amountMinor }
     /** Every fixed cost of the period that is or will be charged: skipped ones are not. */
@@ -365,8 +372,11 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
      * end to forecast: the fixed costs are still listed, [PeriodForecast.waiting]
      * is set, and nothing about the end is guessed.
      *
-     * With no earlier period to learn from, the everyday part is left out
-     * (null) rather than guessed: the fixed part is still exact.
+     * With no earlier period that had everyday spending to learn from, the
+     * estimate is this period's own pace once a week of it has passed
+     * ([PeriodForecast.ownPace], a wider range); before that, or with nothing
+     * spent, the everyday part is left out (null) rather than guessed: the
+     * fixed part is still exact.
      *
      * [deleted] are the ids of rows written off, so a fixed cost skipped for
      * a month is not waited for.
@@ -419,8 +429,9 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         val earlier = (1..3).map { period.minusMonths(it.toLong()) }.mapNotNull { p ->
             val r = rule.daysOf(p)
             val rows = counted(list, p).filter { it.kind != TransactionKind.INCOME }
-            if (rows.isEmpty()) return@mapNotNull null
             val everydayRows = rows.filter { everyday(it) }
+            // A period of fixed costs only has nothing to say about everyday spending: it is not a pace of zero.
+            if (everydayRows.isEmpty()) return@mapNotNull null
             val len = (ChronoUnit.DAYS.between(r.start, r.endInclusive) + 1).toInt()
             val cut = r.start.plusDays(day.toLong() - 1)
             val before = everydayRows.filter { it.date <= cut }.sumOf { spend(it) }
@@ -432,6 +443,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
         var lowRest: Long? = null
         var midRest: Long? = null
         var highRest: Long? = null
+        var ownPace = false
         if (!waiting && earlier.isNotEmpty() && day <= length) {
             val rate = median(earlier.map { it.first })
             val usualSoFar = median(earlier.map { it.second.toDouble() })
@@ -441,8 +453,15 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
             midRest = rest.toLong()
             lowRest = (rest * LOW_FACTOR).toLong()
             highRest = (rest * HIGH_FACTOR).toLong()
+        } else if (!waiting && day <= length && day >= MIN_OWN_DAYS && everydaySoFar > 0) {
+            // Nothing earlier to learn from: this period's own pace, with a wider range, because it is only one week or two.
+            ownPace = true
+            val rest = everydaySoFar.toDouble() / day * (length - day)
+            midRest = rest.toLong()
+            lowRest = (rest * OWN_LOW_FACTOR).toLong()
+            highRest = (rest * OWN_HIGH_FACTOR).toLong()
         }
-        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest, waiting)
+        return PeriodForecast(day, length, income, expectedIncome, spent, fixed.sortedBy { it.date }, lowRest, midRest, highRest, waiting, everydaySoFar, ownPace)
     }
 
     private fun median(values: List<Double>): Double {
@@ -588,3 +607,6 @@ private const val SHRINK_DAYS = 10
 /** The everyday spending still to come lands between these times the estimate in about four periods of five. */
 private const val LOW_FACTOR = 0.6
 private const val HIGH_FACTOR = 1.6
+private const val MIN_OWN_DAYS = 7
+private const val OWN_LOW_FACTOR = 0.5
+private const val OWN_HIGH_FACTOR = 1.8

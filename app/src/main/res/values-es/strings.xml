@@ -612,11 +612,15 @@
     <string name="forecast_fixed_to_come">Fijos por cobrar</string>
     <string name="forecast_everyday">Gasto del día a día que falta</string>
     <string name="forecast_note">El gasto del día a día es lo que gastaron los últimos tres periodos por día desde este día, ajustado a cómo va este. Los fijos son exactos: salen de tus gastos fijos.</string>
+    <string name="forecast_free">Te quedaría si no gastas nada más</string>
+    <string name="forecast_free_text">Ingresos, menos lo gastado y los fijos que faltan. Esta parte es exacta.</string>
+    <string name="forecast_note_own">Ningún periodo anterior tiene gasto del día a día del que aprender, así que se usa cómo va este: lo que llevas gastado al día en el día a día, para los días que faltan. Es menos seguro, por eso el rango es más amplio. Los fijos son exactos: salen de tus gastos fijos.</string>
     <string name="fixed_costs">Gastos fijos</string>
     <string name="fixed_total_tile">Fijos del periodo</string>
     <string name="fixed_progress">%1$s cobrados · faltan %2$s</string>
     <string name="per_day">Puedes gastar al día</string>
     <string name="per_day_text">Lo que te queda, repartido en los %1$d días que faltan</string>
+    <string name="per_day_text_pace">Repartido en los %1$d días que faltan. Hasta hoy gastas %2$s al día en el día a día.</string>
     <string name="fixed_paid_on">Cobrado el %1$s</string>
     <string name="fixed_due_on">Toca el %1$s</string>
     <string name="fixed_overdue">Vencido · tocaba el %1$s</string>
@@ -666,7 +670,7 @@
     <string name="update_later">Ahora no</string>
     <string name="forecast_day">Día %1$d de %2$d del periodo. Es una estimación: lo que ya has gastado, más los fijos que faltan, más tu gasto habitual al día en los días que quedan.</string>
     <string name="left_to_spend">Te queda por gastar</string>
-    <string name="left_to_spend_text">Ingresos %1$s − gastado %2$s − fijos %3$s</string>
+    <string name="left_to_spend_text">Lo que entra, menos lo gastado y los fijos que faltan</string>
     <string name="forecast_too_early">Aún es pronto para estimar cómo acabará el periodo (día %1$d de %2$d). Vuelve en unos días.</string>
     <string name="entry_deleted">Movimiento eliminado</string>
     <string name="undo">Deshacer</string>

@@ -62,7 +62,6 @@ import io.github.sirallap.fulla.core.time.LocalDate
 fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
     val c = FullaTheme.colors
     val f = view.formats
-    var explaining by remember { mutableStateOf(false) }
 
     Section(stringResource(R.string.forecast), top = 16.dp)
     if (forecast.known && forecast.early) {
@@ -76,17 +75,17 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
             style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
         val spendEnd = forecast.spentEndMinor!!
         TileRow {
-            LiquidTile(stringResource(R.string.forecast_spend), "≈ " + f.money(spendEnd), Modifier.weight(1f).clickable { explaining = true },
+            LiquidTile(stringResource(R.string.forecast_spend), "≈ " + f.money(spendEnd), Modifier.weight(1f),
                 context = stringResource(R.string.forecast_between, f.money(forecast.spentEndLowMinor!!), f.money(forecast.spentEndHighMinor!!)),
                 level = if (spendEnd > 0) (forecast.spentMinor.toFloat() / spendEnd).coerceIn(0f, 1f) else null, phase = 0.4f)
             val kept = forecast.keptMinor
             if (kept != null) {
-                LiquidTile(stringResource(R.string.forecast_kept), "≈ " + f.money(kept), Modifier.weight(1f).clickable { explaining = true },
+                LiquidTile(stringResource(R.string.forecast_kept), "≈ " + f.money(kept), Modifier.weight(1f),
                     context = stringResource(R.string.forecast_between, f.money(forecast.keptLowMinor!!), f.money(forecast.keptHighMinor!!)),
                     level = (kept.toFloat() / forecast.totalIncomeMinor).coerceIn(0f, 1f), tone = LiquidTone.IN,
                     valueColor = if (kept < 0) c.moneyOut else c.moneyIn, phase = 1.6f)
             } else {
-                LiquidTile(stringResource(R.string.forecast_kept), "—", Modifier.weight(1f).clickable { explaining = true },
+                LiquidTile(stringResource(R.string.forecast_kept), "—", Modifier.weight(1f),
                     context = stringResource(R.string.forecast_add_income), tone = LiquidTone.IN)
             }
         }
@@ -94,10 +93,10 @@ fun ForecastSection(view: HouseholdView, forecast: PeriodForecast) {
         ListRow(stringResource(R.string.forecast_waiting), context = stringResource(R.string.forecast_waiting_text), divider = false)
     } else {
         Text(stringResource(R.string.forecast_no_history), style = FullaType.secondary, color = c.inkMuted,
-            modifier = Modifier.clickable { explaining = true }.padding(horizontal = 20.dp, vertical = 8.dp))
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
     }
 
-    if (explaining) ForecastSheet(view, forecast) { explaining = false }
+    if (!forecast.waiting) ForecastBreakdown(view, forecast)
 }
 
 /**
@@ -121,7 +120,7 @@ fun FixedTotalsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCos
             level = if (total > 0) forecast.fixedPaidMinor.toFloat() / total else null, phase = 2.2f)
         if (left != null) {
             LiquidTile(stringResource(R.string.left_to_spend), f.money(left), Modifier.weight(1f),
-                context = stringResource(R.string.left_to_spend_text, f.money(forecast.totalIncomeMinor), f.money(forecast.spentMinor), f.money(forecast.fixedToComeMinor)),
+                context = stringResource(R.string.left_to_spend_text),
                 level = (left.toFloat() / forecast.totalIncomeMinor).coerceIn(0f, 1f), tone = LiquidTone.IN,
                 valueColor = if (left < 0) c.moneyOut else c.moneyIn, phase = 3.8f)
         } else Spacer(Modifier.weight(1f))
@@ -129,7 +128,8 @@ fun FixedTotalsSection(view: HouseholdView, forecast: PeriodForecast, onFixedCos
     if (left != null && perDay != null) {
         TileRow {
             LiquidTile(stringResource(R.string.per_day), f.money(perDay), Modifier.weight(1f),
-                context = stringResource(R.string.per_day_text, forecast.length - forecast.day),
+                context = forecast.everydayPerDayMinor?.let { stringResource(R.string.per_day_text_pace, forecast.length - forecast.day, f.money(it)) }
+                    ?: stringResource(R.string.per_day_text, forecast.length - forecast.day),
                 tone = LiquidTone.IN, valueColor = if (perDay < 0) c.moneyOut else c.moneyIn, phase = 4.6f)
             Spacer(Modifier.weight(1f))
         }
@@ -248,34 +248,36 @@ private fun FixedBarRow(view: HouseholdView, item: FixedItem, today: LocalDate, 
 
 /** How the forecast is worked out, line by line, so every figure can be checked. */
 @Composable
-private fun ForecastSheet(view: HouseholdView, forecast: PeriodForecast, onDismiss: () -> Unit) {
+private fun ForecastBreakdown(view: HouseholdView, forecast: PeriodForecast) {
     val c = FullaTheme.colors
     val f = view.formats
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.paper) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
-            Section(stringResource(R.string.forecast_how), top = 0.dp)
-            ListRow(stringResource(R.string.forecast_income),
-                context = if (forecast.expectedIncomeMinor > 0) stringResource(R.string.forecast_income_context, f.money(forecast.incomeMinor), f.money(forecast.expectedIncomeMinor)) else null,
-                end = { AmountText(f.money(forecast.totalIncomeMinor), color = c.moneyIn) })
-            ListRow(stringResource(R.string.forecast_spent_so_far), end = { AmountText(f.money(-forecast.spentMinor)) })
-            val pending = forecast.fixed.filter { it.status == FixedStatus.PENDING }
-            ListRow(stringResource(R.string.forecast_fixed_to_come),
-                context = pending.take(4).joinToString(" · ") { it.name + " " + f.day(it.date) }.ifBlank { null },
-                end = { AmountText(f.money(-forecast.fixedToComeMinor)) })
-            val rest = forecast.everydayRestMinor
-            if (rest != null) {
-                ListRow(stringResource(R.string.forecast_everyday),
-                    context = stringResource(R.string.forecast_between, f.money(forecast.everydayLowMinor!!), f.money(forecast.everydayHighMinor!!)),
-                    end = { AmountText(f.money(-rest)) })
-                val kept = forecast.keptMinor
-                ListRow(stringResource(if (kept != null) R.string.forecast_kept else R.string.forecast_spend),
-                    titleColor = c.ink, divider = false,
-                    end = { AmountText("≈ " + f.money(kept ?: forecast.spentEndMinor!!), color = if (kept != null && kept < 0) c.moneyOut else c.ink) })
-            } else {
-                Text(stringResource(R.string.forecast_no_history), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
-            }
-            Text(stringResource(R.string.forecast_note), style = FullaType.secondary, color = c.inkMuted,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
-        }
+    Section(stringResource(R.string.forecast_how), top = 16.dp)
+    ListRow(stringResource(R.string.forecast_income),
+        context = if (forecast.expectedIncomeMinor > 0) stringResource(R.string.forecast_income_context, f.money(forecast.incomeMinor), f.money(forecast.expectedIncomeMinor)) else null,
+        end = { AmountText(f.money(forecast.totalIncomeMinor), color = c.moneyIn) })
+    ListRow(stringResource(R.string.forecast_spent_so_far), end = { AmountText(f.money(-forecast.spentMinor)) })
+    val pending = forecast.fixed.filter { it.status == FixedStatus.PENDING }
+    ListRow(stringResource(R.string.forecast_fixed_to_come),
+        context = pending.take(4).joinToString(" · ") { it.name + " " + f.day(it.date) }.ifBlank { null },
+        end = { AmountText(f.money(-forecast.fixedToComeMinor)) })
+    // What is certain: the income less what was spent and what is still to be charged. Only the everyday spending to come is a guess.
+    val free = forecast.leftToSpendMinor
+    if (free != null) {
+        ListRow(stringResource(R.string.forecast_free), context = stringResource(R.string.forecast_free_text), titleColor = c.ink,
+            end = { AmountText(f.money(free), color = if (free < 0) c.moneyOut else c.moneyIn) })
+    } else {
+        Text(stringResource(R.string.forecast_add_income), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
     }
+    val rest = forecast.everydayRestMinor
+    if (rest != null && !forecast.early) {
+        ListRow(stringResource(R.string.forecast_everyday),
+            context = stringResource(R.string.forecast_between, f.money(forecast.everydayLowMinor!!), f.money(forecast.everydayHighMinor!!)),
+            end = { AmountText(f.money(-rest)) })
+        val kept = forecast.keptMinor
+        ListRow(stringResource(if (kept != null) R.string.forecast_kept else R.string.forecast_spend),
+            titleColor = c.ink, divider = false,
+            end = { AmountText("≈ " + f.money(kept ?: forecast.spentEndMinor!!), color = if (kept != null && kept < 0) c.moneyOut else c.ink) })
+    }
+    Text(stringResource(if (forecast.ownPace) R.string.forecast_note_own else R.string.forecast_note), style = FullaType.secondary, color = c.inkMuted,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
 }

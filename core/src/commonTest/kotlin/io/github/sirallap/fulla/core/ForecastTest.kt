@@ -158,6 +158,27 @@ class ForecastTest {
         assertEquals(4_000, f.spentMinor)
     }
 
+    @Test
+    fun earlier_periods_with_only_fixed_costs_are_not_a_pace_of_zero_this_period_s_own_pace_is_used() {
+        // Earlier periods held only the car's charge. This one has spent 100 a day on everyday things for ten days.
+        val rows = history { m -> listOf(written(car, m.atDay(15))) } +
+            (1..10).map { plain(10_000, d(it)) } + written(car, d(15))
+        val f = analytics(car).forecast(rows, jan, today = d(10))!!
+        assertTrue(f.ownPace)
+        assertEquals(10_000, f.everydayPerDayMinor)
+        assertEquals(10_000L * 21, f.everydayRestMinor, "100 a day for the 21 days that are left")
+        assertTrue(f.everydayLowMinor!! < f.everydayRestMinor!! && f.everydayRestMinor!! < f.everydayHighMinor!!, "never a range of one number")
+        assertEquals(f.spentMinor + f.fixedToComeMinor + f.everydayRestMinor!!, f.spentEndMinor)
+    }
+
+    @Test
+    fun a_week_has_to_pass_before_this_period_s_own_pace_is_used() {
+        val f = analytics().forecast(listOf(plain(4_000, d(2))), jan, today = d(3))!!
+        assertNull(f.everydayRestMinor)
+        val g = analytics().forecast((1..7).map { plain(1_000, d(it)) }, jan, today = d(7))!!
+        assertEquals(1_000L * 24, g.everydayRestMinor)
+    }
+
     private fun history(perMonth: (YearMonth) -> List<Transaction>) =
         (1..3).flatMap { perMonth(jan.minusMonths(it.toLong())) }
 

@@ -612,11 +612,15 @@
     <string name="forecast_fixed_to_come">Noch fällige Fixkosten</string>
     <string name="forecast_everyday">Noch zu erwartende Alltagsausgaben</string>
     <string name="forecast_note">Die Alltagsausgaben sind das, was die letzten drei Zeiträume ab diesem Tag pro Tag ausgegeben haben, angepasst daran, wie dieser läuft. Fixkosten sind exakt: Sie stammen aus deinen wiederkehrenden Posten.</string>
+    <string name="forecast_free">Bliebe, wenn du nichts mehr ausgibst</string>
+    <string name="forecast_free_text">Einnahmen, abzüglich Ausgaben und der noch fälligen Fixkosten. Dieser Teil ist exakt.</string>
+    <string name="forecast_note_own">Kein früherer Zeitraum hat Alltagsausgaben, aus denen sich lernen lässt; deshalb zählt, wie dieser läuft: was du bisher pro Tag für den Alltag ausgibst, für die verbleibenden Tage. Das ist unsicherer, daher ist die Spanne größer. Fixkosten sind exakt: Sie stammen aus deinen wiederkehrenden Posten.</string>
     <string name="fixed_costs">Fixkosten</string>
     <string name="fixed_total_tile">Fixkosten im Zeitraum</string>
     <string name="fixed_progress">%1$s abgebucht · %2$s offen</string>
     <string name="per_day">Du kannst pro Tag ausgeben</string>
     <string name="per_day_text">Was bleibt, verteilt auf die %1$d verbleibenden Tage</string>
+    <string name="per_day_text_pace">Verteilt auf die %1$d verbleibenden Tage. Bisher gibst du %2$s pro Tag für den Alltag aus.</string>
     <string name="fixed_paid_on">Abgebucht am %1$s</string>
     <string name="fixed_due_on">Fällig am %1$s</string>
     <string name="fixed_overdue">Überfällig · war am %1$s fällig</string>
@@ -666,7 +670,7 @@
     <string name="update_later">Jetzt nicht</string>
     <string name="forecast_day">Tag %1$d von %2$d des Zeitraums. Eine Schätzung: schon Ausgegebenes, plus die noch fälligen Fixkosten, plus deine üblichen Alltagsausgaben für die restlichen Tage.</string>
     <string name="left_to_spend">Noch auszugeben</string>
-    <string name="left_to_spend_text">Einnahmen %1$s − ausgegeben %2$s − Fixkosten %3$s</string>
+    <string name="left_to_spend_text">Was hereinkommt, abzüglich Ausgaben und der noch fälligen Fixkosten</string>
     <string name="forecast_too_early">Noch zu früh, um das Ende des Zeitraums zu schätzen (Tag %1$d von %2$d). Schau in ein paar Tagen wieder vorbei.</string>
     <string name="entry_deleted">Eintrag gelöscht</string>
     <string name="undo">Rückgängig</string>
