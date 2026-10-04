@@ -90,7 +90,7 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
 
     // A period that is still running has only part of its income and spending so far: it says so in the list of periods.
     val running = stringResource(R.string.period_running)
-    fun runningMark(p: io.github.sirallap.fulla.core.time.YearMonth, text: String) = if (p == current) "$running · $text" else text
+    fun runningMark(p: java.time.YearMonth, text: String) = if (p == current) "$running · $text" else text
 
     Column(Modifier.fillMaxSize()) {
         BackHeader(stringResource(R.string.insights), onBack)
