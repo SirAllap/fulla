@@ -58,6 +58,14 @@ the transaction's `kind` gives the direction. Never a float anywhere. Minor
 units per currency come from `testdata/defaults/currencies.json` (0 for JPY, 3
 for BHD, 2 for most).
 
+What a person types in a text field is read by `MoneyParser.parseTyped`, never by
+`parse` with the language's style: a phone's decimal key follows the phone's
+region and not the app's language, so `12.50` in an app set to Spanish was
+read as 1.250 until it was. Text that is not an amount is said so and holds
+Save back; it never keeps the old value as if it had been typed. (`parse`
+stays for files, where the style is stated.) An account's opening balance is
+the one amount that can be below zero: a credit card, an overdraft.
+
 ### Two clocks, two fields
 
 `client_updated_at` is when a person made an edit, by their phone's clock. It

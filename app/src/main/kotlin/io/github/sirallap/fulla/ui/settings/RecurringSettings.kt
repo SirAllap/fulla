@@ -208,7 +208,7 @@ private fun RecurringDialog(view: HouseholdView, existing: RecurringRule?, onDis
     var allCategories by remember { mutableStateOf(false) }
     var auto by remember { mutableStateOf(existing?.autoCreate ?: true) }
     var active by remember { mutableStateOf(existing?.active ?: true) }
-    val minor = MoneyParser.parse(amount, f.currency, f.decimalStyle)
+    val minor = MoneyParser.parseTyped(amount, f.currency, f.decimalStyle)
     val dayNumber = day.toIntOrNull()?.takeIf { it in 1..31 }
     val schedule = runCatching {
         when (frequency) {

@@ -414,17 +414,15 @@ internal fun bundleItem(view: HouseholdView, kind: Structure, id: String): JsonO
     Wire.list(view.state.bundle[kind.bundleKey]).firstOrNull { (it["id"] as? JsonPrimitive)?.content == id }
 
 /**
- * An account's opening balance from what somebody typed: blank keeps it at 0,
- * anything else parses in the household's currency. A negative amount is
- * treated as invalid input, the same as text that does not parse at all —
- * [io.github.sirallap.fulla.core.guide.OpeningBalances.patch]'s own rule
- * (never negative), enforced here at the one place both writers of an
- * opening balance ([StructureDialog]'s balance field and the guide's
- * opening-balances step) parse what was typed.
+ * An account's opening balance from what somebody typed: blank is 0, a minus
+ * sign is a debt (a credit card, an overdraft), and text that is not an amount
+ * is null, which both writers of an opening balance ([StructureDialog]'s
+ * balance field and the guide's opening-balances step) say out loud instead of
+ * keeping the old balance as if it had been typed. Either decimal key is read
+ * as the decimal, whatever language the app is in.
  */
 internal fun parseOpeningBalance(text: String, formats: io.github.sirallap.fulla.ui.Formats): Long? =
-    if (text.isBlank()) 0L
-    else io.github.sirallap.fulla.core.money.MoneyParser.parse(text, formats.currency, formats.decimalStyle)?.takeIf { it >= 0 }
+    io.github.sirallap.fulla.core.guide.OpeningBalances.parse(text, formats.currency, formats.decimalStyle)
 
 /** Name, archive, (for categories) icon, and (for accounts) an opening balance. Nothing is ever deleted: archived things keep their history. */
 @Composable
@@ -443,7 +441,9 @@ private fun StructureDialog(
     var archived by remember { mutableStateOf((item["archived"] as? JsonPrimitive)?.content == "true") }
     var icon by remember { mutableStateOf((item["icon"] as? JsonPrimitive)?.content ?: "label") }
     val openingBalanceMinor = (item["opening_balance_minor"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L
-    var balanceText by remember { mutableStateOf(formats?.plain(openingBalanceMinor) ?: "") }
+    // The field holds the amount and the switch under it says it is owed: a phone's decimal keypad has no minus key.
+    var debt by remember { mutableStateOf(openingBalanceMinor < 0) }
+    var balanceText by remember { mutableStateOf(formats?.plain(kotlin.math.abs(openingBalanceMinor)) ?: "") }
     // The stored date, if this account already has one. An account being
     // edited that has never had one (existing account, null date) defaults to
     // today only for display; it is not sent unless the person actually
@@ -460,6 +460,9 @@ private fun StructureDialog(
     // values exactly as they were, the same "absent keeps its value" rule as
     // opening_balance_date already had.
     var balanceTouched by remember { mutableStateOf(isNewAccount) }
+    // What is in the field, as an amount; null when it is not one, which is said under the field and stops Save.
+    val balanceValue = formats?.let { io.github.sirallap.fulla.core.guide.OpeningBalances.parse(balanceText, it.currency, it.decimalStyle, debt) }
+    val balanceInvalid = formats != null && balanceValue == null
     FullaDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit)) },
@@ -471,12 +474,17 @@ private fun StructureDialog(
                 if (formats != null) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(balanceText, { balanceText = it; balanceTouched = true }, modifier = Modifier.weight(1f),
-                            label = { Text(stringResource(R.string.opening_balance)) },
+                            label = { Text(stringResource(R.string.opening_balance)) }, isError = balanceInvalid,
                             singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                         Chip(formats.day(balanceDate), false, { pickingBalanceDate = true })
                     }
+                    if (balanceInvalid) Text(stringResource(R.string.opening_balance_invalid),
+                        style = FullaType.secondary, color = FullaTheme.colors.danger)
                     Text(stringResource(R.string.opening_balance_help),
                         style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                    SwitchRow(stringResource(R.string.opening_balance_debt), stringResource(R.string.opening_balance_debt_help), debt) {
+                        debt = it; balanceTouched = true
+                    }
                 }
                 if (iconPicker) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -500,12 +508,11 @@ private fun StructureDialog(
             }
         },
         confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = {
-                val balance = formats?.let { parseOpeningBalance(balanceText, it) ?: openingBalanceMinor }
+            TextButton(enabled = name.isNotBlank() && !balanceInvalid, onClick = {
                 onSave(JsonObject(item + mapOf("name" to JsonPrimitive(name.trim()), "archived" to JsonPrimitive(archived)) +
                     (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap()) +
-                    (if (balance != null && balanceTouched) mapOf(
-                        "opening_balance_minor" to JsonPrimitive(balance),
+                    (if (balanceValue != null && balanceTouched) mapOf(
+                        "opening_balance_minor" to JsonPrimitive(balanceValue),
                         "opening_balance_date" to JsonPrimitive(balanceDate.toString()),
                     ) else emptyMap())))
                 onDismiss()
@@ -576,8 +583,9 @@ fun BudgetsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         val own = if (month == null) defaults[catId] else overrides[catId]
         EditDialog(view.categoryName(catId) ?: "", own?.let { f.plain(it.amountMinor) } ?: "",
             stringResource(if (month == null) R.string.monthly_budget else R.string.budget_for_month),
-            onDismiss = { editing = null }, number = true) { text ->
-            val minor = MoneyParser.parse(text, f.currency, f.decimalStyle) ?: return@EditDialog
+            onDismiss = { editing = null }, number = true,
+            enabledFor = { (MoneyParser.parseTyped(it, f.currency, f.decimalStyle) ?: -1) >= 0 }) { text ->
+            val minor = MoneyParser.parseTyped(text, f.currency, f.decimalStyle) ?: return@EditDialog
             val item = buildJsonObject {
                 put("id", own?.id ?: UUID.randomUUID().toString()); put("category_id", catId)
                 put("period", month?.toString()); put("amount_minor", minor)

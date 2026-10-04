@@ -523,6 +523,11 @@
     <string name="opening_balance">Saldo al empezar el día</string>
     <!-- Under the opening balance field: it is money already there, not income this month. -->
     <string name="opening_balance_help">Lo que la cuenta tenía cuando empezó ese día. Los movimientos desde ese día se suman o restan; los anteriores ya están incluidos.</string>
+    <!-- Under the opening balance field when what was typed is not an amount -->
+    <string name="opening_balance_invalid">Eso no es un importe. Escribe cifras, como 250 o 12,50.</string>
+    <!-- A switch in the account form: the opening balance is money owed (a credit card, an overdraft), so it is below zero -->
+    <string name="opening_balance_debt">La cuenta está en deuda</string>
+    <string name="opening_balance_debt_help">Una tarjeta de crédito o un descubierto: el saldo cuenta como dinero que se debe.</string>
 
     <string name="tour_jar">Este es tu mes. El bote se llena con lo que ahorras; los ingresos y gastos están debajo.</string>
     <string name="tour_overview">Resumen: este mes de un vistazo. Vuelve a meses anteriores con las flechas.</string>

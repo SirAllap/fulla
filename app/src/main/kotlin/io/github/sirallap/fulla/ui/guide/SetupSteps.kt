@@ -175,21 +175,27 @@ fun OpeningBalancesStep(view: HouseholdView, stepOf: Pair<Int, Int>, onNext: () 
         }
     }
 
+    // Text that is not an amount is said so and holds Next back, rather than being skipped as if it had been saved.
+    val invalid = accounts.filter { a -> texts[a.id].orEmpty().let { it.isNotBlank() && parseOpeningBalance(it, f) == null } }.map { it.id }.toSet()
+
     GuideSheet(
         title = stringResource(R.string.guide_accounts_title),
         stepOf = stepOf,
         primaryLabel = stringResource(R.string.guide_next),
         onPrimary = { save() },
         onSkip = onSkip,
+        primaryEnabled = invalid.isEmpty(),
         dismissOnOutsideTap = false,
     ) {
         for (a in accounts) {
+            val bad = a.id in invalid
             OutlinedTextField(
                 value = texts[a.id] ?: "",
                 onValueChange = { texts[a.id] = it },
                 label = { Text(a.name) },
                 placeholder = { Text(f.plain(0L)) },
-                supportingText = { Text(stringResource(R.string.opening_balance_help)) },
+                isError = bad,
+                supportingText = { Text(stringResource(if (bad) R.string.opening_balance_invalid else R.string.opening_balance_help)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),

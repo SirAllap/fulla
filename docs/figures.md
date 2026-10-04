@@ -28,7 +28,7 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 | The jar, "In", "Out" | income and spending of the period, drawn to scale; the figure in the jar is income − spending | `Analytics.summary`, `Hero` |
 | "Left" / "Saved" % | (income − spending) / income, rounded, "—" with no income. **Left** while the period runs, **Saved** once it is over | `PeriodSummary.savingsRate` |
 | "At the end of the period" | what would be kept: income and income still due, less what was spent, less the fixed costs still to come, less the everyday spending expected (a range). Without the estimate (too early, or no income), what would be left if nothing more is spent | `Analytics.forecast`, `PeriodForecast` |
-| Accounts total | opening balances plus everything since each opening date up to today, archived accounts out | `Analytics.accountsTotal` |
+| Accounts total | opening balances (below zero for an account in debt: a credit card, an overdraft) plus everything since each opening date up to today, archived accounts out | `Analytics.accountsTotal` |
 | Budget of the period | what the budgeted categories used (subcategories included, trips with a jar of their own out) against what they allow; left or over, never a negative left | `Budgets.status` |
 | Trip | spent, left or over the budget | `Trips.totals`, `Trips.forHome` |
 | Fixed costs | each charge due in the period: charged (written by the recurring item, or by hand and standing for it) or still to come; skipped ones are not waited for | `Analytics.forecast`, `Coverage` |
@@ -65,5 +65,8 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 ## Writing the same thing twice
 
 Money reads the same on every platform (`MoneyFormatterTest`: a four-digit amount is grouped on a
-phone and in a browser alike). The day moves on by itself at midnight on every screen that works
+phone and in a browser alike). An amount typed in a text field is read the same on every platform too
+(`MoneyParser.parseTyped`: the decimal is whichever of `.` and `,` comes last with one or two digits after it, so
+12.50 is twelve and a half in an app set to Spanish, not 1.250), and text that is not an amount is said so
+instead of keeping the old value (`OpeningBalancesTest`). The day moves on by itself at midnight on every screen that works
 from it. Percentages are rounded the same everywhere, and those of one chart add up to 100.

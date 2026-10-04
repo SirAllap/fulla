@@ -86,7 +86,7 @@ fun FieldControl(view: HouseholdView, field: CustomField, value: Any?, onChange:
             var text by remember { mutableStateOf((value as? Number)?.toLong()?.let { f.plain(it) } ?: "") }
             OutlinedTextField(text, {
                 text = it
-                onChange(if (it.isBlank()) null else MoneyParser.parse(it, f.currency, f.decimalStyle) ?: value)
+                onChange(if (it.isBlank()) null else MoneyParser.parseTyped(it, f.currency, f.decimalStyle) ?: value)
             }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), label = { Text(label) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), suffix = { Text(f.currency.code) })
         }
