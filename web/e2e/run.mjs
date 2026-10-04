@@ -146,6 +146,7 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   ok(await page.locator('.sheet .problem').first().isVisible() && await page.locator('.sheet .btn.primary[disabled]').count() === 1, 'an opening balance that is not an amount is said so, and Save waits');
   await page.fill('.sheet input >> nth=1', '300.5');
   await page.locator('.sheet .row:has-text("en deuda") input').check();
+  await shot('05b-account-debt');
   ok(await page.locator('.sheet .btn.primary[disabled]').count() === 0 && !(await page.locator('.sheet .problem').first().isVisible()), 'a dot is a decimal on a page that writes commas, and the debt switch lets Save through');
   await page.click('.sheet .btn.primary');
   await page.waitForSelector('.row:has-text("Tarjeta")');
