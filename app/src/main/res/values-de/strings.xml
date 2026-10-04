@@ -587,7 +587,10 @@
     <string name="saving_rate">Du behältst %1$d %% davon</string>
     <string name="overspending_rate">Du hast %1$d %% mehr ausgegeben als eingenommen</string>
     <string name="daily_average">Tagesdurchschnitt</string>
-    <string name="daily_average_text">Über %1$d Tage</string>
+    <string name="daily_average_text">Ohne Fixkosten · über %1$d Tage</string>
+    <string name="daily_average_context">Ohne Fixkosten · Tag %1$d von %2$d</string>
+    <string name="left_now">Übrig</string>
+    <string name="period_running">Läuft</string>
     <string name="forecast">Am Ende des Zeitraums</string>
     <string name="movements">Ausgaben</string>
     <string name="movements_text">Im Schnitt %1$s</string>
@@ -601,7 +604,6 @@
     <string name="times">%1$d-mal</string>
     <string name="savings">Gespart</string>
     <string name="of_income">Von %1$s Einnahmen</string>
-    <string name="of_income_so_far">Von %1$s Einnahmen, bis heute</string>
     <string name="of_days">Von %1$d Tagen</string>
     <string name="forecast_spend">Du würdest ausgeben</string>
     <string name="forecast_kept">Dir blieben</string>
@@ -609,7 +611,7 @@
     <string name="forecast_add_income">Trage deine Einnahmen ein, um zu sehen, was dir bliebe</string>
     <string name="forecast_waiting">Warte auf dein nächstes Gehalt</string>
     <string name="forecast_waiting_text">Die Prognose kommt zurück, sobald du es einträgst. Bis dahin: deine Fixkosten.</string>
-    <string name="forecast_no_history">Noch nicht genug Verlauf, um die Alltagsausgaben zu schätzen. Es braucht mindestens einen früheren Zeitraum.</string>
+    <string name="forecast_no_history">Noch nicht genug, um die Alltagsausgaben zu schätzen. Es braucht einen früheren Zeitraum oder eine Woche von diesem mit mindestens fünf Ausgaben.</string>
     <string name="forecast_how">Wie wird das berechnet?</string>
     <string name="forecast_income">Einnahmen</string>
     <string name="forecast_income_context">%1$s eingegangen, %2$s noch fällig</string>
@@ -625,7 +627,6 @@
     <string name="fixed_progress">%1$s abgebucht · %2$s offen</string>
     <string name="per_day">Du kannst pro Tag ausgeben</string>
     <string name="per_day_text">Was bleibt, verteilt auf die %1$d verbleibenden Tage, heute eingeschlossen</string>
-    <string name="per_day_text_pace">Verteilt auf die %1$d verbleibenden Tage, heute eingeschlossen. Bisher gibst du %2$s pro Tag für den Alltag aus.</string>
     <string name="fixed_paid_on">Abgebucht am %1$s</string>
     <string name="fixed_due_on">Fällig am %1$s</string>
     <string name="fixed_overdue">Überfällig · war am %1$s fällig</string>
@@ -674,8 +675,6 @@
     <string name="update_why">Eine neue Version bringt neue Funktionen und Korrekturen. Das Update dauert eine Minute, deine Daten bleiben, wie sie sind.</string>
     <string name="update_later">Jetzt nicht</string>
     <string name="forecast_day">Tag %1$d von %2$d des Zeitraums. Eine Schätzung: schon Ausgegebenes, plus die noch fälligen Fixkosten, plus deine üblichen Alltagsausgaben für die restlichen Tage.</string>
-    <string name="left_to_spend">Noch auszugeben</string>
-    <string name="left_to_spend_text">Was hereinkommt, abzüglich Ausgaben und der noch fälligen Fixkosten</string>
     <string name="forecast_too_early">Noch zu früh, um das Ende des Zeitraums zu schätzen (Tag %1$d von %2$d). Schau in ein paar Tagen wieder vorbei.</string>
     <string name="entry_deleted">Eintrag gelöscht</string>
     <string name="undo">Rückgängig</string>

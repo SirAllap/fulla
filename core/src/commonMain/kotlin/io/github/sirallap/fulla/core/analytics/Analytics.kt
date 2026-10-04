@@ -66,7 +66,7 @@ data class PeriodReport(
     val averageMinor: Long,
     /** Days of the period gone so far (all of them for a past period). */
     val days: Int,
-    /** Spending over [days], 0 when none has gone by. */
+    /** Everyday (variable) spending over [days], 0 when none has gone by: the fixed costs are their own figure, not a pace. */
     val dailyMinor: Long,
     val fixedMinor: Long,
     val variableMinor: Long,
@@ -78,6 +78,10 @@ data class PeriodReport(
     val places: List<Place>,
     val budgets: Int,
     val budgetsOver: Int,
+    /** Days of the period that are over (today is not, until it ends) with no variable spending at all. */
+    val noSpendDays: Int = 0,
+    /** The days [noSpendDays] is out of: the ones that are over, so a day not yet spent is not counted as a day without spending. */
+    val noSpendOf: Int = 0,
 )
 
 enum class FixedStatus { PAID, PENDING, SKIPPED }
@@ -150,6 +154,13 @@ data class PeriodForecast(
     val fixedTotalMinor: Long get() = fixedPaidMinor + fixedToComeMinor
     val totalIncomeMinor: Long get() = incomeMinor + expectedIncomeMinor
     val known: Boolean get() = everydayRestMinor != null
+
+    /**
+     * The end-of-period estimate is worth showing: there is one, the period is
+     * not too young for it to mean anything, and there is income to keep some
+     * of. Otherwise only the exact part is shown ([leftToSpendMinor]).
+     */
+    val estimated: Boolean get() = known && !early && keptMinor != null
 
     val spentEndMinor: Long? get() = everydayRestMinor?.let { spentMinor + fixedToComeMinor + it }
     val spentEndLowMinor: Long? get() = everydayLowMinor?.let { spentMinor + fixedToComeMinor + it }
@@ -565,6 +576,7 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
             today > range.endInclusive -> (ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt()
             else -> (ChronoUnit.DAYS.between(range.start, today) + 1).toInt()
         }
+        val variable = out.filter { it.recurrence == Recurrence.VARIABLE }.sumOf { spend(it) }
         val weekdays = LongArray(7)
         for (t in out) if (t.recurrence == Recurrence.VARIABLE) weekdays[t.date.dayOfWeek.value - 1] += spend(t)
         val places = expenses.filter { it.note.isNotBlank() }.groupBy { it.note.normalizeName() }
@@ -582,39 +594,59 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
             count = expenses.size,
             averageMinor = if (expenses.isEmpty()) 0 else expenses.sumOf { it.amountMinor } / expenses.size,
             days = days,
-            dailyMinor = if (days > 0) spent / days else 0,
+            dailyMinor = if (days > 0) variable / days else 0,
             fixedMinor = out.filter { it.recurrence == Recurrence.FIXED }.sumOf { spend(it) },
-            variableMinor = out.filter { it.recurrence == Recurrence.VARIABLE }.sumOf { spend(it) },
+            variableMinor = variable,
             biggest = expenses.sortedByDescending { it.amountMinor }.take(top),
             weekdays = weekdays.toList(),
             places = places,
             budgets = limits.size,
             budgetsOver = limits.count { (category, limit) -> (used[category] ?: 0) > limit },
+            noSpendDays = noSpendDays(list, period, today),
+            noSpendOf = daysDone(period, today),
         )
     }
 
-    /** Days in the period, up to [today], with no variable spending at all. */
-    fun noSpendDays(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate): Int {
+    /** Days of [period] that are over as of [today]: all of them for a past period, none before it starts; today is not, until it ends. */
+    private fun daysDone(period: YearMonth, today: LocalDate): Int {
         val days = rule.daysOf(period)
-        val last = minOf(today, days.endInclusive)
-        if (last < days.start) return 0
+        return when {
+            today < days.start -> 0
+            today > days.endInclusive -> (ChronoUnit.DAYS.between(days.start, days.endInclusive) + 1).toInt()
+            else -> ChronoUnit.DAYS.between(days.start, today).toInt()
+        }
+    }
+
+    /**
+     * Days of the period that are over, with no variable spending at all. Today
+     * is not counted while it is running: a day not spent yet is not a day
+     * without spending, and the figure would drop the moment something is bought.
+     */
+    fun noSpendDays(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate): Int {
+        val done = daysDone(period, today)
+        if (done == 0) return 0
+        val first = rule.daysOf(period).start
         val spent = counted(txs, period)
             .filter { it.kind == TransactionKind.EXPENSE && it.recurrence == Recurrence.VARIABLE }
             .map { it.date }.toSet()
-        return generateSequence(days.start) { it.plusDays(1) }.takeWhile { it <= last }.count { it !in spent }
+        return (0 until done).count { first.plusDays(it.toLong()) !in spent }
     }
 
     /**
      * Expenses that come back month after month for about the same amount
      * (within 10 % of their median) under the same note, in at least three of
-     * the last [lookbackMonths] months, and are not already recurring items.
+     * the last [lookbackMonths] months, and are not already recurring items
+     * (no row of one, and no recurring item of that name).
      */
     fun detectedRecurring(txs: Iterable<Transaction>, today: LocalDate, lookbackMonths: Int = 6): List<DetectedRecurring> {
         val since = today.minusMonths(lookbackMonths.toLong())
+        // What already is a recurring item is not suggested again: its hand-written rows from before it was set up still look it.
+        val named = config.recurringRules.filter { !it.archived }.map { it.name.normalizeName() }.filter { it.isNotEmpty() }
+        fun isSetUp(key: String) = named.any { n -> key == n || (n.length >= 4 && key.contains(n)) || (key.length >= 4 && n.contains(key)) }
         return txs.filter {
             it.isActive && it.kind == TransactionKind.EXPENSE && it.recurringRuleId == null &&
                 it.date > since && it.note.isNotBlank()
-        }.groupBy { it.note.normalizeName() }.mapNotNull { (_, group) ->
+        }.groupBy { it.note.normalizeName() }.filterKeys { !isSetUp(it) }.mapNotNull { (_, group) ->
             val amounts = group.map { it.amountMinor }.sorted()
             val median = amounts[amounts.size / 2]
             val close = group.filter { abs(it.amountMinor - median) * 10 <= median }

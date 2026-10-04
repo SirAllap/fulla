@@ -78,21 +78,33 @@ object OverviewScreen {
             div("figures") {
                 figure(t("money_in"), format.money(summary.incomeMinor, signed = true), "in")
                 figure(t("money_out"), format.money(summary.expenseMinor), "out")
-                figure(t("saved"), summary.savingsRate?.let { "${(it * 100).roundToInt()} %" } ?: "—", "")
+                // A period that is still running has not saved anything yet: what is left of the income so far is "left", not "saved".
+                figure(t(if (period == current) "left_now" else "saved"), summary.savingsRate?.let { "${(it * 100).roundToInt()} %" } ?: "—", "")
             }
             div("rows") {
-                if (budgets.isNotEmpty()) {
-                    val spent = budgetSpend.filterKeys { it in budgets }.values.sum()
-                    val total = budgets.values.sum()
-                    listRow(t("budget_of_period"), context = t("budget_left_of", format.money(total - spent), format.money(total)), end = { chevron() },
-                        below = { progress(if (total > 0) spent.toDouble() / total else 0.0, spent > total) }) { App.openSettings(SettingsPage.BUDGETS) }
+                // The answer to "how will this month end", one quiet line; the analysis has the sums behind it.
+                if (forecast != null && !forecast.waiting) {
+                    val kept = forecast.keptMinor
+                    val free = forecast.leftToSpendMinor
+                    if (forecast.estimated && kept != null) {
+                        listRow(t("forecast"), context = t("forecast_between", format.money(forecast.keptLowMinor!!), format.money(forecast.keptHighMinor!!)), start = leadIcon("event"),
+                            end = { amountText("≈ " + format.money(kept), if (kept < 0) "neg" else "in") }) { App.openInsights() }
+                    } else if (free != null) {
+                        listRow(t("forecast_free"), context = t("forecast_free_text"), start = leadIcon("event"),
+                            end = { amountText(format.money(free), if (free < 0) "neg" else "in") }) { App.openInsights() }
+                    }
+                }
+                Budgets.status(budgets, budgetSpend)?.let { status ->
+                    listRow(t("budget_of_period"),
+                        context = if (status.overMinor > 0) t("trip_over", format.money(status.overMinor)) else t("budget_left_of", format.money(status.leftMinor), format.money(status.limitMinor)), end = { chevron() },
+                        below = { progress(status.fraction.toDouble(), status.overMinor > 0) }) { App.openSettings(SettingsPage.BUDGETS) }
                 }
                 if (homeTrip != null) {
                     val totals = Trips.totals(homeTrip, view.active)
                     val budget = homeTrip.budgetMinor
                     val left = totals.leftMinor
                     listRow(homeTrip.name, start = leadIcon(tripKindIcon(homeTrip.kind)), end = { chevron() },
-                        context = if (budget != null && left != null) t("trip_left", format.money(left), format.money(budget)) else format.money(totals.spentMinor),
+                        context = if (budget != null && left != null) (if (totals.overMinor > 0) t("trip_over", format.money(totals.overMinor)) else t("trip_left", format.money(left), format.money(budget))) else format.money(totals.spentMinor),
                         below = if (budget != null) ({ progress(totals.spentMinor.toDouble() / budget, totals.overMinor > 0) }) else null) { App.openTrip(homeTrip.id) }
                 }
             }

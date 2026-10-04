@@ -6,6 +6,7 @@
 //
 //   ./gradlew :web:jsBrowserDistribution && cd web/e2e && npm install && node run.mjs
 
+import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync, mkdirSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
@@ -248,6 +249,83 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   ok((await page.textContent('main')).includes('Sprache'), 'the language can be changed, and sticks');
   await shot('12-dark-settings-de');
   ok(errors.length === 0, 'no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+// ── 2b. a period in progress, restored from a backup: the figures add up and say what they are ──
+// A salary-started month on its tenth day, four fixed costs (one charged, three to come) and nine everyday expenses.
+function periodInProgress() {
+  const config = JSON.parse(readFileSync(new URL('./household.config.json', import.meta.url), 'utf8'));
+  const day = (d, n) => { const x = new Date(d.getTime() + n * 864e5); return x.toISOString().slice(0, 10); };
+  const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00Z');
+  const start = new Date(today.getTime() - 9 * 864e5);
+  const me = config.me_member_id;
+  const cat = Object.fromEntries(config.categories.map((c) => [c.name, c.id]));
+  const income = config.categories.find((c) => c.applies_to === 'income').id;
+  const account = config.accounts.find((a) => a.type === 'checking').id;
+  const uuid5 = (ns, name) => {
+    const h = createHash('sha1').update(Buffer.concat([Buffer.from(ns.replace(/-/g, ''), 'hex'), Buffer.from(name)])).digest();
+    h[6] = (h[6] & 0x0f) | 0x50; h[8] = (h[8] & 0x3f) | 0x80;
+    const x = h.subarray(0, 16).toString('hex');
+    return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20, 32)}`;
+  };
+  let n = 0;
+  const id = () => `00000000-0000-4000-9000-${String(++n).padStart(12, '0')}`;
+  const stamp = '2030-01-01T00:00:00.000Z';
+  const tx = (kind, date, amount, category, note, recurrence = 'variable', extra = {}) => ({
+    id: id(), kind, date, amount_minor: amount, category_id: category, account_id: account, to_account_id: null, paid_by_member_id: me, to_member_id: null,
+    split: null, recurrence, note, tags: [], extras: {}, status: 'active', recurring_rule_id: null, occurrence_date: null, import_fingerprint: null,
+    trip_id: null, created_at: stamp, client_updated_at: '2030-01-02T00:00:00.000Z', server_seq: 0, ...extra,
+  });
+  const rule = (name, amount, onDay, category, k) => {
+    const rid = `00000000-0000-4000-8000-0000000007${String(k).padStart(2, '0')}`;
+    config.recurring_rules.push({
+      id: rid, name, schedule: { freq: 'monthly', interval: 1, by_weekday: [], by_month_day: new Date(onDay).getUTCDate(), by_month: null },
+      template: { kind: 'expense', amount_minor: amount, category_id: category, account_id: account, to_account_id: null, paid_by_member_id: me, to_member_id: null,
+        split: null, recurrence: 'fixed', note: name, tags: [], extras: {}, original_currency: null, trip_id: null, created_at: stamp },
+      start_date: day(start, -100), end_date: null, auto_create: true, active: true, archived: false,
+    });
+    return rid;
+  };
+  const rows = [tx('income', day(start, 0), 271600, income, 'Nómina', 'fixed', { tags: ['fulla:starts-period'] })];
+  const rentDay = day(start, 3);
+  const rent = rule('Alquiler', 50000, rentDay, cat['Vivienda'], 1);
+  rule('Internet', 3322, day(start, 11), cat['Suministros'], 2);
+  rule('Préstamo coche', 35000, day(start, 14), cat['Transporte'], 3);
+  rule('Seguro', 12000, day(start, 19), cat['Otros gastos'], 4);
+  rows.push(tx('expense', rentDay, 50000, cat['Vivienda'], 'Alquiler', 'fixed', { id: uuid5(rent, rentDay), recurring_rule_id: rent, occurrence_date: rentDay }));
+  for (const [off, amount, c, note] of [[1, 4520, 'Supermercado', 'Mercadona'], [2, 3810, 'Supermercado', 'Mercadona'], [3, 2990, 'Supermercado', 'Frutería'],
+    [4, 1850, 'Comer fuera', 'Bar'], [5, 2240, 'Comer fuera', 'Menú'], [6, 1200, 'Transporte', 'Bus'], [7, 850, 'Transporte', 'Metro'],
+    [8, 3557, 'Ocio', 'Cine'], [9, 3500, 'Salud', 'Farmacia']]) rows.push(tx('expense', day(start, off), amount, cat[c], note));
+  return JSON.stringify({ format: 'fulla-backup', version: 1, created_at: stamp, config, transactions: rows });
+}
+{
+  const { ctx, page, errors, shot } = await phone({ locale: 'es-ES' });
+  await page.goto(BASE);
+  await page.click('text=Más opciones');
+  await (await page.$('#restore-file')).setInputFiles({ name: 'fulla-casa.json', mimeType: 'application/json', buffer: Buffer.from(periodInProgress()) });
+  await page.waitForSelector('.tabbar');
+  await skipGuide(page);
+  await page.click('.tab:has-text("Resumen")');
+  await page.waitForSelector('.figures');
+  const figures = (await page.textContent('.figures')).replace(/\s+/g, ' ');
+  ok(/2716,00/.test(figures) && /745,17/.test(figures) && /Te queda/.test(figures) && /73 %/.test(figures),
+    'a month still running says "Te queda", not "Ahorro": ' + figures.trim());
+  ok(/Al final del periodo/.test(await page.textContent('main')) && /≈/.test(await page.textContent('main')), 'the overview answers how the month will end, in one line');
+  await shot('30-overview-running');
+  await page.click('text=Análisis');
+  await page.waitForSelector('.insights');
+  const text = (await page.textContent('.insights')).replace(/\s+/g, ' ');
+  ok(/Al final del periodo/.test(text) && text.indexOf('Al final del periodo') < text.indexOf('El periodo en cifras'), 'the analysis opens with how the period will end, before what already happened');
+  ok(text.indexOf('Te quedarían') < text.indexOf('Gastarías'), 'and what would be kept comes before what would be spent');
+  ok(/Ingresos\s*2716,00/.test(text) && /Gastado hasta hoy\s*−745,17/.test(text) && /Fijos por cobrar[^−]*−503,22/.test(text), 'the sums are in view: income, spent so far, fixed costs still to come');
+  ok(/Te quedaría si no gastas nada más[^0-9]*1467,61/.test(text), 'and what would be left if nothing more is spent adds up: 2716,00 − 745,17 − 503,22 = 1467,61');
+  ok(/Media diaria\s*24,51/.test(text) && /Sin los fijos/.test(text), 'the daily average leaves the fixed costs out: 245,17 over 10 days');
+  ok(/Te queda\s*73 %/.test(text), 'the share of the income left is not called savings while the period runs');
+  ok(!/\b[a-z]+(_[a-z]+)+\b/.test(text), 'no untranslated key shows on the analysis' + (text.match(/\b[a-z]+(_[a-z]+)+\b/) ? ': ' + text.match(/\b[a-z]+(_[a-z]+)+\b/)[0] : ''));
+  if (process.env.DEBUG_TEXT) console.log(text);
+  await shot('31-insights-running');
+  ok(errors.length === 0, 'no console errors on either screen' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
 

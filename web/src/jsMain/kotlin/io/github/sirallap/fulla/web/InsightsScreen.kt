@@ -6,6 +6,7 @@ import io.github.sirallap.fulla.client.remote.Structure
 import io.github.sirallap.fulla.client.wire.Wire
 import io.github.sirallap.fulla.core.analytics.DetectedRecurring
 import io.github.sirallap.fulla.core.analytics.FixedStatus
+import io.github.sirallap.fulla.core.analytics.Percent
 import io.github.sirallap.fulla.core.analytics.PeriodReport
 import io.github.sirallap.fulla.core.model.Recurrence
 import io.github.sirallap.fulla.core.recurring.Frequency
@@ -61,7 +62,6 @@ object InsightsScreen {
         val trends = a.trends(view.active, period, minimumMinor = 10 * unit, today = today)
         val repeating = a.detectedRecurring(view.active, today)
         val byMember = a.byMember(view.active, period).filter { it.paidMinor != 0L || it.shareMinor != 0L }
-        val noSpend = a.noSpendDays(view.active, period, today)
         val top = a.topCategories(view.active, period)
         val dimensions = SchemaEngine.dimensions(view.config.fields)
         val canEdit = view.config.me()?.let { Permissions.canEditStructure(it) } == true
@@ -74,21 +74,22 @@ object InsightsScreen {
                 appendChild(iconButton("chevron_right", t("next_period"), "accent") { chosen = if (period.plusMonths(1) >= current) null else period.plusMonths(1); App.render() }
                     .also { if (period >= current) it.setAttribute("disabled", "") })
             }
-            section(t("period_summary"), first = true)
-            figureTiles(format, period, view, report, noSpend)
+            // How the period will end is what a person opens this screen for: it comes first, before what already happened.
             if (forecast != null) {
-                // The same forecast the overview shows, on the jar's liquid.
                 val f = forecast
-                if (f.known && !f.early) {
-                    section(t("forecast"))
+                section(t("forecast"), first = true)
+                if (f.known && f.early) note(t("forecast_too_early", f.day, f.length))
+                else if (f.known) {
                     note(t("forecast_day", f.day, f.length))
                     val spendEnd = f.spentEndMinor!!
+                    // What would be kept leads: it is the question. What would be spent is the same sum seen from the other side.
                     tiles(listOf(
-                        Tile(t("forecast_spend"), "≈ " + format.money(spendEnd), t("forecast_between", format.money(f.spentEndLowMinor!!), format.money(f.spentEndHighMinor!!)), if (spendEnd > 0) (f.spentMinor.toDouble() / spendEnd).coerceIn(0.0, 1.0) else null, "out", phase = 0.4),
                         f.keptMinor?.let { k -> Tile(t("forecast_kept"), "≈ " + format.money(k), t("forecast_between", format.money(f.keptLowMinor!!), format.money(f.keptHighMinor!!)), (k.toDouble() / f.totalIncomeMinor).coerceIn(0.0, 1.0), "in", if (k < 0) "out" else "in", 1.6) }
                             ?: Tile(t("forecast_kept"), "—", t("forecast_add_income"), null, "in"),
+                        Tile(t("forecast_spend"), "≈ " + format.money(spendEnd), t("forecast_between", format.money(f.spentEndLowMinor!!), format.money(f.spentEndHighMinor!!)), if (spendEnd > 0) (f.spentMinor.toDouble() / spendEnd).coerceIn(0.0, 1.0) else null, "out", phase = 0.4),
                     ))
-                } else if (f.known) { section(t("forecast")); note(t("forecast_too_early", f.day, f.length)) }
+                } else if (f.waiting) div("rows") { listRow(t("forecast_waiting"), context = t("forecast_waiting_text"), divider = false) }
+                else note(t("forecast_no_history"))
                 if (!f.waiting) {
                     // The sum behind it, in view: only the everyday spending still to come is a guess.
                     section(t("forecast_how"))
@@ -109,32 +110,37 @@ object InsightsScreen {
                     if (f.leftToSpendMinor == null) note(t("forecast_add_income"))
                     note(t(if (f.ownPace) "forecast_note_own" else "forecast_note"))
                 }
-                if (f.fixed.isNotEmpty()) {
-                    section(t("fixed_costs"))
-                    val total = f.fixedTotalMinor; val left = f.leftToSpendMinor; val perDay = f.perDayMinor
-                    val row1 = mutableListOf(Tile(t("fixed_total_tile"), format.money(total), t("fixed_progress", format.money(f.fixedPaidMinor), format.money(f.fixedToComeMinor)), if (total > 0) f.fixedPaidMinor.toDouble() / total else null, "out", phase = 2.2, onClick = { App.closeInsights(); App.openSettings(SettingsPage.RECURRING) }))
-                    if (left != null) row1 += Tile(t("left_to_spend"), format.money(left), t("left_to_spend_text"), (left.toDouble() / f.totalIncomeMinor).coerceIn(0.0, 1.0), "in", if (left < 0) "out" else "in", 3.8)
-                    tiles(row1)
-                    if (left != null && perDay != null) tiles(listOf(Tile(t("per_day"), format.money(perDay), (f.everydayPerDayMinor?.let { t("per_day_text_pace", f.daysToGo, format.money(it)) } ?: t("per_day_text", f.daysToGo)), null, "in", if (perDay < 0) "out" else "in", 4.6)))
-                    if (left == null) note(t("forecast_add_income"))
-                }
+            }
+            section(t("period_summary"), first = forecast == null)
+            figureTiles(format, period, view, report)
+            if (forecast != null && forecast.fixed.isNotEmpty()) {
+                val f = forecast
+                section(t("fixed_costs"))
+                val total = f.fixedTotalMinor; val left = f.leftToSpendMinor; val perDay = f.perDayMinor
+                val row = mutableListOf(Tile(t("fixed_total_tile"), format.money(total), t("fixed_progress", format.money(f.fixedPaidMinor), format.money(f.fixedToComeMinor)), if (total > 0) f.fixedPaidMinor.toDouble() / total else null, "out", phase = 2.2, onClick = { App.closeInsights(); App.openSettings(SettingsPage.RECURRING) }))
+                if (left != null && perDay != null) row += Tile(t("per_day"), format.money(perDay), t("per_day_text", f.daysToGo), null, "in", if (perDay < 0) "out" else "in", 4.6)
+                tiles(row)
+                if (left == null) note(t("forecast_add_income"))
             }
             if (top.isNotEmpty()) {
                 val total = top.sumOf { it.amountMinor }.toDouble(); val max = top.maxOf { it.amountMinor }.toDouble()
                 section(t("where_it_went"))
-                vials(top.map { s ->
+                // Whole percentages that add up to 100, not 99 or 101.
+                val percents = Percent.split(top.map { it.amountMinor })
+                vials(top.mapIndexed { i, s ->
                     val cat = s.key?.let { view.config.category(it) }
                     val name = if (s.key == null) t("other_categories") else cat?.name ?: t("uncategorized")
-                    Vial(name, if (s.key == null) null else cat?.icon ?: "label", s.amountMinor / max, s.amountMinor / total, "$name, ${format.money(s.amountMinor)}")
+                    Vial(name, if (s.key == null) null else cat?.icon ?: "label", s.amountMinor / max, s.amountMinor / total, "$name, ${format.money(s.amountMinor)}", top = "${percents[i]} %")
                 })
             }
             if (report.weekdays.any { it > 0 }) {
                 val total = report.weekdays.filter { it > 0 }.sum().toDouble(); val max = report.weekdays.max().toDouble()
                 section(t("by_weekday"))
+                val percents = Percent.split(report.weekdays)
                 vials(report.weekdays.mapIndexed { i, amount ->
                     val day = (js("new Date(2024, 0, i + 1)").toLocaleDateString(I18n.language, js("({ weekday: 'short' })")) as String).replaceFirstChar { it.titlecase() }.trimEnd('.')
                     val positive = amount.coerceAtLeast(0)
-                    Vial(day, null, positive / max, positive / total, "$day, ${format.money(amount)}")
+                    Vial(day, null, positive / max, positive / total, "$day, ${format.money(amount)}", top = "${percents[i]} %")
                 })
             }
             if (report.biggest.isNotEmpty()) {
@@ -180,8 +186,10 @@ object InsightsScreen {
                 vials(shown.map { s -> Vial(format.shortPeriod(s.period), null, s.expenseMinor.coerceAtLeast(0) / max, 0.0,
                     format.period(s.period) + ", " + t("in_out", format.money(s.incomeMinor), format.money(s.expenseMinor)), top = format.whole(s.expenseMinor)) })
             }
+            if (series.size == 1) section(t("period_by_period"))
             if (series.isNotEmpty()) div("rows") {
-                for (s in series.take(6)) listRow(format.period(s.period), context = t("in_out", format.money(s.incomeMinor), format.money(s.expenseMinor)),
+                // A period that is still running has only part of its income and spending so far: it says so.
+                for (s in series.take(6)) listRow(format.period(s.period), context = (if (s.period == current) t("period_running") + " · " else "") + t("in_out", format.money(s.incomeMinor), format.money(s.expenseMinor)),
                     end = { amountText(format.money(s.savingsMinor, signed = true), if (s.savingsMinor < 0) "" else "in") })
             }
             if (repeating.isNotEmpty()) {
@@ -226,7 +234,7 @@ object InsightsScreen {
     }
 
     /** The period in figures, two glass tiles to a row, each filled to what it measures. A tile with nothing to say is left out. */
-    private fun HTMLElement.figureTiles(format: Format, period: YearMonth, view: HouseholdView, report: PeriodReport, noSpend: Int) {
+    private fun HTMLElement.figureTiles(format: Format, period: YearMonth, view: HouseholdView, report: PeriodReport) {
         val range = view.rule.daysOf(period)
         val length = (ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt().coerceAtLeast(1)
         val list = mutableListOf<Tile>()
@@ -234,15 +242,21 @@ object InsightsScreen {
         val vsPrevious = when {
             previous == null || previous <= 0 -> null
             report.spentMinor == previous -> t(if (report.partial) "vs_previous_same_sofar" else "vs_previous_same")
-            else -> t((if (report.spentMinor > previous) "vs_previous_more" else "vs_previous_less") + (if (report.partial) "_sofar" else ""), abs((report.spentMinor - previous) * 100.0 / previous).roundToInt())
+            else -> {
+                val percent = abs((report.spentMinor - previous) * 100.0 / previous).roundToInt()
+                // Literal keys, so the build's string scan finds them.
+                if (report.spentMinor > previous) (if (report.partial) t("vs_previous_more_sofar", percent) else t("vs_previous_more", percent))
+                else (if (report.partial) t("vs_previous_less_sofar", percent) else t("vs_previous_less", percent))
+            }
         }
         list += Tile(t("spent"), format.money(report.spentMinor), vsPrevious, if (report.incomeMinor > 0) report.spentMinor.toDouble() / report.incomeMinor else null, "out", phase = 0.2)
-        report.savingsRate?.let { r -> list += Tile(t("savings"), "${(r * 100).roundToInt()} %", t(if (report.partial) "of_income_so_far" else "of_income", format.money(report.incomeMinor)), r.coerceIn(0.0, 1.0), "in", if (r < 0) "out" else "in", 1.4) }
-        if (report.days > 0) list += Tile(t("daily_average"), format.money(report.dailyMinor), t("day_of", report.days, length), report.days.toDouble() / length, "out", phase = 2.1)
+        // A period that is still running has not saved anything yet: what is left of the income so far is "left", not "saved".
+        report.savingsRate?.let { r -> list += Tile(t(if (report.partial) "left_now" else "savings"), "${(r * 100).roundToInt()} %", t("of_income", format.money(report.incomeMinor)), r.coerceIn(0.0, 1.0), "in", if (r < 0) "out" else "in", 1.4) }
+        if (report.days > 0) list += Tile(t("daily_average"), format.money(report.dailyMinor), if (report.partial) t("daily_average_context", report.days, length) else t("daily_average_text", report.days), report.days.toDouble() / length, "out", phase = 2.1)
         if (report.count > 0) list += Tile(t("movements"), "${report.count}", t("movements_text", format.money(report.averageMinor)), null, "out")
         val both = report.fixedMinor + report.variableMinor
         if (both > 0) list += Tile(t("fixed_variable"), "${(report.fixedMinor * 100.0 / both).roundToInt()} %", t("fixed_variable_text", format.money(report.fixedMinor), format.money(report.variableMinor)), report.fixedMinor.toDouble() / both, "out", phase = 3.6)
-        if (report.days > 0) list += Tile(t("no_spend_days"), "$noSpend", t("of_days", report.days), noSpend.toDouble() / report.days, "in", phase = 4.4)
+        if (report.noSpendOf > 0) list += Tile(t("no_spend_days"), "${report.noSpendDays}", t("of_days", report.noSpendOf), report.noSpendDays.toDouble() / report.noSpendOf, "in", phase = 4.4)
         if (report.budgets > 0) list += Tile(t("budgets_over"), t("budgets_over_value", report.budgetsOver, report.budgets), null, report.budgetsOver.toDouble() / report.budgets, "out", if (report.budgetsOver > 0) "out" else "", 5.2)
         tiles(list)
     }

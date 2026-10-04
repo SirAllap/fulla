@@ -637,7 +637,10 @@
     <string name="saving_rate">You keep %1$d %% of it</string>
     <string name="overspending_rate">You spent %1$d %% more than came in</string>
     <string name="daily_average">Daily average</string>
-    <string name="daily_average_text">Over %1$d days</string>
+    <string name="daily_average_text">Without the fixed costs · over %1$d days</string>
+    <string name="daily_average_context">Without the fixed costs · day %1$d of %2$d</string>
+    <string name="left_now">Left</string>
+    <string name="period_running">Running</string>
     <string name="forecast">By the end of the period</string>
     <string name="movements">Expenses</string>
     <string name="movements_text">%1$s on average</string>
@@ -651,7 +654,6 @@
     <string name="times">%1$d times</string>
     <string name="savings">Kept</string>
     <string name="of_income">Of %1$s that came in</string>
-    <string name="of_income_so_far">Of %1$s that came in, so far</string>
     <string name="of_days">Of %1$d days</string>
     <string name="forecast_spend">You would spend</string>
     <string name="forecast_kept">You would keep</string>
@@ -659,7 +661,7 @@
     <string name="forecast_add_income">Add your income to see what you would keep</string>
     <string name="forecast_waiting">Waiting for your next salary</string>
     <string name="forecast_waiting_text">The forecast returns once you note it. Meanwhile, these are your fixed costs.</string>
-    <string name="forecast_no_history">Not enough history yet to estimate everyday spending. It needs at least one earlier period.</string>
+    <string name="forecast_no_history">There is not enough yet to estimate everyday spending. It takes an earlier period, or a week of this one with at least five expenses.</string>
     <string name="forecast_how">How is it worked out?</string>
     <string name="forecast_income">Income</string>
     <string name="forecast_income_context">%1$s in, %2$s still due</string>
@@ -675,7 +677,6 @@
     <string name="fixed_progress">%1$s charged · %2$s to go</string>
     <string name="per_day">You can spend per day</string>
     <string name="per_day_text">What is left, spread over the %1$d days to go, today included</string>
-    <string name="per_day_text_pace">Spread over the %1$d days to go, today included. So far you spend %2$s a day on everyday things.</string>
     <string name="fixed_paid_on">Charged on %1$s</string>
     <string name="fixed_due_on">Due on %1$s</string>
     <string name="fixed_overdue">Overdue · was due on %1$s</string>
@@ -724,8 +725,6 @@
     <string name="update_why">A new version has new features and fixes. Updating takes a minute, and your data stays as it is.</string>
     <string name="update_later">Not now</string>
     <string name="forecast_day">Day %1$d of %2$d of the period. An estimate: what is already spent, plus the fixed costs still to come, plus your usual everyday spending for the days left.</string>
-    <string name="left_to_spend">Left to spend</string>
-    <string name="left_to_spend_text">What comes in, less what you spent and the fixed costs still to be charged</string>
     <string name="forecast_too_early">Too early to estimate how the period will end (day %1$d of %2$d). Come back in a few days.</string>
     <string name="entry_deleted">Entry deleted</string>
     <string name="undo">Undo</string>

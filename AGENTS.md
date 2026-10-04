@@ -220,8 +220,11 @@ nothing wrote shows as overdue, with "Apply" (`Ledger.applyRecurring`).
 
 ### A figure compares like with like
 
-The analysis is read as fact, so a figure must not compare unequal things (`AnalyticsTest`, `PeriodReportTest`,
-`ForecastTest` hold each of these):
+The analysis is read as fact, so a figure must not compare unequal things. `FiguresAddUpTest` runs 240 made-up
+households and checks that every figure agrees with every other one that a person could add up with a calculator
+(spent everywhere, categories add up to spent, fixed + variable = spent, forecast = spent + fixed to come + everyday,
+balances add up to zero, accounts hold what they opened with plus what moved, percentages of a chart add up to 100).
+A new figure gets its identity there. The rules it enforces:
 
 - A period that is still running is held against the *same days* of the earlier ones (`Analytics.trends` with
   `today`, `PeriodReport.previousSpentMinor` with `partial`), never against whole months: ten days against a
@@ -231,8 +234,15 @@ The analysis is read as fact, so a figure must not compare unequal things (`Anal
 - A day-to-day pace is learnt only from periods that had day-to-day spending; a period of fixed costs only is not a
   pace of zero. Without any, this period's own pace stands in (a week in, five rows at least, only what is marked
   variable, one big purchase held to three usual rows) with a wider range.
-- What is left to spend per day counts today (`PeriodForecast.daysToGo`), like a trip's daily figure.
-- A percentage is rounded, not cut, wherever it is shown.
+- What is left to spend per day counts today (`PeriodForecast.daysToGo`), like a trip's daily figure, and a trip not
+  started yet spreads what is left of its budget, not the whole of it (something may be booked ahead).
+- Days without spending count only days that are over: today is not a day without spending until it ends.
+- The daily average and the days' shares are of everyday (variable) spending: the fixed costs are their own figures.
+- What is "left" is called left while a period runs (`PeriodReport.partial`), and saved only once it is over.
+- Left and over are never both shown and never negative (`BudgetStatus`, a trip's totals).
+- What already is a recurring item is not suggested again as something that looks recurring.
+- A percentage is rounded the same wherever it is shown, and the percentages of one chart are split by the largest
+  remainder (`Percent.split`) so they add up to exactly 100.
 
 ### Migrations
 

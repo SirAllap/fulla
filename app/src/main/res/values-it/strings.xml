@@ -587,7 +587,10 @@
     <string name="saving_rate">Ne tieni il %1$d %%</string>
     <string name="overspending_rate">Hai speso il %1$d %% in più di quanto è entrato</string>
     <string name="daily_average">Media giornaliera</string>
-    <string name="daily_average_text">Su %1$d giorni</string>
+    <string name="daily_average_text">Senza le spese fisse · su %1$d giorni</string>
+    <string name="daily_average_context">Senza le spese fisse · giorno %1$d di %2$d</string>
+    <string name="left_now">Ti resta</string>
+    <string name="period_running">In corso</string>
     <string name="forecast">A fine periodo</string>
     <string name="movements">Spese</string>
     <string name="movements_text">%1$s in media</string>
@@ -601,7 +604,6 @@
     <string name="times">%1$d volte</string>
     <string name="savings">Risparmio</string>
     <string name="of_income">Su %1$s entrati</string>
-    <string name="of_income_so_far">Su %1$s di entrate, fino a oggi</string>
     <string name="of_days">Su %1$d giorni</string>
     <string name="forecast_spend">Spenderesti</string>
     <string name="forecast_kept">Ti resterebbero</string>
@@ -609,7 +611,7 @@
     <string name="forecast_add_income">Aggiungi le tue entrate per vedere cosa ti resterebbe</string>
     <string name="forecast_waiting">In attesa del tuo prossimo stipendio</string>
     <string name="forecast_waiting_text">La previsione torna quando lo annoti. Intanto, ecco le tue spese fisse.</string>
-    <string name="forecast_no_history">Non c’è ancora abbastanza storico per stimare le spese di ogni giorno. Serve almeno un periodo precedente.</string>
+    <string name="forecast_no_history">Non c\'è ancora abbastanza per stimare le spese di ogni giorno. Serve un periodo precedente, o una settimana di questo con almeno cinque spese.</string>
     <string name="forecast_how">Come si calcola?</string>
     <string name="forecast_income">Entrate</string>
     <string name="forecast_income_context">%1$s entrati, %2$s ancora attesi</string>
@@ -625,7 +627,6 @@
     <string name="fixed_progress">%1$s addebitati · mancano %2$s</string>
     <string name="per_day">Puoi spendere al giorno</string>
     <string name="per_day_text">Quello che resta, ripartito sui %1$d giorni rimasti, oggi incluso</string>
-    <string name="per_day_text_pace">Ripartito sui %1$d giorni rimasti, oggi incluso. Finora spendi %2$s al giorno per le spese di ogni giorno.</string>
     <string name="fixed_paid_on">Addebitato il %1$s</string>
     <string name="fixed_due_on">Previsto il %1$s</string>
     <string name="fixed_overdue">In ritardo · previsto il %1$s</string>
@@ -674,8 +675,6 @@
     <string name="update_why">Una nuova versione porta nuove funzioni e correzioni. L’aggiornamento richiede un minuto e i tuoi dati restano come sono.</string>
     <string name="update_later">Non ora</string>
     <string name="forecast_day">Giorno %1$d di %2$d del periodo. Una stima: quanto hai già speso, più le spese fisse ancora da addebitare, più la tua spesa abituale di ogni giorno per i giorni che restano.</string>
-    <string name="left_to_spend">Ti resta da spendere</string>
-    <string name="left_to_spend_text">Quello che entra, meno quanto hai speso e le spese fisse ancora da addebitare</string>
     <string name="forecast_too_early">Troppo presto per stimare come finirà il periodo (giorno %1$d di %2$d). Torna tra qualche giorno.</string>
     <string name="entry_deleted">Movimento eliminato</string>
     <string name="undo">Annulla</string>

@@ -587,7 +587,10 @@
     <string name="saving_rate">Vous en gardez %1$d %%</string>
     <string name="overspending_rate">Vous avez dépensé %1$d %% de plus que vos revenus</string>
     <string name="daily_average">Moyenne par jour</string>
-    <string name="daily_average_text">Sur %1$d jours</string>
+    <string name="daily_average_text">Hors frais fixes · sur %1$d jours</string>
+    <string name="daily_average_context">Hors frais fixes · jour %1$d sur %2$d</string>
+    <string name="left_now">Il reste</string>
+    <string name="period_running">En cours</string>
     <string name="forecast">À la fin de la période</string>
     <string name="movements">Dépenses</string>
     <string name="movements_text">%1$s en moyenne</string>
@@ -601,7 +604,6 @@
     <string name="times">%1$d fois</string>
     <string name="savings">Épargne</string>
     <string name="of_income">Sur %1$s de revenus</string>
-    <string name="of_income_so_far">Sur %1$s de revenus, jusqu\'à aujourd\'hui</string>
     <string name="of_days">Sur %1$d jours</string>
     <string name="forecast_spend">Vous dépenseriez</string>
     <string name="forecast_kept">Il vous resterait</string>
@@ -609,7 +611,7 @@
     <string name="forecast_add_income">Ajoutez vos revenus pour voir ce qu’il vous resterait</string>
     <string name="forecast_waiting">En attente de votre prochain salaire</string>
     <string name="forecast_waiting_text">La prévision revient dès que vous l’ajoutez. En attendant, voici vos frais fixes.</string>
-    <string name="forecast_no_history">Pas encore assez d’historique pour estimer les dépenses courantes. Il faut au moins une période précédente.</string>
+    <string name="forecast_no_history">Pas encore assez pour estimer les dépenses courantes. Il faut une période précédente, ou une semaine de celle-ci avec au moins cinq dépenses.</string>
     <string name="forecast_how">Comment est-ce calculé ?</string>
     <string name="forecast_income">Revenus</string>
     <string name="forecast_income_context">%1$s reçus, %2$s encore attendus</string>
@@ -625,7 +627,6 @@
     <string name="fixed_progress">%1$s prélevés · %2$s à venir</string>
     <string name="per_day">Vous pouvez dépenser par jour</string>
     <string name="per_day_text">Ce qui reste, réparti sur les %1$d jours restants, aujourd\'hui inclus</string>
-    <string name="per_day_text_pace">Réparti sur les %1$d jours restants, aujourd\'hui inclus. Jusqu\'ici tu dépenses %2$s par jour pour le quotidien.</string>
     <string name="fixed_paid_on">Prélevé le %1$s</string>
     <string name="fixed_due_on">Prévu le %1$s</string>
     <string name="fixed_overdue">En retard · prévu le %1$s</string>
@@ -674,8 +675,6 @@
     <string name="update_why">Une nouvelle version apporte de nouvelles fonctions et des corrections. La mise à jour prend une minute et vos données restent telles quelles.</string>
     <string name="update_later">Pas maintenant</string>
     <string name="forecast_day">Jour %1$d sur %2$d de la période. Une estimation : ce qui est déjà dépensé, plus les charges fixes à venir, plus vos dépenses courantes habituelles pour les jours restants.</string>
-    <string name="left_to_spend">Reste à dépenser</string>
-    <string name="left_to_spend_text">Ce qui rentre, moins ce que tu as dépensé et les frais fixes encore à venir</string>
     <string name="forecast_too_early">Trop tôt pour estimer la fin de la période (jour %1$d sur %2$d). Revenez dans quelques jours.</string>
     <string name="entry_deleted">Écriture supprimée</string>
     <string name="undo">Annuler</string>

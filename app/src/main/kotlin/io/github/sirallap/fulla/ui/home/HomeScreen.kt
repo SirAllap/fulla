@@ -21,6 +21,7 @@ import io.github.sirallap.fulla.ui.components.Chip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.SaveAlt
@@ -180,13 +181,28 @@ fun HomeScreen(
                         icon = Icons.Outlined.AccountBalance, onClick = onAccounts)
                 }
                 item {
-                    Figures(view, summary.incomeMinor, summary.expenseMinor, summary.savingsRate)
-                    if (budgets.isNotEmpty()) {
-                        val spent = budgetSpend.filterKeys { it in budgets }.values.sum()
-                        val total = budgets.values.sum()
+                    // A period that is still running has not saved anything yet: what is left of the income so far is "left", not "saved".
+                    Figures(view, summary.incomeMinor, summary.expenseMinor, summary.savingsRate, running = period == current)
+                    // The answer to "how will this month end", one quiet line; the analysis has the sums behind it.
+                    if (forecast != null && !forecast.waiting) {
+                        val kept = forecast.keptMinor
+                        val free = forecast.leftToSpendMinor
+                        if (forecast.estimated && kept != null) {
+                            ListRow(stringResource(R.string.forecast),
+                                context = stringResource(R.string.forecast_between, f.money(forecast.keptLowMinor!!), f.money(forecast.keptHighMinor!!)),
+                                icon = Icons.Outlined.Event, iconTint = c.inkMuted, onClick = onInsights,
+                                end = { AmountText("≈ " + f.money(kept), color = if (kept < 0) c.moneyOut else c.moneyIn) })
+                        } else if (free != null) {
+                            ListRow(stringResource(R.string.forecast_free), context = stringResource(R.string.forecast_free_text),
+                                icon = Icons.Outlined.Event, iconTint = c.inkMuted, onClick = onInsights,
+                                end = { AmountText(f.money(free), color = if (free < 0) c.moneyOut else c.moneyIn) })
+                        }
+                    }
+                    Budgets.status(budgets, budgetSpend)?.let { status ->
                         ListRow(stringResource(R.string.budget_of_period), onClick = onBudgets,
-                            context = stringResource(R.string.budget_left_of, f.money(total - spent), f.money(total)),
-                            below = { ProgressLine(if (total > 0) spent.toFloat() / total else 0f, c.moneyOut, over = spent > total) },
+                            context = if (status.overMinor > 0) stringResource(R.string.trip_over, f.money(status.overMinor))
+                                else stringResource(R.string.budget_left_of, f.money(status.leftMinor), f.money(status.limitMinor)),
+                            below = { ProgressLine(status.fraction, c.moneyOut, over = status.overMinor > 0) },
                             end = { Icon(Icons.Outlined.ChevronRight, null, tint = c.inkMuted) })
                     }
                     if (homeTrip != null && homeTripTotals != null) {
@@ -196,7 +212,8 @@ fun HomeScreen(
                             title = homeTrip.name,
                             icon = tripKindIcon(homeTrip.kind),
                             context = if (budget != null && left != null) {
-                                stringResource(R.string.trip_left, f.money(left), f.money(budget))
+                                if (homeTripTotals.overMinor > 0) stringResource(R.string.trip_over, f.money(homeTripTotals.overMinor))
+                                else stringResource(R.string.trip_left, f.money(left), f.money(budget))
                             } else f.money(homeTripTotals.spentMinor),
                             below = if (budget != null) ({
                                 ProgressLine(homeTripTotals.spentMinor.toFloat() / budget, c.moneyOut, over = homeTripTotals.overMinor > 0)
@@ -242,13 +259,13 @@ fun HomeScreen(
 }
 
 @Composable
-private fun Figures(view: HouseholdView, income: Long, expense: Long, rate: Double?) {
+private fun Figures(view: HouseholdView, income: Long, expense: Long, rate: Double?, running: Boolean) {
     val c = FullaTheme.colors
     val f = view.formats
     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
         Figure(stringResource(R.string.money_in), f.money(income, signed = true), c.moneyIn, Modifier.weight(1f))
         Figure(stringResource(R.string.money_out), f.money(expense), c.moneyOut, Modifier.weight(1f))
-        Figure(stringResource(R.string.saved), rate?.let { "${Math.round(it * 100)} %" } ?: "—", c.ink, Modifier.weight(1f))
+        Figure(stringResource(if (running) R.string.left_now else R.string.saved), rate?.let { "${Math.round(it * 100)} %" } ?: "—", c.ink, Modifier.weight(1f))
     }
 }
 

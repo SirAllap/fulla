@@ -58,7 +58,6 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
     val trends = remember(view, period) { a.trends(view.active, period, minimumMinor = 10 * unit, today = today) }
     val repeating = remember(view) { a.detectedRecurring(view.active, today) }
     val byMember = remember(view, period) { a.byMember(view.active, period).filter { it.paidMinor != 0L || it.shareMinor != 0L } }
-    val noSpend = remember(view, period) { a.noSpendDays(view.active, period, today) }
     val top = remember(view, period) { a.topCategories(view.active, period) }
     val others = stringResource(R.string.other_categories)
     val uncategorized = stringResource(R.string.uncategorized)
@@ -89,17 +88,22 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
         }
     }
 
+    // A period that is still running has only part of its income and spending so far: it says so in the list of periods.
+    val running = stringResource(R.string.period_running)
+    fun runningMark(p: io.github.sirallap.fulla.core.time.YearMonth, text: String) = if (p == current) "$running · $text" else text
+
     Column(Modifier.fillMaxSize()) {
         BackHeader(stringResource(R.string.insights), onBack)
         io.github.sirallap.fulla.ui.components.PeriodSelector(f.period(period), { periodText = period.minusMonths(1).toString() },
             { periodText = period.plusMonths(1).toString() }, canGoNext = period < current)
         LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding()) {
-            item(key = "figures") {
-                Section(stringResource(R.string.period_summary), top = 8.dp())
-                FigureTiles(view, period, report, noSpend)
-            }
+            // How the period will end is what a person opens this screen for: it comes first, before what already happened.
             if (forecast != null) item(key = "forecast") {
                 io.github.sirallap.fulla.ui.home.ForecastSection(view, forecast)
+            }
+            item(key = "figures") {
+                Section(stringResource(R.string.period_summary), top = if (forecast != null) 16.dp() else 8.dp())
+                FigureTiles(view, period, report)
             }
             if (forecast != null && forecast.fixed.isNotEmpty()) item(key = "fixed") {
                 io.github.sirallap.fulla.ui.home.FixedTotalsSection(view, forecast, onFixedCosts)
@@ -107,23 +111,26 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
             if (top.isNotEmpty()) item(key = "vials") {
                 val total = top.sumOf { it.amountMinor }.toFloat()
                 val max = top.maxOf { it.amountMinor }.toFloat()
+                // Whole percentages that add up to 100, not 99 or 101.
+                val percents = io.github.sirallap.fulla.core.analytics.Percent.split(top.map { it.amountMinor })
                 Section(stringResource(R.string.where_it_went))
-                SpendingVials(top.map { s ->
+                SpendingVials(top.mapIndexed { i, s ->
                     val cat = s.key?.let { view.config.category(it) }
                     val name = if (s.key == null) others else cat?.name ?: uncategorized
                     Vial(name, if (s.key == null) null else io.github.sirallap.fulla.ui.entry.CategoryIcons.of(cat?.icon ?: "label"),
-                        level = s.amountMinor / max, share = s.amountMinor / total, description = "$name, ${f.money(s.amountMinor)}")
+                        level = s.amountMinor / max, share = s.amountMinor / total, description = "$name, ${f.money(s.amountMinor)}", top = "${percents[i]} %")
                 })
             }
             if (report.weekdays.any { it > 0 }) item(key = "weekdays") {
                 val total = report.weekdays.filter { it > 0 }.sum().toFloat()
                 val max = report.weekdays.max().toFloat()
+                val percents = io.github.sirallap.fulla.core.analytics.Percent.split(report.weekdays)
                 Section(stringResource(R.string.by_weekday))
                 SpendingVials(report.weekdays.mapIndexed { i, amount ->
                     val day = java.time.DayOfWeek.of(i + 1).getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault())
                         .replaceFirstChar { it.titlecase(Locale.getDefault()) }.trimEnd('.')
                     val positive = amount.coerceAtLeast(0)
-                    Vial(day, null, level = positive / max, share = positive / total, description = "$day, ${f.money(amount)}")
+                    Vial(day, null, level = positive / max, share = positive / total, description = "$day, ${f.money(amount)}", top = "${percents[i]} %")
                 })
             }
             if (report.biggest.isNotEmpty()) {
@@ -188,13 +195,13 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
                 })
                 for (s in series.take(6)) {
                     ListRow(f.period(s.period),
-                        context = stringResource(R.string.in_out, f.money(s.incomeMinor), f.money(s.expenseMinor)),
+                        context = runningMark(s.period, stringResource(R.string.in_out, f.money(s.incomeMinor), f.money(s.expenseMinor))),
                         end = { AmountText(f.money(s.savingsMinor, signed = true), color = if (s.savingsMinor < 0) c.moneyOut else c.moneyIn) })
                 }
             } else if (series.size == 1) item(key = "series") {
                 val s = series.first()
                 Section(stringResource(R.string.period_by_period))
-                ListRow(f.period(s.period), context = stringResource(R.string.in_out, f.money(s.incomeMinor), f.money(s.expenseMinor)),
+                ListRow(f.period(s.period), context = runningMark(s.period, stringResource(R.string.in_out, f.money(s.incomeMinor), f.money(s.expenseMinor))),
                     end = { AmountText(f.money(s.savingsMinor, signed = true), color = if (s.savingsMinor < 0) c.moneyOut else c.moneyIn) })
             }
             if (repeating.isNotEmpty()) {
@@ -226,7 +233,6 @@ private fun FigureTiles(
     view: HouseholdView,
     period: io.github.sirallap.fulla.core.time.YearMonth,
     report: io.github.sirallap.fulla.core.analytics.PeriodReport,
-    noSpend: Int,
 ) {
     val c = FullaTheme.colors
     val f = view.formats
@@ -246,13 +252,15 @@ private fun FigureTiles(
     tiles.add { m -> LiquidTile(stringResource(R.string.spent), f.money(report.spentMinor), m, context = vsPrevious,
         level = if (report.incomeMinor > 0) report.spentMinor.toFloat() / report.incomeMinor else null, phase = 0.2f) }
     report.savingsRate?.let { rate ->
-        tiles.add { m -> LiquidTile(stringResource(R.string.savings), "${(rate * 100).roundToInt()} %", m,
-            context = stringResource(if (report.partial) R.string.of_income_so_far else R.string.of_income, f.money(report.incomeMinor)), level = rate.toFloat().coerceIn(0f, 1f),
+        // A period that is still running has not saved anything yet: what is left of the income so far is not the savings it will end with.
+        tiles.add { m -> LiquidTile(stringResource(if (report.partial) R.string.left_now else R.string.savings), "${(rate * 100).roundToInt()} %", m,
+            context = stringResource(R.string.of_income, f.money(report.incomeMinor)), level = rate.toFloat().coerceIn(0f, 1f),
             tone = LiquidTone.IN, valueColor = if (rate < 0) c.moneyOut else c.moneyIn, phase = 1.4f) }
     }
     if (report.days > 0) {
         tiles.add { m -> LiquidTile(stringResource(R.string.daily_average), f.money(report.dailyMinor), m,
-            context = stringResource(R.string.day_of, report.days, length), level = report.days.toFloat() / length, phase = 2.1f) }
+            context = if (report.partial) stringResource(R.string.daily_average_context, report.days, length) else stringResource(R.string.daily_average_text, report.days),
+            level = report.days.toFloat() / length, phase = 2.1f) }
     }
     if (report.count > 0) {
         tiles.add { m -> LiquidTile(stringResource(R.string.movements), "${report.count}", m,
@@ -264,9 +272,9 @@ private fun FigureTiles(
             context = stringResource(R.string.fixed_variable_text, f.money(report.fixedMinor), f.money(report.variableMinor)),
             level = report.fixedMinor.toFloat() / both, phase = 3.6f) }
     }
-    if (report.days > 0) {
-        tiles.add { m -> LiquidTile(stringResource(R.string.no_spend_days), "$noSpend", m,
-            context = stringResource(R.string.of_days, report.days), level = noSpend.toFloat() / report.days, tone = LiquidTone.IN, phase = 4.4f) }
+    if (report.noSpendOf > 0) {
+        tiles.add { m -> LiquidTile(stringResource(R.string.no_spend_days), "${report.noSpendDays}", m,
+            context = stringResource(R.string.of_days, report.noSpendOf), level = report.noSpendDays.toFloat() / report.noSpendOf, tone = LiquidTone.IN, phase = 4.4f) }
     }
     if (report.budgets > 0) {
         tiles.add { m -> LiquidTile(stringResource(R.string.budgets_over), stringResource(R.string.budgets_over_value, report.budgetsOver, report.budgets), m,
