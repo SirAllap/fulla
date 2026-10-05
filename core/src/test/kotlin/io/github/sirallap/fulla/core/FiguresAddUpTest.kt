@@ -2,6 +2,7 @@
 package io.github.sirallap.fulla.core
 
 import io.github.sirallap.fulla.core.analytics.Analytics
+import io.github.sirallap.fulla.core.analytics.DayTotals
 import io.github.sirallap.fulla.core.analytics.FixedStatus
 import io.github.sirallap.fulla.core.analytics.Percent
 import io.github.sirallap.fulla.core.balance.Balances
@@ -19,6 +20,8 @@ import io.github.sirallap.fulla.core.recurring.Frequency
 import io.github.sirallap.fulla.core.recurring.RecurringRule
 import io.github.sirallap.fulla.core.recurring.Schedule
 import io.github.sirallap.fulla.core.rules.PeriodRule
+import io.github.sirallap.fulla.core.sync.LocalTransaction
+import io.github.sirallap.fulla.core.sync.SyncState
 import java.time.LocalDate
 import io.github.sirallap.fulla.core.trips.Trip
 import io.github.sirallap.fulla.core.trips.Trips
@@ -129,6 +132,10 @@ class FiguresAddUpTest {
             val summary = a.summary(h.rows, period)
             assertEquals(spent, summary.expenseMinor, why("summary spent"))
             assertEquals(income, summary.incomeMinor, why("summary income"))
+            // The days of the history say what was spent and received; together they are the period.
+            val days = counted.groupBy { it.date }.values.map { DayTotals.of(it.map { t -> LocalTransaction(t, SyncState.SYNCED) }) }
+            assertTrue(days.all { it.spentMinor >= 0 && it.receivedMinor >= 0 }, why("a day is never negative"))
+            assertEquals(income - spent, days.sumOf { it.receivedMinor - it.spentMinor }, why("the days add up to the period"))
             val report = a.report(h.rows, period, today, h.config.trips)
             assertEquals(spent, report.spentMinor, why("report spent"))
             assertEquals(income, report.incomeMinor, why("report income"))

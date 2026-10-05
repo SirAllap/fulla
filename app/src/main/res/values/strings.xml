@@ -66,6 +66,9 @@
     <string name="filter_income">Income</string>
     <string name="filter_moves">Transfers</string>
     <string name="filter_spending">Spending</string>
+    <!-- At the end of a day's title in the history: what was spent that day, then what was received (each only when there is something) -->
+    <string name="day_spent">Spent %1$s</string>
+    <string name="day_received">Received %1$s</string>
     <string name="filter_unsent">Not sent</string>
     <string name="fixed">Fixed</string>
     <string name="fixed_help">Rent, salary, subscriptions: the same every period.</string>

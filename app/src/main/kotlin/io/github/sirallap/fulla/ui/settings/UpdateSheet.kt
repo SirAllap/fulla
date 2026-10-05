@@ -94,14 +94,15 @@ fun UpdateSheet(update: Update, onDismiss: () -> Unit) {
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.paper) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(20.dp)) {
+        // The title and the buttons stay where they are; only the notes scroll, however long they are.
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(20.dp)) {
             Text(stringResource(R.string.update_available, update.version), style = FullaType.title, color = c.ink)
             Text(stringResource(R.string.update_why), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(top = 4.dp))
             if (update.sizeBytes > 0) {
                 Text(megabytes(update.sizeBytes), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(top = 4.dp))
             }
             if (update.notes.isNotBlank()) {
-                androidx.compose.foundation.layout.Box(Modifier.padding(top = 16.dp)) { ReleaseNotesText(update.notes) }
+                Column(Modifier.weight(1f, fill = false).padding(top = 16.dp).verticalScroll(rememberScrollState())) { ReleaseNotesText(update.notes) }
             }
             error?.let { Text(it, style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(top = 16.dp)) }
             if (needsPermission) {

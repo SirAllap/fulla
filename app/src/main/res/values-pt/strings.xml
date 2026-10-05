@@ -65,6 +65,9 @@
     <string name="filter_income">Receitas</string>
     <string name="filter_moves">Transferências</string>
     <string name="filter_spending">Despesas</string>
+    <!-- At the end of a day's title in the history: what was spent that day, then what was received (each only when there is something) -->
+    <string name="day_spent">Gastaste %1$s</string>
+    <string name="day_received">Recebeste %1$s</string>
     <string name="filter_unsent">Não enviados</string>
     <string name="fixed">Fixo</string>
     <string name="fixed_help">Aluguel, salário, assinaturas: iguais em todo período.</string>
