@@ -62,6 +62,12 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 | To settle | the fewest payments that bring every balance to zero | `SettlementPlanner` |
 | Accounts | as on the overview | `Analytics.accountBalances` |
 
+## History
+
+| Figure | Is | Source |
+| --- | --- | --- |
+| History, each day | what was spent and what was received that day: expenses less refunds, and income (a refund beyond the day's expenses counts as received); transfers and settlements are neither; deleted and refused rows are out; a day that moved no money says nothing | `DayTotals` |
+
 ## Writing the same thing twice
 
 Money reads the same on every platform (`MoneyFormatterTest`: a four-digit amount is grouped on a

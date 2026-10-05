@@ -76,6 +76,7 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .section { padding: 24px var(--inset) 8px; display: flex; align-items: center; }
 .section.first { padding-top: 8px; }
 .section > :first-child { flex: 1; }
+.t-section-note { margin-left: 12px; text-align: right; font-size: 13px; line-height: 17px; color: var(--ink-muted); }
 
 /* ListRow: 56 high, 20 inset, 14 gap, a hairline indented to the text */
 .rows { display: flex; flex-direction: column; }

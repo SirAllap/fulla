@@ -2,6 +2,7 @@
 package io.github.sirallap.fulla.web
 
 import io.github.sirallap.fulla.client.local.CsvExport
+import io.github.sirallap.fulla.core.analytics.DayTotals
 import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.schema.SchemaEngine
@@ -80,8 +81,18 @@ object HistoryScreen {
         }.map { it.transaction.date to it }.sortedWith(compareByDescending<Pair<LocalDate, LocalTransaction>> { it.first }.thenByDescending { it.second.transaction.createdAt })
         if (shown.isEmpty()) { emptyState("receipt_long", t("empty_history_title"), t("empty_history_text")); return }
         var last: LocalDate? = null
-        for ((day, row) in shown.take(limit)) {
-            if (day != last) { last = day; section(dayTitle(day, format)) }
+        val visible = shown.take(limit)
+        for ((day, row) in visible) {
+            if (day != last) {
+                last = day
+                // What was spent and what was received that day, worked out in core; nothing is said of a day that moved no money.
+                val totals = DayTotals.of(visible.filter { it.first == day }.map { it.second })
+                val summary = listOfNotNull(
+                    t("day_spent", format.money(totals.spentMinor)).takeIf { totals.spentMinor > 0 },
+                    t("day_received", format.money(totals.receivedMinor)).takeIf { totals.receivedMinor > 0 },
+                ).joinToString(" · ")
+                section(dayTitle(day, format), summary = summary.ifEmpty { null })
+            }
             entry(row, view, format)
         }
         if (shown.size > limit) div("actions") { secondaryButton(t("more")) { limit += 100; App.render() } }

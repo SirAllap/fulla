@@ -39,8 +39,11 @@ fun iconButton(name: String, label: String, onClick: () -> Unit): HTMLElement = 
 private fun gearButton(): HTMLElement = iconButton("settings", t("settings")) { App.openSettings() }
 
 /** The name of a group of rows: small capitals with room above and below. */
-fun HTMLElement.section(text: String, first: Boolean = false) {
-    div(if (first) "section first" else "section") { span("t-section") { text(text) } }
+fun HTMLElement.section(text: String, first: Boolean = false, summary: String? = null) {
+    div(if (first) "section first" else "section") {
+        span("t-section") { text(text) }
+        if (summary != null) span("t-section-note") { text(summary) }
+    }
 }
 
 /**

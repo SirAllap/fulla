@@ -106,6 +106,8 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.click('.tab:has-text("Historial")');
   await page.waitForSelector('.history .row');
   ok(await page.locator('.history .row').count() === 2, 'History lists both entries');
+  const dayNote = await page.textContent('.history .t-section-note');
+  ok(/Gastaste\s*12,50\s*€.*Recibiste\s*1\.234,56\s*€/.test(dayNote), 'each day of History says what was spent and what was received: ' + dayNote);
   await shot('04-history');
   await gear(page);
   await shot('05-settings');

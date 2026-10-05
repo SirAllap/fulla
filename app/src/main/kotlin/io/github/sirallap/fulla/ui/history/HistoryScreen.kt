@@ -3,6 +3,7 @@ package io.github.sirallap.fulla.ui.history
 
 import io.github.sirallap.fulla.ui.components.listEndPadding
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,8 +27,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.core.analytics.DayTotals
 import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.sync.LocalTransaction
@@ -45,6 +48,7 @@ import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.TabHeader
 import io.github.sirallap.fulla.ui.entry.CategoryIcons
 import io.github.sirallap.fulla.ui.theme.FullaTheme
+import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.launch
 
 enum class HistoryFilter(val label: Int) {
@@ -123,7 +127,17 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
             } else {
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = listEndPadding(aboveTabBar = true)) {
                     for ((day, rows) in days) {
-                        item(key = "day-$day") { Section(f.day(day), top = 16.dp) }
+                        item(key = "day-$day") {
+                            // What was spent and what was received that day, worked out in core; nothing is said of a day that moved no money.
+                            val totals = DayTotals.of(rows)
+                            val spent = stringResource(R.string.day_spent, f.money(totals.spentMinor))
+                            val received = stringResource(R.string.day_received, f.money(totals.receivedMinor))
+                            val summary = listOfNotNull(spent.takeIf { totals.spentMinor > 0 }, received.takeIf { totals.receivedMinor > 0 }).joinToString(" · ")
+                            val trailing: (@Composable RowScope.() -> Unit)? = if (totals.isEmpty) null else {
+                                { Text(summary, style = FullaType.label, color = c.inkMuted, textAlign = TextAlign.End, modifier = Modifier.padding(start = 12.dp)) }
+                            }
+                            Section(f.day(day), top = 16.dp, trailing = trailing)
+                        }
                         items(rows, key = { it.id }) { row -> HistoryRow(view, row) { onOpen(row.id) } }
                     }
                 }
