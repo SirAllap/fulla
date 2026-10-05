@@ -190,6 +190,16 @@ val bundleMigrations by tasks.registering(Copy::class) {
 android.sourceSets.getByName("main").assets.srcDir(migrationsAssetsDir)
 tasks.named("preBuild") { dependsOn(bundleMigrations) }
 
+// The release notes of every version (docs/releases/<version>.md), bundled so Settings > About can show what changed in
+// this version and in the earlier ones without a network: the same text the GitHub release carries.
+val releaseNotesAssetsDir = layout.buildDirectory.dir("generated/releaseNotesAssets")
+val bundleReleaseNotes by tasks.registering(Copy::class) {
+    from(rootProject.file("docs/releases")) { include("*.md") }
+    into(releaseNotesAssetsDir.map { it.dir("releases") })
+}
+android.sourceSets.getByName("main").assets.srcDir(releaseNotesAssetsDir)
+tasks.named("preBuild") { dependsOn(bundleReleaseNotes) }
+
 // Room's exported schema JSON (ksp's room.schemaLocation, above) is what
 // MigrationTestHelper validates a migration against. Robolectric's unit
 // tests read assets from the debug variant's merged assets (there is no

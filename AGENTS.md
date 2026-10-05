@@ -289,3 +289,5 @@ a `## Español` section and a `## English` section (`ReleaseNotes.forLanguage`
 shows the one in the phone's language, English when there is none for it).
 Plain Markdown only: bold, italic, `code`, `-` bullets and headings are
 rendered (`ReleaseNotes.parse`); anything else shows as text.
+Every file in `docs/releases/` is bundled into the app (`bundleReleaseNotes` in `app/build.gradle.kts`), and
+Settings › About shows this version's notes and the earlier ones from there, offline.

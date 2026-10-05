@@ -132,7 +132,7 @@ fun UpdateSheet(update: Update, onDismiss: () -> Unit) {
  * raw Markdown the release is written in.
  */
 @Composable
-private fun ReleaseNotesText(notes: String) {
+internal fun ReleaseNotesText(notes: String) {
     val c = FullaTheme.colors
     val language = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
     val blocks = remember(notes, language) {

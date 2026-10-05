@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Check
@@ -46,6 +48,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sirallap.fulla.BuildConfig
+import io.github.sirallap.fulla.core.version.ReleaseHistory
 import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.client.local.LocalHousehold
 import io.github.sirallap.fulla.client.remote.FullaApi
@@ -704,8 +707,22 @@ fun AboutSettings(onUpdate: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     var notices by remember { mutableStateOf<String?>(null) }
+    // The notes of every version are in the app (docs/releases, bundled): this one's, and the earlier ones in a drop-down.
+    val versions = remember { ReleaseHistory.versions(context.assets.list("releases").orEmpty().toList()) }
+    var reading by remember { mutableStateOf<String?>(null) }
+    var showEarlier by remember { mutableStateOf(false) }
     Column {
         ListRow(stringResource(R.string.app_name), context = stringResource(R.string.version, BuildConfig.VERSION_NAME))
+        if (BuildConfig.VERSION_NAME in versions) {
+            ListRow(stringResource(R.string.whats_new), context = stringResource(R.string.whats_new_text), onClick = { reading = BuildConfig.VERSION_NAME })
+        }
+        val earlier = versions.filter { it != BuildConfig.VERSION_NAME }
+        if (earlier.isNotEmpty()) {
+            ListRow(stringResource(R.string.earlier_versions, earlier.size), context = stringResource(R.string.earlier_versions_text),
+                end = { androidx.compose.material3.Icon(if (showEarlier) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, tint = FullaTheme.colors.inkMuted) },
+                onClick = { showEarlier = !showEarlier })
+            if (showEarlier) for (v in earlier) ListRow(stringResource(R.string.version, v), onClick = { reading = v })
+        }
         SwitchRow(stringResource(R.string.update_check), stringResource(R.string.update_check_text),
             checked = settings?.checkForUpdates ?: true,
             onChange = { on -> scope.launch { container.settings.setCheckForUpdates(on) } })
@@ -717,6 +734,15 @@ fun AboutSettings(onUpdate: () -> Unit = {}) {
                 "── $name ──\n" + context.assets.open("licenses/$name").bufferedReader().use { it.readText() }
             }
         })
+    }
+    reading?.let { version ->
+        val notes = remember(version) { runCatching { context.assets.open("releases/$version.md").bufferedReader().use { it.readText() } }.getOrDefault("") }
+        FullaDialog(
+            onDismissRequest = { reading = null },
+            title = { Text(stringResource(R.string.version, version)) },
+            text = { Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) { ReleaseNotesText(notes) } },
+            confirmButton = { TextButton(onClick = { reading = null }) { Text(stringResource(R.string.done)) } },
+        )
     }
     notices?.let { text ->
         FullaDialog(

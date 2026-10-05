@@ -251,6 +251,11 @@
     <string name="usually">D\'habitude %1$s</string>
     <string name="usually_so_far">À ce stade, d\'habitude %1$s</string>
     <string name="version">Version %1$s</string>
+    <!-- Settings > About: the notes of the installed version, and a drop-down with the notes of the earlier ones (the count in brackets) -->
+    <string name="whats_new">Ce qui a changé dans cette version</string>
+    <string name="whats_new_text">Les nouveautés par rapport à la précédente</string>
+    <string name="earlier_versions">Versions précédentes (%1$d)</string>
+    <string name="earlier_versions_text">Ce qui a changé dans chacune, de la plus récente à la plus ancienne</string>
     <string name="welcome_line">Ce qui entre, ce qui sort et ce qui reste.</string>
     <string name="welcome_text">Pour une personne ou tout un foyer. Elle fonctionne hors ligne, et vos données vivent là où vous le décidez.</string>
     <string name="where_it_lives">Où il se trouve</string>

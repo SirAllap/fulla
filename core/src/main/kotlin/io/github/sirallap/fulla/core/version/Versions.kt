@@ -40,3 +40,11 @@ object Versions {
         return candidateVersion > currentVersion
     }
 }
+
+/** The versions that have release notes, newest first, from the names of the note files ("0.1.34.md"). */
+object ReleaseHistory {
+    fun versions(fileNames: List<String>): List<String> =
+        fileNames.filter { it.endsWith(".md") }
+            .mapNotNull { name -> Version.parse(name.removeSuffix(".md"))?.takeIf { !it.isNone } }
+            .distinct().sortedDescending().map { it.toString() }
+}
