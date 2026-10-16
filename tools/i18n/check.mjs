@@ -4,7 +4,8 @@
 // Every language has every string English has, with the same placeholders.
 // A missing string would show English in the middle of another language; a
 // missing or extra placeholder crashes String.format at runtime. A string
-// defined twice in one file fails the Android resource merge, in CI only.
+// defined twice in one file fails the Android resource merge, in CI only; so does an apostrophe that is not
+// escaped (`\'`) in a text that is not quoted.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,6 +19,7 @@ const read = (dir) => {
   for (const m of xml.matchAll(/<string name="([^"]+)"( translatable="false")?>([\s\S]*?)<\/string>/g)) {
     if (all.has(m[1])) problems.push(`${dir}: ${m[1]} is defined more than once`);
     all.add(m[1]);
+    if (!m[3].trim().startsWith('"') && /(?<!\\)'/.test(m[3])) problems.push(`${dir}: ${m[1]} has an apostrophe that is not escaped (write \\')`);
     if (!m[2]) out.set(m[1], m[3]);
   }
   return out;

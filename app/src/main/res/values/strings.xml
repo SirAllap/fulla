@@ -556,7 +556,7 @@
     <string name="opening_balance_debt_help">A credit card or an overdraft: the balance counts as money owed.</string>
     <!-- Account form: round-up saving as banks offer it (every purchase rounded up to the next euro, the difference moved to savings) -->
     <string name="round_up_title">Round-up saving</string>
-    <string name="round_up_help">Turn it on only if your bank already does it: each card purchase, bill or subscription is rounded up to the next euro and the difference goes to your savings account. That way the balances in Fulla match your bank's.</string>
+    <string name="round_up_help">Turn it on only if your bank already does it: each card purchase, bill or subscription is rounded up to the next euro and the difference goes to your savings account. That way the balances in Fulla match your bank\'s.</string>
     <string name="round_up_multiplier">Multiplier</string>
     <string name="round_up_to">Move it to</string>
     <string name="round_up_example">If you pay %1$s for a coffee, it is rounded up to %2$s and you save %3$s. Your multiplier is %4$d.</string>
