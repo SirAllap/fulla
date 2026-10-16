@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
@@ -48,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -167,7 +170,7 @@ private fun Household(state: HouseholdState) {
     // Deleting an entry asks nothing and says what happened, with a way back: the quickest thing that cannot go wrong.
     fun announceDeleted(id: String) {
         snackScope.launch {
-            val result = snackbarHostState.showSnackbar(deletedLabel, actionLabel = undoLabel, duration = androidx.compose.material3.SnackbarDuration.Long)
+            val result = snackbarHostState.showSnackbar(deletedLabel, actionLabel = undoLabel, duration = androidx.compose.material3.SnackbarDuration.Short)
             if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) container.ledger.restore(view.id, id)
         }
     }
@@ -239,7 +242,8 @@ private fun Household(state: HouseholdState) {
 
         GuideHost(view, tab, setTab = { tab = it })
 
-        Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
+        // Above the tab bar, never over it: a message must not cover the way to another tab. The bar is 64 dp and a divider.
+        Box(Modifier.fillMaxSize().navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 76.dp), contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
             SnackbarHost(snackbarHostState) { data -> Snackbar(data) }
         }
     }
