@@ -3,6 +3,8 @@ package io.github.sirallap.fulla.client.wire
 
 import io.github.sirallap.fulla.core.importers.CategorizationRule
 import io.github.sirallap.fulla.core.model.Account
+import io.github.sirallap.fulla.core.model.RoundUp
+import io.github.sirallap.fulla.core.roundup.RoundUps
 import io.github.sirallap.fulla.core.model.AccountType
 import io.github.sirallap.fulla.core.model.AppliesTo
 import io.github.sirallap.fulla.core.model.Budget
@@ -197,7 +199,9 @@ object Wire {
                     // explicit null both read as "no date": a legacy account,
                     // every movement counts, same as before this field existed.
                     it.str("opening_balance_date")?.let(LocalDate::parse),
-                    it.int("sort") ?: 0, it.bool("archived") ?: false)
+                    it.int("sort") ?: 0, it.bool("archived") ?: false,
+                    // Absent (an older bundle) and null both read as "round-up off".
+                    roundUp = it.str("round_up_to")?.let { to -> it.int("round_up_multiplier")?.takeIf { m -> m in RoundUps.MULTIPLIERS }?.let { m -> RoundUp(to, m) } })
             },
             categories = o.arr("categories").map { it.jsonObject }.map {
                 Category(it.str("id")!!, it.str("name") ?: "", AppliesTo.of(it.str("applies_to")), it.str("parent_id"),
@@ -321,6 +325,7 @@ object Wire {
         put("id", a.id); put("name", a.name); put("type", a.type.key)
         put("opening_balance_minor", a.openingBalanceMinor)
         put("opening_balance_date", a.openingBalanceDate?.toString())
+        put("round_up_to", a.roundUp?.toAccountId); put("round_up_multiplier", a.roundUp?.multiplier)
         put("sort", a.sort); put("archived", a.archived)
     }
 

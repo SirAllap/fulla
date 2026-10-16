@@ -189,7 +189,9 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
  * details line, so the common case is three taps.
  */
 @Composable
-fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit, onSaved: (String?) -> Unit = {}, onDeleted: (String) -> Unit = {}) {
+fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit, onSaved: (String?) -> Unit = {}, onDeleted: (String) -> Unit = {},
+    /** A new purchase on an account that rounds up: what went to savings, and the id of its transfer, for an Undo. */
+    onRoundedUp: (String, String) -> Unit = { _, _ -> }) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val existing = remember(editingId) { editingId?.let { id -> view.rows.firstOrNull { it.id == id }?.transaction } }
@@ -199,6 +201,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
     var problem by remember { mutableStateOf<String?>(null) }
     val c = FullaTheme.colors
     val fieldProblem = stringResource(R.string.field_value_problem)
+    val roundUpSaved = stringResource(R.string.round_up_saved)
 
     var saved by remember { mutableStateOf(false) }
     val reducedMotion = io.github.sirallap.fulla.ui.theme.FullaMotion.reduced()
@@ -225,6 +228,8 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         val cleared = draft.extras.filterValues { it == null }.keys.associateWith { null }
         val t = built.copy(extras = merged.extras + cleared)
         val savedTripName = view.config.trip(t.tripId)?.name
+        // What the bank will move to savings with this purchase, said once it is written (a new purchase only).
+        val rounded = if (existing == null) io.github.sirallap.fulla.core.roundup.RoundUps.companionOf(t, view.config) else null
         // One salary per month: marking this one takes the mark off the one it replaces.
         val replaced = if (PeriodAnchors.marked(t)) draft.otherSalary?.let { PeriodAnchors.mark(it, false) } else null
         scope.launch {
@@ -233,6 +238,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
             saved = true
             if (!reducedMotion) kotlinx.coroutines.delay(460)
             onSaved(savedTripName)
+            rounded?.let { onRoundedUp(roundUpSaved.format(view.formats.money(it.amountMinor), view.accountName(it.toAccountId) ?: ""), it.id) }
             onDone()
             saved = false
         }

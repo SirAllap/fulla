@@ -233,6 +233,19 @@ A new figure gets its identity there. The rules it enforces:
   screen that works from it (`rememberToday` in the app, a tick in the web app), and the own-pace range of the
   forecast is backtested (`ForecastTest`).
 
+### Round-up saving is written by the phone, as a transfer
+
+An account can round its purchases up to the next whole unit and move the difference, times 1, 2, 5 or 10, to another
+account, as some banks do (`Account.roundUp`, columns `round_up_to` and `round_up_multiplier`, migration 0022). Fulla
+moves no money: it writes down what the bank did, so the balances match. The move is an ordinary transfer with the
+reserved tag `fulla:round-up` (hidden like the salary mark) and an id worked out from the purchase's
+(`RoundUps.idFor`), so two phones write the same row and the sync merges them, and a purchase always finds its transfer.
+`Ledger.save` and the recurring generation write it in the purchase's own Room transaction; editing a purchase changes
+the transfer it has, deleting or restoring it does the same to the transfer. What is never done: rounding after the
+fact (a purchase written before it was turned on, or edited after), rounding an import (a bank statement already holds
+the bank's own transfers), rounding cash, rounding a refund, and bringing back a transfer the person deleted. It is
+not spending or income, so no figure moves; only the balances of the two accounts do (`RoundUpsTest`, `LedgerTest`).
+
 ### Migrations
 
 Applied in filename order, each once, recorded in `fulla.schema_migrations`.

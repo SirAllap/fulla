@@ -164,6 +164,14 @@ private fun Household(state: HouseholdState) {
         }
     }
 
+    // Round-up saving: what a new purchase moved to savings, with a way back (the transfer is deleted, the purchase stays).
+    fun announceRoundUp(text: String, transferId: String) {
+        snackScope.launch {
+            val result = snackbarHostState.showSnackbar(text, actionLabel = undoLabel, duration = androidx.compose.material3.SnackbarDuration.Long)
+            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) container.ledger.delete(view.id, transferId)
+        }
+    }
+
     // Deleting an entry asks nothing and says what happened, with a way back: the quickest thing that cannot go wrong.
     fun announceDeleted(id: String) {
         snackScope.launch {
@@ -204,7 +212,7 @@ private fun Household(state: HouseholdState) {
                         (fadeIn(fade) + slideInHorizontally(enterSpec) { if (toRight) it / 20 else -it / 20 }) togetherWith fadeOut(fade)
                     }) { shown ->
                         when (shown) {
-                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW }, onSaved = ::announceSaved)
+                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW }, onSaved = ::announceSaved, onRoundedUp = ::announceRoundUp)
                             Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
                             Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") })

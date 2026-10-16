@@ -407,7 +407,9 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         // the wire writes both balance fields (Wire.kt). That is what tells
         // the dialog whether it is creating or editing.
         val isNew = "opening_balance_date" !in item
-        StructureDialog(item, onDismiss = { editing = null }, iconPicker = false, formats = view.formats, isNewAccount = isNew) { updated ->
+        val itemId = (item["id"] as? JsonPrimitive)?.content
+        StructureDialog(item, onDismiss = { editing = null }, iconPicker = false, formats = view.formats, isNewAccount = isNew,
+            otherAccounts = view.config.accounts.filter { !it.archived && it.id != itemId }) { updated ->
             change { api -> ledger.upsert(view.id, Structure.ACCOUNT, updated, api) }
         }
     }
@@ -435,6 +437,8 @@ private fun StructureDialog(
     iconPicker: Boolean,
     formats: io.github.sirallap.fulla.ui.Formats? = null,
     isNewAccount: Boolean = false,
+    /** The accounts a round-up can go to (an account being edited). */
+    otherAccounts: List<io.github.sirallap.fulla.core.model.Account> = emptyList(),
     /** Deleting, for what can be deleted: it closes this dialog and the caller asks what the deletion needs. [deleteBlockedText] says why it cannot be done now. */
     onDeleteClick: (() -> Unit)? = null,
     deleteBlockedText: String? = null,
@@ -463,6 +467,11 @@ private fun StructureDialog(
     // values exactly as they were, the same "absent keeps its value" rule as
     // opening_balance_date already had.
     var balanceTouched by remember { mutableStateOf(isNewAccount) }
+    // Round-up saving, as a bank offers it: per account, never cash, and nothing to round in a currency with no cents.
+    val showRoundUp = formats != null && (item["type"] as? JsonPrimitive)?.content != "cash" && formats.currency.minorUnits > 0
+    var roundTo by remember { mutableStateOf((item["round_up_to"] as? JsonPrimitive)?.takeIf { it != JsonNull }?.content) }
+    var roundMultiplier by remember { mutableStateOf((item["round_up_multiplier"] as? JsonPrimitive)?.takeIf { it != JsonNull }?.content?.toIntOrNull() ?: 2) }
+    var roundTouched by remember { mutableStateOf(false) }
     // What is in the field, as an amount; null when it is not one, which is said under the field and stops Save.
     val balanceValue = formats?.let { io.github.sirallap.fulla.core.guide.OpeningBalances.parse(balanceText, it.currency, it.decimalStyle, debt) }
     val balanceInvalid = formats != null && balanceValue == null
@@ -487,6 +496,34 @@ private fun StructureDialog(
                         style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
                     SwitchRow(stringResource(R.string.opening_balance_debt), stringResource(R.string.opening_balance_debt_help), debt) {
                         debt = it; balanceTouched = true
+                    }
+                }
+                if (showRoundUp && formats != null) {
+                    if (otherAccounts.isEmpty()) {
+                        Text(stringResource(R.string.round_up_needs_account), style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                    } else {
+                        SwitchRow(stringResource(R.string.round_up_title), stringResource(R.string.round_up_help), roundTo != null) { on ->
+                            roundTo = if (on) (otherAccounts.firstOrNull { it.type == io.github.sirallap.fulla.core.model.AccountType.SAVINGS } ?: otherAccounts.first()).id else null
+                            roundTouched = true
+                        }
+                        if (roundTo != null) {
+                            Text(stringResource(R.string.round_up_multiplier), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                for (m in io.github.sirallap.fulla.core.roundup.RoundUps.MULTIPLIERS) {
+                                    Chip("×$m", m == roundMultiplier, { roundMultiplier = m; roundTouched = true })
+                                }
+                            }
+                            Text(stringResource(R.string.round_up_to), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                for (a in otherAccounts) Chip(a.name, a.id == roundTo, { roundTo = a.id; roundTouched = true })
+                            }
+                            // The bank's own example, with this multiplier: a coffee of 1,50.
+                            val unit = (0 until formats.currency.minorUnits).fold(1L) { acc, _ -> acc * 10 }
+                            val coffee = unit * 3 / 2
+                            Text(stringResource(R.string.round_up_example, formats.money(coffee), formats.money(unit * 2),
+                                formats.money(io.github.sirallap.fulla.core.roundup.RoundUps.savingMinor(coffee, formats.currency, roundMultiplier)), roundMultiplier),
+                                style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                        }
                     }
                 }
                 if (iconPicker) {
@@ -514,6 +551,10 @@ private fun StructureDialog(
             TextButton(enabled = name.isNotBlank() && !balanceInvalid, onClick = {
                 onSave(JsonObject(item + mapOf("name" to JsonPrimitive(name.trim()), "archived" to JsonPrimitive(archived)) +
                     (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap()) +
+                    (if (showRoundUp && roundTouched) mapOf(
+                        "round_up_to" to (roundTo?.let { JsonPrimitive(it) } ?: JsonNull),
+                        "round_up_multiplier" to (if (roundTo != null) JsonPrimitive(roundMultiplier) else JsonNull),
+                    ) else emptyMap()) +
                     (if (balanceValue != null && balanceTouched) mapOf(
                         "opening_balance_minor" to JsonPrimitive(balanceValue),
                         "opening_balance_date" to JsonPrimitive(balanceDate.toString()),

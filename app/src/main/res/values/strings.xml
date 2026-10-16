@@ -554,6 +554,17 @@
     <!-- A switch in the account form: the opening balance is money owed (a credit card, an overdraft), so it is below zero -->
     <string name="opening_balance_debt">The account is in debt</string>
     <string name="opening_balance_debt_help">A credit card or an overdraft: the balance counts as money owed.</string>
+    <!-- Account form: round-up saving as banks offer it (every purchase rounded up to the next euro, the difference moved to savings) -->
+    <string name="round_up_title">Round-up saving</string>
+    <string name="round_up_help">Turn it on only if your bank already does it: each card purchase, bill or subscription is rounded up to the next euro and the difference goes to your savings account. That way the balances in Fulla match your bank's.</string>
+    <string name="round_up_multiplier">Multiplier</string>
+    <string name="round_up_to">Move it to</string>
+    <string name="round_up_example">If you pay %1$s for a coffee, it is rounded up to %2$s and you save %3$s. Your multiplier is %4$d.</string>
+    <string name="round_up_needs_account">Add another account first, the savings one, to move the round-up to.</string>
+    <!-- Message after saving a purchase on an account that rounds up: what went to savings, and to which account -->
+    <string name="round_up_saved">Round-up: %1$s to %2$s</string>
+    <!-- History: the title of the transfer a round-up made, from one account to the other -->
+    <string name="round_up_row">Round-up %1$s → %2$s</string>
 
     <!-- Coach-mark copy for the getting-started tour, spoken directly to the person -->
     <string name="tour_jar">This is your month. The jar fills with what you keep; income and spending are below it.</string>

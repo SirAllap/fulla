@@ -60,7 +60,7 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 | --- | --- | --- |
 | Between you | what each member paid minus their share, settlements included; always adds up to zero | `Balances` (also `fulla.member_balances`) |
 | To settle | the fewest payments that bring every balance to zero | `SettlementPlanner` |
-| Accounts | as on the overview | `Analytics.accountBalances` |
+| Accounts | as on the overview; a round-up (a purchase's cents up to the next euro, times the multiplier) is a transfer, so it moves the balance of two accounts and no spending or income | `Analytics.accountBalances`, `RoundUps` |
 
 ## History
 

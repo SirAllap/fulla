@@ -536,6 +536,17 @@
     <!-- A switch in the account form: the opening balance is money owed (a credit card, an overdraft), so it is below zero -->
     <string name="opening_balance_debt">Le compte est en négatif</string>
     <string name="opening_balance_debt_help">Une carte de crédit ou un découvert : le solde compte comme de l\'argent dû.</string>
+    <!-- Account form: round-up saving as banks offer it (every purchase rounded up to the next euro, the difference moved to savings) -->
+    <string name="round_up_title">Épargne par arrondi</string>
+    <string name="round_up_help">Activez-le seulement si votre banque le fait déjà : chaque achat par carte, facture ou abonnement est arrondi à l\'euro supérieur et la différence va sur votre compte d\'épargne. Ainsi les soldes de Fulla correspondent à ceux de votre banque.</string>
+    <string name="round_up_multiplier">Multiplicateur</string>
+    <string name="round_up_to">Verser sur</string>
+    <string name="round_up_example">Si vous payez %1$s pour un café, il est arrondi à %2$s et vous épargnez %3$s. Votre multiplicateur est %4$d.</string>
+    <string name="round_up_needs_account">Créez d\'abord un autre compte, celui d\'épargne, vers lequel verser l\'arrondi.</string>
+    <!-- Message after saving a purchase on an account that rounds up: what went to savings, and to which account -->
+    <string name="round_up_saved">Arrondi : %1$s vers %2$s</string>
+    <!-- History: the title of the transfer a round-up made, from one account to the other -->
+    <string name="round_up_row">Arrondi %1$s → %2$s</string>
 
     <string name="tour_jar">Voici votre mois. Le bocal se remplit de ce que vous gardez ; les revenus et les dépenses sont en dessous.</string>
     <string name="tour_overview">Aperçu : ce mois-ci en un coup d\'œil. Revenez aux mois précédents avec les flèches.</string>

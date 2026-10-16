@@ -562,6 +562,43 @@ test('editing an account without opening_balance_minor or opening_balance_date k
   assert.equal(account.opening_balance_date, '2030-01-15');
 });
 
+test('round-up: both keys together, to another account of the household, never from cash, absent keeps and null clears', (ctx) => {
+  const save = (a) => rpc(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: a });
+  const fails = (a) => expectError(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: a }, 'validation_failed');
+  const card = uuid();
+  const orange = uuid();
+  const wallet = uuid();
+  save({ id: orange, name: 'Orange', type: 'savings' });
+  save({ id: wallet, name: 'Wallet', type: 'cash' });
+  let cfg = save({ id: card, name: 'Card', type: 'checking', round_up_to: orange, round_up_multiplier: 2 });
+  let account = cfg.accounts.find((a) => a.id === card);
+  assert.equal(account.round_up_to, orange);
+  assert.equal(account.round_up_multiplier, 2);
+
+  // The "rename only" payload of a phone that has never heard of round-up leaves it as it is.
+  cfg = save({ id: card, name: 'Card 2', type: 'checking' });
+  account = cfg.accounts.find((a) => a.id === card);
+  assert.equal(account.name, 'Card 2');
+  assert.equal(account.round_up_to, orange);
+  assert.equal(account.round_up_multiplier, 2);
+
+  fails({ id: card, name: 'Card 2', type: 'checking', round_up_to: orange, round_up_multiplier: 3 });
+  fails({ id: card, name: 'Card 2', type: 'checking', round_up_to: orange });
+  fails({ id: card, name: 'Card 2', type: 'checking', round_up_multiplier: 2 });
+  fails({ id: card, name: 'Card 2', type: 'checking', round_up_to: card, round_up_multiplier: 1 });
+  fails({ id: card, name: 'Card 2', type: 'checking', round_up_to: uuid(), round_up_multiplier: 1 });
+  fails({ id: wallet, name: 'Wallet', type: 'cash', round_up_to: orange, round_up_multiplier: 1 });
+  for (const multiplier of [1, 5, 10]) {
+    cfg = save({ id: card, name: 'Card 2', type: 'checking', round_up_to: orange, round_up_multiplier: multiplier });
+    assert.equal(cfg.accounts.find((a) => a.id === card).round_up_multiplier, multiplier);
+  }
+
+  cfg = save({ id: card, name: 'Card 2', type: 'checking', round_up_to: null, round_up_multiplier: null });
+  account = cfg.accounts.find((a) => a.id === card);
+  assert.equal(account.round_up_to, null);
+  assert.equal(account.round_up_multiplier, null);
+});
+
 test('categories nest one level deep', (ctx) => {
   const save = (c) => rpc(ctx.db, ctx.alice, 'fulla_category_upsert', { p_household_id: ctx.hh, p_category: c });
   const pets = uuid();

@@ -6,9 +6,11 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.sirallap.fulla.client.local.Backup
 import io.github.sirallap.fulla.client.remote.Structure
 import io.github.sirallap.fulla.client.wire.Wire
+import io.github.sirallap.fulla.core.model.AccountType
 import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.roundup.RoundUps
 import io.github.sirallap.fulla.core.sync.SyncState
 import io.github.sirallap.fulla.data.local.FullaDatabase
 import io.github.sirallap.fulla.data.prefs.SettingsStore
@@ -275,5 +277,78 @@ class LedgerTest {
         job.join()
 
         assertTrue(ledger.household(h)!!.config.trips.isEmpty())
+    }
+
+    /** Turns round-up on for the first account that is not cash, towards another, and returns (from, to). */
+    private suspend fun roundUpOn(h: String, multiplier: Int): Pair<String, String> {
+        val accounts = ledger.household(h)!!.config.accounts
+        val from = accounts.first { it.type != AccountType.CASH }
+        val to = accounts.first { it.id != from.id }
+        ledger.upsert(h, Structure.ACCOUNT, buildJsonObject {
+            put("id", from.id); put("name", from.name); put("type", from.type.key)
+            put("round_up_to", to.id); put("round_up_multiplier", multiplier)
+        }, null)
+        return from.id to to.id
+    }
+
+    @Test
+    fun `a purchase on an account that rounds up writes its transfer, and the transfer follows the purchase`() = runTest {
+        val h = household()
+        val (from, to) = roundUpOn(h, 2)
+        val config = ledger.household(h)!!.config
+        val t = expense(h, 150, config).copy(accountId = from)
+        ledger.save(h, t)
+        val id = RoundUps.idFor(t.id)
+        val made = ledger.transaction(id)!!.transaction
+        assertEquals(TransactionKind.TRANSFER, made.kind)
+        assertEquals(100, made.amountMinor)
+        assertEquals(from, made.accountId)
+        assertEquals(to, made.toAccountId)
+        assertTrue(RoundUps.isRoundUp(made))
+
+        clock = clock.plusSeconds(60)
+        ledger.save(h, t.copy(amountMinor = 380))
+        assertEquals(40, ledger.transaction(id)!!.transaction.amountMinor)
+
+        clock = clock.plusSeconds(60)
+        ledger.save(h, t.copy(amountMinor = 400))
+        assertEquals(Status.DELETED, ledger.transaction(id)!!.transaction.status, "an exact amount has nothing to round")
+
+        clock = clock.plusSeconds(60)
+        ledger.save(h, t.copy(amountMinor = 150))
+        // the person deleted it with the purchase's edit: it stays deleted, nothing is written again behind their back
+        assertEquals(Status.DELETED, ledger.transaction(id)!!.transaction.status)
+    }
+
+    @Test
+    fun `deleting a purchase takes its round-up with it and restoring brings it back`() = runTest {
+        val h = household()
+        val (from, _) = roundUpOn(h, 1)
+        val t = expense(h, 80, ledger.household(h)!!.config).copy(accountId = from)
+        ledger.save(h, t)
+        val id = RoundUps.idFor(t.id)
+        assertEquals(20, ledger.transaction(id)!!.transaction.amountMinor)
+        clock = clock.plusSeconds(60)
+        ledger.delete(h, t.id)
+        assertEquals(Status.DELETED, ledger.transaction(id)!!.transaction.status)
+        clock = clock.plusSeconds(60)
+        ledger.restore(h, t.id)
+        assertEquals(Status.ACTIVE, ledger.transaction(id)!!.transaction.status)
+    }
+
+    @Test
+    fun `what was written before round-up was on, and what an import writes, is never rounded`() = runTest {
+        val h = household()
+        val accounts = ledger.household(h)!!.config.accounts
+        val first = accounts.first { it.type != AccountType.CASH }
+        val before = expense(h, 150, ledger.household(h)!!.config).copy(accountId = first.id)
+        ledger.save(h, before)
+        val (from, _) = roundUpOn(h, 2)
+        clock = clock.plusSeconds(60)
+        ledger.save(h, before.copy(amountMinor = 380))
+        assertNull(ledger.transaction(RoundUps.idFor(before.id)), "an old purchase that is edited is not rounded after the fact")
+        val imported = expense(h, 150, ledger.household(h)!!.config).copy(accountId = from)
+        ledger.saveAll(h, listOf(imported))
+        assertNull(ledger.transaction(RoundUps.idFor(imported.id)), "a bank statement already holds the bank's own transfers")
     }
 }

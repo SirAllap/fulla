@@ -536,6 +536,17 @@
     <!-- A switch in the account form: the opening balance is money owed (a credit card, an overdraft), so it is below zero -->
     <string name="opening_balance_debt">A conta está em dívida</string>
     <string name="opening_balance_debt_help">Um cartão de crédito ou um descoberto: o saldo conta como dinheiro em dívida.</string>
+    <!-- Account form: round-up saving as banks offer it (every purchase rounded up to the next euro, the difference moved to savings) -->
+    <string name="round_up_title">Poupança por arredondamento</string>
+    <string name="round_up_help">Ativa-o só se o teu banco já o faz: cada compra com cartão, recibo ou subscrição é arredondada para o euro seguinte e a diferença vai para a tua conta de poupança. Assim os saldos do Fulla coincidem com os do banco.</string>
+    <string name="round_up_multiplier">Multiplicador</string>
+    <string name="round_up_to">Passar para</string>
+    <string name="round_up_example">Se pagas %1$s por um café, é arredondado para %2$s e poupas %3$s. O teu multiplicador é %4$d.</string>
+    <string name="round_up_needs_account">Cria primeiro outra conta, a de poupança, para onde passar o arredondamento.</string>
+    <!-- Message after saving a purchase on an account that rounds up: what went to savings, and to which account -->
+    <string name="round_up_saved">Arredondamento: %1$s para %2$s</string>
+    <!-- History: the title of the transfer a round-up made, from one account to the other -->
+    <string name="round_up_row">Arredondamento %1$s → %2$s</string>
 
     <string name="tour_jar">Este é o seu mês. O frasco enche-se com o que poupa; as receitas e despesas estão por baixo.</string>
     <string name="tour_overview">Resumo: este mês num relance. Volte a meses anteriores com as setas.</string>

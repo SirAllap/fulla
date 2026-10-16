@@ -153,7 +153,9 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, onClick: () -
     val t = row.transaction
     val category = view.config.category(t.categoryId)
     val title = when (t.kind) {
-        TransactionKind.TRANSFER -> stringResource(R.string.transfer_between, view.accountName(t.accountId) ?: "?", view.accountName(t.toAccountId) ?: "?")
+        TransactionKind.TRANSFER ->
+            if (io.github.sirallap.fulla.core.roundup.RoundUps.isRoundUp(t)) stringResource(R.string.round_up_row, view.accountName(t.accountId) ?: "?", view.accountName(t.toAccountId) ?: "?")
+            else stringResource(R.string.transfer_between, view.accountName(t.accountId) ?: "?", view.accountName(t.toAccountId) ?: "?")
         TransactionKind.SETTLEMENT -> stringResource(R.string.settlement_between, view.memberName(t.paidByMemberId), view.memberName(t.toMemberId))
         else -> t.note.ifBlank { category?.name ?: stringResource(R.string.uncategorized) }
     }

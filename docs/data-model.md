@@ -28,7 +28,7 @@ this page explains them.
 | `households` | Name, currency, locale, period rules, first day of the week, member limit, `config_version` |
 | `members` | People in a household. `user_id` is null for members without an account. `role`: owner, admin, member. `status`: active, archived, removed |
 | `invites` | Single-use codes with expiry, optionally earmarked to claim a member without an account |
-| `accounts` | Cash, checking, savings, credit card or other, with an opening balance |
+| `accounts` | Cash, checking, savings, credit card or other, with an opening balance and, optionally, a round-up (`round_up_to`, `round_up_multiplier`) |
 | `categories` | One level of nesting; each applies to expenses, income or both |
 | `custom_fields` | Household-defined fields; values live in `transactions.extras` under the field's `key`. `category_ids` limits one to some categories (and their subcategories), where it is asked as one more level |
 | `budgets` | A limit per category and period (`YYYY-MM`), or for every period when `period` is null |
