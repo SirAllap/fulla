@@ -439,7 +439,7 @@ internal fun parseOpeningBalance(text: String, formats: io.github.sirallap.fulla
     io.github.sirallap.fulla.core.guide.OpeningBalances.parse(text, formats.currency, formats.decimalStyle)
 
 /** The purchases of this period that a round-up already set up has not rounded yet, and the button that rounds them. */
-internal class RoundUpBackfill(val count: Int, val totalMinor: Long, val apply: ((Int) -> Unit) -> Unit)
+internal class RoundUpBackfill(val count: Int, val totalMinor: Long, val write: ((Int) -> Unit) -> Unit)
 
 /** Name, archive, (for categories) icon, and (for accounts) an opening balance. Nothing is ever deleted: archived things keep their history. */
 @Composable
@@ -547,7 +547,7 @@ private fun StructureDialog(
                                 } else {
                                     Text(stringResource(R.string.round_up_backfill_info, roundUpBackfill.count, formats.money(roundUpBackfill.totalMinor)),
                                         style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
-                                    TextButton(onClick = { roundUpBackfill.apply { done = it } }) { Text(stringResource(R.string.round_up_backfill)) }
+                                    TextButton(onClick = { roundUpBackfill.write { done = it } }) { Text(stringResource(R.string.round_up_backfill)) }
                                 }
                             }
                         }
