@@ -78,6 +78,22 @@ object RoundUps {
             .toList()
     }
 
+    /** The active round-up transfer of [expense] among [byId] (every row held, by id), or null: the one a list shows under the purchase. */
+    fun underPurchase(expense: Transaction, byId: Map<String, Transaction>): Transaction? {
+        if (expense.kind != TransactionKind.EXPENSE) return null
+        val id = runCatching { idFor(expense.id) }.getOrNull() ?: return null
+        return byId[id]?.takeIf { isRoundUp(it) && it.status == Status.ACTIVE }
+    }
+
+    /**
+     * The round-up transfers of [shown] that sit under a purchase that is shown too, so a list draws them once, as part of
+     * the purchase. One whose purchase is not in the list (another filter, a search) is not among them and stands alone.
+     */
+    fun foldedInto(shown: List<Transaction>): Set<String> {
+        val under = shown.filter { it.kind == TransactionKind.EXPENSE }.mapNotNull { runCatching { idFor(it.id) }.getOrNull() }.toSet()
+        return shown.filter { isRoundUp(it) && it.id in under }.map { it.id }.toSet()
+    }
+
     /** What to do with the transfer of a purchase that was just written. */
     sealed interface Action {
         data object None : Action

@@ -245,6 +245,10 @@ the transfer it has, deleting or restoring it does the same to the transfer. Wha
 fact (a purchase written before it was turned on, or edited after), rounding an import (a bank statement already holds
 the bank's own transfers), rounding cash, rounding a refund, and bringing back a transfer the person deleted. It is
 not spending or income, so no figure moves; only the balances of the two accounts do (`RoundUpsTest`, `LedgerTest`).
+The History draws it under its purchase, as a line of that row, not as a row of its own (`RoundUps.underPurchase`,
+`RoundUps.foldedInto`): it stands alone only when its purchase is not in the list (the Transfers filter, a search). The
+phone says nothing when it writes one: a message over the tab bar was tried and was in the way. A person can ask for
+the rounding of the current period's purchases once (`RoundUps.backfill`, `Ledger.applyRoundUpBackfill`).
 
 ### Migrations
 

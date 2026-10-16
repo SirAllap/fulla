@@ -154,4 +154,20 @@ class RoundUpsTest {
         val deletedByHand = made.single().copy(status = Status.DELETED)
         assertTrue(RoundUps.backfill(rows + deletedByHand, Fixtures.MAIN, from, to, config()).isEmpty(), "a round-up the person deleted stays deleted")
     }
+
+    @Test
+    fun `a list shows the round-up under its purchase and only stands it alone when the purchase is not in the list`() {
+        val purchase = spend(150)
+        val made = RoundUps.companionOf(purchase, config())!!
+        val other = spend(300).copy(id = "00000000-0000-4000-8000-000000000b01")
+        val byId = listOf(purchase, made, other).associateBy { it.id }
+
+        assertEquals(made, RoundUps.underPurchase(purchase, byId))
+        assertNull(RoundUps.underPurchase(other, byId), "a purchase with nothing to round has nothing under it")
+        assertNull(RoundUps.underPurchase(made, byId), "only a purchase has a round-up under it")
+        assertNull(RoundUps.underPurchase(purchase, byId + (made.id to made.copy(status = Status.DELETED))), "one the person deleted is not shown")
+
+        assertEquals(setOf(made.id), RoundUps.foldedInto(listOf(made, purchase, other)))
+        assertTrue(RoundUps.foldedInto(listOf(made, other)).isEmpty(), "without its purchase in the list it stands alone")
+    }
 }

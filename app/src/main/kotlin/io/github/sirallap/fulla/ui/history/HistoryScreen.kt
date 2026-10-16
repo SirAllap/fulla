@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.core.analytics.DayTotals
 import io.github.sirallap.fulla.core.model.Status
+import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.sync.LocalTransaction
 import io.github.sirallap.fulla.core.sync.SyncState
@@ -102,7 +103,10 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
             }
         }
     }
-    val days = remember(shown) { shown.groupBy { it.transaction.date }.toSortedMap(compareByDescending { it }) }
+    // A round-up is shown under its purchase, not as a row of its own; it stands alone only when its purchase is not in the list.
+    val byId = remember(view) { view.rows.associate { it.transaction.id to it.transaction } }
+    val folded = remember(shown) { io.github.sirallap.fulla.core.roundup.RoundUps.foldedInto(shown.map { it.transaction }) }
+    val days = remember(shown) { shown.filter { it.transaction.id !in folded }.groupBy { it.transaction.date }.toSortedMap(compareByDescending { it }) }
 
     Column(Modifier.fillMaxSize()) {
         TabHeader(stringResource(R.string.tab_history), actions = { headerActions() },
@@ -138,7 +142,9 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
                             }
                             Section(f.day(day), top = 16.dp, trailing = trailing)
                         }
-                        items(rows, key = { it.id }) { row -> HistoryRow(view, row) { onOpen(row.id) } }
+                        items(rows, key = { it.id }) { row ->
+                            HistoryRow(view, row, io.github.sirallap.fulla.core.roundup.RoundUps.underPurchase(row.transaction, byId)) { onOpen(row.id) }
+                        }
                     }
                 }
             }
@@ -147,7 +153,7 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
 }
 
 @Composable
-private fun HistoryRow(view: HouseholdView, row: LocalTransaction, onClick: () -> Unit) {
+private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Transaction?, onClick: () -> Unit) {
     val c = FullaTheme.colors
     val f = view.formats
     val t = row.transaction
@@ -166,11 +172,13 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, onClick: () -
     ).plus(io.github.sirallap.fulla.core.schema.SchemaEngine.fieldsForList(view.config.fields).mapNotNull { f ->
         io.github.sirallap.fulla.ui.entry.fieldText(view, f, t.extras[f.key])
     }).joinToString(" · ")
-    val detail = when (row.state) {
+    // What went to savings with this purchase, as a line of its own under it.
+    val rounded = roundUp?.let { stringResource(R.string.round_up_saved, f.money(it.amountMinor), view.accountName(it.toAccountId) ?: "") }
+    val detail = listOfNotNull(when (row.state) {
         SyncState.REJECTED -> stringResource(R.string.rejected_reason, row.rejectMessage ?: row.rejectCode ?: "")
         SyncState.PENDING -> stringResource(R.string.not_sent_yet)
         else -> null
-    }
+    }, rounded).joinToString(" · ").ifBlank { null }
     val payer = view.config.member(t.paidByMemberId)
     val deleted = t.status == Status.DELETED
     ListRow(
