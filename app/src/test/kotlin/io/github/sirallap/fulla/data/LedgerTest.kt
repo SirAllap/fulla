@@ -312,7 +312,7 @@ class LedgerTest {
 
         clock = clock.plusSeconds(60)
         ledger.save(h, t.copy(amountMinor = 400))
-        assertEquals(Status.DELETED, ledger.transaction(id)!!.transaction.status, "an exact amount has nothing to round")
+        assertEquals("an exact amount has nothing to round", Status.DELETED, ledger.transaction(id)!!.transaction.status)
 
         clock = clock.plusSeconds(60)
         ledger.save(h, t.copy(amountMinor = 150))
@@ -346,10 +346,10 @@ class LedgerTest {
         val (from, _) = roundUpOn(h, 2)
         clock = clock.plusSeconds(60)
         ledger.save(h, before.copy(amountMinor = 380))
-        assertNull(ledger.transaction(RoundUps.idFor(before.id)), "an old purchase that is edited is not rounded after the fact")
+        assertNull("an old purchase that is edited is not rounded after the fact", ledger.transaction(RoundUps.idFor(before.id)))
         val imported = expense(h, 150, ledger.household(h)!!.config).copy(accountId = from)
         ledger.saveAll(h, listOf(imported))
-        assertNull(ledger.transaction(RoundUps.idFor(imported.id)), "a bank statement already holds the bank's own transfers")
+        assertNull("a bank statement already holds the bank's own transfers", ledger.transaction(RoundUps.idFor(imported.id)))
     }
 
     @Test
@@ -362,6 +362,6 @@ class LedgerTest {
         val day = before.date
         assertEquals(1, ledger.applyRoundUpBackfill(h, from, day, day))
         assertEquals(100, ledger.transaction(RoundUps.idFor(before.id))!!.transaction.amountMinor)
-        assertEquals(0, ledger.applyRoundUpBackfill(h, from, day, day), "a second press writes nothing")
+        assertEquals("a second press writes nothing", 0, ledger.applyRoundUpBackfill(h, from, day, day))
     }
 }
