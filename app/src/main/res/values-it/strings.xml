@@ -542,6 +542,10 @@
     <string name="round_up_multiplier">Moltiplicatore</string>
     <string name="round_up_to">Sposta su</string>
     <string name="round_up_example">Se paghi %1$s per un caffè, viene arrotondato a %2$s e risparmi %3$s. Il tuo moltiplicatore è %4$d.</string>
+    <string name="round_up_backfill">Applica alle spese di questo periodo</string>
+    <string name="round_up_backfill_info">%1$d spese di questo periodo non sono ancora arrotondate; %2$s andrebbero al conto di destinazione.</string>
+    <string name="round_up_backfill_none">Niente da arrotondare in questo periodo.</string>
+    <string name="round_up_backfill_done">Fatto: %1$d arrotondamenti registrati.</string>
     <string name="round_up_needs_account">Crea prima un altro conto, quello di risparmio, su cui spostare l\'arrotondamento.</string>
     <!-- Message after saving a purchase on an account that rounds up: what went to savings, and to which account -->
     <string name="round_up_saved">Arrotondamento: %1$s su %2$s</string>

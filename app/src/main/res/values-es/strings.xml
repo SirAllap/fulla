@@ -542,6 +542,10 @@
     <string name="round_up_multiplier">Multiplicador</string>
     <string name="round_up_to">Pasarlo a</string>
     <string name="round_up_example">Si pagas %1$s por un café, se redondea hasta %2$s y ahorrarás %3$s. Tu multiplicador actual es %4$d.</string>
+    <string name="round_up_backfill">Aplicar a los gastos de este periodo</string>
+    <string name="round_up_backfill_info">%1$d gastos de este periodo aún sin redondear; se moverían %2$s a la cuenta de destino.</string>
+    <string name="round_up_backfill_none">No queda nada por redondear en este periodo.</string>
+    <string name="round_up_backfill_done">Hecho: %1$d redondeos anotados.</string>
     <string name="round_up_needs_account">Crea antes otra cuenta, la de ahorro, a la que pasar el redondeo.</string>
     <!-- Message after saving a purchase on an account that rounds up: what went to savings, and to which account -->
     <string name="round_up_saved">Redondeo: %1$s a %2$s</string>

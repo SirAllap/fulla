@@ -133,4 +133,25 @@ class RoundUpsTest {
         assertEquals(150L, summary.expenseMinor, "only the purchase is spending")
         assertEquals(0L, summary.incomeMinor)
     }
+
+    @Test
+    fun `asking for it rounds this period's purchases once, and leaves out what is out of range, deleted or already done`() {
+        val inside = spend(150).copy(id = "00000000-0000-4000-8000-000000000a01", date = LocalDate.of(2030, 1, 10))
+        val outside = spend(150).copy(id = "00000000-0000-4000-8000-000000000a02", date = LocalDate.of(2029, 12, 31))
+        val exact = spend(1200).copy(id = "00000000-0000-4000-8000-000000000a03", date = LocalDate.of(2030, 1, 11))
+        val cash = spend(150).copy(id = "00000000-0000-4000-8000-000000000a04", date = LocalDate.of(2030, 1, 12), accountId = Fixtures.CASH)
+        val gone = spend(150).copy(id = "00000000-0000-4000-8000-000000000a05", date = LocalDate.of(2030, 1, 13), status = Status.DELETED)
+        val from = LocalDate.of(2030, 1, 1)
+        val to = LocalDate.of(2030, 1, 31)
+        val rows = listOf(inside, outside, exact, cash, gone)
+
+        val made = RoundUps.backfill(rows, Fixtures.MAIN, from, to, config())
+        assertEquals(listOf(RoundUps.idFor(inside.id)), made.map { it.id })
+        assertEquals(100L, made.single().amountMinor)
+        assertEquals(inside.date, made.single().date)
+
+        assertTrue(RoundUps.backfill(rows + made, Fixtures.MAIN, from, to, config()).isEmpty(), "a second press writes nothing")
+        val deletedByHand = made.single().copy(status = Status.DELETED)
+        assertTrue(RoundUps.backfill(rows + deletedByHand, Fixtures.MAIN, from, to, config()).isEmpty(), "a round-up the person deleted stays deleted")
+    }
 }

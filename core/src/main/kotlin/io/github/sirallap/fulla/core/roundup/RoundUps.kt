@@ -64,6 +64,20 @@ object RoundUps {
         )
     }
 
+    /**
+     * The transfers a person asks to write for what [accountId] already holds between [from] and [to] (both included):
+     * one per active expense of that account in that range that has none yet. [all] is every row held, deleted ones
+     * too, so a round-up the person deleted stays deleted and pressing it twice writes nothing the second time.
+     */
+    fun backfill(all: List<Transaction>, accountId: String, from: java.time.LocalDate, to: java.time.LocalDate, config: Config): List<Transaction> {
+        val held = all.map { it.id }.toSet()
+        return all.asSequence()
+            .filter { it.accountId == accountId && it.date in from..to }
+            .mapNotNull { companionOf(it, config) }
+            .filter { it.id !in held }
+            .toList()
+    }
+
     /** What to do with the transfer of a purchase that was just written. */
     sealed interface Action {
         data object None : Action

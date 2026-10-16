@@ -542,6 +542,10 @@
     <string name="round_up_multiplier">Multiplikator</string>
     <string name="round_up_to">Weiterleiten an</string>
     <string name="round_up_example">Wenn du %1$s für einen Kaffee zahlst, wird auf %2$s aufgerundet und du sparst %3$s. Dein Multiplikator ist %4$d.</string>
+    <string name="round_up_backfill">Auf die Ausgaben dieses Zeitraums anwenden</string>
+    <string name="round_up_backfill_info">%1$d Ausgaben dieses Zeitraums sind noch nicht aufgerundet; %2$s gingen auf das Zielkonto.</string>
+    <string name="round_up_backfill_none">In diesem Zeitraum gibt es nichts mehr aufzurunden.</string>
+    <string name="round_up_backfill_done">Erledigt: %1$d Aufrundungen eingetragen.</string>
     <string name="round_up_needs_account">Lege zuerst ein weiteres Konto an, das Sparkonto, auf das die Aufrundung gehen soll.</string>
     <!-- Message after saving a purchase on an account that rounds up: what went to savings, and to which account -->
     <string name="round_up_saved">Aufrunden: %1$s auf %2$s</string>

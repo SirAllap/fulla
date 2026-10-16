@@ -560,6 +560,10 @@
     <string name="round_up_multiplier">Multiplier</string>
     <string name="round_up_to">Move it to</string>
     <string name="round_up_example">If you pay %1$s for a coffee, it is rounded up to %2$s and you save %3$s. Your multiplier is %4$d.</string>
+    <string name="round_up_backfill">Round this period\'s purchases</string>
+    <string name="round_up_backfill_info">%1$d purchases from this period are not rounded yet; %2$s would move to the destination account.</string>
+    <string name="round_up_backfill_none">Nothing left to round in this period.</string>
+    <string name="round_up_backfill_done">Done: %1$d round-ups written.</string>
     <string name="round_up_needs_account">Add another account first, the savings one, to move the round-up to.</string>
     <!-- Message after saving a purchase on an account that rounds up: what went to savings, and to which account -->
     <string name="round_up_saved">Round-up: %1$s to %2$s</string>

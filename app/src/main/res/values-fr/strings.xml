@@ -542,6 +542,10 @@
     <string name="round_up_multiplier">Multiplicateur</string>
     <string name="round_up_to">Verser sur</string>
     <string name="round_up_example">Si vous payez %1$s pour un café, il est arrondi à %2$s et vous épargnez %3$s. Votre multiplicateur est %4$d.</string>
+    <string name="round_up_backfill">Appliquer aux dépenses de cette période</string>
+    <string name="round_up_backfill_info">%1$d dépenses de cette période ne sont pas encore arrondies ; %2$s iraient vers le compte de destination.</string>
+    <string name="round_up_backfill_none">Rien à arrondir dans cette période.</string>
+    <string name="round_up_backfill_done">Fait : %1$d arrondis enregistrés.</string>
     <string name="round_up_needs_account">Créez d\'abord un autre compte, celui d\'épargne, vers lequel verser l\'arrondi.</string>
     <!-- Message after saving a purchase on an account that rounds up: what went to savings, and to which account -->
     <string name="round_up_saved">Arrondi : %1$s vers %2$s</string>

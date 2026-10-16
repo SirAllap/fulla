@@ -386,6 +386,7 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
 @Composable
 fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val ledger = LocalContainer.current.ledger
+    val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
     var editing by remember { mutableStateOf<JsonObject?>(null) }
     Column {
@@ -409,7 +410,15 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         val isNew = "opening_balance_date" !in item
         val itemId = (item["id"] as? JsonPrimitive)?.content
         StructureDialog(item, onDismiss = { editing = null }, iconPicker = false, formats = view.formats, isNewAccount = isNew,
-            otherAccounts = view.config.accounts.filter { !it.archived && it.id != itemId }) { updated ->
+            otherAccounts = view.config.accounts.filter { !it.archived && it.id != itemId },
+            roundUpBackfill = itemId?.takeIf { view.config.account(it)?.roundUp != null }?.let { id ->
+                val today = LocalDate.now()
+                val from = RecurringPlanner.currentPeriodStart(view.config, view.active, today)
+                val rows = io.github.sirallap.fulla.core.roundup.RoundUps.backfill(view.rows.map { it.transaction }, id, from, today, view.config)
+                RoundUpBackfill(rows.size, rows.sumOf { it.amountMinor }) { done ->
+                    scope.launch { done(ledger.applyRoundUpBackfill(view.id, id, from, today)) }
+                }
+            }) { updated ->
             change { api -> ledger.upsert(view.id, Structure.ACCOUNT, updated, api) }
         }
     }
@@ -429,6 +438,9 @@ internal fun bundleItem(view: HouseholdView, kind: Structure, id: String): JsonO
 internal fun parseOpeningBalance(text: String, formats: io.github.sirallap.fulla.ui.Formats): Long? =
     io.github.sirallap.fulla.core.guide.OpeningBalances.parse(text, formats.currency, formats.decimalStyle)
 
+/** The purchases of this period that a round-up already set up has not rounded yet, and the button that rounds them. */
+internal class RoundUpBackfill(val count: Int, val totalMinor: Long, val apply: ((Int) -> Unit) -> Unit)
+
 /** Name, archive, (for categories) icon, and (for accounts) an opening balance. Nothing is ever deleted: archived things keep their history. */
 @Composable
 private fun StructureDialog(
@@ -439,6 +451,8 @@ private fun StructureDialog(
     isNewAccount: Boolean = false,
     /** The accounts a round-up can go to (an account being edited). */
     otherAccounts: List<io.github.sirallap.fulla.core.model.Account> = emptyList(),
+    /** What a round-up already saved here could still write for this period's purchases (count and amount to move), and how to write it. */
+    roundUpBackfill: RoundUpBackfill? = null,
     /** Deleting, for what can be deleted: it closes this dialog and the caller asks what the deletion needs. [deleteBlockedText] says why it cannot be done now. */
     onDeleteClick: (() -> Unit)? = null,
     deleteBlockedText: String? = null,
@@ -523,6 +537,19 @@ private fun StructureDialog(
                             Text(stringResource(R.string.round_up_example, formats.money(coffee), formats.money(unit * 2),
                                 formats.money(io.github.sirallap.fulla.core.roundup.RoundUps.savingMinor(coffee, formats.currency, roundMultiplier)), roundMultiplier),
                                 style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                            // Only for what is saved: the button writes what the account already says.
+                            if (roundUpBackfill != null && !roundTouched) {
+                                var done by remember { mutableStateOf<Int?>(null) }
+                                if (done != null) {
+                                    Text(stringResource(R.string.round_up_backfill_done, done!!), style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                                } else if (roundUpBackfill.count == 0) {
+                                    Text(stringResource(R.string.round_up_backfill_none), style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                                } else {
+                                    Text(stringResource(R.string.round_up_backfill_info, roundUpBackfill.count, formats.money(roundUpBackfill.totalMinor)),
+                                        style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+                                    TextButton(onClick = { roundUpBackfill.apply { done = it } }) { Text(stringResource(R.string.round_up_backfill)) }
+                                }
+                            }
                         }
                     }
                 }

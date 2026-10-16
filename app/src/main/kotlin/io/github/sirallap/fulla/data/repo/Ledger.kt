@@ -119,6 +119,22 @@ class Ledger(
         transactions.upsert(listOf(Rows.entity(householdId, next)))
     }
 
+    /** Writes the round-up transfers the person asked for on [accountId]'s purchases from [from] to [to] (see [RoundUps.backfill]); how many. */
+    suspend fun applyRoundUpBackfill(householdId: String, accountId: String, from: LocalDate, to: LocalDate): Int {
+        val h = households.get(householdId) ?: return 0
+        val connected = h.mode == CONNECTED
+        val config = LocalHousehold.config(Wire.json.parseToJsonElement(h.configJson).jsonObject)
+        val written = db.withTransaction {
+            val all = transactions.all(householdId).map { Rows.local(it).transaction }
+            val rows = RoundUps.backfill(all, accountId, from, to, config)
+                .map { Edits.create(it, connected, now(), config.household) }
+            if (rows.isNotEmpty()) transactions.upsert(rows.map { Rows.entity(householdId, it) })
+            rows.size
+        }
+        if (connected && written > 0) requestSync()
+        return written
+    }
+
     /** A purchase deleted or restored takes its round-up transfer with it, unless the person already deleted that. */
     private suspend fun cascadeRoundUp(householdId: String, expenseId: String, deleted: Boolean) {
         val h = households.get(householdId) ?: return

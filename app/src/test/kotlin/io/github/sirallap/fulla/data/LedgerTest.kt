@@ -351,4 +351,17 @@ class LedgerTest {
         ledger.saveAll(h, listOf(imported))
         assertNull(ledger.transaction(RoundUps.idFor(imported.id)), "a bank statement already holds the bank's own transfers")
     }
+
+    @Test
+    fun `asking for it rounds what was already written, once`() = runTest {
+        val h = household()
+        val first = ledger.household(h)!!.config.accounts.first { it.type != AccountType.CASH }
+        val before = expense(h, 150, ledger.household(h)!!.config).copy(accountId = first.id)
+        ledger.save(h, before)
+        val (from, _) = roundUpOn(h, 2)
+        val day = before.date
+        assertEquals(1, ledger.applyRoundUpBackfill(h, from, day, day))
+        assertEquals(100, ledger.transaction(RoundUps.idFor(before.id))!!.transaction.amountMinor)
+        assertEquals(0, ledger.applyRoundUpBackfill(h, from, day, day), "a second press writes nothing")
+    }
 }
