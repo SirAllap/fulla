@@ -51,6 +51,7 @@ import io.github.sirallap.fulla.BuildConfig
 import io.github.sirallap.fulla.core.version.ReleaseHistory
 import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.client.local.LocalHousehold
+import io.github.sirallap.fulla.client.local.RecurringPlanner
 import io.github.sirallap.fulla.client.remote.FullaApi
 import io.github.sirallap.fulla.client.remote.FullaError
 import io.github.sirallap.fulla.client.remote.InviteLink
