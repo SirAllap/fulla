@@ -5,8 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
@@ -23,9 +21,6 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -50,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -140,16 +134,6 @@ private fun Household(state: HouseholdState) {
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     val pendingUpdate = settings?.pendingUpdate
     val guideTargets = io.github.sirallap.fulla.ui.guide.rememberGuideTargets()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val snackScope = rememberCoroutineScope()
-    val savedTripLabel = stringResource(R.string.saved_to_trip)
-    // Saved as Everyday keeps its existing (silent) behaviour: only naming a
-    // trip is new information worth a confirmation.
-    fun announceSaved(tripName: String?) {
-        if (tripName == null) return
-        snackScope.launch { snackbarHostState.showSnackbar(savedTripLabel.format(tripName)) }
-    }
-
     // A new version: told once, in whatever screen the person is on, and again a day later while it is not installed.
     // Not over the guide. Dismissing it leaves the gear's dot and the banner at the top of Settings.
     val foreground by container.foreground.collectAsStateWithLifecycle()
@@ -197,7 +181,7 @@ private fun Household(state: HouseholdState) {
                         (fadeIn(fade) + slideInHorizontally(enterSpec) { if (toRight) it / 20 else -it / 20 }) togetherWith fadeOut(fade)
                     }) { shown ->
                         when (shown) {
-                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW }, onSaved = ::announceSaved)
+                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW })
                             Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
                             Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") })
@@ -207,7 +191,7 @@ private fun Household(state: HouseholdState) {
                 }
             }
             composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() }, onSaved = ::announceSaved)
+                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() })
             }
             composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }, onFixedCosts = { nav.navigate("settings/recurring") }) }
             composable("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
@@ -232,10 +216,6 @@ private fun Household(state: HouseholdState) {
 
         GuideHost(view, tab, setTab = { tab = it })
 
-        // Above the tab bar, never over it: a message must not cover the way to another tab. The bar is 64 dp and a divider.
-        Box(Modifier.fillMaxSize().navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 76.dp), contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
-            SnackbarHost(snackbarHostState) { data -> Snackbar(data) }
-        }
     }
 }
 

@@ -189,7 +189,7 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
  * details line, so the common case is three taps.
  */
 @Composable
-fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit, onSaved: (String?) -> Unit = {}, onDeleted: (String) -> Unit = {}) {
+fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit, onDeleted: (String) -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val existing = remember(editingId) { editingId?.let { id -> view.rows.firstOrNull { it.id == id }?.transaction } }
@@ -224,7 +224,6 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         // A cleared field travels as an explicit null: an absent key would keep the stored value.
         val cleared = draft.extras.filterValues { it == null }.keys.associateWith { null }
         val t = built.copy(extras = merged.extras + cleared)
-        val savedTripName = view.config.trip(t.tripId)?.name
         // One salary per month: marking this one takes the mark off the one it replaces.
         val replaced = if (PeriodAnchors.marked(t)) draft.otherSalary?.let { PeriodAnchors.mark(it, false) } else null
         scope.launch {
@@ -232,7 +231,6 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
             // The save key gathers into a ✓ before the screen moves on.
             saved = true
             if (!reducedMotion) kotlinx.coroutines.delay(460)
-            onSaved(savedTripName)
             onDone()
             saved = false
         }
