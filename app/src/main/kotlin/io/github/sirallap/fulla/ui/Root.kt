@@ -143,8 +143,6 @@ private fun Household(state: HouseholdState) {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackScope = rememberCoroutineScope()
     val savedTripLabel = stringResource(R.string.saved_to_trip)
-    val deletedLabel = stringResource(R.string.entry_deleted)
-    val undoLabel = stringResource(R.string.undo)
     // Saved as Everyday keeps its existing (silent) behaviour: only naming a
     // trip is new information worth a confirmation.
     fun announceSaved(tripName: String?) {
@@ -164,14 +162,6 @@ private fun Household(state: HouseholdState) {
         if (s.guideHousehold == null && io.github.sirallap.fulla.client.remote.UpdateAnnouncement.due(version, s.updateAnnouncedVersion, s.updateAnnouncedAt, now)) {
             container.settings.setUpdateAnnounced(version, now)
             updateOpen = true
-        }
-    }
-
-    // Deleting an entry asks nothing and says what happened, with a way back: the quickest thing that cannot go wrong.
-    fun announceDeleted(id: String) {
-        snackScope.launch {
-            val result = snackbarHostState.showSnackbar(deletedLabel, actionLabel = undoLabel, duration = androidx.compose.material3.SnackbarDuration.Short)
-            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) container.ledger.restore(view.id, id)
         }
     }
 
@@ -217,7 +207,7 @@ private fun Household(state: HouseholdState) {
                 }
             }
             composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() }, onSaved = ::announceSaved, onDeleted = ::announceDeleted)
+                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() }, onSaved = ::announceSaved)
             }
             composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }, onFixedCosts = { nav.navigate("settings/recurring") }) }
             composable("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
