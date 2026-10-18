@@ -24,6 +24,7 @@ import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.recurring.Scheduler
+import io.github.sirallap.fulla.core.roundup.RoundUps
 import io.github.sirallap.fulla.core.rules.PeriodRule
 import io.github.sirallap.fulla.core.sync.ConflictNote
 import io.github.sirallap.fulla.core.sync.LocalTransaction
@@ -299,23 +300,68 @@ object Ledger {
 
     // ── rows ─────────────────────────────────────────────────────────────────
 
-    /** Creates or changes a row; the id says which. */
+    /** Creates or changes a row; the id says which. A purchase on an account that rounds up brings its round-up along. */
     suspend fun save(t: Transaction) {
-        val household = bundle?.let { LocalHousehold.config(it).household } ?: return
-        val existing = rows.firstOrNull { it.id == t.id }
-        val next = if (existing == null) Edits.create(t, connected, now(), household) else Edits.edit(existing, t, connected, now())
-        rows = if (existing == null) rows + next else rows.map { if (it.id == t.id) next else it }
+        val config = bundle?.let { LocalHousehold.config(it) } ?: return
+        write(t, config, roundUp = true)
         persist()
         requestSync()
     }
 
-    suspend fun delete(id: String) = change(id) { Edits.delete(it, connected, now()) }
-    suspend fun undelete(id: String) = change(id) { Edits.restore(it, connected, now()) }
+    private fun write(t: Transaction, config: Config, roundUp: Boolean) {
+        val existing = rows.firstOrNull { it.id == t.id }
+        put(if (existing == null) Edits.create(t, connected, now(), config.household) else Edits.edit(existing, t, connected, now()))
+        if (roundUp) roundUpFor(t, existing?.transaction, config)?.let(::put)
+    }
 
-    private suspend fun change(id: String, f: (LocalTransaction) -> LocalTransaction) {
+    private fun put(row: LocalTransaction) {
+        rows = if (rows.any { it.id == row.id }) rows.map { if (it.id == row.id) row else it } else rows + row
+    }
+
+    /**
+     * Round-up saving: what a written purchase does to the transfer it makes (RoundUps.reconcile), as on the phone:
+     * the same id, so the two write the same row; [previous] is the purchase before this edit, null for a new one.
+     */
+    private fun roundUpFor(t: Transaction, previous: Transaction?, config: Config): LocalTransaction? {
+        if (config.accounts.none { it.roundUp != null }) return null
+        val id = runCatching { RoundUps.idFor(t.id) }.getOrNull() ?: return null
+        val held = rows.firstOrNull { it.id == id }
+        return when (val action = RoundUps.reconcile(t, previous, held?.transaction, config)) {
+            RoundUps.Action.None -> null
+            is RoundUps.Action.Create -> Edits.create(action.transfer, connected, now(), config.household)
+            is RoundUps.Action.Update -> held?.let { Edits.edit(it, action.transfer, connected, now()) }
+            RoundUps.Action.Delete -> held?.let { Edits.delete(it, connected, now()) }
+        }
+    }
+
+    /** Writes the round-ups a person asked for on [accountId]'s purchases from [from] to [to] (RoundUps.backfill); how many. */
+    suspend fun applyRoundUpBackfill(accountId: String, from: LocalDate, to: LocalDate): Int {
+        val config = LocalHousehold.config(bundle ?: return 0)
+        val made = RoundUps.backfill(rows.map { it.transaction }, accountId, from, to, config)
+            .map { Edits.create(it, connected, now(), config.household) }
+        if (made.isEmpty()) return 0
+        rows = rows + made
+        persist()
+        requestSync()
+        return made.size
+    }
+
+    suspend fun delete(id: String) = deleteOrRestore(id, deleted = true)
+    suspend fun undelete(id: String) = deleteOrRestore(id, deleted = false)
+
+    /** A purchase deleted or restored takes its round-up with it, unless the person already deleted that one. */
+    private suspend fun deleteOrRestore(id: String, deleted: Boolean) {
         val row = rows.firstOrNull { it.id == id } ?: return
-        val next = f(row)
-        rows = rows.map { if (it.id == id) next else it }
+        put(if (deleted) Edits.delete(row, connected, now()) else Edits.restore(row, connected, now()))
+        val roundUpId = runCatching { RoundUps.idFor(id) }.getOrNull()
+        val held = roundUpId?.let { r -> rows.firstOrNull { it.id == r } }
+        if (held != null && RoundUps.isRoundUp(held.transaction)) {
+            when {
+                deleted && held.transaction.status == Status.ACTIVE -> put(Edits.delete(held, connected, now()))
+                !deleted && held.transaction.status == Status.DELETED -> put(Edits.restore(held, connected, now()))
+                else -> Unit
+            }
+        }
         persist()
         requestSync()
     }
@@ -337,8 +383,16 @@ object Ledger {
         else { bundle = LocalHousehold.copyBudgets(b, from, to); persist() }
     }
 
-    /** Writes several rows at once, such as the settlements that start a shared pot. */
-    suspend fun saveAll(list: List<Transaction>) { for (t in list) save(t) }
+    /**
+     * Writes several rows at once, such as the settlements that start a shared pot or an import. Nothing is rounded up
+     * here: a bank statement already holds the bank's own round-up transfers.
+     */
+    suspend fun saveAll(list: List<Transaction>) {
+        val config = bundle?.let { LocalHousehold.config(it) } ?: return
+        for (t in list) write(t, config, roundUp = false)
+        persist()
+        requestSync()
+    }
 
     /** Limits a field to some categories, or lifts the limit (empty). */
     suspend fun setFieldCategories(fieldId: String, categoryIds: Set<String>) {
@@ -434,9 +488,13 @@ object Ledger {
         val api = Remote.api!!
         api.ping()
         val joined = api.householdCreateFromLocal(LocalHousehold.forUpload(b))
-        val config = LocalHousehold.afterUpload(b, joined.config)
+        // Savings goals go up one by one once the household exists: each names an account the upload has just saved.
+        var server = joined.config
+        val id = LocalHousehold.config(b).household.id
+        for (goal in (b["goals"] as? JsonArray).orEmpty()) server = api.upsert(id, Structure.GOAL, goal.jsonObject)
+        val config = LocalHousehold.afterUpload(b, server)
         bundle = config
-        meta = Meta(CONNECTED, endpoint.url, endpoint.anonKey, 0, LocalHousehold.version(joined.config))
+        meta = Meta(CONNECTED, endpoint.url, endpoint.anonKey, 0, LocalHousehold.version(server))
         rows = rows.map { r -> Edits.connect(listOf(r)).firstOrNull() ?: r }
         persist()
         // At once, not soon: a person may invite somebody before a timer fires, and what was written alone must reach the server first.
@@ -569,6 +627,8 @@ object Ledger {
         val due = RecurringPlanner.plan(config, rows.map { it.id }.toSet(), today) { rows.map { it.transaction } }
         if (due.isEmpty()) return 0
         rows = rows + due.map { Edits.create(it, connected, now(), config.household) }
+        // A fixed cost on an account that rounds up is rounded like any other purchase (bills and subscriptions are).
+        for (t in due) roundUpFor(t, null, config)?.let(::put)
         persist()
         requestSync()
         return due.size
@@ -582,6 +642,7 @@ object Ledger {
         val row = RecurringPlanner.occurrence(rule, date, config).copy(status = if (skip) Status.DELETED else Status.ACTIVE)
         if (rows.any { it.id == row.id }) return false
         rows = rows + Edits.create(row, connected, now(), config.household)
+        if (!skip) roundUpFor(row, null, config)?.let(::put)
         persist()
         requestSync()
         return true

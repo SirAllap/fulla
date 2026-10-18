@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.web
 
+import io.github.sirallap.fulla.core.roundup.RoundUps
 import io.github.sirallap.fulla.client.local.LocalHousehold
 import io.github.sirallap.fulla.client.platform.randomUuid
 import io.github.sirallap.fulla.client.remote.Structure
@@ -406,6 +407,57 @@ object AccountsPage {
             check()
             balance.on("input") { check() }
             switchRow(t("opening_balance_debt"), t("opening_balance_debt_help"), debt) { debt = it; check() }
+            // Round-up saving, as a bank offers it: per account, never cash, and nothing to round in a currency with no cents.
+            val type = existing?.type ?: io.github.sirallap.fulla.core.model.AccountType.CHECKING
+            val others = view.config.accounts.filter { !it.archived && it.id != existing?.id }
+            var roundTo: String? = existing?.roundUp?.toAccountId
+            var roundMultiplier = existing?.roundUp?.multiplier ?: 2
+            var roundTouched = false
+            if (type != io.github.sirallap.fulla.core.model.AccountType.CASH && format.currency.minorUnits > 0) {
+                if (others.isEmpty()) note(t("round_up_needs_account"))
+                else {
+                    val box = div("round-up")
+                    fun render() {
+                        box.clear()
+                        box.switchRow(t("round_up_title"), t("round_up_help"), roundTo != null) { on ->
+                            roundTo = if (on) (others.firstOrNull { it.type == io.github.sirallap.fulla.core.model.AccountType.SAVINGS } ?: others.first()).id else null
+                            roundTouched = true
+                            render()
+                        }
+                        if (roundTo == null) return
+                        box.labelled(t("round_up_multiplier")) {
+                            chipRow { for (m in RoundUps.MULTIPLIERS) chip("×$m", m == roundMultiplier) { roundMultiplier = m; roundTouched = true; render() } }
+                        }
+                        box.labelled(t("round_up_to")) {
+                            chipRow(wrap = true) { for (a in others) chip(a.name, a.id == roundTo) { roundTo = a.id; roundTouched = true; render() } }
+                        }
+                        // The bank's own example, with this multiplier: a coffee of 1,50.
+                        var unit = 1L
+                        repeat(format.currency.minorUnits) { unit *= 10 }
+                        val coffee = unit * 3 / 2
+                        box.note(t("round_up_example", format.money(coffee), format.money(unit * 2),
+                            format.money(RoundUps.savingMinor(coffee, format.currency, roundMultiplier)), roundMultiplier))
+                        // What is saved already can round this period's purchases, once; a choice not yet saved cannot.
+                        if (!roundTouched && existing?.roundUp != null) {
+                            val today = LocalDate.now()
+                            val from = io.github.sirallap.fulla.client.local.RecurringPlanner.currentPeriodStart(view.config, view.active, today)
+                            val pending = RoundUps.backfill(view.rows.map { it.transaction }, existing.id, from, today, view.config)
+                            if (pending.isEmpty()) box.note(t("round_up_backfill_none"))
+                            else {
+                                box.note(t("round_up_backfill_info", pending.size, format.money(pending.sumOf { it.amountMinor })))
+                                box.secondaryButton(t("round_up_backfill")) {
+                                    App.launch {
+                                        val made = Ledger.applyRoundUpBackfill(existing.id, from, today)
+                                        box.clear()
+                                        box.note(t("round_up_backfill_done", made))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    render()
+                }
+            }
             switchRow(t("archive"), t("archive_help"), archived) { archived = it }
             div("actions") {
                 saveButton = primaryButton(t("save")) {
@@ -418,10 +470,15 @@ object AccountsPage {
                     val date = existing?.openingBalanceDate ?: if (changed) LocalDate.now() else null
                     val item = io.github.sirallap.fulla.core.model.Account(
                         existing?.id ?: randomUuid(), title, existing?.type ?: io.github.sirallap.fulla.core.model.AccountType.CHECKING,
-                        minor, date, existing?.sort ?: view.config.accounts.size, archived)
+                        minor, date, existing?.sort ?: view.config.accounts.size, archived,
+                        roundUp = if (roundTouched) roundTo?.let { io.github.sirallap.fulla.core.model.RoundUp(it, roundMultiplier) } else existing?.roundUp)
                     val wire = io.github.sirallap.fulla.client.wire.Wire.account(item)
                     // Renaming or archiving leaves the balance and its date out, so what is stored is not rewritten (an account without a date counts every movement, and must go on doing so).
-                    val body = if (changed) wire else JsonObject(wire.filterKeys { it != "opening_balance_minor" && it != "opening_balance_date" })
+                    // The round-up likewise: sent only when it was touched here, so an edit never undoes one another phone set.
+                    val body = JsonObject(wire.filterKeys { k ->
+                        (changed || (k != "opening_balance_minor" && k != "opening_balance_date")) &&
+                            (roundTouched || (k != "round_up_to" && k != "round_up_multiplier"))
+                    })
                     App.launch { Ledger.upsert(Structure.ACCOUNT, body) }
                 }
                 quietButton(t("cancel")) { close() }

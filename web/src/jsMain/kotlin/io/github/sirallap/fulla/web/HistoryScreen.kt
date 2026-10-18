@@ -4,6 +4,7 @@ package io.github.sirallap.fulla.web
 import io.github.sirallap.fulla.client.local.CsvExport
 import io.github.sirallap.fulla.core.analytics.DayTotals
 import io.github.sirallap.fulla.core.model.Status
+import io.github.sirallap.fulla.core.roundup.RoundUps
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.schema.SchemaEngine
 import io.github.sirallap.fulla.core.split.SharedPot
@@ -34,6 +35,8 @@ object HistoryScreen {
     }
 
     private var filter = Filter.ALL
+    /** One account, or all of them: a transfer shows under both its accounts. */
+    private var account: String? = null
     private var query = ""
     private var limit = 100
 
@@ -66,6 +69,12 @@ object HistoryScreen {
                     chip(t(f.label), f == filter) { filter = f; limit = 100; App.render() }
                 }
             }
+            val accounts = view.config.accounts.filter { !it.archived }
+            if (account != null && accounts.none { it.id == account }) account = null
+            if (accounts.size >= 2) chipRow {
+                chip(t("all_accounts"), account == null) { account = null; limit = 100; App.render() }
+                for (a in accounts) chip(a.name, a.id == account) { account = a.id; limit = 100; App.render() }
+            }
             list = div("")
             list.fill(view, format)
         }
@@ -73,14 +82,21 @@ object HistoryScreen {
 
     private fun HTMLElement.fill(view: HouseholdView, format: Format) {
         val q = query.trim().normalizeName()
-        val shown = view.rows.filter { filter.keeps(it) }.filter { row ->
+        val matching = view.rows.filter { filter.keeps(it) }
+            .filter { account == null || it.transaction.accountId == account || it.transaction.toAccountId == account }
+            .filter { row ->
             if (q.isEmpty()) return@filter true
             val tx = row.transaction
             listOfNotNull(tx.note, view.config.category(tx.categoryId)?.name, view.config.account(tx.accountId)?.name, view.memberName(tx.paidByMemberId))
                 .plus(tx.tags).any { it.normalizeName().contains(q) } || format.plain(tx.amountMinor).contains(query.trim())
-        }.map { it.transaction.date to it }.sortedWith(compareByDescending<Pair<LocalDate, LocalTransaction>> { it.first }.thenByDescending { it.second.transaction.createdAt })
+        }
+        // A round-up is shown under its purchase, not as a row of its own; it stands alone only when its purchase is not in the list.
+        val byId = view.rows.associate { it.transaction.id to it.transaction }
+        val folded = RoundUps.foldedInto(matching.map { it.transaction })
+        val shown = matching.filter { it.transaction.id !in folded }.map { it.transaction.date to it }.sortedWith(compareByDescending<Pair<LocalDate, LocalTransaction>> { it.first }.thenByDescending { it.second.transaction.createdAt })
         if (shown.isEmpty()) { emptyState("receipt_long", t("empty_history_title"), t("empty_history_text")); return }
         var last: LocalDate? = null
+        var card: HTMLElement? = null
         val visible = shown.take(limit)
         for ((day, row) in visible) {
             if (day != last) {
@@ -92,20 +108,24 @@ object HistoryScreen {
                     t("day_received", format.money(totals.receivedMinor)).takeIf { totals.receivedMinor > 0 },
                 ).joinToString(" · ")
                 section(dayTitle(day, format), summary = summary.ifEmpty { null })
+                // A day's rows sit in one card under the day's name.
+                card = div("rows card")
             }
-            entry(row, view, format)
+            card!!.entry(row, view, format, RoundUps.underPurchase(row.transaction, byId))
         }
         if (shown.size > limit) div("actions") { secondaryButton(t("more")) { limit += 100; App.render() } }
     }
 
     private fun dayTitle(day: LocalDate, format: Format): String = format.day(day)
 
-    private fun HTMLElement.entry(row: LocalTransaction, view: HouseholdView, format: Format) {
+    private fun HTMLElement.entry(row: LocalTransaction, view: HouseholdView, format: Format, roundUp: io.github.sirallap.fulla.core.model.Transaction?) {
         val tx = row.transaction
         val config = view.config
         val category = config.category(tx.categoryId)
         val title = when (tx.kind) {
-            TransactionKind.TRANSFER -> t("transfer_between", config.account(tx.accountId)?.name ?: "?", config.account(tx.toAccountId)?.name ?: "?")
+            TransactionKind.TRANSFER ->
+                if (RoundUps.isRoundUp(tx)) t("round_up_row", config.account(tx.accountId)?.name ?: "?", config.account(tx.toAccountId)?.name ?: "?")
+                else t("transfer_between", config.account(tx.accountId)?.name ?: "?", config.account(tx.toAccountId)?.name ?: "?")
             TransactionKind.SETTLEMENT -> t("settlement_between", view.memberName(tx.paidByMemberId), view.memberName(tx.toMemberId))
             else -> tx.note.ifBlank { category?.name ?: t("uncategorized") }
         }
@@ -114,15 +134,17 @@ object HistoryScreen {
             config.account(tx.accountId)?.name?.takeIf { tx.kind != TransactionKind.TRANSFER },
             t("kind_refund").takeIf { tx.kind == TransactionKind.REFUND },
         ) + SchemaEngine.fieldsForList(config.fields).mapNotNull { f -> fieldText(view, f, tx.extras[f.key], format) }).joinToString(" · ")
-        val detail = when (row.state) {
+        // What went to savings with this purchase, as a line of its own under it.
+        val rounded = roundUp?.let { t("round_up_saved", format.money(it.amountMinor), config.account(it.toAccountId)?.name ?: "") }
+        val detail = listOfNotNull(when (row.state) {
             SyncState.REJECTED -> t("rejected_reason", row.rejectMessage ?: row.rejectCode ?: "")
             SyncState.PENDING -> t("not_sent_yet")
             else -> null
-        }
+        }, rounded).joinToString(" · ").ifBlank { null }
         val payer = config.member(tx.paidByMemberId)
         val deleted = tx.status == Status.DELETED
         val several = config.activeMembers.size >= 2
-        div("rows") {
+        run {
             listRow(title, context = context.ifBlank { null }, detail = detail, dim = deleted,
                 start = {
                     if (payer != null && several) {
