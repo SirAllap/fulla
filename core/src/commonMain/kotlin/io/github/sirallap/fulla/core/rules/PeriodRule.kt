@@ -166,7 +166,7 @@ object PeriodAnchors {
         t.copy(tags = if (starts) (t.tags - TAG) + TAG else t.tags - TAG)
 
     /** Tags as a person sees them. */
-    fun visibleTags(tags: List<String>): List<String> = tags - TAG
+    fun visibleTags(tags: List<String>): List<String> = tags - TAG - io.github.sirallap.fulla.core.roundup.RoundUps.TAG
 
     /** The latest salary that starts a period, the model for the next one. */
     fun latest(transactions: Iterable<Transaction>): Transaction? = transactions.filter(::counts).maxByOrNull { it.date }

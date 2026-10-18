@@ -132,7 +132,13 @@ data class Account(
     val openingBalanceDate: LocalDate? = null,
     val sort: Int = 0,
     val archived: Boolean = false,
+    /** Round-up saving: what every purchase on this account puts aside, and where. Null: off. */
+    val roundUp: RoundUp? = null,
 )
+
+/** Where the round-up of an account goes and how many times the difference to the next whole unit is put aside (1, 2, 5 or 10). */
+data class RoundUp(val toAccountId: String, val multiplier: Int)
+
 
 data class Category(
     val id: String,
@@ -229,6 +235,7 @@ data class Config(
     val budgets: List<Budget> = emptyList(),
     val recurringRules: List<io.github.sirallap.fulla.core.recurring.RecurringRule> = emptyList(),
     val trips: List<Trip> = emptyList(),
+    val goals: List<io.github.sirallap.fulla.core.goals.Goal> = emptyList(),
 ) {
     val activeMembers: List<Member> get() = members.filter { it.isActive }
     fun member(id: String?): Member? = members.firstOrNull { it.id == id }

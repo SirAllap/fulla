@@ -46,6 +46,9 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import io.github.sirallap.fulla.core.time.LocalDate
+import io.github.sirallap.fulla.core.goals.Goal
+import io.github.sirallap.fulla.core.model.RoundUp
+import io.github.sirallap.fulla.core.roundup.RoundUps
 
 /**
  * The wire format, both ways. It is the database's JSON exactly
@@ -197,7 +200,9 @@ object Wire {
                     // explicit null both read as "no date": a legacy account,
                     // every movement counts, same as before this field existed.
                     it.str("opening_balance_date")?.let(LocalDate::parse),
-                    it.int("sort") ?: 0, it.bool("archived") ?: false)
+                    it.int("sort") ?: 0, it.bool("archived") ?: false,
+                    // Absent (an older bundle) and null both read as "round-up off".
+                    roundUp = it.str("round_up_to")?.let { to -> it.int("round_up_multiplier")?.takeIf { m -> m in RoundUps.MULTIPLIERS }?.let { m -> RoundUp(to, m) } })
             },
             categories = o.arr("categories").map { it.jsonObject }.map {
                 Category(it.str("id")!!, it.str("name") ?: "", AppliesTo.of(it.str("applies_to")), it.str("parent_id"),
@@ -225,7 +230,24 @@ object Wire {
             },
             recurringRules = o.arr("recurring_rules").map { it.jsonObject }.mapNotNull { recurring(it) },
             trips = o.arr("trips").map { it.jsonObject }.map(::trip),
+            // An older bundle has no goals: none.
+            goals = o.arr("goals").map { it.jsonObject }.mapNotNull(::goal),
         )
+    }
+
+    fun goal(o: JsonObject): Goal? {
+        val id = o.str("id") ?: return null
+        val account = o.str("account_id") ?: return null
+        return Goal(
+            id = id, name = o.str("name") ?: "", targetMinor = o.long("target_minor") ?: return null, accountId = account,
+            targetDate = o.str("target_date")?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+            archived = o.bool("archived") ?: false,
+        )
+    }
+
+    fun goal(g: Goal): JsonObject = buildJsonObject {
+        put("id", g.id); put("name", g.name); put("target_minor", g.targetMinor); put("account_id", g.accountId)
+        put("target_date", g.targetDate?.toString()); put("archived", g.archived)
     }
 
     fun trip(o: JsonObject): Trip = Trip(
@@ -315,12 +337,14 @@ object Wire {
         put("categorization_rules", JsonArray(emptyList()))
         put("import_profiles", JsonArray(emptyList()))
         put("trips", JsonArray(c.trips.map(::trip)))
+        put("goals", JsonArray(c.goals.map { goal(it) }))
     }
 
     fun account(a: Account): JsonObject = buildJsonObject {
         put("id", a.id); put("name", a.name); put("type", a.type.key)
         put("opening_balance_minor", a.openingBalanceMinor)
         put("opening_balance_date", a.openingBalanceDate?.toString())
+        put("round_up_to", a.roundUp?.toAccountId); put("round_up_multiplier", a.roundUp?.multiplier)
         put("sort", a.sort); put("archived", a.archived)
     }
 
