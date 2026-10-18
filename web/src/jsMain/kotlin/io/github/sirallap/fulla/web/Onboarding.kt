@@ -31,7 +31,7 @@ object Onboarding {
     private var key = ""
     private var email = ""
     private var password = ""
-    private var createAccount = false
+    private var createAccount = true
     private var code = ""
     private var linked: InviteLink? = null
 
@@ -141,9 +141,9 @@ object Onboarding {
     }
 
     private fun HTMLElement.projectFields() {
-        val u = field(t("project_url"), url, "url") { attr("autocapitalize", "none"); attr("autocorrect", "off"); attr("inputmode", "url") }
+        val u = field(t("project_id"), url, "url", help = t("project_id_help")) { attr("autocapitalize", "none"); attr("autocorrect", "off"); attr("inputmode", "url") }
         u.on("input") { url = u.value }
-        val k = field(t("anon_key"), key) { attr("autocapitalize", "none"); attr("autocorrect", "off") }
+        val k = field(t("public_key"), key) { attr("autocapitalize", "none"); attr("autocorrect", "off") }
         k.on("input") { key = k.value }
     }
 

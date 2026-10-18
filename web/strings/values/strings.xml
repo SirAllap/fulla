@@ -17,9 +17,16 @@
     <string name="setup_manual_project">Create a project</string>
     <string name="setup_manual_project_text">Any name, a region near you, and a database password you will not need again.</string>
     <string name="setup_manual_sql">Install Fulla\'s database</string>
-    <string name="setup_manual_sql_text">Copy the script, open the SQL editor of your project, paste it and press Run. It is safe to run again.</string>
+    <string name="setup_manual_sql_text">Copy the script, open the SQL editor of your project, paste it and press Run. It is safe to run again, and it lets the accounts you make for Fulla in without a confirmation email.</string>
     <string name="setup_copy_script">Copy script</string>
-    <string name="setup_manual_keys">Copy the address and the key</string>
-    <string name="setup_manual_keys_text">URL: Project Settings → General → Project ID, press Copy and paste it as it is (20 letters). Key: Project Settings → API Keys, copy the one called “anon” (long, starts with eyJ) or “Publishable” (starts with sb_publishable_). Never the secret one.</string>
+    <string name="setup_manual_id">Copy the Project ID</string>
+    <string name="setup_manual_id_text">Open, then press Copy next to Project ID and paste it below (20 letters).</string>
+    <string name="project_id">Project ID</string>
+    <string name="project_id_help">Or the project’s address, https://….supabase.co.</string>
+    <string name="setup_manual_key">Copy the public key</string>
+    <string name="setup_manual_key_text">Open and copy the “Publishable” key (starts with sb_publishable_). Or, under the Legacy tab, the “anon” one (starts with eyJ). Never a secret or service_role key.</string>
+    <string name="public_key">Public key</string>
+    <string name="setup_manual_account">Your Fulla account</string>
+    <string name="setup_manual_account_text">An email and a password of your choice, not your Supabase ones. The first time, leave Create an account on.</string>
     <string name="setup_script_copied">Script copied. Paste it in the SQL editor and press Run.</string>
 </resources>

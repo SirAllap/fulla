@@ -14,7 +14,7 @@ object SyncPage {
     private var key = ""
     private var email = ""
     private var password = ""
-    private var create = false
+    private var create = true
     private var busy = false
     private var error: String? = null
     private var signedInAs: String? = null

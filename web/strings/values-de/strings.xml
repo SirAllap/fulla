@@ -17,9 +17,16 @@
     <string name="setup_manual_project">Projekt anlegen</string>
     <string name="setup_manual_project_text">Beliebiger Name, eine Region in deiner Nähe und ein Datenbankpasswort, das du nicht mehr brauchst.</string>
     <string name="setup_manual_sql">Fullas Datenbank installieren</string>
-    <string name="setup_manual_sql_text">Kopiere das Skript, öffne den SQL-Editor deines Projekts, füge es ein und drücke Run. Es kann bedenkenlos erneut ausgeführt werden.</string>
+    <string name="setup_manual_sql_text">Kopiere das Skript, öffne den SQL-Editor deines Projekts, füge es ein und drücke Run. Es kann bedenkenlos erneut ausgeführt werden, und Konten, die du für Fulla anlegst, brauchen damit keine Bestätigungs-E-Mail.</string>
     <string name="setup_copy_script">Skript kopieren</string>
-    <string name="setup_manual_keys">Adresse und Schlüssel kopieren</string>
-    <string name="setup_manual_keys_text">URL: Project Settings → General → Project ID, tippe auf Copy und füge es unverändert ein (20 Buchstaben). Schlüssel: Project Settings → API Keys, kopiere „anon“ (lang, beginnt mit eyJ) oder „Publishable“ (beginnt mit sb_publishable_). Nie den geheimen.</string>
+    <string name="setup_manual_id">Project ID kopieren</string>
+    <string name="setup_manual_id_text">Öffnen, neben Project ID auf Copy tippen und unten einfügen (20 Buchstaben).</string>
+    <string name="project_id">Projekt-ID</string>
+    <string name="project_id_help">Oder die Adresse des Projekts, https://….supabase.co.</string>
+    <string name="setup_manual_key">Öffentlichen Schlüssel kopieren</string>
+    <string name="setup_manual_key_text">Öffnen und den Schlüssel „Publishable“ kopieren (beginnt mit sb_publishable_). Oder im Tab Legacy den „anon“-Schlüssel (beginnt mit eyJ). Nie einen secret- oder service_role-Schlüssel.</string>
+    <string name="public_key">Öffentlicher Schlüssel</string>
+    <string name="setup_manual_account">Dein Fulla-Konto</string>
+    <string name="setup_manual_account_text">Eine E-Mail und ein Passwort deiner Wahl, nicht die von Supabase. Beim ersten Mal „Konto erstellen“ eingeschaltet lassen.</string>
     <string name="setup_script_copied">Skript kopiert. Füge es im SQL-Editor ein und drücke Run.</string>
 </resources>

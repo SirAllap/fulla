@@ -400,13 +400,18 @@ if (process.env.FULLA_SKIP_DB !== '1') {
 
     await gear(a.page);
     await row(a.page, 'Sync').click();
-    ok(await a.page.locator('.setup-step').count() === 4 && await a.page.locator('input[type=url]').count() === 1, 'without a project of its own, Sync explains the four steps and asks for the address and the key');
+    ok(await a.page.locator('.setup-step').count() === 6 && await a.page.locator('input[type=url]').count() === 1, 'without a project of its own, Sync explains the six steps and asks for the project ID and the key');
+    await a.page.evaluate(() => { window.open = (u) => { window.__opened = (window.__opened || []).concat(u); return null; }; });
+    await a.page.fill('input[type=url]', 'abcdefghijklmnopqrst');
+    await a.page.click('.setup-step >> nth=4 >> .text-btn');
+    const opened = await a.page.evaluate(() => window.__opened || []);
+    ok(opened[0] === 'https://supabase.com/dashboard/project/abcdefghijklmnopqrst/settings/api-keys', 'with the project ID in, the key step opens that project\'s API keys: ' + opened[0]);
+    ok(await a.page.locator('input.switch').isChecked(), 'Create an account is on to begin with');
     await a.shot('19-setup-guide');
     await a.page.fill('input[type=url]', fakeUrl);
     await a.page.fill('input >> nth=1', 'anon-key-for-tests');
     await a.page.fill('input[type=email]', 'alice@example.com');
     await a.page.fill('input[type=password]', 'correct horse battery');
-    await a.page.click('.switch');
     await a.shot('20-share');
     await a.page.click('main .btn.primary');
     await a.page.waitForSelector('.row:has-text("Signed in as")', { timeout: 20000 });
@@ -429,9 +434,14 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     await b.page.fill('input[type=url]', fakeUrl);
     await b.page.fill('input >> nth=2', 'anon-key-for-tests');
     await b.page.fill('input >> nth=3', 'Bob Example');
+    await b.page.fill('input[type=email]', 'alice@example.com');
+    await b.page.fill('input[type=password]', 'not her password');
+    await b.page.click('main .btn.primary');
+    await b.page.waitForSelector('.problem', { timeout: 20000 });
+    ok(/Wrong email or password/.test(await b.page.textContent('.problem')), 'creating an account that exists signs in instead, so a wrong password says so');
+    b.errors.length = 0; // the refused sign-in above logs its 422 and 400 on purpose
     await b.page.fill('input[type=email]', 'bob@example.com');
     await b.page.fill('input[type=password]', 'another long phrase');
-    await b.page.click('.switch');
     await b.shot('21-join');
     await b.page.click('main .btn.primary');
     await b.page.waitForSelector('.tabbar', { timeout: 30000 });

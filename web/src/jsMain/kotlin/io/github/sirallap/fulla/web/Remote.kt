@@ -68,11 +68,20 @@ object Remote {
     /** The person signed in here, or null. */
     suspend fun session(): Session? = supabase?.currentSession()
 
-    /** Signs in, or creates the account first. Null from sign-up means the project wants the email confirmed. */
+    /**
+     * Signs in, or creates the account first. Creating is on by default, so an account that already exists signs in
+     * instead of stopping the person. False means the project wants the email confirmed.
+     */
     suspend fun signIn(email: String, password: String, create: Boolean): Boolean {
         val s = supabase ?: error("No project chosen")
         if (create) {
-            if (s.signUp(email, password) == null) {
+            val session = try {
+                s.signUp(email, password)
+            } catch (e: FullaError) {
+                if (e.code != "user_already_exists" && "already registered" !in e.message.lowercase()) throw e
+                s.signIn(email, password)
+            }
+            if (session == null) {
                 // The project wants the email confirmed. Fulla's script confirms accounts itself, so signing in works.
                 try { s.signIn(email, password) } catch (e: Exception) { return false }
             }

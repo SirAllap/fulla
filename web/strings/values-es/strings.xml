@@ -17,9 +17,16 @@
     <string name="setup_manual_project">Crea un proyecto</string>
     <string name="setup_manual_project_text">Cualquier nombre, una región cercana y una contraseña de base de datos que no volverás a necesitar.</string>
     <string name="setup_manual_sql">Instala la base de datos de Fulla</string>
-    <string name="setup_manual_sql_text">Copia el script, abre el editor SQL de tu proyecto, pégalo y pulsa Run. Se puede ejecutar otra vez sin problema.</string>
+    <string name="setup_manual_sql_text">Copia el script, abre el editor SQL de tu proyecto, pégalo y pulsa Run. Se puede ejecutar otra vez sin problema, y hace que las cuentas que crees para Fulla no necesiten confirmar el correo.</string>
     <string name="setup_copy_script">Copiar script</string>
-    <string name="setup_manual_keys">Copia la dirección y la clave</string>
-    <string name="setup_manual_keys_text">URL: Project Settings → General → Project ID, pulsa Copy y pégalo tal cual (20 letras). Clave: Project Settings → API Keys, copia la llamada «anon» (larga, empieza por eyJ) o «Publishable» (empieza por sb_publishable_). Nunca la secreta.</string>
+    <string name="setup_manual_id">Copia el Project ID</string>
+    <string name="setup_manual_id_text">Abre, pulsa Copy junto a Project ID y pégalo abajo (20 letras).</string>
+    <string name="project_id">ID del proyecto</string>
+    <string name="project_id_help">O la dirección del proyecto, https://….supabase.co.</string>
+    <string name="setup_manual_key">Copia la clave pública</string>
+    <string name="setup_manual_key_text">Abre y copia la clave «Publishable» (empieza por sb_publishable_). O, en la pestaña Legacy, la «anon» (empieza por eyJ). Nunca una clave secret ni service_role.</string>
+    <string name="public_key">Clave pública</string>
+    <string name="setup_manual_account">Tu cuenta de Fulla</string>
+    <string name="setup_manual_account_text">Un correo y una contraseña que elijas tú, no los de Supabase. La primera vez, deja activado Crear una cuenta.</string>
     <string name="setup_script_copied">Script copiado. Pégalo en el editor SQL y pulsa Run.</string>
 </resources>

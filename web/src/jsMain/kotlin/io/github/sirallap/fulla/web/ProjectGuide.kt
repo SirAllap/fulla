@@ -12,7 +12,8 @@ import kotlin.js.Promise
  * A household's own Supabase project, from a browser. The Android app creates it with an access token; a browser page
  * is not allowed to call Supabase's management API (it answers no cross-site request), so here the person does it
  * once by hand, with every step explained and its page one tap away: an account, a project, Fulla's database (the
- * script is copied to the clipboard), then the project's address and public key. A build made for one project (the
+ * script is copied to the clipboard, and it lets accounts in without a confirmation email), then the project's ID and
+ * public key, each with a link to the page that shows it, and the Fulla account. A build made for one project (the
  * Android build's) never shows any of this.
  */
 object ProjectGuide {
@@ -44,14 +45,22 @@ object ProjectGuide {
             div("text") { span("title") { text(t("setup_manual_sql")) }; span("sub") { text(t("setup_manual_sql_text")) } }
             div("setup-buttons") {
                 child("button", "text-btn") { attr("type", "button"); text(t("setup_copy_script")); click { copyScript() } }
-                child("button", "text-btn") { attr("type", "button"); text(t("setup_open")); click { open("https://supabase.com/dashboard/project/_/sql/new") } }
+                child("button", "text-btn") { attr("type", "button"); text(t("setup_open")); click { open(page("sql/new")) } }
             }
         }
-        step(4, t("setup_manual_keys"), t("setup_manual_keys_text"), t("setup_open")) { open("https://supabase.com/dashboard/project/_/settings/general") }
-        val u = field(t("project_url"), url, "url") { attr("autocapitalize", "none"); attr("autocorrect", "off"); attr("inputmode", "url") }
+        step(4, t("setup_manual_id"), t("setup_manual_id_text"), t("setup_open")) { open(page("settings/general")) }
+        val u = field(t("project_id"), url, "url", help = t("project_id_help")) { attr("autocapitalize", "none"); attr("autocorrect", "off"); attr("inputmode", "url") }
         u.on("input") { url = u.value }
-        val k = field(t("anon_key"), key, help = t("anon_key_help")) { attr("autocapitalize", "none"); attr("autocorrect", "off") }
+        step(5, t("setup_manual_key"), t("setup_manual_key_text"), t("setup_open")) { open(page("settings/api-keys")) }
+        val k = field(t("public_key"), key) { attr("autocapitalize", "none"); attr("autocorrect", "off") }
         k.on("input") { key = k.value }
+        step(6, t("setup_manual_account"), t("setup_manual_account_text"), null) {}
+    }
+
+    /** A page of the person's project in Supabase's dashboard: theirs once the ID is in, else Supabase asks which one. */
+    private fun page(path: String): String {
+        val ref = parse(url, "-")?.host?.removeSuffix(".supabase.co")
+        return "https://supabase.com/dashboard/project/${ref ?: "_"}/$path"
     }
 
     private fun open(page: String) { window.open(page, "_blank", "noopener") }
