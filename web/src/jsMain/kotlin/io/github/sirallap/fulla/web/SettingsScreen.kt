@@ -25,6 +25,18 @@ enum class SettingsPage(val title: String, val icon: String) {
     ABOUT("settings_about", "info"),
 }
 
+/** The blocks of Settings, as on the phone. Every page is in exactly one (SettingsGroupsTest). */
+enum class SettingsGroup(val title: String, val help: String, val pages: List<SettingsPage>) {
+    HOME("settings_group_home", "settings_group_home_help",
+        listOf(SettingsPage.HOUSEHOLD, SettingsPage.MEMBERS, SettingsPage.SYNC, SettingsPage.HOUSEHOLDS)),
+    MONEY("settings_group_money", "settings_group_money_help",
+        listOf(SettingsPage.ACCOUNTS, SettingsPage.GOALS, SettingsPage.CATEGORIES, SettingsPage.BUDGETS, SettingsPage.RECURRING, SettingsPage.TRIPS)),
+    DATA("settings_group_data", "settings_group_data_help",
+        listOf(SettingsPage.IMPORT, SettingsPage.RULES, SettingsPage.FIELDS, SettingsPage.BACKUP)),
+    APP("settings_group_app", "settings_group_app_help",
+        listOf(SettingsPage.APPEARANCE, SettingsPage.ABOUT)),
+}
+
 /** Settings, and nothing but settings: each section is a screen of its own, reached from the list. */
 object SettingsScreen {
     private const val WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000L
@@ -63,17 +75,26 @@ object SettingsScreen {
 
     private fun HTMLElement.index(view: HouseholdView) {
         InstallHint.card()?.let { appendChild(it) }
-        div("rows") {
-            for (p in SettingsPage.entries) {
-                // A phone-only household has nobody to share with yet: the same sections, the same order.
-                listRow(t(p.title), start = { span("lead") { ui(p.icon) } },
-                    end = {
-                        if (p == SettingsPage.BACKUP && backupDue()) span("dot") { attr("aria-hidden", "true") }
-                        chevron()
-                    }) { App.settingsPage = p; App.render(); window.scrollTo(0.0, 0.0) }
+        // Four blocks, each with what it is for, instead of one long list: the household, its money, its data, the app.
+        for ((i, group) in SettingsGroup.entries.withIndex()) {
+            div(if (i == 0) "group-title first" else "group-title") {
+                child("h3") { text(t(group.title)) }
+                child("p") { text(t(group.help)) }
+            }
+            div("rows card") {
+                for (p in group.pages) {
+                    // A phone-only household has nobody to share with yet: the same sections, the same order.
+                    listRow(t(p.title), start = { span("lead") { ui(p.icon) } },
+                        end = {
+                            if (p == SettingsPage.BACKUP && backupDue()) span("dot") { attr("aria-hidden", "true") }
+                            chevron()
+                        }) { App.settingsPage = p; App.render(); window.scrollTo(0.0, 0.0) }
+                }
+                if (group == SettingsGroup.APP) {
+                    listRow(t("settings_show_guide"), start = leadIcon("info")) { App.closeSettings(); GuideHost.start(view.id, io.github.sirallap.fulla.core.guide.GuideOrigin.REPLAY) }
+                }
             }
         }
-        div("rows") { listRow(t("settings_show_guide"), start = leadIcon("info")) { App.closeSettings(); GuideHost.start(view.id, io.github.sirallap.fulla.core.guide.GuideOrigin.REPLAY) } }
         if (!Idb.available) child("p", "problem") { text(t("web_storage_missing")) }
     }
 

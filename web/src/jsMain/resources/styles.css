@@ -301,3 +301,41 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .setup-step .sub { font-size: 14px; line-height: 19px; color: var(--ink-muted); }
 .setup-progress { padding: 4px var(--inset); }
 .setup-buttons { display: flex; flex-direction: column; align-items: flex-end; }
+
+/* 0.1.40: the round Add button in the middle of the bar, raised above it; its own highlight, no pill */
+.tab.add::before { display: none; }
+.tab.add .add-fab { width: 56px; height: 56px; margin-top: -28px; border-radius: 50%; background: var(--highlight); color: var(--on-highlight);
+  display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22); transition: transform 160ms var(--ease); }
+.tab.add:active .add-fab { transform: scale(0.94); }
+
+/* Cards: the rows of a section in one rounded surface, with room around it */
+.rows.card, .card { margin: 0 16px; background: var(--paper-high); border-radius: 20px; overflow: hidden; }
+.rows.card .row { padding-left: 16px; padding-right: 16px; }
+.rows.card .row::after { left: 16px; }
+.rows.card > .row:last-child::after { display: none; }
+.rows.card + .rows.card { margin-top: 12px; }
+
+/* Settings in blocks: a title and what the block is for, above its card */
+.group-title { padding: 28px var(--inset) 10px; display: flex; flex-direction: column; gap: 2px; }
+.group-title.first { padding-top: 12px; }
+.group-title h3 { margin: 0; font-size: 20px; line-height: 26px; font-weight: 600; color: var(--ink); }
+.group-title p { margin: 0; font-size: 14px; line-height: 19px; color: var(--ink-muted); }
+
+/* A goal that is reached fills green */
+.progress.paid > div { background: var(--in-surface); }
+
+/* The month day by day */
+.calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 12px; }
+.cal-head { text-align: center; font-size: 12px; line-height: 16px; color: var(--ink-muted); }
+.cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 12px; color: var(--ink); }
+.cal-day.quiet { color: var(--ink-muted); }
+.cal-day.empty { visibility: hidden; }
+.cal-day.today { box-shadow: inset 0 0 0 2px var(--highlight); }
+.cal-legend { grid-column: 1 / -1; margin: 6px 0 0; font-size: 14px; line-height: 19px; color: var(--ink-muted); }
+
+/* The demo says so at the top, with the way to one's own household */
+.demo-notice { align-self: flex-start; margin: 4px var(--inset); padding: 8px 14px; border: 0; border-radius: 999px; background: var(--highlight); color: var(--on-highlight);
+  font-size: 13px; line-height: 17px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; }
+
+/* Messages at the top, never over the tabs */
+.toast, .toast.no-tabs { top: calc(env(safe-area-inset-top) + 72px); bottom: auto; }

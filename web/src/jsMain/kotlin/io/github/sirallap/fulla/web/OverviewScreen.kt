@@ -43,6 +43,14 @@ object OverviewScreen {
 
         return el("main", "screen overview") {
             tabHeader(config.household.name, insightsPill())
+            // Invented data says so at the top, with the way to one's own household one tap away.
+            if (io.github.sirallap.fulla.core.demo.DemoData.isDemo(view.id)) {
+                child("button", "demo-notice") {
+                    attr("type", "button"); attr("aria-label", t("demo_use_mine"))
+                    text(t("demo_notice")); ui("chevron_right", 18)
+                    click { Onboarding.adding = true; App.render() }
+                }
+            }
             InstallHint.card()?.let { appendChild(it) }
             div("period") {
                 appendChild(iconButton("chevron_left", t("previous_period"), "accent") { chosen = period.minusMonths(1); App.render() })

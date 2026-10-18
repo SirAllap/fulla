@@ -66,8 +66,8 @@ object InsightsScreen {
         val dimensions = SchemaEngine.dimensions(view.config.fields)
         val canEdit = view.config.me()?.let { Permissions.canEditStructure(it) } == true
 
-        return el("main", "screen no-tabs insights") {
-            backHeader(t("insights")) { App.closeInsights() }
+        return el("main", "screen insights") {
+            tabHeader(t("insights"))
             div("period") {
                 appendChild(iconButton("chevron_left", t("previous_period"), "accent") { chosen = period.minusMonths(1); App.render() })
                 span("t-amount label") { text(format.period(period)) }
@@ -115,11 +115,12 @@ object InsightsScreen {
             }
             section(t("period_summary"), first = forecast == null)
             figureTiles(format, period, view, report)
+            calendar(view, format, a.calendar(view.active, period, today, view.deletedIds), today)
             if (forecast != null && forecast.fixed.isNotEmpty()) {
                 val f = forecast
                 section(t("fixed_costs"))
                 val total = f.fixedTotalMinor; val left = f.leftToSpendMinor; val perDay = f.perDayMinor
-                val row = mutableListOf(Tile(t("fixed_total_tile"), format.money(total), t("fixed_progress", format.money(f.fixedPaidMinor), format.money(f.fixedToComeMinor)), if (total > 0) f.fixedPaidMinor.toDouble() / total else null, "out", phase = 2.2, onClick = { App.closeInsights(); App.openSettings(SettingsPage.RECURRING) }))
+                val row = mutableListOf(Tile(t("fixed_total_tile"), format.money(total), t("fixed_progress", format.money(f.fixedPaidMinor), format.money(f.fixedToComeMinor)), if (total > 0) f.fixedPaidMinor.toDouble() / total else null, "out", phase = 2.2, onClick = { App.openSettings(SettingsPage.RECURRING) }))
                 if (left != null && perDay != null) row += Tile(t("per_day"), format.money(perDay), t("per_day_text", f.daysToGo), null, "in", if (perDay < 0) "out" else "in", 4.6)
                 tiles(row)
                 if (left == null) note(t("forecast_add_income"))
@@ -304,6 +305,50 @@ object InsightsScreen {
                     span("t-label name") { text(v.label) }
                 }
             }
+        }
+    }
+
+    /**
+     * The period day by day: a square per day, green when it spent less than there was per day, orange when more
+     * (Analytics.calendar). Weeks start on Monday; the line under it says what "per day" is.
+     */
+    private fun HTMLElement.calendar(view: HouseholdView, format: Format, cal: io.github.sirallap.fulla.core.analytics.SpendingCalendar, today: LocalDate) {
+        val dark = Liquids.dark()
+        fun hex(c: Long) = "#" + (c and 0xFFFFFF).toString(16).padStart(6, '0')
+        section(t("calendar_title"), summary = if (cal.dailyMinor != null) t("calendar_summary", cal.under, cal.over) else null)
+        div("card calendar") {
+            // The head: Monday to Sunday, from a week known to start on a Monday.
+            val monday = LocalDate.of(2030, 1, 7)
+            for (i in 0 until 7) span("cal-head") { text(format.weekdayLetter(monday.plusDays(i.toLong()))) }
+            val lead = cal.days.first().date.dayOfWeek.value - 1
+            repeat(lead) { span("cal-day empty") }
+            for (day in cal.days) {
+                val mark = day.mark
+                val what = when (mark) {
+                    io.github.sirallap.fulla.core.analytics.DayMark.UNDER -> t("calendar_day_under")
+                    io.github.sirallap.fulla.core.analytics.DayMark.OVER -> t("calendar_day_over")
+                    else -> null
+                }
+                span(buildString {
+                    append("cal-day")
+                    if (mark == io.github.sirallap.fulla.core.analytics.DayMark.TO_COME || mark == io.github.sirallap.fulla.core.analytics.DayMark.NONE) append(" quiet")
+                    if (day.date == today) append(" today")
+                }) {
+                    when (mark) {
+                        io.github.sirallap.fulla.core.analytics.DayMark.UNDER -> style.background = hex(io.github.sirallap.fulla.core.design.CalendarColors.under(dark))
+                        io.github.sirallap.fulla.core.analytics.DayMark.OVER -> style.background = hex(io.github.sirallap.fulla.core.design.CalendarColors.over(dark))
+                        else -> Unit
+                    }
+                    attr("aria-label", listOfNotNull(format.day(day.date), format.money(day.spentMinor), what).joinToString(", "))
+                    text(day.date.dayOfMonth.toString())
+                }
+            }
+            val legend = when (cal.basis) {
+                io.github.sirallap.fulla.core.analytics.DailyBasis.AFTER_FIXED -> t("calendar_basis_after_fixed", format.money(cal.dailyMinor ?: 0))
+                io.github.sirallap.fulla.core.analytics.DailyBasis.USUAL -> t("calendar_basis_usual", format.money(cal.dailyMinor ?: 0))
+                null -> t("calendar_no_basis")
+            }
+            child("p", "cal-legend") { text(legend) }
         }
     }
 }

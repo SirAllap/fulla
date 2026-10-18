@@ -7,11 +7,12 @@ import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import org.w3c.dom.HTMLElement
 
-/** The four tabs of the Android app, with its icons. Everything else hangs off the gear. */
+/** The tabs of the Android app, in its order: two on each side of Add, the round button in the middle. Everything else hangs off the gear. */
 enum class Tab(val label: String, val icon: String) {
-    ADD("tab_add", "add_circle_outline"),
     OVERVIEW("tab_overview", "opacity"),
     HISTORY("tab_history", "receipt_long"),
+    ADD("tab_add", "add"),
+    INSIGHTS("insights", "insights"),
     BALANCES("tab_balances", "account_balance_wallet"),
 }
 
@@ -48,8 +49,9 @@ object App {
         window.scrollTo(0.0, 0.0)
     }
 
-    fun openInsights() { insightsOpen = true; render(); window.scrollTo(0.0, 0.0) }
-    fun closeInsights() { insightsOpen = false; render() }
+    /** Insights is a tab now; these stay for the places that open it (the overview's button, the guide). */
+    fun openInsights() = go(Tab.INSIGHTS)
+    fun closeInsights() = go(Tab.OVERVIEW)
     fun openTrip(id: String) { tripId = id; render(); window.scrollTo(0.0, 0.0) }
     fun closeTrip() { tripId = null; render() }
 
@@ -76,9 +78,7 @@ object App {
             return
         }
         val format = Format(view.config)
-        if (insightsOpen) {
-            root.appendChild(InsightsScreen.build(view, format))
-        } else if (tripId != null) {
+        if (tripId != null) {
             root.appendChild(TripScreen.build(view, format, tripId!!))
         } else if (settingsOpen) {
             root.appendChild(SettingsScreen.build(view, format))
@@ -87,6 +87,7 @@ object App {
                 Tab.ADD -> AddScreen.build(view, format)
                 Tab.OVERVIEW -> OverviewScreen.build(view, format)
                 Tab.HISTORY -> HistoryScreen.build(view, format)
+                Tab.INSIGHTS -> InsightsScreen.build(view, format)
                 Tab.BALANCES -> BalancesScreen.build(view, format)
             })
             root.appendChild(tabBar())
@@ -99,6 +100,16 @@ object App {
         attr("aria-label", "Fulla")
         div("tabbar-inner") {
             for (entry in Tab.entries) {
+                // Adding is what the app is for: a round button in the middle, raised above the bar, always the same tap.
+                if (entry == Tab.ADD) {
+                    child("button", if (entry == tab) "tab add selected" else "tab add") {
+                        attr("type", "button"); attr("aria-label", t(entry.label))
+                        if (entry == tab) attr("aria-current", "page")
+                        span("add-fab") { ui("add", 30) }
+                        click { go(entry) }
+                    }
+                    continue
+                }
                 child("button", if (entry == tab) "tab selected" else "tab") {
                     attr("type", "button")
                     if (entry == tab) attr("aria-current", "page")
@@ -110,7 +121,7 @@ object App {
         }
     }
 
-    /** A short message at the bottom, with an optional way back. */
+    /** A short message at the top, under the header, never over the tabs: what failed, what was copied. */
     fun toast(message: String, actionLabel: String? = null, onAction: () -> Unit = {}) {
         document.getElementById("toast")?.let { it.parentNode?.removeChild(it) }
         val toast = el("div", if (settingsOpen) "toast no-tabs" else "toast") {

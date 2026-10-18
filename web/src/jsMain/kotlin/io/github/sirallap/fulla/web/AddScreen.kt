@@ -98,7 +98,7 @@ object AddScreen {
                         App.launch { Ledger.undelete(id); App.go(Tab.HISTORY) }
                     } else iconButton("delete_outline", t("delete")) {
                         val id = editingRow.id; App.editing = null; loadedFor = null; reset(format)
-                        App.launch { Ledger.delete(id); App.toast(t("entry_deleted"), t("undo")) { App.launch { Ledger.undelete(id) } }; App.go(Tab.HISTORY) }
+                        App.launch { Ledger.delete(id); App.go(Tab.HISTORY) }
                     },
                 ) else emptyArray()))
             chipRow { for ((k, label) in kinds) chip(t(label), k == kind) { kind = k; categoryId = null; problem = null; App.render() } }
@@ -445,14 +445,14 @@ object AddScreen {
         built = built.copy(extras = merged.extras + extras.filterValues { it == null }.keys.associateWith { null })
         // One salary per month: marking this one takes the mark off the one it replaces.
         val replaced = if (PeriodAnchors.marked(built)) PeriodAnchors.otherSalaryNear(built, view.active)?.let { PeriodAnchors.mark(it, false) } else null
-        val savedTrip = config.trip(built.tripId)?.name
         App.launch {
             val wasEditing = editingRow != null
             App.editing = null; loadedFor = null
             reset(format)
             if (replaced == null) Ledger.save(built) else Ledger.saveAll(listOf(built, replaced))
-            App.toast(if (savedTrip != null) t("saved_to_trip", savedTrip) else t("web_saved"))
-            if (wasEditing) App.go(Tab.HISTORY) else App.render()
+            // No message over the screen, as on the phone: a new entry shows on the overview, a changed one in History.
+            // What is deleted comes back from History › Deleted.
+            if (wasEditing) App.go(Tab.HISTORY) else App.go(Tab.OVERVIEW)
         }
     }
 }

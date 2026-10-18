@@ -28,7 +28,7 @@ object BalancesScreen {
                 div("actions") { quietButton(t("shared_pot_change")) { App.openSettings(SettingsPage.HOUSEHOLD) } }
             } else if (members.size >= 2) {
                 section(t("between_you"), first = true)
-                for (b in balances.filter { x -> config.member(x.memberId)?.isActive == true || x.balanceMinor != 0L }) {
+                div("rows card") { for (b in balances.filter { x -> config.member(x.memberId)?.isActive == true || x.balanceMinor != 0L }) {
                     val m = config.member(b.memberId)
                     listRow(
                         title = m?.displayName ?: "?",
@@ -36,26 +36,29 @@ object BalancesScreen {
                         start = { badge(m?.initials ?: "?", m?.colorIndex ?: 0) },
                         end = { amountText(format.money(b.balanceMinor, signed = true), when { b.balanceMinor > 0 -> "in"; b.balanceMinor < 0 -> "neg"; else -> "muted" }) },
                     )
-                }
+                } }
                 section(t("to_settle"))
                 if (plan.isEmpty()) emptyState("check_circle", t("all_settled_title"), t("all_settled_text"))
-                else for (p in plan) {
+                else div("rows card") { for (p in plan) {
                     listRow(
                         title = t("pays", view.memberName(p.fromMemberId), view.memberName(p.toMemberId)),
                         context = t("tap_to_record"),
                         end = { amountText(format.money(p.amountMinor)) },
                         onClick = { confirm(view, format, p) },
                     )
-                }
+                } }
             }
             section(t("accounts"), first = !shared && members.size < 2)
-            for (a in config.accounts.filter { !it.archived }) {
-                val amount = accountBalances[a.id] ?: 0L
-                listRow(a.name, end = { amountText(format.money(amount), if (amount < 0) "neg" else "") })
-            }
-            if (shared) {
-                val total = view.analytics.accountsTotal(view.active, config.accounts, LocalDate.now())
-                listRow(t("household_total"), divider = false, end = { amountText(format.money(total), if (total < 0) "neg" else "") })
+            div("rows card") {
+                for (a in config.accounts.filter { !it.archived }) {
+                    val amount = accountBalances[a.id] ?: 0L
+                    listRow(a.name, end = { amountText(format.money(amount), if (amount < 0) "neg" else "") })
+                }
+                // In one shared pot the household's total closes the accounts' card.
+                if (shared) {
+                    val total = view.analytics.accountsTotal(view.active, config.accounts, LocalDate.now())
+                    listRow(t("household_total"), end = { amountText(format.money(total), if (total < 0) "neg" else "") })
+                }
             }
             // Savings goals, each with how far its account has got; tapping one opens them in Settings.
             section(t("settings_goals"))

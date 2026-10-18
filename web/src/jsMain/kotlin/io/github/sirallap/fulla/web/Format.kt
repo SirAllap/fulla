@@ -24,6 +24,9 @@ class Format(val config: Config) {
     /** A day for a list: "Tue 3 Oct". */
     fun day(d: LocalDate): String = date(d, "weekday" to "short", "day" to "numeric", "month" to "short")
 
+    /** The one-letter name of [d]'s weekday, for the head of a calendar ("M", "L"). */
+    fun weekdayLetter(d: LocalDate): String = date(d, "weekday" to "narrow")
+
     fun longDay(d: LocalDate): String = date(d, "weekday" to "long", "day" to "numeric", "month" to "long", "year" to "numeric")
 
     /** A whole amount, no decimals: the label above a vial. */
