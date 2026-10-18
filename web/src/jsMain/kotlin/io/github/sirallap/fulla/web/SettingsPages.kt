@@ -409,7 +409,7 @@ object AccountsPage {
             switchRow(t("opening_balance_debt"), t("opening_balance_debt_help"), debt) { debt = it; check() }
             // Round-up saving, as a bank offers it: per account, never cash, and nothing to round in a currency with no cents.
             val type = existing?.type ?: io.github.sirallap.fulla.core.model.AccountType.CHECKING
-            val others = view.config.accounts.filter { !it.archived && it.id != existing?.id }
+            val others = RoundUps.destinations(view.config.accounts, existing?.id, existing?.roundUp?.toAccountId)
             var roundTo: String? = existing?.roundUp?.toAccountId
             var roundMultiplier = existing?.roundUp?.multiplier ?: 2
             var roundTouched = false

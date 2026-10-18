@@ -42,7 +42,7 @@ object OverviewScreen {
         val homeTrip = Trips.forHome(config.trips, today)
 
         return el("main", "screen overview") {
-            tabHeader(config.household.name, insightsPill())
+            tabHeader(config.household.name)
             // Invented data says so at the top, with the way to one's own household one tap away.
             if (io.github.sirallap.fulla.core.demo.DemoData.isDemo(view.id)) {
                 child("button", "demo-notice") {
@@ -153,12 +153,6 @@ object OverviewScreen {
         val last = Ledger.lastBackupAt
         return !view.connected && last != null && view.rows.size >= 20 && view.active.any { io.github.sirallap.fulla.core.demo.DemoData.TAG !in it.tags } &&
             last < io.github.sirallap.fulla.core.time.Instant.now().toEpochMilli() - 30L * 24 * 3600 * 1000
-    }
-
-    private fun HTMLElement.insightsPill(): HTMLElement = el("button", "pill") {
-        attr("type", "button"); attr("aria-label", t("insights"))
-        ui("insights", 22); span("pill-label") { text(t("insights")) }
-        click { App.openInsights() }
     }
 
     private fun HTMLElement.progress(fraction: Double, over: Boolean) {

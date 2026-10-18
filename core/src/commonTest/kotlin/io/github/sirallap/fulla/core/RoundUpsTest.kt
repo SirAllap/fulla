@@ -35,6 +35,14 @@ class RoundUpsTest {
     private fun spend(minor: Long) = Fixtures.expense(amount = minor, split = null)
 
     @Test
+    fun a_round_up_goes_to_any_other_open_account_never_to_cash_unless_it_already_did() {
+        val accounts = config().accounts + Account("00000000-0000-4000-8000-000000000302", "Old", AccountType.SAVINGS, archived = true)
+        assertEquals(listOf(savingsId), RoundUps.destinations(accounts, Fixtures.MAIN, null).map { it.id })
+        assertEquals(listOf(Fixtures.CASH, savingsId), RoundUps.destinations(accounts, Fixtures.MAIN, Fixtures.CASH).map { it.id })
+        assertEquals(listOf(Fixtures.MAIN, savingsId), RoundUps.destinations(accounts, null, null).map { it.id })
+    }
+
+    @Test
     fun a_coffee_of_1_50_rounds_up_to_2_and_times_two_puts_1_00_aside() {
         assertEquals(100, RoundUps.savingMinor(150, eur, 2))
     }
