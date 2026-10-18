@@ -103,15 +103,21 @@ object RoundUps {
     }
 
     /**
-     * What a written purchase does to its transfer. [held] is the transfer this phone already has for it, if any.
-     * A new purchase gets its transfer. A changed one only changes the transfer it already has (what was written
-     * before round-up was turned on, or before the person changed the account, is never rounded after the fact),
-     * deletes it when it no longer applies, and leaves alone one the person deleted themselves.
+     * What a written purchase does to its transfer. [previous] is the purchase as it was before this edit (null for a new
+     * one) and [held] the transfer this phone already has for it, if any.
+     *
+     * A purchase gets its transfer when it is new, or when this edit is what makes it qualify: it moved from cash to an
+     * account that rounds, or its amount stopped being exact. What was written before round-up was turned on is not
+     * rounded afterwards by an edit that changes nothing about that (the person can ask for it, see [backfill]). A
+     * transfer that is held follows the purchase (amount, date, account), and goes when the purchase no longer
+     * qualifies (moved to cash, amount exact). If it went that way and the purchase qualifies again, it comes back. A
+     * transfer the person deleted by hand, while the purchase qualified, stays deleted.
      */
-    fun reconcile(expense: Transaction, isNew: Boolean, held: Transaction?, config: Config): Action {
+    fun reconcile(expense: Transaction, previous: Transaction?, held: Transaction?, config: Config): Action {
         val wanted = companionOf(expense, config)
-        if (held == null) return if (isNew && wanted != null) Action.Create(wanted) else Action.None
-        if (held.status != Status.ACTIVE) return Action.None
+        val qualifiedBefore = previous != null && companionOf(previous, config) != null
+        if (held == null) return if (wanted != null && !qualifiedBefore) Action.Create(wanted) else Action.None
+        if (held.status != Status.ACTIVE) return if (wanted != null && !qualifiedBefore) Action.Update(wanted) else Action.None
         if (wanted == null) return Action.Delete
         val same = held.amountMinor == wanted.amountMinor && held.date == wanted.date && held.accountId == wanted.accountId &&
             held.toAccountId == wanted.toAccountId && held.paidByMemberId == wanted.paidByMemberId

@@ -241,8 +241,12 @@ moves no money: it writes down what the bank did, so the balances match. The mov
 reserved tag `fulla:round-up` (hidden like the salary mark) and an id worked out from the purchase's
 (`RoundUps.idFor`), so two phones write the same row and the sync merges them, and a purchase always finds its transfer.
 `Ledger.save` and the recurring generation write it in the purchase's own Room transaction; editing a purchase changes
-the transfer it has, deleting or restoring it does the same to the transfer. What is never done: rounding after the
-fact (a purchase written before it was turned on, or edited after), rounding an import (a bank statement already holds
+the transfer it has, deleting or restoring it does the same to the transfer. The round-up follows the purchase when its account changes: cash corrected to the account that rounds makes it,
+the account that rounds corrected to cash takes it away, and back again brings the same transfer back
+(`RoundUps.reconcile` looks at the purchase before the edit: an edit that makes it qualify makes the transfer, one that
+stops it qualifying takes it away, and one the person deleted by hand while it qualified stays deleted). What is never
+done: rounding after the
+fact (a purchase written before it was turned on and edited in a way that does not change whether it qualifies), rounding an import (a bank statement already holds
 the bank's own transfers), rounding cash, rounding a refund, and bringing back a transfer the person deleted. It is
 not spending or income, so no figure moves; only the balances of the two accounts do (`RoundUpsTest`, `LedgerTest`).
 The History draws it under its purchase, as a line of that row, not as a row of its own (`RoundUps.underPurchase`,

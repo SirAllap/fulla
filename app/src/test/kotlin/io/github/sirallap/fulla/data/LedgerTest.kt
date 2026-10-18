@@ -364,4 +364,27 @@ class LedgerTest {
         assertEquals(100, ledger.transaction(RoundUps.idFor(before.id))!!.transaction.amountMinor)
         assertEquals("a second press writes nothing", 0, ledger.applyRoundUpBackfill(h, from, day, day))
     }
+
+    @Test
+    fun `a purchase moved to an account that does not round, and back, loses and gets its round-up`() = runTest {
+        val h = household()
+        val (rounds, other) = roundUpOn(h, 2)
+        val t = expense(h, 150, ledger.household(h)!!.config).copy(accountId = other)
+        ledger.save(h, t)
+        val id = RoundUps.idFor(t.id)
+        assertNull("an account that does not round makes nothing", ledger.transaction(id))
+
+        clock = clock.plusSeconds(60)
+        ledger.save(h, t.copy(accountId = rounds))
+        assertEquals("corrected to the account that rounds: made now", 100L, ledger.transaction(id)!!.transaction.amountMinor)
+        assertEquals(Status.ACTIVE, ledger.transaction(id)!!.transaction.status)
+
+        clock = clock.plusSeconds(60)
+        ledger.save(h, t.copy(accountId = other))
+        assertEquals("moved away again: the round-up goes", Status.DELETED, ledger.transaction(id)!!.transaction.status)
+
+        clock = clock.plusSeconds(60)
+        ledger.save(h, t.copy(accountId = rounds))
+        assertEquals("and comes back", Status.ACTIVE, ledger.transaction(id)!!.transaction.status)
+    }
 }

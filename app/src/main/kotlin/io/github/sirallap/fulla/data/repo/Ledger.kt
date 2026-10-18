@@ -95,7 +95,7 @@ class Ledger(
             val existing = transactions.get(t.id)?.let(Rows::local)
             val row = if (existing == null) Edits.create(t, connected, now(), household) else Edits.edit(existing, t, connected, now())
             transactions.upsert(listOf(Rows.entity(householdId, row)))
-            roundUp(householdId, h, t, isNew = existing == null, connected)
+            roundUp(householdId, h, t, previous = existing?.transaction, connected)
         }
         if (connected) requestSync()
     }
@@ -105,12 +105,12 @@ class Ledger(
      * transaction as the purchase, so the two are never apart. Imports and what a person writes by hand in a
      * shared household go through here alike: it is the account that decides.
      */
-    private suspend fun roundUp(householdId: String, h: HouseholdEntity, t: Transaction, isNew: Boolean, connected: Boolean) {
+    private suspend fun roundUp(householdId: String, h: HouseholdEntity, t: Transaction, previous: Transaction?, connected: Boolean) {
         val config = LocalHousehold.config(Wire.json.parseToJsonElement(h.configJson).jsonObject)
         if (config.accounts.none { it.roundUp != null }) return
         val id = runCatching { RoundUps.idFor(t.id) }.getOrNull() ?: return
         val held = transactions.get(id)?.let(Rows::local)
-        val next = when (val action = RoundUps.reconcile(t, isNew, held?.transaction, config)) {
+        val next = when (val action = RoundUps.reconcile(t, previous, held?.transaction, config)) {
             RoundUps.Action.None -> return
             is RoundUps.Action.Create -> Edits.create(action.transfer, connected, now(), config.household)
             is RoundUps.Action.Update -> Edits.edit(held ?: return, action.transfer, connected, now())
@@ -211,7 +211,7 @@ class Ledger(
             if (due.isEmpty()) return@withTransaction
             transactions.upsert(due.map { Rows.entity(householdId, Edits.create(it, connected, now(), config.household)) })
             // A fixed cost on an account that rounds up is rounded like any other purchase (receipts and subscriptions are).
-            for (row in due) roundUp(householdId, h, row, isNew = true, connected)
+            for (row in due) roundUp(householdId, h, row, previous = null, connected)
             written = due.size
         }
         if (written > 0 && connected) requestSync()
@@ -254,7 +254,7 @@ class Ledger(
             val row = RecurringPlanner.occurrence(rule, date, config).copy(status = status)
             if (transactions.get(row.id) != null) return@withTransaction
             transactions.upsert(listOf(Rows.entity(householdId, Edits.create(row, connected, now(), config.household))))
-            roundUp(householdId, h, row, isNew = true, connected)
+            roundUp(householdId, h, row, previous = null, connected)
             written = true
         }
         if (written && connected) requestSync()

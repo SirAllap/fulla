@@ -100,23 +100,23 @@ class RoundUpsTest {
     fun `a new purchase gets its transfer, a changed one changes the transfer it has, and one written before is never rounded afterwards`() {
         val cfg = config()
         val expense = spend(150)
-        val made = (RoundUps.reconcile(expense, isNew = true, held = null, config = cfg) as Action.Create).transfer
+        val made = (RoundUps.reconcile(expense, previous = null, held = null, config = cfg) as Action.Create).transfer
         assertEquals(100, made.amountMinor)
 
         // the amount changes: the transfer follows
         val dearer = expense.copy(amountMinor = 380)
-        val update = RoundUps.reconcile(dearer, isNew = false, held = made, config = cfg) as Action.Update
+        val update = RoundUps.reconcile(dearer, previous = expense, held = made, config = cfg) as Action.Update
         assertEquals(40, update.transfer.amountMinor)
         assertEquals(made.id, update.transfer.id)
         // nothing changed: nothing to do
-        assertEquals(Action.None, RoundUps.reconcile(expense, isNew = false, held = made, config = cfg))
+        assertEquals(Action.None, RoundUps.reconcile(expense, previous = expense, held = made, config = cfg))
         // the amount is exact now, or the account is no longer one that rounds: the transfer goes
-        assertEquals(Action.Delete, RoundUps.reconcile(expense.copy(amountMinor = 200), isNew = false, held = made, config = cfg))
-        assertEquals(Action.Delete, RoundUps.reconcile(expense.copy(accountId = Fixtures.CASH), isNew = false, held = made, config = cfg))
+        assertEquals(Action.Delete, RoundUps.reconcile(expense.copy(amountMinor = 200), previous = expense, held = made, config = cfg))
+        assertEquals(Action.Delete, RoundUps.reconcile(expense.copy(accountId = Fixtures.CASH), previous = expense, held = made, config = cfg))
         // an old purchase that is edited gets nothing made after the fact
-        assertEquals(Action.None, RoundUps.reconcile(dearer, isNew = false, held = null, config = cfg))
+        assertEquals(Action.None, RoundUps.reconcile(dearer, previous = expense, held = null, config = cfg))
         // a transfer the person deleted stays deleted
-        assertEquals(Action.None, RoundUps.reconcile(dearer, isNew = false, held = made.copy(status = Status.DELETED), config = cfg))
+        assertEquals(Action.None, RoundUps.reconcile(dearer, previous = expense, held = made.copy(status = Status.DELETED), config = cfg))
     }
 
     @Test
@@ -153,6 +153,38 @@ class RoundUpsTest {
         assertTrue(RoundUps.backfill(rows + made, Fixtures.MAIN, from, to, config()).isEmpty(), "a second press writes nothing")
         val deletedByHand = made.single().copy(status = Status.DELETED)
         assertTrue(RoundUps.backfill(rows + deletedByHand, Fixtures.MAIN, from, to, config()).isEmpty(), "a round-up the person deleted stays deleted")
+    }
+
+    @Test
+    fun `changing the account of a purchase moves its round-up with it, both ways, and back again`() {
+        val cfg = config()
+        val inCash = spend(150).copy(accountId = Fixtures.CASH)
+        val onCard = inCash.copy(accountId = Fixtures.MAIN)
+
+        // cash, then corrected to the account that rounds: the round-up is made now
+        val made = (RoundUps.reconcile(onCard, previous = inCash, held = null, config = cfg) as Action.Create).transfer
+        assertEquals(100, made.amountMinor)
+        // and the other way: the card purchase was cash after all, the round-up goes
+        assertEquals(Action.Delete, RoundUps.reconcile(inCash, previous = onCard, held = made, config = cfg))
+        // and back to the card once more: the same transfer comes back
+        val gone = made.copy(status = Status.DELETED)
+        val back = RoundUps.reconcile(onCard, previous = inCash, held = gone, config = cfg) as Action.Update
+        assertEquals(made.id, back.transfer.id)
+        assertEquals(Status.ACTIVE, back.transfer.status)
+        // one the person deleted by hand while the purchase qualified stays deleted when the account is not touched
+        assertEquals(Action.None, RoundUps.reconcile(onCard.copy(note = "x"), previous = onCard, held = gone, config = cfg))
+    }
+
+    @Test
+    fun `an amount that stops being exact makes the round-up, and one that becomes exact takes it away and gives it back`() {
+        val cfg = config()
+        val exact = spend(400)
+        val inexact = exact.copy(amountMinor = 380)
+        val made = (RoundUps.reconcile(inexact, previous = exact, held = null, config = cfg) as Action.Create).transfer
+        assertEquals(40, made.amountMinor)
+        assertEquals(Action.Delete, RoundUps.reconcile(exact, previous = inexact, held = made, config = cfg))
+        val back = RoundUps.reconcile(inexact, previous = exact, held = made.copy(status = Status.DELETED), config = cfg)
+        assertTrue(back is Action.Update && back.transfer.status == Status.ACTIVE)
     }
 
     @Test
