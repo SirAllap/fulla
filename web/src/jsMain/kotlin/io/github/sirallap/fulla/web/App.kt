@@ -102,7 +102,7 @@ object App {
             for (entry in Tab.entries) {
                 // Adding is what the app is for: a round button in the middle, raised above the bar, always the same tap.
                 if (entry == Tab.ADD) {
-                    child("button", if (entry == tab) "tab add selected" else "tab add") {
+                    child("button", if (entry == tab) "tab tab-add selected" else "tab tab-add") {
                         attr("type", "button"); attr("aria-label", t(entry.label))
                         if (entry == tab) attr("aria-current", "page")
                         span("add-fab") { ui("add", 30) }

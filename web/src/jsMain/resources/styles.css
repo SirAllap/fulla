@@ -303,10 +303,10 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .setup-buttons { display: flex; flex-direction: column; align-items: flex-end; }
 
 /* 0.1.40: the round Add button in the middle of the bar, raised above it; its own highlight, no pill */
-.tab.add::before { display: none; }
-.tab.add .add-fab { width: 56px; height: 56px; margin-top: -28px; border-radius: 50%; background: var(--highlight); color: var(--on-highlight);
+.tab.tab-add::before { display: none; }
+.tab.tab-add .add-fab { width: 56px; height: 56px; margin-top: -28px; border-radius: 50%; background: var(--highlight); color: var(--on-highlight);
   display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22); transition: transform 160ms var(--ease); }
-.tab.add:active .add-fab { transform: scale(0.94); }
+.tab.tab-add:active .add-fab { transform: scale(0.94); }
 
 /* Cards: the rows of a section in one rounded surface, with room around it */
 .rows.card, .card { margin: 0 16px; background: var(--paper-high); border-radius: 20px; overflow: hidden; }

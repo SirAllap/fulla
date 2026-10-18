@@ -52,7 +52,7 @@ async function skipGuide(page) {
     await page.waitForTimeout(150);
   }
   // The tour leaves the app on whichever tab it last named.
-  await page.click('.tabbar .tab:first-child');
+  await page.click('.tabbar .tab.tab-add');
 }
 const gear = (page) => page.click('.header .icon-btn[aria-label]:last-child');
 const back = (page) => page.click('.header.back .icon-btn');
@@ -82,18 +82,21 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await shot('02c-guide-tour');
   await page.click('.tour-skip');
   await page.waitForSelector('.tour', { state: 'detached' });
-  await page.click('.tabbar .tab:first-child');
+  await page.click('.tabbar .tab.tab-add');
   await shot('02-add');
 
   await type(page, '12,5');
   await page.click('.tile >> nth=1');
   await page.click('.key.save');
-  await page.waitForSelector('.toast');
+  // Saved: the overview, as on the phone, with no message over it; Add is the round button in the middle.
+  await page.waitForSelector('.screen.overview');
+  ok(await page.locator('.toast').count() === 0, 'saving says nothing over the screen: it shows the overview');
+  await page.click('.tabbar .tab.tab-add');
   await page.click('button.chip:has-text("Ingreso")');
   await type(page, '1234,56');
   await page.click('.tile >> nth=0');
   await page.click('.key.save');
-  await page.waitForSelector('.toast');
+  await page.waitForSelector('.screen.overview');
 
   await page.click('.tab:has-text("Resumen")');
   await page.waitForSelector('.figures');
@@ -251,12 +254,13 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
   await page.locator('.history .row.tap').first().click();
   await page.waitForSelector('.keypad');
   await page.click('.header .icon-btn[aria-label="Delete"]');
-  await page.waitForSelector('.toast-action');
+  await page.waitForSelector('.history .row');
   const gone = await page.locator('.history .row').first().textContent();
   ok(gone !== entryBefore, 'delete takes the entry out of the list');
-  await page.click('.toast-action');
-  await page.waitForTimeout(300);
-  ok((await page.locator('.history .row').first().textContent()) !== gone, 'and undo brings it back');
+  ok(await page.locator('.toast').count() === 0, 'and says nothing over the screen');
+  await page.click('button.chip:has-text("Deleted")');
+  ok((await page.locator('.history .row').first().textContent()) === entryBefore, 'what is deleted waits under Deleted, to be brought back');
+  await page.click('button.chip:has-text("All")');
 
   // with no connection at all, the app still opens, with its data
   await page.reload();
@@ -392,7 +396,7 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     await type(a.page, '12,5'.replace(',', '.'));
     await a.page.click('.tile >> nth=1');
     await a.page.click('.key.save');
-    await a.page.waitForSelector('.toast');
+    await a.page.waitForSelector('.screen.overview');
 
     await gear(a.page);
     await row(a.page, 'Sync').click();
@@ -436,11 +440,11 @@ if (process.env.FULLA_SKIP_DB !== '1') {
     await b.page.waitForSelector('.history .row', { timeout: 30000 });
     ok(await b.page.locator('.history .row').count() === 1, 'Bob joins with the invite and finds what Alice wrote down');
 
-    await b.page.click('.tab:has-text("Add")');
+    await b.page.click('.tabbar .tab.tab-add');
     await type(b.page, '30');
     await b.page.click('.tile >> nth=0');
     await b.page.click('.key.save');
-    await b.page.waitForSelector('.toast');
+    await b.page.waitForSelector('.screen.overview');
     await b.page.waitForTimeout(3500);
     await a.page.click('.header .icon-btn[aria-label="Back"]');
     await a.page.click('.header .icon-btn[aria-label="Back"]');
@@ -463,6 +467,92 @@ if (process.env.FULLA_SKIP_DB !== '1') {
   } finally {
     fake.stop();
   }
+}
+
+// ── 7. 0.1.40: Add in the middle, Settings in blocks, round-up, the account filter, goals, the calendar ──
+{
+  const { ctx, page, errors, shot } = await phone({ locale: 'es-ES' });
+  try {
+    await page.goto(BASE);
+    await page.click('text=Empezar');
+    await page.fill('input >> nth=0', 'Casa');
+    await page.fill('input >> nth=1', 'Alice Example');
+    await page.click('button:has-text("Crear")');
+    await page.waitForSelector('.tabbar');
+    await skipGuide(page);
+    ok(await page.locator('.tabbar .tab.tab-add .add-fab').count() === 1, 'Add is the round button of the bar');
+    ok(await page.locator('.tabbar .tab').nth(2).evaluate((e) => e.classList.contains('tab-add')), 'in the middle, two tabs on each side');
+    await shot('40-add-in-the-middle');
+
+    await gear(page);
+    ok(await page.locator('.group-title').count() === 4 && await page.locator('.rows.card').count() === 4, 'Settings comes in four blocks, each with its line and its card');
+    await shot('41-settings-blocks');
+    await row(page, 'Cuentas').click();
+    await row(page, 'Añadir una cuenta').click();
+    await page.fill('.sheet input >> nth=0', 'Ahorro');
+    await page.click('.sheet .btn.primary');
+    await page.waitForSelector('.sheet', { state: 'detached' });
+    await row(page, 'Cuenta principal').click();
+    await page.click('.sheet .round-up label.row');
+    await page.click('.sheet .round-up button.chip:has-text("×2")');
+    await page.click('.sheet .round-up button.chip:has-text("Ahorro")');
+    ok(/1,00/.test(await page.textContent('.sheet .round-up')), 'the account form says what a coffee of 1,50 puts aside with this multiplier');
+    await shot('42-round-up-form');
+    await page.click('.sheet .btn.primary');
+    await page.waitForSelector('.sheet', { state: 'detached' });
+    await back(page);
+    await back(page);
+
+    // 1,50 written in cash, then corrected to the account that rounds up: the round-up is made then.
+    await page.click('.tabbar .tab.tab-add');
+    await type(page, '1,5');
+    await page.click('.tile >> nth=1');
+    await page.click('.details-line');
+    await page.click('.sheet button.chip:has-text("Efectivo")');
+    await page.click('.key.save');
+    await page.waitForSelector('.screen.overview');
+    await page.click('.tab:has-text("Historial")');
+    ok(!/Redondeo/.test(await page.textContent('.history')), 'cash is never rounded up');
+    await page.locator('.history .row.tap').first().click();
+    await page.waitForSelector('.keypad');
+    await page.click('.details-line');
+    await page.click('.sheet button.chip:has-text("Cuenta principal")');
+    await page.click('.key.save');
+    await page.waitForSelector('.history .row');
+    const day = (await page.textContent('.history .rows.card')).replace(/\s+/g, ' ');
+    ok(/Redondeo: 1,00/.test(day), 'moved to the account that rounds up, the purchase gets its round-up, as a line under it: ' + day.trim());
+    ok(await page.locator('.history .rows.card .row').count() === 1, 'and not as a row of its own');
+    await shot('43-round-up-under-purchase');
+    await page.click('.chips button.chip:has-text("Ahorro")');
+    ok(/Redondeo/.test(await page.locator('.history .row').first().textContent()), 'filtered to the savings account, the round-up stands alone');
+    await page.click('.chips button.chip:has-text("Todas las cuentas")');
+
+    // A goal kept in the savings account: what is saved is its balance.
+    await gear(page);
+    await row(page, 'Metas de ahorro').click();
+    await page.click('main .btn.primary');
+    await page.fill('.sheet input >> nth=0', 'Verano');
+    await page.fill('.sheet input >> nth=1', '100');
+    await page.press('.sheet input >> nth=1', 'Tab');
+    await page.click('.sheet button.chip:has-text("Ahorro")');
+    await page.click('.sheet .btn.primary');
+    await page.waitForSelector('.sheet', { state: 'detached' });
+    await back(page);
+    await back(page);
+    await page.click('.tab:has-text("Saldos")');
+    const balances = (await page.textContent('main')).replace(/\s+/g, ' ');
+    ok(/Verano/.test(balances) && /1,00 € de 100,00 €/.test(balances), 'Balances shows the goal with what its account holds: ' + balances.trim());
+    await shot('44-goal-in-balances');
+
+    await page.click('.tab:has-text("Análisis")');
+    await page.waitForSelector('.calendar');
+    ok(await page.locator('.calendar .cal-day:not(.empty)').count() >= 28, 'Insights is a tab, with the month day by day');
+    await shot('45-calendar');
+    ok(errors.length === 0, 'no console errors' + errors.join(' | '));
+  } catch (e) {
+    ok(false, '0.1.40 on the web: ' + e.message.split('\n').slice(0, 4).join(' / '));
+  }
+  await ctx.close();
 }
 
 await browser.close();
