@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -77,7 +78,7 @@ fun LiquidTabBar(items: List<TabItem>, selected: Int, center: Int? = null, onSel
         BoxWithConstraints(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp, vertical = 8.dp)) {
             val slot = maxWidth / items.size
             // The round button in the middle is its own highlight: the pill fades out while it is the one on.
-            val pill by animateFloatAsState(if (selected == center) 0f else 1f, FullaMotion.snappy(reduced), label = "pill")
+            val pill by animateFloatAsState(if (selected == center) 0f else 1f, FullaMotion.snappy<Float>(reduced), label = "pill")
             Box(
                 Modifier.offset(x = slot * left + 4.dp).width(slot * (right - left) - 8.dp).fillMaxHeight()
                     .graphicsLayer { alpha = pill }

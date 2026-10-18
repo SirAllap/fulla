@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,13 +48,14 @@ fun CalendarSection(view: HouseholdView, calendar: SpendingCalendar, today: Loca
     val c = FullaTheme.colors
     val f = view.formats
     val summary = if (calendar.dailyMinor != null) stringResource(R.string.calendar_summary, calendar.under, calendar.over) else null
-    Section(stringResource(R.string.calendar_title), trailing = summary?.let { text ->
-        { Text(text, style = FullaType.label, color = c.inkMuted, textAlign = TextAlign.End) }
-    })
+    val trailing: (@Composable RowScope.() -> Unit)? = if (summary == null) null else {
+        { Text(summary, style = FullaType.label, color = c.inkMuted, textAlign = TextAlign.End) }
+    }
+    Section(stringResource(R.string.calendar_title), trailing = trailing)
     CardGroup {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (d in DayOfWeek.entries) {
+                for (d in DayOfWeek.values()) {
                     Text(d.getDisplayName(TextStyle.NARROW, Locale.getDefault()), style = FullaType.label, color = c.inkMuted,
                         textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 }
