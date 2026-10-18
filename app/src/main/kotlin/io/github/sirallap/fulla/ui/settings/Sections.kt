@@ -411,7 +411,7 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         val isNew = "opening_balance_date" !in item
         val itemId = (item["id"] as? JsonPrimitive)?.content
         StructureDialog(item, onDismiss = { editing = null }, iconPicker = false, formats = view.formats, isNewAccount = isNew,
-            otherAccounts = view.config.accounts.filter { !it.archived && it.id != itemId },
+            otherAccounts = io.github.sirallap.fulla.core.roundup.RoundUps.destinations(view.config.accounts, itemId, view.config.accounts.firstOrNull { it.id == itemId }?.roundUp?.toAccountId),
             roundUpBackfill = itemId?.takeIf { view.config.account(it)?.roundUp != null }?.let { id ->
                 val today = LocalDate.now()
                 val from = RecurringPlanner.currentPeriodStart(view.config, view.active, today)

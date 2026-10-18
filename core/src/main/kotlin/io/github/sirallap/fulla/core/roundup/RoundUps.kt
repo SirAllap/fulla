@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.core.roundup
 
+import io.github.sirallap.fulla.core.model.Account
 import io.github.sirallap.fulla.core.model.AccountType
 import io.github.sirallap.fulla.core.model.Config
 import io.github.sirallap.fulla.core.model.Status
@@ -38,6 +39,13 @@ object RoundUps {
 
     /** The id of the transfer a purchase makes: the same on every phone, so it is written once. */
     fun idFor(expenseId: String): String = DeterministicId.uuid5(UUID.fromString(expenseId), "round-up")
+
+    /**
+     * The accounts a round-up can go to from [fromId]: not itself, not archived, and not cash, which is never where a
+     * bank puts savings. One already chosen stays on the list, so an older choice still shows.
+     */
+    fun destinations(accounts: List<Account>, fromId: String?, current: String?): List<Account> =
+        accounts.filter { !it.archived && it.id != fromId && (it.type != AccountType.CASH || it.id == current) }
 
     /** Whether [t] is a transfer this made. */
     fun isRoundUp(t: Transaction): Boolean = t.kind == TransactionKind.TRANSFER && TAG in t.tags

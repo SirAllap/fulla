@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material.icons.outlined.Warning
@@ -112,7 +111,7 @@ fun HomeScreen(
 
     Column(Modifier.fillMaxSize()) {
         // Analysis is a button of its own, to the left of the sync and the gear, so the gear never moves between tabs.
-        TabHeader(view.config.household.name, actions = { InsightsButton(onInsights); headerActions() })
+        TabHeader(view.config.household.name, actions = { headerActions() })
         PullToRefreshBox(
             isRefreshing = refreshing,
             onRefresh = { scope.launch { refreshing = true; container.syncAll(); refreshing = false } },
@@ -337,24 +336,6 @@ private fun Rows(view: HouseholdView, rows: List<io.github.sirallap.fulla.core.m
         ListRow(t.note.ifBlank { view.categoryName(t.categoryId) ?: "" }, indent = indent, context = f.day(t.date),
             onClick = { onOpen(t.id) },
             end = { AmountText(f.money(if (t.kind == TransactionKind.REFUND) -t.amountMinor else t.amountMinor), color = c.inkMuted) })
-    }
-}
-
-/** The way into the analysis, big enough to be seen: icon and name on a tinted pill. */
-@Composable
-private fun InsightsButton(onClick: () -> Unit) {
-    val c = FullaTheme.colors
-    val label = stringResource(R.string.insights)
-    // On a narrow phone the name would not fit beside the title: the icon alone, in the same pill.
-    val narrow = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 360
-    androidx.compose.foundation.layout.Row(
-        Modifier.padding(end = 4.dp).height(40.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-            .background(c.highlight).clickable(onClickLabel = label, onClick = onClick).padding(horizontal = if (narrow) 10.dp else 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Icon(Icons.Outlined.Insights, if (narrow) label else null, tint = c.onHighlight, modifier = Modifier.size(22.dp))
-        if (!narrow) Text(label, style = FullaType.body, color = c.onHighlight, maxLines = 1)
     }
 }
 
