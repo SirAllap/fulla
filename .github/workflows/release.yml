@@ -12,12 +12,23 @@
 #   FULLA_KEY_PASSWORD       the key's password
 # Run by hand without them (Actions → Release → Run workflow) and it only
 # checks that the release build, with R8, compiles.
+#
+# Run by hand on main with a version (say 0.1.40) and it publishes that
+# release itself: it checks that docs/releases/0.1.40.md exists and that
+# there is no such release yet, builds the signed APK, and creates the tag
+# v0.1.40 on the commit it built, the release with those notes, and its
+# files. Nobody has to make the tag or copy the notes by hand.
 name: Release
 
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Publish this version (major.minor.patch, e.g. 0.1.40). Empty: only check that the release build compiles.'
+        required: false
+        default: ''
 
 concurrency:
   group: release-${{ github.ref }}
@@ -43,9 +54,34 @@ jobs:
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
       - name: Version from the tag
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            name="${GITHUB_REF#refs/tags/v}"
+          if [ -n "$VERSION" ]; then
+            # Published by hand: only from main, only with its notes written, only once.
+            if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+              echo "::error::A release is published from main only, not from $GITHUB_REF."
+              exit 1
+            fi
+            if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::'$VERSION' is not major.minor.patch."
+              exit 1
+            fi
+            if [ ! -f "docs/releases/$VERSION.md" ]; then
+              echo "::error::docs/releases/$VERSION.md is missing: write the notes first."
+              exit 1
+            fi
+            if gh release view "v$VERSION" > /dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null 2>&1; then
+              echo "::error::v$VERSION already exists."
+              exit 1
+            fi
+            echo "RELEASE_TAG=v$VERSION" >> "$GITHUB_ENV"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "RELEASE_TAG=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$VERSION" ] || [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            name="${VERSION:-${GITHUB_REF#refs/tags/v}}"
             # versionCode from the tag (major*10000 + minor*100 + patch), not
             # the CI run number: run numbers are not permanent — they'd
             # restart from 1 if this repository were ever moved or recreated
@@ -80,7 +116,7 @@ jobs:
           KEYSTORE_B64: ${{ secrets.FULLA_KEYSTORE_B64 }}
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
-            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            if [ -n "$RELEASE_TAG" ]; then
               echo "::error::A tagged release needs the signing secrets; see the top of release.yml."
               exit 1
             fi
@@ -102,7 +138,7 @@ jobs:
       - name: setup.sql
         run: npm run db:bundle
       - name: Publish
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: env.RELEASE_TAG != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -113,9 +149,10 @@ jobs:
           [ -f "$notes" ] || { echo "Fulla $FULLA_VERSION_NAME." > "$RUNNER_TEMP/notes.md"; notes="$RUNNER_TEMP/notes.md"; }
           # A release published by hand (from the phone, say) already exists:
           # its notes stay as written and only the files are attached.
-          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "fulla-$FULLA_VERSION_NAME.apk" fulla.apk dist/setup.sql --clobber
+          # Published by hand, the tag does not exist yet: the release makes it, on the very commit that was built.
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "fulla-$FULLA_VERSION_NAME.apk" fulla.apk dist/setup.sql --clobber
           else
-            gh release create "$GITHUB_REF_NAME" "fulla-$FULLA_VERSION_NAME.apk" fulla.apk dist/setup.sql \
-              --title "Fulla $FULLA_VERSION_NAME" --notes-file "$notes"
+            gh release create "$RELEASE_TAG" "fulla-$FULLA_VERSION_NAME.apk" fulla.apk dist/setup.sql \
+              --target "$GITHUB_SHA" --title "Fulla $FULLA_VERSION_NAME" --notes-file "$notes"
           fi

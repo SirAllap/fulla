@@ -319,3 +319,7 @@ Plain Markdown only: bold, italic, `code`, `-` bullets and headings are
 rendered (`ReleaseNotes.parse`); anything else shows as text.
 Every file in `docs/releases/` is bundled into the app (`bundleReleaseNotes` in `app/build.gradle.kts`), and
 Settings › About shows this version's notes and the earlier ones from there, offline.
+
+A release is published by running the Release workflow by hand on `main` with the version (`0.1.40`): it refuses to
+run without `docs/releases/0.1.40.md` or when that release exists, then builds, and creates the tag on the commit it
+built, the release with those notes and its files. Pushing a tag `v0.1.40` still works too.
