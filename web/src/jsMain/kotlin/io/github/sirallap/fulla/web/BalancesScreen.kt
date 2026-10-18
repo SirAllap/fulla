@@ -57,6 +57,13 @@ object BalancesScreen {
                 val total = view.analytics.accountsTotal(view.active, config.accounts, LocalDate.now())
                 listRow(t("household_total"), divider = false, end = { amountText(format.money(total), if (total < 0) "neg" else "") })
             }
+            // Savings goals, each with how far its account has got; tapping one opens them in Settings.
+            section(t("settings_goals"))
+            val goals = config.goals.filter { !it.archived }
+            div("rows card") {
+                if (goals.isEmpty()) listRow(t("goal_new"), context = t("goals_empty_text"), start = leadIcon("flag")) { App.openSettings(SettingsPage.GOALS) }
+                else with(GoalsPage) { for (g in goals) goalRow(view, format, g) { App.openSettings(SettingsPage.GOALS) } }
+            }
         }
     }
 
