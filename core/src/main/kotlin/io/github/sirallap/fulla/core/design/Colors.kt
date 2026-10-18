@@ -146,6 +146,20 @@ object IdentityColors {
     fun category(index: Int, dark: Boolean): Long = (if (dark) categoriesDark else categories)[index.mod(12)]
 }
 
+/**
+ * The calendar of Analysis: a day under what there was per day is green, a day over it orange, whatever the money
+ * palette, because that is what the two words mean to a person. The day's number is ink on both.
+ */
+object CalendarColors {
+    const val UNDER_LIGHT = 0xFFCFE8D5
+    const val UNDER_DARK = 0xFF24513A
+    const val OVER_LIGHT = 0xFFF7D2A2
+    const val OVER_DARK = 0xFF6A4214
+
+    fun under(dark: Boolean): Long = if (dark) UNDER_DARK else UNDER_LIGHT
+    fun over(dark: Boolean): Long = if (dark) OVER_DARK else OVER_LIGHT
+}
+
 /** WCAG 2.x contrast. */
 object Contrast {
     const val TEXT_MINIMUM = 4.5

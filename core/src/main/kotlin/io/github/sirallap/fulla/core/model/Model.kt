@@ -234,6 +234,7 @@ data class Config(
     val budgets: List<Budget> = emptyList(),
     val recurringRules: List<io.github.sirallap.fulla.core.recurring.RecurringRule> = emptyList(),
     val trips: List<Trip> = emptyList(),
+    val goals: List<io.github.sirallap.fulla.core.goals.Goal> = emptyList(),
 ) {
     val activeMembers: List<Member> get() = members.filter { it.isActive }
     fun member(id: String?): Member? = members.firstOrNull { it.id == id }

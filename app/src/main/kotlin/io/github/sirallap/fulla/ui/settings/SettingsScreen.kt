@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
@@ -57,6 +58,8 @@ import io.github.sirallap.fulla.core.roles.Permissions
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.BackHeader
+import io.github.sirallap.fulla.ui.components.CardGroup
+import io.github.sirallap.fulla.ui.components.GroupTitle
 import io.github.sirallap.fulla.ui.components.ListRow
 import io.github.sirallap.fulla.ui.components.rememberChange
 import io.github.sirallap.fulla.ui.theme.FullaTheme
@@ -73,6 +76,7 @@ enum class SettingsSection(val route: String, val title: Int, val icon: ImageVec
     ACCOUNTS("accounts", R.string.settings_accounts, Icons.Outlined.AccountBalance),
     BUDGETS("budgets", R.string.settings_budgets, Icons.Outlined.PieChart),
     TRIPS("trips", R.string.settings_trips, Icons.Outlined.Luggage),
+    GOALS("goals", R.string.settings_goals, Icons.Outlined.Flag),
     RECURRING("recurring", R.string.settings_recurring, Icons.Outlined.Event),
     IMPORT("import", R.string.import_statement, Icons.Outlined.FileUpload),
     RULES("rules", R.string.settings_rules, Icons.Outlined.Rule),
@@ -114,6 +118,7 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
                 SettingsSection.ACCOUNTS -> item { AccountsSettings(view, canEdit, change) }
                 SettingsSection.BUDGETS -> item { BudgetsSettings(view, canEdit, change) }
                 SettingsSection.TRIPS -> item { TripsSettings(view, change) }
+                SettingsSection.GOALS -> item { GoalsSettings(view, change) }
                 SettingsSection.RECURRING -> item { RecurringSettings(view, canEdit, change) }
                 SettingsSection.IMPORT -> item { ImportSettings(view, change) }
                 SettingsSection.RULES -> item { RulesSettings(view, canEdit, change) }
@@ -151,22 +156,45 @@ private fun LazyListScope.index(
             )
         }
     }
-    items(SettingsSection.entries.filter { it != SettingsSection.INDEX }, key = { it.route }) { s ->
-        ListRow(stringResource(s.title), icon = s.icon, onClick = { onOpen(s) },
-            end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.inkMuted) })
-    }
-    item {
-        val container = LocalContainer.current
-        val scope = rememberCoroutineScope()
-        ListRow(stringResource(R.string.settings_show_guide), icon = Icons.Outlined.Info, onClick = {
-            scope.launch {
-                container.settings.startGuide(view.id, io.github.sirallap.fulla.core.guide.GuideOrigin.REPLAY)
-                onBack()
+    // Four blocks, each with what it is for, instead of one long list: the household, its money, its data, the app.
+    for (group in SettingsGroup.entries) {
+        item(key = "group-${group.name}") {
+            GroupTitle(stringResource(group.title), stringResource(group.help), top = if (group.ordinal == 0) 12.dp else 28.dp)
+            CardGroup {
+                val sections = group.sections
+                sections.forEachIndexed { i, s ->
+                    ListRow(stringResource(s.title), icon = s.icon, onClick = { onOpen(s) },
+                        divider = i < sections.lastIndex || group == SettingsGroup.APP,
+                        end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.inkMuted) })
+                }
+                if (group == SettingsGroup.APP) {
+                    val container = LocalContainer.current
+                    val scope = rememberCoroutineScope()
+                    ListRow(stringResource(R.string.settings_show_guide), icon = Icons.Outlined.Info, onClick = {
+                        scope.launch {
+                            container.settings.startGuide(view.id, io.github.sirallap.fulla.core.guide.GuideOrigin.REPLAY)
+                            onBack()
+                        }
+                    })
+                    // At the end, where the list ends: no need to go looking for it in About.
+                    CheckUpdatesRow(onUpdate, divider = false)
+                }
             }
-        })
+        }
     }
-    // At the bottom, where the list ends: no need to go looking for it in About.
-    item { CheckUpdatesRow(onUpdate) }
+}
+
+/** The blocks of Settings and the sections in each. Every section but the index is in exactly one (SettingsGroupsTest). */
+enum class SettingsGroup(val title: Int, val help: Int, val sections: List<SettingsSection>) {
+    HOME(R.string.settings_group_home, R.string.settings_group_home_help,
+        listOf(SettingsSection.HOUSEHOLD, SettingsSection.MEMBERS, SettingsSection.SYNC, SettingsSection.HOUSEHOLDS)),
+    MONEY(R.string.settings_group_money, R.string.settings_group_money_help,
+        listOf(SettingsSection.ACCOUNTS, SettingsSection.GOALS, SettingsSection.CATEGORIES, SettingsSection.BUDGETS,
+            SettingsSection.RECURRING, SettingsSection.TRIPS)),
+    DATA(R.string.settings_group_data, R.string.settings_group_data_help,
+        listOf(SettingsSection.IMPORT, SettingsSection.RULES, SettingsSection.FIELDS, SettingsSection.BACKUP)),
+    APP(R.string.settings_group_app, R.string.settings_group_app_help,
+        listOf(SettingsSection.APPEARANCE, SettingsSection.ABOUT)),
 }
 
 /** A new version, impossible to miss: what it is for and the button, at the top of Settings. */
@@ -196,7 +224,7 @@ private fun UpdateBanner(update: Update, onUpdate: () -> Unit) {
  * the person never has to go back and look for it.
  */
 @Composable
-fun CheckUpdatesRow(onFound: () -> Unit) {
+fun CheckUpdatesRow(onFound: () -> Unit, divider: Boolean = true) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
@@ -212,6 +240,7 @@ fun CheckUpdatesRow(onFound: () -> Unit) {
         stringResource(if (checking) R.string.update_checking else R.string.update_check_now),
         context = result ?: stringResource(R.string.version, io.github.sirallap.fulla.BuildConfig.VERSION_NAME),
         icon = Icons.Outlined.SystemUpdate,
+        divider = divider,
         end = if (checking) ({
             androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
         }) else null,

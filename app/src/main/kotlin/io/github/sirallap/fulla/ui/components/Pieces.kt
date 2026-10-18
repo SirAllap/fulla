@@ -67,6 +67,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -214,7 +215,8 @@ fun ListRow(
     iconTint: Color = Color.Unspecified,
     start: (@Composable () -> Unit)? = null,
     indent: Dp = 0.dp,
-    divider: Boolean = true,
+    // Inside a card the last row draws no line: the card's edge ends it.
+    divider: Boolean = LocalCardSlot.current?.divider ?: true,
     clickLabel: String? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
@@ -222,6 +224,7 @@ fun ListRow(
     end: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val c = FullaTheme.colors
+    val inset = LocalRowInset.current
     val clickable = when {
         onLongClick != null -> Modifier.combinedClickable(onClickLabel = clickLabel, onClick = { onClick?.invoke() }, onLongClick = onLongClick)
         onClick != null -> Modifier.clickable(onClickLabel = clickLabel, onClick = onClick)
@@ -230,7 +233,7 @@ fun ListRow(
     Column(modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth().then(clickable).heightIn(min = 56.dp)
-                .padding(start = 20.dp + indent, end = 20.dp, top = 10.dp, bottom = 10.dp),
+                .padding(start = inset + indent, end = inset, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -250,7 +253,70 @@ fun ListRow(
             }
             end?.invoke(this)
         }
-        if (divider) Hairline(inset = 20.dp + indent)
+        if (divider) Hairline(inset = inset + indent)
+    }
+}
+
+/**
+ * Where a row sits in a card. A card is drawn by its rows, the first rounding the top and the last the bottom, so a
+ * lazy list can put its rows in a card one by one; the line between rows is drawn by every row but the last.
+ */
+enum class CardSlot {
+    ONLY, FIRST, MIDDLE, LAST;
+
+    val divider: Boolean get() = this == FIRST || this == MIDDLE
+
+    companion object {
+        fun of(index: Int, count: Int): CardSlot = when {
+            count <= 1 -> ONLY
+            index == 0 -> FIRST
+            index == count - 1 -> LAST
+            else -> MIDDLE
+        }
+    }
+}
+
+/** Side room around a card, and inside it before a row's text. */
+private val CardMargin = 16.dp
+val CardInset = 16.dp
+private val CardRadius = 20.dp
+
+/** The part of a card that [slot] draws: a raised surface with room on both sides, rounded where the card begins and ends. */
+fun Modifier.card(slot: CardSlot): Modifier = composed {
+    val shape = when (slot) {
+        CardSlot.ONLY -> RoundedCornerShape(CardRadius)
+        CardSlot.FIRST -> RoundedCornerShape(topStart = CardRadius, topEnd = CardRadius)
+        CardSlot.LAST -> RoundedCornerShape(bottomStart = CardRadius, bottomEnd = CardRadius)
+        CardSlot.MIDDLE -> androidx.compose.ui.graphics.RectangleShape
+    }
+    padding(horizontal = CardMargin).clip(shape).background(FullaTheme.colors.paperHigh, shape)
+}
+
+/** One row of a lazy list inside a card: [slot] says which part of the card it is, and whether it draws the line under it. */
+@Composable
+fun CardItem(slot: CardSlot, content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxWidth().card(slot)) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalRowInset provides CardInset, LocalCardSlot provides slot) { content() }
+    }
+}
+
+/** A few rows that belong together, in one card. Each row asks [LocalCardSlot] whether it is the last. */
+@Composable
+fun CardGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier.fillMaxWidth().card(CardSlot.ONLY)) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalRowInset provides CardInset) { content() }
+    }
+}
+
+/** The part of a card the current row is, when it is in one (see [CardItem]). */
+val LocalCardSlot = androidx.compose.runtime.staticCompositionLocalOf<CardSlot?> { null }
+
+/** A group's title and the one line that says what it is for, above its card. */
+@Composable
+fun GroupTitle(title: String, help: String?, modifier: Modifier = Modifier, top: Dp = 28.dp) {
+    Column(modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = top, bottom = 10.dp)) {
+        Text(title, style = FullaType.title, color = FullaTheme.colors.ink, modifier = Modifier.semantics { heading() })
+        if (help != null) Text(help, style = FullaType.secondary, color = FullaTheme.colors.inkMuted, modifier = Modifier.padding(top = 2.dp))
     }
 }
 

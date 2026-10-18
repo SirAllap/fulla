@@ -327,10 +327,15 @@ class Ledger(
         if (h.mode == CONNECTED) return
         val local = Wire.json.parseToJsonElement(h.configJson).jsonObject
         val joined = api.householdCreateFromLocal(LocalHousehold.forUpload(local))
-        val config = LocalHousehold.afterUpload(local, joined.config)
+        // Savings goals go up one by one once the household exists: each names an account the upload has just saved.
+        var server = joined.config
+        for (goal in (local["goals"] as? kotlinx.serialization.json.JsonArray).orEmpty()) {
+            server = api.upsert(householdId, Structure.GOAL, goal.jsonObject)
+        }
+        val config = LocalHousehold.afterUpload(local, server)
         db.withTransaction {
             households.upsert(h.copy(mode = CONNECTED, configJson = config.toString(),
-                configVersion = LocalHousehold.version(joined.config), cursor = 0))
+                configVersion = LocalHousehold.version(server), cursor = 0))
             val rows = Edits.connect(transactions.all(householdId).map(Rows::local))
             transactions.upsert(rows.map { Rows.entity(householdId, it) })
         }

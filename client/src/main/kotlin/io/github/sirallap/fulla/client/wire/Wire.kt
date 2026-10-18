@@ -3,6 +3,7 @@ package io.github.sirallap.fulla.client.wire
 
 import io.github.sirallap.fulla.core.importers.CategorizationRule
 import io.github.sirallap.fulla.core.model.Account
+import io.github.sirallap.fulla.core.goals.Goal
 import io.github.sirallap.fulla.core.model.RoundUp
 import io.github.sirallap.fulla.core.roundup.RoundUps
 import io.github.sirallap.fulla.core.model.AccountType
@@ -229,7 +230,24 @@ object Wire {
             },
             recurringRules = o.arr("recurring_rules").map { it.jsonObject }.mapNotNull { recurring(it) },
             trips = o.arr("trips").map { it.jsonObject }.map(::trip),
+            // An older bundle has no goals: none.
+            goals = o.arr("goals").map { it.jsonObject }.mapNotNull(::goal),
         )
+    }
+
+    fun goal(o: JsonObject): Goal? {
+        val id = o.str("id") ?: return null
+        val account = o.str("account_id") ?: return null
+        return Goal(
+            id = id, name = o.str("name") ?: "", targetMinor = o.long("target_minor") ?: return null, accountId = account,
+            targetDate = o.str("target_date")?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+            archived = o.bool("archived") ?: false,
+        )
+    }
+
+    fun goal(g: Goal): JsonObject = buildJsonObject {
+        put("id", g.id); put("name", g.name); put("target_minor", g.targetMinor); put("account_id", g.accountId)
+        put("target_date", g.targetDate?.toString()); put("archived", g.archived)
     }
 
     fun trip(o: JsonObject): Trip = Trip(
@@ -319,6 +337,7 @@ object Wire {
         put("categorization_rules", JsonArray(emptyList()))
         put("import_profiles", JsonArray(emptyList()))
         put("trips", JsonArray(c.trips.map(::trip)))
+        put("goals", JsonArray(c.goals.map { goal(it) }))
     }
 
     fun account(a: Account): JsonObject = buildJsonObject {

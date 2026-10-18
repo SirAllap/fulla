@@ -53,6 +53,7 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 | Who paid | what each member paid and their share, refunds taken off | `Analytics.byMember` |
 | Period by period | income, spending and what is left of the last periods; the one running says so | `Analytics.series` |
 | Looks recurring | the same note in three of the last six months for about the same amount, and not already a recurring item | `Analytics.detectedRecurring` |
+| Day by day | every day of the period with its everyday (variable) spending, green under and orange over what there was per day: the income less the fixed costs (written and still to come, as the forecast counts them) over the period's days, or without income the usual everyday spending per day of up to three earlier periods; days to come, and today until it has gone over, are neither; the days add up to the variable spending | `Analytics.calendar` |
 
 ## Balances
 
@@ -61,6 +62,7 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 | Between you | what each member paid minus their share, settlements included; always adds up to zero | `Balances` (also `fulla.member_balances`) |
 | To settle | the fewest payments that bring every balance to zero | `SettlementPlanner` |
 | Accounts | as on the overview; a round-up (a purchase's cents up to the next euro, times the multiplier) is a transfer, so it moves the balance of two accounts and no spending or income | `Analytics.accountBalances`, `RoundUps` |
+| Savings goal | saved is the goal's account balance (never below zero), left is the target less that (never below zero); with a date, left spread over the months to go, this one and the date's included, rounded up so that putting it aside each month always arrives; past its date it says so and asks for nothing a month | `Goals.progress` |
 
 ## History
 

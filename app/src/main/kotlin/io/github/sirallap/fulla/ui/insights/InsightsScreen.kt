@@ -43,7 +43,9 @@ import kotlin.math.roundToInt
  * what moved against the usual, who paid, and how each period compares.
  */
 @Composable
-fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> Unit = {}) {
+fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> Unit = {},
+    /** Set when the screen is a tab: it gets the tab's header (sync, settings) and room for the tab bar, and no back arrow. */
+    headerActions: (@Composable () -> Unit)? = null) {
     val c = FullaTheme.colors
     val f = view.formats
     val a = view.analytics
@@ -93,10 +95,11 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
     fun runningMark(p: java.time.YearMonth, text: String) = if (p == current) "$running · $text" else text
 
     Column(Modifier.fillMaxSize()) {
-        BackHeader(stringResource(R.string.insights), onBack)
+        if (headerActions != null) io.github.sirallap.fulla.ui.components.TabHeader(stringResource(R.string.insights), actions = { headerActions() })
+        else BackHeader(stringResource(R.string.insights), onBack)
         io.github.sirallap.fulla.ui.components.PeriodSelector(f.period(period), { periodText = period.minusMonths(1).toString() },
             { periodText = period.plusMonths(1).toString() }, canGoNext = period < current)
-        LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding()) {
+        LazyColumn(Modifier.weight(1f), contentPadding = listEndPadding(aboveTabBar = headerActions != null)) {
             // How the period will end is what a person opens this screen for: it comes first, before what already happened.
             if (forecast != null) item(key = "forecast") {
                 io.github.sirallap.fulla.ui.home.ForecastSection(view, forecast)
@@ -104,6 +107,10 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
             item(key = "figures") {
                 Section(stringResource(R.string.period_summary), top = if (forecast != null) 16.dp() else 8.dp())
                 FigureTiles(view, period, report)
+            }
+            item(key = "calendar") {
+                val calendar = remember(view, period, today) { a.calendar(view.active, period, today, view.deletedIds) }
+                CalendarSection(view, calendar, today)
             }
             if (forecast != null && forecast.fixed.isNotEmpty()) item(key = "fixed") {
                 io.github.sirallap.fulla.ui.home.FixedTotalsSection(view, forecast, onFixedCosts)

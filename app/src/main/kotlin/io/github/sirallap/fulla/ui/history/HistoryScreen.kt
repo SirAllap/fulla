@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
@@ -42,6 +43,8 @@ import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AmountText
 import io.github.sirallap.fulla.ui.components.ChipRow
 import io.github.sirallap.fulla.ui.components.EmptyState
+import io.github.sirallap.fulla.ui.components.CardItem
+import io.github.sirallap.fulla.ui.components.CardSlot
 import io.github.sirallap.fulla.ui.components.ListRow
 import io.github.sirallap.fulla.ui.components.MemberBadge
 import io.github.sirallap.fulla.ui.components.MenuItem
@@ -80,11 +83,15 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
     val f = view.formats
     var filter by rememberSaveable { mutableStateOf(HistoryFilter.ALL) }
     var query by rememberSaveable { mutableStateOf("") }
+    // One account, or all of them: a transfer shows under both its accounts.
+    var account by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshing by remember { mutableStateOf(false) }
 
-    val shown = remember(view, filter, query) {
+    val shown = remember(view, filter, query, account) {
         val q = query.trim().normalizeName()
-        view.rows.filter { filter.keeps(it) }.filter { row ->
+        view.rows.filter { filter.keeps(it) }
+            .filter { account == null || it.transaction.accountId == account || it.transaction.toAccountId == account }
+            .filter { row ->
             if (q.isEmpty()) return@filter true
             val t = row.transaction
             listOfNotNull(t.note, view.categoryName(t.categoryId), view.accountName(t.accountId), view.memberName(t.paidByMemberId))
@@ -119,6 +126,11 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
         OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
             placeholder = { Text(stringResource(R.string.search)) }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true)
         ChipRow(HistoryFilter.entries.map { it to stringResource(it.label) }, filter, { filter = it })
+        val accounts = view.config.accounts.filter { !it.archived }
+        if (accounts.size >= 2) {
+            ChipRow(listOf<Pair<String?, String>>(null to stringResource(R.string.all_accounts)) + accounts.map { it.id to it.name },
+                account, { account = it })
+        }
         PullToRefreshBox(
             isRefreshing = refreshing,
             onRefresh = { scope.launch { refreshing = true; container.syncAll(); refreshing = false } },
@@ -142,8 +154,11 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
                             }
                             Section(f.day(day), top = 16.dp, trailing = trailing)
                         }
-                        items(rows, key = { it.id }) { row ->
-                            HistoryRow(view, row, io.github.sirallap.fulla.core.roundup.RoundUps.underPurchase(row.transaction, byId)) { onOpen(row.id) }
+                        // A day's rows sit in one card under the day's name.
+                        itemsIndexed(rows, key = { _, row -> row.id }) { i, row ->
+                            CardItem(CardSlot.of(i, rows.size)) {
+                                HistoryRow(view, row, io.github.sirallap.fulla.core.roundup.RoundUps.underPurchase(row.transaction, byId)) { onOpen(row.id) }
+                            }
                         }
                     }
                 }

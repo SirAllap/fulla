@@ -34,6 +34,17 @@ class ColorsTest {
     }
 
     @Test
+    fun `the calendar's days carry their number in ink`() {
+        for (dark in listOf(false, true)) {
+            val ink = BaseColors.of(dark).ink
+            for (ground in listOf(io.github.sirallap.fulla.core.design.CalendarColors.under(dark), io.github.sirallap.fulla.core.design.CalendarColors.over(dark))) {
+                val r = Contrast.ratio(ink, ground)
+                assertTrue(r >= Contrast.TEXT_MINIMUM, "calendar day on ${if (dark) "dark" else "light"}: %.2f".format(r))
+            }
+        }
+    }
+
+    @Test
     fun `money text in every palette`() {
         for (p in MoneyPalette.entries) for (dark in listOf(false, true)) {
             check("${p.name}.in", p.of(dark).inText, dark)

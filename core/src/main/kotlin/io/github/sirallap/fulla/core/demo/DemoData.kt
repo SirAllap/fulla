@@ -28,6 +28,11 @@ object DemoData {
     const val TAG = "demo"
     private val NAMESPACE = UUID.fromString("6f1c2b8e-3d4a-4e5f-9a0b-1c2d3e4f5a6b")
 
+    /** The demo household's id: the same on every phone, so the app knows when it is showing invented data. */
+    val HOUSEHOLD_ID: String = DeterministicId.uuid5(NAMESPACE, "household")
+
+    fun isDemo(householdId: String): Boolean = householdId == HOUSEHOLD_ID
+
     data class Demo(val config: Config, val transactions: List<Transaction>)
 
     fun build(today: LocalDate, language: String = "en", seed: Int = 2030): Demo {

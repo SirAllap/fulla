@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,7 +62,7 @@ data class TabItem(val label: String, val icon: ImageVector)
  * itself up there, like a drop.
  */
 @Composable
-fun LiquidTabBar(items: List<TabItem>, selected: Int, onSelect: (Int) -> Unit) {
+fun LiquidTabBar(items: List<TabItem>, selected: Int, center: Int? = null, onSelect: (Int) -> Unit) {
     val c = FullaTheme.colors
     val reduced = FullaMotion.reduced()
     val last = remember { intArrayOf(selected) }
@@ -75,12 +76,31 @@ fun LiquidTabBar(items: List<TabItem>, selected: Int, onSelect: (Int) -> Unit) {
         Hairline()
         BoxWithConstraints(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp, vertical = 8.dp)) {
             val slot = maxWidth / items.size
+            // The round button in the middle is its own highlight: the pill fades out while it is the one on.
+            val pill by animateFloatAsState(if (selected == center) 0f else 1f, FullaMotion.snappy(reduced), label = "pill")
             Box(
                 Modifier.offset(x = slot * left + 4.dp).width(slot * (right - left) - 8.dp).fillMaxHeight()
+                    .graphicsLayer { alpha = pill }
                     .background(c.highlight, RoundedCornerShape(16.dp))
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 items.forEachIndexed { i, item ->
+                    if (i == center) {
+                        // Adding is what the app is for: a round button in the middle, raised above the bar, always the same tap.
+                        val source = remember { MutableInteractionSource() }
+                        Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                            Box(
+                                Modifier.offset(y = (-14).dp).size(56.dp).yields(source)
+                                    .background(c.highlight, androidx.compose.foundation.shape.CircleShape)
+                                    .semantics { this.selected = i == selected; contentDescription = item.label }
+                                    .clickable(source, indication = null, role = Role.Button) { onSelect(i) },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(androidx.compose.material.icons.Icons.Filled.Add, null, tint = c.onHighlight, modifier = Modifier.size(30.dp))
+                            }
+                        }
+                        return@forEachIndexed
+                    }
                     // A tab is "on" while the pill covers most of it.
                     val covered = (minOf(right, i + 1f) - maxOf(left, i.toFloat())).coerceIn(0f, 1f) > 0.5f
                     val tint = if (covered) c.onHighlight else c.inkMuted

@@ -234,6 +234,20 @@ data class Hero(val incomeMinor: Long, val expenseMinor: Long) {
  * pockets and people, so they are not income or spending (except in account
  * balances, where that is exactly what they are).
  */
+/** How a day of the calendar compares with what there was to spend per day. */
+enum class DayMark { UNDER, OVER, TO_COME, NONE }
+
+/** Where the calendar's daily figure comes from: the income after the fixed costs, or the usual everyday spending. */
+enum class DailyBasis { AFTER_FIXED, USUAL }
+
+data class CalendarDay(val date: LocalDate, val spentMinor: Long, val mark: DayMark)
+
+/** A period day by day (Analytics.calendar). [dailyMinor] is null when there is nothing to set a day against. */
+data class SpendingCalendar(val days: List<CalendarDay>, val dailyMinor: Long?, val basis: DailyBasis?) {
+    val under: Int get() = days.count { it.mark == DayMark.UNDER }
+    val over: Int get() = days.count { it.mark == DayMark.OVER }
+}
+
 class Analytics(private val config: Config, private val rule: PeriodRule) {
 
     private fun periodOf(t: Transaction): YearMonth = rule.periodOf(t.date, t.kind, t.recurrence)
@@ -637,6 +651,63 @@ class Analytics(private val config: Config, private val rule: PeriodRule) {
      * is not counted while it is running: a day not spent yet is not a day
      * without spending, and the figure would drop the moment something is bought.
      */
+    /**
+     * The period as a calendar: every day's everyday (variable) spending, set against what there was to spend per day.
+     *
+     * What there was per day ([SpendingCalendar.dailyMinor]) is what the income leaves once the fixed costs are paid,
+     * spread over the period's days ([DailyBasis.AFTER_FIXED]; for the running period, with the income and the fixed
+     * costs still to come, as the forecast counts them). Without income, it is the usual everyday spending per day of the up
+     * to three earlier periods that had any ([DailyBasis.USUAL]). Without either there is nothing to set a day against.
+     * A day that has not come is [DayMark.TO_COME]; so is today, until it has gone over: a day is not "under" before it
+     * ends. The days add up to the report's variable spending.
+     */
+    fun calendar(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate, deleted: Set<String> = emptySet()): SpendingCalendar {
+        val list = txs.toList()
+        val range = rule.daysOf(period)
+        val length = (ChronoUnit.DAYS.between(range.start, range.endInclusive) + 1).toInt()
+        fun variable(p: YearMonth) = counted(list, p).filter {
+            (it.kind == TransactionKind.EXPENSE || it.kind == TransactionKind.REFUND) && it.recurrence == Recurrence.VARIABLE
+        }
+        val own = variable(period)
+        val byDay = own.groupBy { it.date }.mapValues { (_, rows) -> rows.sumOf { spend(it) } }
+        val running = today in range.start..range.endInclusive || (rule.isOpen(period) && today > range.endInclusive)
+        // A period waiting for its next salary runs on past its usual length: the calendar runs on with it.
+        val waiting = rule.isOpen(period) && today > range.endInclusive
+        val first = (own.map { it.date } + range.start).min()
+        val last = (own.map { it.date } + range.endInclusive + (if (waiting) listOf(today) else emptyList())).max()
+        // The income less the fixed costs written down; while the period runs, with what is still to come of both.
+        val rows = counted(list, period)
+        val ahead = if (running) forecast(list, period, today, deleted) else null
+        val income = rows.filter { it.kind == TransactionKind.INCOME }.sumOf { it.amountMinor } + (ahead?.expectedIncomeMinor ?: 0)
+        val fixed = rows.filter { it.recurrence == Recurrence.FIXED }.sumOf { spend(it) } + (ahead?.fixedToComeMinor ?: 0)
+        val afterFixed: Long? = if (income > 0) income - fixed else null
+        val (daily, basis) = when {
+            afterFixed != null && afterFixed > 0 -> afterFixed / length to DailyBasis.AFTER_FIXED
+            else -> {
+                val usual = (1..3).map { period.minusMonths(it.toLong()) }.mapNotNull { p ->
+                    val spent = variable(p).sumOf { spend(it) }
+                    if (spent <= 0) return@mapNotNull null
+                    val r = rule.daysOf(p)
+                    spent / (ChronoUnit.DAYS.between(r.start, r.endInclusive) + 1)
+                }
+                if (usual.isEmpty()) null to null else usual.sum() / usual.size to DailyBasis.USUAL
+            }
+        }
+        val days = (0..ChronoUnit.DAYS.between(first, last).toInt()).map { i ->
+            val date = first.plusDays(i.toLong())
+            val spent = byDay[date] ?: 0L
+            val mark = when {
+                date > today -> DayMark.TO_COME
+                daily == null -> DayMark.NONE
+                spent > daily -> DayMark.OVER
+                date == today -> DayMark.TO_COME
+                else -> DayMark.UNDER
+            }
+            CalendarDay(date, spent, mark)
+        }
+        return SpendingCalendar(days, daily, basis)
+    }
+
     fun noSpendDays(txs: Iterable<Transaction>, period: YearMonth, today: LocalDate): Int {
         val done = daysDone(period, today)
         if (done == 0) return 0

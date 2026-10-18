@@ -12,6 +12,7 @@ import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.CloudUpload
+import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Settings
@@ -114,10 +115,12 @@ fun FullaRoot(container: AppContainer, activity: androidx.fragment.app.FragmentA
     }
 }
 
+/** The tabs, in the order of the bar: two on each side of Add, which is the round button in the middle. */
 enum class Tab(val label: Int, val icon: ImageVector) {
-    ADD(R.string.tab_add, Icons.Outlined.AddCircleOutline),
     OVERVIEW(R.string.tab_overview, Icons.Outlined.Opacity),
     HISTORY(R.string.tab_history, Icons.Outlined.ReceiptLong),
+    ADD(R.string.tab_add, Icons.Outlined.AddCircleOutline),
+    INSIGHTS(R.string.insights, Icons.Outlined.Insights),
     BALANCES(R.string.tab_balances, Icons.Outlined.AccountBalanceWallet),
 }
 
@@ -182,12 +185,13 @@ private fun Household(state: HouseholdState) {
                     }) { shown ->
                         when (shown) {
                             Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW })
-                            Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { nav.navigate("insights") }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
+                            Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { tab = Tab.INSIGHTS }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
-                            Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") })
+                            Tab.INSIGHTS -> io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { tab = Tab.OVERVIEW }, onFixedCosts = { nav.navigate("settings/recurring") }, headerActions = headerActions)
+                            Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") }, onGoals = { nav.navigate("settings/goals") })
                         }
                     }
-                    LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal) { tab = Tab.entries[it] }
+                    LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal, center = Tab.ADD.ordinal) { tab = Tab.entries[it] }
                 }
             }
             composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->

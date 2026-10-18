@@ -150,6 +150,14 @@ class FiguresAddUpTest {
             assertEquals(positive, a.topCategories(h.rows, period).sumOf { it.amountMinor }, why("the chart shows every positive category"))
             assertEquals(report.spentMinor, report.fixedMinor + report.variableMinor, why("fixed and variable add up to spent"))
             assertEquals(report.variableMinor, report.weekdays.sum(), why("weekdays add up to the variable spending"))
+            // The calendar's days are the period's days, and they hold its variable spending, no more and no less.
+            val calendar = a.calendar(h.rows, period, today, h.rows.filter { !it.isActive }.map { it.id }.toSet())
+            assertEquals(report.variableMinor, calendar.days.sumOf { it.spentMinor }, why("the calendar adds up to the variable spending"))
+            assertTrue(calendar.days.size >= rule.daysOf(period).let { java.time.temporal.ChronoUnit.DAYS.between(it.start, it.endInclusive).toInt() + 1 },
+                why("a square for every day of the period"))
+            assertEquals(calendar.days.size, calendar.days.map { it.date }.toSet().size, why("one square per day"))
+            assertTrue(calendar.days.filter { it.date > today }.all { it.mark == io.github.sirallap.fulla.core.analytics.DayMark.TO_COME },
+                why("a day that has not come is neither under nor over"))
             assertEquals(spent, a.groupBy(h.rows, period, "category").values.sum(), why("grouped by category"))
             assertEquals(spent, a.groupBy(h.rows, period, "recurrence").values.sum(), why("grouped by recurrence"))
             val excluded = h.config.trips.filter { !it.inCategoryBudgets }.map { it.id }.toSet()

@@ -119,6 +119,10 @@ fun HomeScreen(
             modifier = Modifier.weight(1f),
         ) {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = listEndPadding(aboveTabBar = true)) {
+                // Invented data says so at the top, with the way to one's own household one tap away.
+                if (io.github.sirallap.fulla.core.demo.DemoData.isDemo(view.id)) item(key = "demo") {
+                    DemoNotice(onUseMine = { container.addingHousehold.value = true })
+                }
                 item {
                     PeriodSelector(f.period(period), { periodText = period.minusMonths(1).toString() },
                         { periodText = period.plusMonths(1).toString() }, canGoNext = period < current)
@@ -351,5 +355,22 @@ private fun InsightsButton(onClick: () -> Unit) {
     ) {
         Icon(Icons.Outlined.Insights, if (narrow) label else null, tint = c.onHighlight, modifier = Modifier.size(22.dp))
         if (!narrow) Text(label, style = FullaType.body, color = c.onHighlight, maxLines = 1)
+    }
+}
+
+/** The demo's notice: invented data, and the way to start with one's own. */
+@Composable
+private fun DemoNotice(onUseMine: () -> Unit) {
+    val c = FullaTheme.colors
+    androidx.compose.foundation.layout.Row(
+        Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 4.dp)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+            .background(c.highlight)
+            .clickable(onClickLabel = stringResource(R.string.demo_use_mine), onClick = onUseMine)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        Text(stringResource(R.string.demo_notice), style = FullaType.label, color = c.onHighlight)
+        Icon(Icons.Outlined.ChevronRight, null, tint = c.onHighlight, modifier = Modifier.size(18.dp))
     }
 }

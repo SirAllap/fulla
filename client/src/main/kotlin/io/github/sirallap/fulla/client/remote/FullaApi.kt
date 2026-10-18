@@ -175,4 +175,5 @@ enum class Structure(val function: String, val argument: String, val bundleKey: 
     RULE("rule", "rule", "categorization_rules"),
     IMPORT_PROFILE("import_profile", "profile", "import_profiles"),
     TRIP("trip", "trip", "trips"),
+    GOAL("goal", "goal", "goals"),
 }

@@ -254,6 +254,13 @@ The History draws it under its purchase, as a line of that row, not as a row of 
 phone says nothing when it writes one: a message over the tab bar was tried and was in the way. A person can ask for
 the rounding of the current period's purchases once (`RoundUps.backfill`, `Ledger.applyRoundUpBackfill`).
 
+### A savings goal stores no progress
+
+A goal (`fulla.goals`, migration 0023; `core/.../goals/Goals.kt`) is a name, an amount, an account and maybe a date.
+What has been saved is that account's balance, so a goal can never disagree with the account. It is structure, in the
+config bundle like a trip; a phone-only household that is shared uploads its goals one by one right after the
+household (`Ledger.connect`), because each names an account the upload has just saved.
+
 ### Migrations
 
 Applied in filename order, each once, recorded in `fulla.schema_migrations`.

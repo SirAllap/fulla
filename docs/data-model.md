@@ -37,6 +37,7 @@ this page explains them.
 | `import_profiles` | How to read a particular CSV layout |
 | `transactions` | Everything that happened |
 | `trips` | A trip or event with its own optional budget: name, date range, `in_category_budgets` |
+| `goals` | A savings goal: name, `target_minor`, the account it is kept in (`account_id`), an optional `target_date`, `archived`. What is saved is that account's balance, worked out on the phone; nothing about progress is stored |
 
 ## Trips
 

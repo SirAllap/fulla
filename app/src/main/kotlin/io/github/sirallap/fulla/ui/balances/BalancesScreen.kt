@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -35,6 +37,8 @@ import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AmountText
 import io.github.sirallap.fulla.ui.components.EmptyState
+import io.github.sirallap.fulla.ui.components.CardItem
+import io.github.sirallap.fulla.ui.components.CardSlot
 import io.github.sirallap.fulla.ui.components.ListRow
 import io.github.sirallap.fulla.ui.components.MemberBadge
 import io.github.sirallap.fulla.ui.components.Section
@@ -54,7 +58,7 @@ import java.util.UUID
  * stay hidden, and come back if the household splits again.
  */
 @Composable
-fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}) {
+fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}, onGoals: () -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
@@ -79,9 +83,10 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                 }
             } else if (members.size >= 2) {
                 item { Section(stringResource(R.string.between_you), top = 8.dp) }
-                items(balances.filter { b -> view.config.member(b.memberId)?.isActive == true || b.balanceMinor != 0L }, key = { it.memberId }) { b ->
+                val shownBalances = balances.filter { b -> view.config.member(b.memberId)?.isActive == true || b.balanceMinor != 0L }
+                itemsIndexed(shownBalances, key = { _, b -> b.memberId }) { i, b ->
                     val m = view.config.member(b.memberId)
-                    ListRow(
+                    CardItem(CardSlot.of(i, shownBalances.size)) { ListRow(
                         title = m?.displayName ?: "?",
                         start = { MemberBadge(m?.initials ?: "?", m?.colorIndex ?: 0) },
                         context = when {
@@ -96,33 +101,57 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                                 else -> c.inkMuted
                             })
                         },
-                    )
+                    ) }
                 }
                 item { Section(stringResource(R.string.to_settle)) }
                 if (plan.isEmpty()) {
                     item { EmptyState(Icons.Outlined.CheckCircle, stringResource(R.string.all_settled_title), stringResource(R.string.all_settled_text)) }
                 } else {
-                    items(plan, key = { "${it.fromMemberId}-${it.toMemberId}" }) { p ->
-                        ListRow(
+                    itemsIndexed(plan, key = { _, p -> "${p.fromMemberId}-${p.toMemberId}" }) { i, p ->
+                        CardItem(CardSlot.of(i, plan.size)) { ListRow(
                             title = stringResource(R.string.pays, view.memberName(p.fromMemberId), view.memberName(p.toMemberId)),
                             context = stringResource(R.string.tap_to_record),
                             clickLabel = stringResource(R.string.record_payment),
                             onClick = { confirming = p },
                             end = { AmountText(f.money(p.amountMinor)) },
-                        )
+                        ) }
                     }
                 }
             }
             item { Section(stringResource(R.string.accounts)) }
-            items(view.config.accounts.filter { !it.archived }, key = { it.id }) { a ->
+            val open = view.config.accounts.filter { !it.archived }
+            // In one shared pot the household's total closes the accounts' card.
+            val cardRows = open.size + if (shared) 1 else 0
+            itemsIndexed(open, key = { _, a -> a.id }) { i, a ->
                 val amount = accounts[a.id] ?: 0
-                ListRow(a.name, end = { AmountText(f.money(amount), color = if (amount < 0) c.moneyOut else c.ink) })
+                CardItem(CardSlot.of(i, cardRows)) {
+                    ListRow(a.name, end = { AmountText(f.money(amount), color = if (amount < 0) c.moneyOut else c.ink) })
+                }
             }
             if (shared) {
                 item {
                     val total = view.analytics.accountsTotal(view.active, view.config.accounts, today)
-                    ListRow(stringResource(R.string.household_total), divider = false,
-                        end = { AmountText(f.money(total), color = if (total < 0) c.moneyOut else c.ink) })
+                    CardItem(CardSlot.of(cardRows - 1, cardRows)) {
+                        ListRow(stringResource(R.string.household_total),
+                            end = { AmountText(f.money(total), color = if (total < 0) c.moneyOut else c.ink) })
+                    }
+                }
+            }
+            // Savings goals, each with how far its account has got; tapping one opens them in Settings.
+            val goals = view.config.goals.filter { !it.archived }
+            item(key = "goals-title") { Section(stringResource(R.string.settings_goals)) }
+            if (goals.isEmpty()) {
+                item(key = "goals-empty") {
+                    CardItem(CardSlot.ONLY) {
+                        ListRow(stringResource(R.string.goal_new), context = stringResource(R.string.goals_empty_text),
+                            icon = Icons.Outlined.Flag, onClick = onGoals)
+                    }
+                }
+            } else {
+                itemsIndexed(goals, key = { _, g -> "goal-" + g.id }) { i, g ->
+                    CardItem(CardSlot.of(i, goals.size)) {
+                        io.github.sirallap.fulla.ui.settings.GoalRow(view, g, divider = i < goals.lastIndex, onClick = onGoals)
+                    }
                 }
             }
         }

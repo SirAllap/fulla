@@ -238,6 +238,7 @@ test('a stranger gets not_member from every function that takes a household', (c
     ['fulla_import_profile_upsert', { p_household_id: hh, p_profile: {} }],
     ['fulla_trip_upsert', { p_household_id: hh, p_trip: {} }],
     ['fulla_trip_delete', { p_household_id: hh, p_trip_id: uuid() }],
+    ['fulla_goal_upsert', { p_household_id: hh, p_goal: {} }],
     ['fulla_sync_push', { p_household_id: hh, p_mutations: [] }],
     ['fulla_sync_pull', { p_household_id: hh }],
     ['fulla_period_summary', { p_household_id: hh, p_from: '2030-01', p_to: '2030-12' }],
@@ -597,6 +598,35 @@ test('round-up: both keys together, to another account of the household, never f
   account = cfg.accounts.find((a) => a.id === card);
   assert.equal(account.round_up_to, null);
   assert.equal(account.round_up_multiplier, null);
+});
+
+test('savings goals: a member saves one, it names an account of the household, a date is optional and archiving hides nothing', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  const account = ctx.config().accounts[0].id;
+  const id = uuid();
+  const before = ctx.config();
+  let cfg = rpc(ctx.db, bob.user, 'fulla_goal_upsert', { p_household_id: ctx.hh, p_goal: { id, name: 'Summer 2030', target_minor: 160000, account_id: account, target_date: '2030-07-01' } });
+  assert.ok(cfg.config_version > before.config_version);
+  assert.equal(cfg.goals.length, 1);
+  assert.equal(cfg.goals[0].name, 'Summer 2030');
+  assert.equal(cfg.goals[0].target_minor, 160000);
+  assert.equal(cfg.goals[0].account_id, account);
+  assert.equal(cfg.goals[0].target_date, '2030-07-01');
+  assert.equal(cfg.goals[0].archived, false);
+
+  const save = (g) => rpc(ctx.db, ctx.alice, 'fulla_goal_upsert', { p_household_id: ctx.hh, p_goal: g });
+  const fails = (g) => expectError(ctx.db, ctx.alice, 'fulla_goal_upsert', { p_household_id: ctx.hh, p_goal: g }, 'validation_failed');
+  cfg = save({ id, name: 'Summer 2030', target_minor: 180000, account_id: account, target_date: null, archived: true });
+  assert.equal(cfg.goals[0].target_minor, 180000);
+  assert.equal(cfg.goals[0].target_date, null);
+  assert.equal(cfg.goals[0].archived, true, 'an archived goal is still in the bundle; the phone hides it');
+
+  fails({ id: uuid(), name: '', target_minor: 100, account_id: account });
+  fails({ id: uuid(), name: 'Car', target_minor: 0, account_id: account });
+  fails({ id: uuid(), name: 'Car', target_minor: -5, account_id: account });
+  fails({ id: uuid(), name: 'Car', target_minor: 100, account_id: uuid() });
+  fails({ id: uuid(), name: 'Car', target_minor: 100 });
+  fails({ id: uuid(), name: 'Car', target_minor: 100, account_id: account, target_date: 'soon' });
 });
 
 test('categories nest one level deep', (ctx) => {
@@ -1179,9 +1209,10 @@ test('deleting the only account in a household erases the household, every row o
   const kid = virtual(ctx, 'Carol');
   push(ctx, ctx.alice, [upsert(expense(ctx, { members: [ctx.aliceMember, kid] }))]);
   rpc(ctx.db, ctx.alice, 'fulla_budget_upsert', { p_household_id: ctx.hh, p_budget: { id: uuid(), category_id: ctx.cat('Groceries'), amount_minor: 30000 } });
+  rpc(ctx.db, ctx.alice, 'fulla_goal_upsert', { p_household_id: ctx.hh, p_goal: { id: uuid(), name: 'Summer', target_minor: 160000, account_id: ctx.config().accounts[0].id } });
   const r = rpc(ctx.db, ctx.alice, 'fulla_account_delete', {});
   assert.equal(r.households_erased, 1);
-  for (const t of ['households', 'members', 'transactions', 'categories', 'accounts', 'budgets']) {
+  for (const t of ['households', 'members', 'transactions', 'categories', 'accounts', 'budgets', 'goals']) {
     const where = t === 'households' ? `id = '${ctx.hh}'` : `household_id = '${ctx.hh}'`;
     assert.equal(count(ctx, `select count(*) from fulla.${t} where ${where};`), 0, `${t} not erased`);
   }
