@@ -316,8 +316,9 @@ class LedgerTest {
 
         clock = clock.plusSeconds(60)
         ledger.save(h, t.copy(amountMinor = 150))
-        // the person deleted it with the purchase's edit: it stays deleted, nothing is written again behind their back
-        assertEquals(Status.DELETED, ledger.transaction(id)!!.transaction.status)
+        // the amount has cents again: the round-up that went when it was exact comes back, the same transfer
+        assertEquals("a round-up that went with an exact amount comes back", Status.ACTIVE, ledger.transaction(id)!!.transaction.status)
+        assertEquals(100L, ledger.transaction(id)!!.transaction.amountMinor)
     }
 
     @Test
