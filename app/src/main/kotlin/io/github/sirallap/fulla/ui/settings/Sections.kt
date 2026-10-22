@@ -289,11 +289,11 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
 fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val ledger = LocalContainer.current.ledger
     val c = FullaTheme.colors
-    var editing by remember { mutableStateOf<JsonObject?>(null) }
+    /** The categories open, one over the other: a category, then one of its subcategories opened from it. */
+    var editing by remember { mutableStateOf(listOf<JsonObject>()) }
     var creating by remember { mutableStateOf<AppliesTo?>(null) }
-    /** The category a new subcategory goes under, once picked. */
+    /** The category a new subcategory goes under, added from that category's own dialog. */
     var creatingUnder by remember { mutableStateOf<io.github.sirallap.fulla.core.model.Category?>(null) }
-    var pickingParent by remember { mutableStateOf<AppliesTo?>(null) }
     /** The category being deleted: asks where its entries go, then archives it. */
     var deleting by remember { mutableStateOf<io.github.sirallap.fulla.core.model.Category?>(null) }
     val order = compareBy<io.github.sirallap.fulla.core.model.Category>({ it.archived }, { it.sort })
@@ -312,34 +312,38 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                         indent = if (cat.parentId != null) 24.dp else 0.dp,
                         titleColor = if (cat.archived) c.inkMuted else c.ink,
                         context = if (cat.archived) stringResource(R.string.archived) else null,
-                        onClick = if (canEdit) ({ editing = bundleItem(view, Structure.CATEGORY, cat.id) }) else null)
+                        onClick = if (canEdit) ({ editing = listOfNotNull(bundleItem(view, Structure.CATEGORY, cat.id)) }) else null)
                 }
             }
-            if (canEdit) {
-                ListRow(stringResource(R.string.add_category), icon = Icons.Outlined.Add, onClick = { creating = applies })
-                if (tops.any { it.parentId == null && !it.archived }) {
-                    ListRow(stringResource(R.string.add_subcategory), icon = Icons.Outlined.Add, onClick = { pickingParent = applies })
-                }
-            }
+            if (canEdit) ListRow(stringResource(R.string.add_category), icon = Icons.Outlined.Add, onClick = { creating = applies })
         }
     }
-    pickingParent?.let { applies ->
-        val parents = view.config.categories.filter {
-            it.parentId == null && !it.archived && (it.appliesTo == applies || (applies == AppliesTo.EXPENSE && it.appliesTo == AppliesTo.BOTH))
-        }.sortedWith(order)
-        FullaDialog(
-            onDismissRequest = { pickingParent = null },
-            title = { Text(stringResource(R.string.subcategory_of)) },
-            text = {
-                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
-                    for (p in parents) {
-                        ListRow(p.name, icon = CategoryIcons.of(p.icon), iconTint = c.category(p.colorIndex),
-                            onClick = { pickingParent = null; creatingUnder = p })
-                    }
+    for (item in editing) androidx.compose.runtime.key((item["id"] as? JsonPrimitive)?.content) {
+        val use = view.config.category((item["id"] as? JsonPrimitive)?.content)?.let {
+            runCatching { io.github.sirallap.fulla.core.categories.CategoryUse.of(view.config, view.active, it.id) }.getOrNull()
+        }
+        val category = view.config.category((item["id"] as? JsonPrimitive)?.content)
+        val close = { editing = editing.filter { it !== item } }
+        StructureDialog(item, onDismiss = close, iconPicker = true,
+            onDeleteClick = if (use != null && category != null && use.children == 0) ({ deleting = category }) else null,
+            deleteBlockedText = if (use != null && use.children > 0) stringResource(R.string.delete_category_children) else null,
+            // A category's own subcategories, each opened over it, and a new one added right there.
+            extra = if (category != null && category.parentId == null) ({
+                Text(stringResource(R.string.subcategories), style = FullaType.label, color = c.inkMuted, modifier = Modifier.padding(top = 8.dp))
+                val children = view.config.categories.filter { it.parentId == category.id }
+                    .filter { referenced == null || !io.github.sirallap.fulla.core.categories.CategoryUse.isGone(view.config, referenced, it.id) }
+                    .sortedWith(order)
+                for (child in children) {
+                    ListRow(child.name, icon = CategoryIcons.of(child.icon), iconTint = c.category(child.colorIndex),
+                        titleColor = if (child.archived) c.inkMuted else c.ink,
+                        context = if (child.archived) stringResource(R.string.archived) else null,
+                        onClick = { bundleItem(view, Structure.CATEGORY, child.id)?.let { editing = editing + it } })
                 }
-            },
-            confirmButton = { TextButton(onClick = { pickingParent = null }) { Text(stringResource(R.string.cancel)) } },
-        )
+                if (!category.archived) ListRow(stringResource(R.string.add_subcategory), icon = Icons.Outlined.Add, onClick = { creatingUnder = category })
+            }) else null,
+        ) { updated ->
+            change { api -> ledger.upsert(view.id, Structure.CATEGORY, updated, api) }
+        }
     }
     creatingUnder?.let { parent ->
         val item = buildJsonObject {
@@ -348,18 +352,6 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             put("color_index", parent.colorIndex); put("sort", view.config.categories.size); put("archived", false)
         }
         StructureDialog(item, onDismiss = { creatingUnder = null }, iconPicker = true) { updated ->
-            change { api -> ledger.upsert(view.id, Structure.CATEGORY, updated, api) }
-        }
-    }
-    editing?.let { item ->
-        val use = view.config.category((item["id"] as? JsonPrimitive)?.content)?.let {
-            runCatching { io.github.sirallap.fulla.core.categories.CategoryUse.of(view.config, view.active, it.id) }.getOrNull()
-        }
-        val category = view.config.category((item["id"] as? JsonPrimitive)?.content)
-        StructureDialog(item, onDismiss = { editing = null }, iconPicker = true,
-            onDeleteClick = if (use != null && category != null && use.children == 0) ({ deleting = category }) else null,
-            deleteBlockedText = if (use != null && use.children > 0) stringResource(R.string.delete_category_children) else null,
-        ) { updated ->
             change { api -> ledger.upsert(view.id, Structure.CATEGORY, updated, api) }
         }
     }
@@ -457,6 +449,8 @@ private fun StructureDialog(
     /** Deleting, for what can be deleted: it closes this dialog and the caller asks what the deletion needs. [deleteBlockedText] says why it cannot be done now. */
     onDeleteClick: (() -> Unit)? = null,
     deleteBlockedText: String? = null,
+    /** What else belongs in this dialog, above the archive switch: a category's subcategories. */
+    extra: (@Composable () -> Unit)? = null,
     onSave: (JsonObject) -> Unit,
 ) {
     var name by remember { mutableStateOf((item["name"] as? JsonPrimitive)?.content ?: "") }
@@ -568,6 +562,7 @@ private fun StructureDialog(
                         }
                     }
                 }
+                extra?.invoke()
                 SwitchRow(stringResource(R.string.archive), stringResource(R.string.archive_help), archived) { archived = it }
                 if (deleteBlockedText != null) {
                     Text(deleteBlockedText, style = FullaType.secondary, color = FullaTheme.colors.inkMuted)

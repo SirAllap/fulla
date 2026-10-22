@@ -600,7 +600,7 @@
     <string name="accounts_total">Sur vos comptes</string>
     <string name="accounts_total_help">Ce qu\'ils contiennent aujourd\'hui. Touchez pour voir chaque compte.</string>
     <string name="add_subcategory">Ajouter une sous-catégorie</string>
-    <string name="subcategory_of">Sous-catégorie de…</string>
+    <string name="subcategories">Sous-catégories</string>
     <string name="subcategory_general">Général</string>
     <string name="field_value_none">Non précisé</string>
     <string name="field_categories">Demander seulement dans</string>
