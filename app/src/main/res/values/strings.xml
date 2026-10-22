@@ -630,7 +630,7 @@
     <string name="accounts_total">In your accounts</string>
     <string name="accounts_total_help">What they hold today. Tap for each account.</string>
     <string name="add_subcategory">Add a subcategory</string>
-    <string name="subcategory_of">Subcategory of…</string>
+    <string name="subcategories">Subcategories</string>
     <string name="subcategory_general">General</string>
     <string name="field_value_none">Not said</string>
     <string name="field_categories">Ask only in</string>

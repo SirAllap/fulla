@@ -233,6 +233,7 @@ svg.icon { flex: none; display: block; fill: currentColor; }
 .welcome { gap: 0; }
 .welcome .buttons .rows { margin: 0 calc(var(--inset) * -1); width: calc(100% + var(--inset) * 2); }
 .sheet .rows { margin: 0; }
+.sheet > .t-label { display: block; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.2px; padding: 16px var(--inset) 2px; }
 
 /* TripToggle: "Everyday / trip", a pill of two options */
 .toggle { display: flex; gap: 4px; margin: 8px var(--inset); padding: 4px; border-radius: 14px; background: var(--paper-high); }

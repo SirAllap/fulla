@@ -275,24 +275,8 @@ object CategoriesPage {
                         },
                         onClick = if (canEdit) ({ edit(view, c.id, c) }) else null)
                 }
-                if (canEdit) {
-                    listRow(t("add_category"), start = leadIcon("add")) { edit(view, randomUuid(), null, applies = applies) }
-                    if (tops.any { it.parentId == null && !it.archived }) listRow(t("add_subcategory"), start = leadIcon("add")) { pickParent(view, applies, tops) }
-                }
+                if (canEdit) listRow(t("add_category"), start = leadIcon("add")) { edit(view, randomUuid(), null, applies = applies) }
             }
-        }
-    }
-
-    private fun pickParent(view: HouseholdView, applies: AppliesTo, tops: List<Category>) {
-        sheet(t("subcategory_of")) { close ->
-            div("rows") {
-                for (p in tops.filter { it.parentId == null && !it.archived }) listRow(p.name,
-                    start = {
-                        style.setProperty("--tile", "var(--cat-${p.colorIndex % 12})")
-                        span("glyph") { categoryIcon(p.icon) }
-                    }) { close(); edit(view, randomUuid(), null, applies = applies, parent = p) }
-            }
-            div("actions") { quietButton(t("cancel")) { close() } }
         }
     }
 
@@ -338,7 +322,9 @@ object CategoriesPage {
         }
     }
 
-    private fun edit(view: HouseholdView, id: String, existing: Category?, applies: AppliesTo = AppliesTo.EXPENSE, parent: Category? = null) {
+    /** A category's sheet; a main one also lists its subcategories, each opened over it, and adds a new one right there. [onSaved] hears what was saved. */
+    private fun edit(view: HouseholdView, id: String, existing: Category?, applies: AppliesTo = AppliesTo.EXPENSE, parent: Category? = null,
+                     onSaved: (Category) -> Unit = {}) {
         var icon = existing?.icon ?: parent?.icon ?: "label"
         var archived = existing?.archived ?: false
         sheet(t("edit")) { close ->
@@ -356,6 +342,27 @@ object CategoriesPage {
                 }
                 paint()
             }
+            if (existing != null && existing.parentId == null) {
+                val referenced = runCatching { CategoryUse.referenced(view.config, view.active) }.getOrNull()
+                var children = view.config.categories.filter { it.parentId == existing.id }
+                    .filter { referenced == null || !CategoryUse.isGone(view.config, referenced, it.id) }
+                span("t-label") { text(t("subcategories")) }
+                val box = div("rows sub-rows")
+                fun paint() {
+                    box.clear()
+                    box.run {
+                        for (c in children.sortedWith(order)) listRow(c.name, context = if (c.archived) t("archived") else null, dim = c.archived,
+                            start = {
+                                style.setProperty("--tile", "var(--cat-${c.colorIndex % 12})")
+                                span("glyph") { categoryIcon(c.icon) }
+                            }) { edit(view, c.id, c) { saved -> children = children.map { if (it.id == saved.id) saved else it }; paint() } }
+                        if (!existing.archived) listRow(t("add_subcategory"), start = leadIcon("add")) {
+                            edit(view, randomUuid(), null, parent = existing) { saved -> children = children + saved; paint() }
+                        }
+                    }
+                }
+                paint()
+            }
             switchRow(t("archive"), t("archive_help"), archived) { archived = it }
             val use = existing?.let { runCatching { CategoryUse.of(view.config, view.active, it.id) }.getOrNull() }
             if (use != null && use.children > 0) note(t("delete_category_children"))
@@ -368,6 +375,7 @@ object CategoriesPage {
                     val count = view.config.categories.size
                     val item = Category(id, title, existing?.appliesTo ?: parent?.appliesTo ?: applies, existing?.parentId ?: parent?.id, icon,
                         existing?.colorIndex ?: parent?.colorIndex ?: (count % 12), existing?.sort ?: count, archived)
+                    onSaved(item)
                     App.launch { Ledger.upsert(Structure.CATEGORY, io.github.sirallap.fulla.client.wire.Wire.category(item)) }
                 }
                 quietButton(t("cancel")) { close() }

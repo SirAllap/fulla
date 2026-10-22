@@ -119,12 +119,17 @@ const row = (page, text) => page.locator('.row', { hasText: text }).first();
 
   // a category with a subcategory
   await row(page, 'Categorías').click();
-  await page.click('text=Añadir subcategoría');
-  await page.click('.sheet .row >> nth=0');
-  await page.fill('.sheet input >> nth=0', 'Fruta');
-  await page.click('.sheet button:has-text("Guardar")');
+  ok(await page.locator('text=Añadir subcategoría').count() === 0, 'no loose "add a subcategory" row: it is added from its category');
+  await row(page, 'Salud').click();
+  await page.click('.sheet >> text=Añadir subcategoría');
+  await page.fill('.sheet >> nth=1 >> input >> nth=0', 'Fruta');
+  await page.click('.sheet >> nth=1 >> button:has-text("Guardar")');
+  await page.waitForSelector('.sheet .sub-rows .row:has-text("Fruta")');
+  await shot('05b-category-subcategories');
+  ok(await page.locator('.sheet').count() === 1, 'a subcategory is added from its category, whose sheet stays open and lists it');
+  await page.click('.sheet button:has-text("Cancelar")');
   await page.waitForSelector('.glyph.sub');
-  ok((await page.textContent('main')).includes('Fruta'), 'a subcategory can be added under a category');
+  ok((await page.textContent('main')).includes('Fruta'), 'and the list shows it under the category');
   await back(page);
 
   // a custom field, a trip: forms made of sheets
