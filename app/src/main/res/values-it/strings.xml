@@ -798,4 +798,6 @@
     <string name="widget_mode_goal_text">A che punto è il tuo primo obiettivo di risparmio.</string>
     <string name="widget_section">Widget</string>
     <string name="widget_change_help">Ogni widget mostra ciò che scegli quando lo aggiungi. Per cambiarlo, tieni premuto il widget e apri le sue impostazioni.</string>
+    <string name="project_bad_key">Questa chiave non è di questo progetto, o è incompleta. Copia di nuovo la chiave anon con il suo pulsante Copy.</string>
+    <string name="project_busy">Il progetto non risponde in questo momento. Riprova tra poco.</string>
 </resources>

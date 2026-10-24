@@ -798,4 +798,6 @@
     <string name="widget_mode_goal_text">Où en est ton premier objectif d’épargne.</string>
     <string name="widget_section">Widget</string>
     <string name="widget_change_help">Chaque widget montre ce que tu choisis en le plaçant. Pour le changer, appuie longuement sur le widget et ouvre ses réglages.</string>
+    <string name="project_bad_key">Cette clé n’est pas celle de ce projet, ou elle est coupée. Recopie la clé anon avec son bouton Copy.</string>
+    <string name="project_busy">Le projet ne répond pas pour l’instant. Réessaie dans un moment.</string>
 </resources>

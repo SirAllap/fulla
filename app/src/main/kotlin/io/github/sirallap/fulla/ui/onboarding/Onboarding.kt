@@ -403,18 +403,24 @@ private fun ProjectForm(url: String, anonKey: String, onUrl: (String) -> Unit, o
         Endpoint.Problem.NOT_A_URL to stringResource(R.string.url_not_supabase),
     )
     val unreachable = stringResource(R.string.project_unreachable)
-    val notSetUp = stringResource(R.string.project_not_set_up)
+    val badKey = stringResource(R.string.project_bad_key)
+    val busyNow = stringResource(R.string.project_busy)
     FormScaffold(stringResource(R.string.shared), onBack, stringResource(R.string.connect), problem == null, error, busy, onAction = {
         val endpoint = Endpoint.parse(url, anonKey) ?: return@FormScaffold
         busy = true
         scope.launch {
-            // A ping before anything else: it proves the URL, the key and the database in one call.
-            val failure = runCatching { container.api(endpoint)!!.ping() }.exceptionOrNull()
+            // The address and the key, proved before anybody signs in (Supabase.checkKey); Fulla's database is
+            // asked right after signing in, since its functions answer only people signed in.
+            val failure = runCatching { container.supabase(endpoint)!!.checkKey() }.exceptionOrNull()
             busy = false
             if (failure == null) {
                 onReady(endpoint)
             } else {
-                error = if ((failure as? FullaError)?.code == FullaError.NETWORK) unreachable else notSetUp
+                error = when ((failure as? FullaError)?.code) {
+                    FullaError.NETWORK -> unreachable
+                    FullaError.INVALID_KEY -> badKey
+                    else -> busyNow
+                }
             }
         }
     }) {
@@ -571,6 +577,7 @@ private fun AccountForm(onBack: () -> Unit, startCreating: Boolean, google: (() 
     var info by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     val wrong = stringResource(R.string.wrong_credentials)
+    val notSetUp = stringResource(R.string.project_not_set_up)
     val confirm = stringResource(R.string.confirm_email)
     val failed = stringResource(R.string.something_failed)
     val differ = creating && repeat.isNotEmpty() && repeat != password
@@ -581,17 +588,23 @@ private fun AccountForm(onBack: () -> Unit, startCreating: Boolean, google: (() 
             scope.launch {
                 val supabase = container.supabase()
                 try {
+                    // Signed in, the project is asked whether Fulla's database is there: before, it could not say.
                     if (creating) {
-                        if (supabase!!.signUp(email, password) == null) { info = confirm } else { onSignedIn() }
+                        if (supabase!!.signUp(email, password) == null) { info = confirm } else { container.api()!!.ping(); onSignedIn() }
                     } else {
                         supabase!!.signIn(email, password)
+                        container.api()!!.ping()
                         onSignedIn()
                     }
                 } catch (e: FullaError) {
-                    error = when (e.code) {
+                    error = when {
+                        // PostgREST answers a function it does not have with 404: the database was never installed.
+                        e.status == 404 || e.code == FullaError.BAD_RESPONSE -> notSetUp
+                        else -> when (e.code) {
                         FullaError.INVALID_CREDENTIALS -> wrong
                         FullaError.EMAIL_NOT_CONFIRMED -> confirm
                         else -> e.message.ifBlank { failed }
+                        }
                     }
                 } finally {
                     busy = false

@@ -6,7 +6,8 @@ import java.net.URI
 /**
  * The one server this phone talks to: a household's own Supabase project.
  *
- * Only `https://<project>.supabase.co` is accepted. The app's promise is that
+ * Only `https://<project>.supabase.co` is accepted (the project's 20-letter ID
+ * alone, as the dashboard shows it, is read as that address). The app's promise is that
  * it contacts exactly one host and that host belongs to the household; a URL
  * anywhere else, or over plain HTTP, is refused before a byte is sent.
  */
@@ -31,7 +32,7 @@ data class Endpoint(val url: String, val anonKey: String) {
         }
 
         private fun normalise(raw: String): String {
-            val t = raw.trim().trimEnd('/')
+            val t = raw.trim().trimEnd('/').let { if (PROJECT.matches(it)) "$it.supabase.co" else it }
             val withScheme = if ("://" in t) t else "https://$t"
             // Keep only scheme and host: a pasted dashboard or REST URL still names the project.
             val uri = runCatching { URI(withScheme) }.getOrNull() ?: return withScheme

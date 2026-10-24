@@ -214,6 +214,26 @@ class SupabaseTest {
     private fun sessionJson(token: String) =
         """{"access_token":"$token","refresh_token":"refresh-2","expires_in":3600,"token_type":"bearer",
            "user":{"id":"user-1","email":"alice@example.com"}}"""
+    @Test
+    fun `the address and key are proved before signing in, without Fulla's functions`() = runTest {
+        val asked = mutableListOf<String>()
+        val ok = client(MemorySessionStore()) { req ->
+            asked += "${req.method.value} ${req.url.encodedPath} ${req.headers["apikey"]}"
+            respond("{}", HttpStatusCode.OK, json)
+        }
+        ok.checkKey()
+        assertEquals(listOf("GET /auth/v1/settings anon-key"), asked)
+        val refused = client(MemorySessionStore()) { respond("""{"message":"Invalid API key"}""", HttpStatusCode.Unauthorized, json) }
+        assertEquals(FullaError.INVALID_KEY, assertFailsWith<FullaError> { refused.checkKey() }.code)
+        val down = client(MemorySessionStore()) { respond("", HttpStatusCode.ServiceUnavailable) }
+        assertEquals(FullaError.SERVER, assertFailsWith<FullaError> { down.checkKey() }.code)
+    }
+
+    @Test
+    fun `the project's ID alone is read as its address`() {
+        assertEquals("https://abcdefghijklmnopqrst.supabase.co", Endpoint.parse(" abcdefghijklmnopqrst ", "k")!!.url)
+        assertEquals(Endpoint.Problem.NOT_SUPABASE, Endpoint.problem("abcdefghijklmnopqrs", "k"))
+    }
 }
 
 class InviteLinkTest {
@@ -267,4 +287,5 @@ class GoogleSignInTest {
         assertEquals(64, nonce.hashed.length)
         assertTrue(nonce.hashed != nonce.raw)
     }
+
 }

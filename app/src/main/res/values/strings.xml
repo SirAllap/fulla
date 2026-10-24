@@ -849,4 +849,6 @@
     <string name="widget_mode_goal_text">How far your first savings goal has got.</string>
     <string name="widget_section">Widget</string>
     <string name="widget_change_help">Each widget shows what you choose when you place it. To change it, long-press the widget and open its settings.</string>
+    <string name="project_bad_key">That key is not this project\'s, or it is cut short. Copy the anon key again with its Copy button.</string>
+    <string name="project_busy">The project is not answering right now. Try again in a moment.</string>
 </resources>

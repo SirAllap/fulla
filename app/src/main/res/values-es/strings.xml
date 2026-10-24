@@ -798,4 +798,6 @@
     <string name="widget_mode_goal_text">Cuánto llevas de tu primera meta de ahorro.</string>
     <string name="widget_section">Widget</string>
     <string name="widget_change_help">Cada widget muestra lo que elijas al ponerlo. Para cambiarlo, mantén pulsado el widget y abre sus ajustes.</string>
+    <string name="project_bad_key">Esa clave no es la de este proyecto, o está cortada. Vuelve a copiar la clave anon con su botón Copy.</string>
+    <string name="project_busy">El proyecto no responde ahora mismo. Inténtalo de nuevo en un momento.</string>
 </resources>

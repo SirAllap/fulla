@@ -798,4 +798,6 @@
     <string name="widget_mode_goal_text">Wie weit dein erstes Sparziel ist.</string>
     <string name="widget_section">Widget</string>
     <string name="widget_change_help">Jedes Widget zeigt, was du beim Platzieren wählst. Zum Ändern das Widget gedrückt halten und seine Einstellungen öffnen.</string>
+    <string name="project_bad_key">Dieser Schlüssel gehört nicht zu diesem Projekt oder ist unvollständig. Kopiere den anon-Schlüssel erneut mit seiner Copy-Taste.</string>
+    <string name="project_busy">Das Projekt antwortet gerade nicht. Versuche es gleich noch einmal.</string>
 </resources>

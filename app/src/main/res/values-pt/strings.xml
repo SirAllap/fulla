@@ -798,4 +798,6 @@
     <string name="widget_mode_goal_text">Quanto já tens da tua primeira meta de poupança.</string>
     <string name="widget_section">Widget</string>
     <string name="widget_change_help">Cada widget mostra o que escolheres ao colocá-lo. Para mudar, mantém o widget premido e abre as definições dele.</string>
+    <string name="project_bad_key">Essa chave não é deste projeto, ou está cortada. Copia de novo a chave anon com o botão Copy.</string>
+    <string name="project_busy">O projeto não está a responder agora. Tenta de novo daqui a pouco.</string>
 </resources>

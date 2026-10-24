@@ -5,6 +5,7 @@ import io.github.sirallap.fulla.client.wire.Wire
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.plugin
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -135,6 +136,35 @@ class Supabase(
      * Calls `public.<function>` with named arguments. A 401 refreshes the
      * session once and repeats the call; a second 401 means signing in again.
      */
+    /**
+     * Proves the address and the public key before anybody has signed in. Fulla's
+     * own functions answer only people signed in (`fulla_ping` included), so they
+     * cannot tell a wrong key from a missing database yet; Auth's public settings
+     * answer any request with the project's key and refuse any other. Whether
+     * Fulla's database is installed is asked right after signing in.
+     */
+    suspend fun checkKey() {
+        val response = try {
+            http.get(endpoint.url + "/auth/v1/settings") {
+                header("apikey", endpoint.anonKey)
+                header(HttpHeaders.Accept, "application/json")
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: FullaError) {
+            throw e
+        } catch (e: Exception) {
+            throw FullaError(FullaError.NETWORK, "Could not reach the server.")
+        }
+        val status = response.status.value
+        if (status in 200..299) return
+        throw when (status) {
+            401, 403 -> FullaError(FullaError.INVALID_KEY, "The project refused this key.", status)
+            in 500..599 -> FullaError(FullaError.SERVER, "The project could not answer.", status)
+            else -> FullaError(FullaError.BAD_RESPONSE, "The project answered in a way Fulla cannot use.", status)
+        }
+    }
+
     suspend fun rpc(function: String, args: JsonObject = JsonObject(emptyMap())): JsonElement {
         var session = sessions.load() ?: throw FullaError(FullaError.NOT_AUTHENTICATED, "Not signed in.", 401)
         if (session.expiresAt - 30 <= clock()) session = refreshed(session)
