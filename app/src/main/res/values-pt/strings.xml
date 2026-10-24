@@ -771,4 +771,5 @@
         <item quantity="one">%1$s por dia · falta %2$d dia</item>
         <item quantity="other">%1$s por dia · faltam %2$d dias</item>
     </plurals>
+    <string name="widget_preview_detail">21,40 por dia · Gasto 812,00</string>
 </resources>

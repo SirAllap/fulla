@@ -821,4 +821,6 @@
         <item quantity="one">%1$s a day · %2$d day left</item>
         <item quantity="other">%1$s a day · %2$d days left</item>
     </plurals>
+    <string name="widget_preview_amount" translatable="false">642,00</string>
+    <string name="widget_preview_detail">21,40 a day · Spent 812,00</string>
 </resources>

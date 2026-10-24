@@ -771,4 +771,5 @@
         <item quantity="one">%1$s pro Tag · noch %2$d Tag</item>
         <item quantity="other">%1$s pro Tag · noch %2$d Tage</item>
     </plurals>
+    <string name="widget_preview_detail">21,40 pro Tag · Ausgegeben 812,00</string>
 </resources>

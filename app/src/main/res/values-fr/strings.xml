@@ -771,4 +771,5 @@
         <item quantity="one">%1$s par jour · %2$d jour restant</item>
         <item quantity="other">%1$s par jour · %2$d jours restants</item>
     </plurals>
+    <string name="widget_preview_detail">21,40 par jour · Dépensé 812,00</string>
 </resources>

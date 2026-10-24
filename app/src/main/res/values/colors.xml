@@ -3,4 +3,6 @@
     <color name="paper">#FFFAF8F3</color>
     <color name="accent">#FF1B1830</color>
     <color name="launcher_background">#FF1B1830</color>
+    <!-- The widget's colours before FullaWidget tints it from core's BaseColors (the list's preview shows these). -->
+    <color name="ink_muted">#FF625C6E</color>
 </resources>

@@ -771,4 +771,5 @@
         <item quantity="one">%1$s al día · queda %2$d día</item>
         <item quantity="other">%1$s al día · quedan %2$d días</item>
     </plurals>
+    <string name="widget_preview_detail">21,40 al día · Gastado 812,00</string>
 </resources>

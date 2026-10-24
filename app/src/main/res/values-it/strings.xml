@@ -771,4 +771,5 @@
         <item quantity="one">%1$s al giorno · resta %2$d giorno</item>
         <item quantity="other">%1$s al giorno · restano %2$d giorni</item>
     </plurals>
+    <string name="widget_preview_detail">21,40 al giorno · Speso 812,00</string>
 </resources>
