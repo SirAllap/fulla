@@ -191,13 +191,20 @@ private class Draft(view: HouseholdView, existing: Transaction?) {
 @Composable
 fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Composable () -> Unit)?, onDone: () -> Unit, onDeleted: (String) -> Unit = {},
                 /** An income asked for from outside (a launcher shortcut): a new entry turns into one, then [onIncomeShown]. */
-                incomeAsked: Boolean = false, onIncomeShown: () -> Unit = {}) {
+                incomeAsked: Boolean = false, onIncomeShown: () -> Unit = {},
+                /** A category asked for from outside (the widget's shortcuts): a new expense starts in it, then [onCategoryShown]. */
+                categoryAsked: String? = null, onCategoryShown: () -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val existing = remember(editingId) { editingId?.let { id -> view.rows.firstOrNull { it.id == id }?.transaction } }
     val draft = remember(editingId, view.id) { Draft(view, existing) }
     LaunchedEffect(incomeAsked) {
         if (incomeAsked && editingId == null) { draft.kind = TransactionKind.INCOME; draft.categoryId = null; onIncomeShown() }
+    }
+    LaunchedEffect(categoryAsked) {
+        val asked = categoryAsked ?: return@LaunchedEffect
+        if (editingId == null && view.config.category(asked)?.archived == false) { draft.kind = TransactionKind.EXPENSE; draft.categoryId = asked }
+        onCategoryShown()
     }
     var detailsOpen by remember { mutableStateOf(false) }
     var allCategories by remember { mutableStateOf(false) }

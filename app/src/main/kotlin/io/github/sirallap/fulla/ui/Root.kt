@@ -136,6 +136,8 @@ private fun Household(state: HouseholdState) {
     var tab by rememberSaveable { mutableStateOf(Tab.ADD) }
     /** An income asked for from outside (a shortcut), until Add has turned to it. */
     var incomeAsked by remember { mutableStateOf(false) }
+    /** A category asked for from outside (the widget's shortcuts), until Add has taken it. */
+    var categoryAsked by remember { mutableStateOf<String?>(null) }
     var syncOpen by remember { mutableStateOf(false) }
     var updateOpen by remember { mutableStateOf(false) }
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
@@ -162,10 +164,10 @@ private fun Household(state: HouseholdState) {
         val request = open ?: return@LaunchedEffect
         container.pendingOpen.value = null
         nav.popBackStack("tabs", inclusive = false)
-        when (request) {
-            io.github.sirallap.fulla.OpenRequest.ADD -> tab = Tab.ADD
-            io.github.sirallap.fulla.OpenRequest.ADD_INCOME -> { tab = Tab.ADD; incomeAsked = true }
-            io.github.sirallap.fulla.OpenRequest.OVERVIEW -> tab = Tab.OVERVIEW
+        when (request.where) {
+            io.github.sirallap.fulla.OpenRequest.Where.ADD -> { tab = Tab.ADD; categoryAsked = request.categoryId }
+            io.github.sirallap.fulla.OpenRequest.Where.ADD_INCOME -> { tab = Tab.ADD; incomeAsked = true }
+            io.github.sirallap.fulla.OpenRequest.Where.OVERVIEW -> tab = Tab.OVERVIEW
         }
     }
 
@@ -202,7 +204,8 @@ private fun Household(state: HouseholdState) {
                     }) { shown ->
                         when (shown) {
                             Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW },
-                                incomeAsked = incomeAsked, onIncomeShown = { incomeAsked = false })
+                                incomeAsked = incomeAsked, onIncomeShown = { incomeAsked = false },
+                                categoryAsked = categoryAsked, onCategoryShown = { categoryAsked = null })
                             Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { tab = Tab.INSIGHTS }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
                             Tab.INSIGHTS -> io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { tab = Tab.OVERVIEW }, onFixedCosts = { nav.navigate("settings/recurring") }, headerActions = headerActions)

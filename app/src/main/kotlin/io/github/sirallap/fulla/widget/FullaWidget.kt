@@ -69,6 +69,7 @@ object FullaWidget {
     const val ACTION_OVERVIEW = "io.github.sirallap.fulla.OVERVIEW"
     const val EXTRA_KIND = "kind"
     const val KIND_INCOME = "income"
+    const val EXTRA_CATEGORY = "category"
 
     /** Wider than this (dp), the figures are shown beside the button. */
     private const val FIGURES_MIN_WIDTH = 180f
@@ -113,6 +114,10 @@ object FullaWidget {
     private class Content(
         val label: String, val amount: String?, val detail: String?, val detailLines: Int, val amountColor: Int,
         val paper: Int, val ink: Int, val inkMuted: Int, val accent: Int, val onAccent: Int,
+        /** How high the liquid stands (null: low and calm) and its two colours, surface and body. */
+        val fill: Float?, val liquidSurface: Int, val liquidBody: Int, val chip: Int,
+        /** The categories one tap from Add: id and name. */
+        val quick: List<Pair<String, String>>,
     )
 
     private suspend fun content(context: Context, container: AppContainer, mode: WidgetMode): Content {
@@ -124,9 +129,24 @@ object FullaWidget {
         val view = settings.activeHouseholdId?.let { id ->
             container.ledger.household(id)?.let { HouseholdView(it, container.ledger.transactions(id).first(), res.configuration.locales[0].language) }
         }
-        val t = describe(res, view, hidden = settings.widgetHideAmounts, today = LocalDate.now(), mode = mode)
-        return Content(t.label, t.amount, t.detail, t.detailLines, (if (t.over) settings.palette.of(dark).outText else colors.ink).toInt(),
-            colors.paper.toInt(), colors.ink.toInt(), colors.inkMuted.toInt(), colors.accent.toInt(), colors.onAccent.toInt())
+        val today = LocalDate.now()
+        val hidden = settings.widgetHideAmounts
+        val t = describe(res, view, hidden = hidden, today = today, mode = mode)
+        val money = settings.palette.of(dark)
+        // The liquid: as high as the figure says (never when amounts are hidden: a level is an amount too), the colour of
+        // money coming in, of money going out once past the limit, and the paper's own when there is no level to show.
+        val level = if (view == null || hidden) null else runCatching {
+            WidgetData.level(mode, view.config, view.analytics, view.active, view.formats.currentPeriod(today), today, view.deletedIds)
+        }.getOrNull()
+        val (surface, body) = when {
+            level == null -> colors.paperHigh to colors.line
+            level.over -> money.outSurface to money.outBody
+            else -> money.inSurface to money.inBody
+        }
+        val quick = if (view == null) emptyList() else WidgetData.quickCategories(view.config, view.active, today).map { it.id to it.name }
+        return Content(t.label, t.amount, t.detail, t.detailLines, (if (t.over) money.outText else colors.ink).toInt(),
+            colors.paper.toInt(), colors.ink.toInt(), colors.inkMuted.toInt(), colors.accent.toInt(), colors.onAccent.toInt(),
+            level?.fill, surface.toInt(), body.toInt(), colors.paperHigh.toInt(), quick)
     }
 
     /** The widget's words: no household yet, amounts hidden, or what [mode] shows. */
@@ -202,19 +222,34 @@ object FullaWidget {
         }
     }
 
+    /** Taller than this (dp), the category shortcuts are shown under the figures. */
+    private const val QUICK_MIN_HEIGHT = 110f
+
     private fun views(context: Context, c: Content, options: Bundle): RemoteViews {
+        // The card is drawn once, near the widget's own size and no wider than 480 px: one bitmap travels with the
+        // update (a widget's update has to fit in one binder transaction), and the launcher scales it to fit.
+        val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH).takeIf { it > 0 } ?: 250
+        val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT).takeIf { it > 0 } ?: 110
+        val scale = minOf(context.resources.displayMetrics.density, 480f / widthDp)
+        val card = WidgetArt.card((widthDp * scale).toInt(), (heightDp * scale).toInt(), 24 * scale, c.fill,
+            c.paper, c.liquidSurface, c.liquidBody, 2 * scale)
+        // Resizing calls onAppWidgetOptionsChanged, which redraws: the shortcuts follow the height it has now.
+        val wide = wide(context, c, card, quick = heightDp >= QUICK_MIN_HEIGHT)
         val small = small(context, c)
-        val wide = wide(context, c)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             RemoteViews(mapOf(SizeF(40f, 40f) to small, SizeF(FIGURES_MIN_WIDTH, 40f) to wide))
         } else {
-            if (options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) >= FIGURES_MIN_WIDTH) wide else small
+            if (widthDp >= FIGURES_MIN_WIDTH) wide else small
         }
     }
 
-    private fun small(context: Context, c: Content) = RemoteViews(context.packageName, R.layout.widget_add).apply { common(context, c) }
+    private fun small(context: Context, c: Content) = RemoteViews(context.packageName, R.layout.widget_add).apply {
+        setInt(R.id.widget_bg, "setColorFilter", c.paper)
+        common(context, c)
+    }
 
-    private fun wide(context: Context, c: Content) = RemoteViews(context.packageName, R.layout.widget_figures).apply {
+    private fun wide(context: Context, c: Content, card: android.graphics.Bitmap, quick: Boolean) = RemoteViews(context.packageName, R.layout.widget_figures).apply {
+        setImageViewBitmap(R.id.widget_bg, card)
         common(context, c)
         setTextViewText(R.id.widget_label, c.label)
         setTextColor(R.id.widget_label, c.inkMuted)
@@ -225,20 +260,37 @@ object FullaWidget {
         setTextColor(R.id.widget_detail, c.inkMuted)
         setInt(R.id.widget_detail, "setMaxLines", c.detailLines)
         setOnClickPendingIntent(R.id.widget_figures, open(context, ACTION_OVERVIEW, null, 2))
+        val shown = quick && c.quick.isNotEmpty()
+        setViewVisibility(R.id.widget_quick, if (shown) android.view.View.VISIBLE else android.view.View.GONE)
+        val slots = listOf(
+            Triple(R.id.widget_quick_1, R.id.widget_quick_1_bg, R.id.widget_quick_1_text),
+            Triple(R.id.widget_quick_2, R.id.widget_quick_2_bg, R.id.widget_quick_2_text),
+            Triple(R.id.widget_quick_3, R.id.widget_quick_3_bg, R.id.widget_quick_3_text),
+        )
+        slots.forEachIndexed { i, (slot, bg, text) ->
+            val category = c.quick.getOrNull(i)
+            setViewVisibility(slot, if (shown && category != null) android.view.View.VISIBLE else android.view.View.INVISIBLE)
+            if (category != null) {
+                setInt(bg, "setColorFilter", c.chip)
+                setTextViewText(text, category.second)
+                setTextColor(text, c.ink)
+                setOnClickPendingIntent(slot, PendingIntent.getActivity(context, 100 + i,
+                    intent(context, ACTION_ADD, null, category.first), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
+            }
+        }
     }
 
     private fun RemoteViews.common(context: Context, c: Content) {
-        setInt(R.id.widget_bg, "setColorFilter", c.paper)
         setInt(R.id.widget_add_circle, "setColorFilter", c.accent)
         setInt(R.id.widget_add_icon, "setColorFilter", c.onAccent)
         setOnClickPendingIntent(R.id.widget_add_button, open(context, ACTION_ADD, null, 1))
         setOnClickPendingIntent(R.id.widget_root, open(context, ACTION_OVERVIEW, null, 2))
     }
 
-    /** Opens the app on Add (an expense, or an income with [kind]) or on the overview. */
-    fun intent(context: Context, action: String, kind: String?): Intent = Intent(context, MainActivity::class.java)
+    /** Opens the app on Add (an expense, or an income with [kind], in [category] when given) or on the overview. */
+    fun intent(context: Context, action: String, kind: String?, category: String? = null): Intent = Intent(context, MainActivity::class.java)
         .setAction(action)
-        .apply { if (kind != null) putExtra(EXTRA_KIND, kind) }
+        .apply { if (kind != null) putExtra(EXTRA_KIND, kind); if (category != null) putExtra(EXTRA_CATEGORY, category) }
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
     private fun open(context: Context, action: String, kind: String?, code: Int): PendingIntent =

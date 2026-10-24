@@ -49,6 +49,10 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 
 Each widget shows one of these, chosen when it is placed and changed by reconfiguring it (`WidgetMode`).
 
+The liquid behind the figure stands as high as what is left of the income, of today's share, of the budget, or as
+far as the goal has got (`WidgetData.level`), and takes money-out's colour once past the limit; none while amounts are
+hidden. The category shortcuts are the expense categories written down most in the last 90 days (`WidgetData.quickCategories`).
+
 No amounts when Settings asks to hide them (the app's lock alone does not).
 
 ## Analysis

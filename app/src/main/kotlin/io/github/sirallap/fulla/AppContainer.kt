@@ -281,5 +281,7 @@ class AppContainer(private val context: Context) {
     }
 }
 
-/** Where the widget or a launcher shortcut opens the app: Add (an expense, or an income) or the overview. */
-enum class OpenRequest { ADD, ADD_INCOME, OVERVIEW }
+/** Where the widget or a launcher shortcut opens the app: Add (an expense, or an income, maybe in a category) or the overview. */
+data class OpenRequest(val where: Where, val categoryId: String? = null) {
+    enum class Where { ADD, ADD_INCOME, OVERVIEW }
+}

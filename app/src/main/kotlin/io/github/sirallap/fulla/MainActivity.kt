@@ -101,8 +101,9 @@ class MainActivity : FragmentActivity() {
     /** The widget and the launcher shortcuts: straight to Add (an expense, or an income) or to the overview. */
     private fun readOpen(intent: Intent?) {
         container.pendingOpen.value = when (intent?.action) {
-            FullaWidget.ACTION_ADD -> if (intent.getStringExtra(FullaWidget.EXTRA_KIND) == FullaWidget.KIND_INCOME) OpenRequest.ADD_INCOME else OpenRequest.ADD
-            FullaWidget.ACTION_OVERVIEW -> OpenRequest.OVERVIEW
+            FullaWidget.ACTION_ADD -> if (intent.getStringExtra(FullaWidget.EXTRA_KIND) == FullaWidget.KIND_INCOME) OpenRequest(OpenRequest.Where.ADD_INCOME)
+                else OpenRequest(OpenRequest.Where.ADD, intent.getStringExtra(FullaWidget.EXTRA_CATEGORY))
+            FullaWidget.ACTION_OVERVIEW -> OpenRequest(OpenRequest.Where.OVERVIEW)
             else -> return
         }
     }

@@ -114,4 +114,29 @@ class WidgetFiguresTest {
         assertEquals(WidgetMode.LEFT, WidgetMode.of("something-newer"))
         WidgetMode.entries.forEach { assertEquals(it, WidgetMode.of(it.key)) }
     }
+
+    @Test
+    fun `the liquid is as full as what is left, empty and marked when over`() {
+        val config = Fixtures.config()
+        val rows = listOf(Fixtures.income(200_000, d(1)), Fixtures.expense(50_000, d(3)))
+        val left = WidgetData.level(WidgetMode.LEFT, config, analytics, rows, jan, d(10))!!
+        assertEquals(0.75f, left.fill, 0.001f)
+        assertFalse(left.over)
+        val over = WidgetData.level(WidgetMode.LEFT, config, analytics, rows + Fixtures.expense(300_000, d(4)), jan, d(10))!!
+        assertEquals(0f, over.fill)
+        assertTrue(over.over)
+        assertNull(WidgetData.level(WidgetMode.LEFT, config, analytics, listOf(Fixtures.expense(100, d(2))), jan, d(10)), "no income, no level")
+        assertNull(WidgetData.level(WidgetMode.RECENT, config, analytics, rows, jan, d(10)))
+    }
+
+    @Test
+    fun `the shortcuts are the categories written down most lately, topped up from the list`() {
+        val config = Fixtures.config()
+        val rows = listOf(Fixtures.expense(100, d(5), category = Fixtures.SNACKS), Fixtures.expense(100, d(6), category = Fixtures.SNACKS),
+            Fixtures.expense(100, d(7), category = Fixtures.LEISURE), Fixtures.expense(100, LocalDate.of(2029, 6, 1), category = Fixtures.GROCERIES))
+        val quick = WidgetData.quickCategories(config, rows, d(10))
+        assertEquals(listOf(Fixtures.SNACKS, Fixtures.LEISURE), quick.take(2).map { it.id })
+        assertEquals(quick.size, quick.map { it.id }.distinct().size)
+        assertTrue(quick.none { it.id == Fixtures.SALARY }, "income categories are not offered")
+    }
 }

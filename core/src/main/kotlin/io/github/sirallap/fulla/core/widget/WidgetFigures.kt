@@ -8,7 +8,9 @@ import io.github.sirallap.fulla.core.analytics.DayTotals
 import io.github.sirallap.fulla.core.goals.Goal
 import io.github.sirallap.fulla.core.goals.GoalProgress
 import io.github.sirallap.fulla.core.goals.Goals
+import io.github.sirallap.fulla.core.model.Category
 import io.github.sirallap.fulla.core.model.Config
+import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.roundup.RoundUps
 import java.time.LocalDate
@@ -108,5 +110,48 @@ object WidgetData {
         val goal = config.goals.firstOrNull { !it.archived } ?: return null
         val balance = analytics.accountBalances(txs, config.accounts, today)[goal.accountId] ?: 0
         return goal to Goals.progress(goal, balance, today)
+    }
+
+    /**
+     * How full the widget's liquid is, 0 to 1, from the figure it shows: what is left of the income
+     * (what is left), of today's share (today), of the budget (budget), and how far the goal has got
+     * (goal). Null where a level would mean nothing (accounts, the latest rows, no income yet): the
+     * widget then draws a calm, low surface. [over] says it is past its limit.
+     */
+    data class Level(val fill: Float, val over: Boolean)
+
+    fun level(mode: WidgetMode, config: Config, analytics: Analytics, txs: List<Transaction>, period: YearMonth,
+              today: LocalDate, deleted: Set<String> = emptySet()): Level? = when (mode) {
+        WidgetMode.LEFT -> {
+            val forecast = runCatching { analytics.forecast(txs, period, today, deleted) }.getOrNull()?.takeIf { !it.waiting }
+            val left = forecast?.leftToSpendMinor
+            val income = forecast?.totalIncomeMinor ?: 0
+            if (left == null || income <= 0) null else Level(fraction(left, income), left < 0)
+        }
+        WidgetMode.TODAY -> {
+            val t = today(analytics, txs, period, today, deleted)
+            val perDay = t.perDayMinor
+            if (perDay == null || perDay <= 0) null else Level(fraction(perDay - t.spentMinor, perDay), t.over)
+        }
+        WidgetMode.BUDGET -> budget(config, analytics, txs, period)?.takeIf { it.limitMinor > 0 }
+            ?.let { Level(fraction(it.leftMinor, it.limitMinor), it.overMinor > 0) }
+        WidgetMode.GOAL -> goal(config, analytics, txs, today)?.let { (_, p) -> Level(p.fraction.toFloat(), false) }
+        WidgetMode.ACCOUNTS, WidgetMode.RECENT -> null
+    }
+
+    private fun fraction(part: Long, whole: Long): Float = (part.toDouble() / whole).coerceIn(0.0, 1.0).toFloat()
+
+    /**
+     * The expense categories written down most in the last [days] days, most first (ties by the
+     * category list's order), for the widget's one-tap shortcuts; topped up from the list itself
+     * while there is little history. Archived ones are never offered.
+     */
+    fun quickCategories(config: Config, txs: List<Transaction>, today: LocalDate, count: Int = 3, days: Long = 90): List<Category> {
+        val open = config.categories.filter { !it.archived && it.appliesTo.allows(TransactionKind.EXPENSE) }
+        val since = today.minusDays(days)
+        val uses = txs.filter { it.kind == TransactionKind.EXPENSE && it.date > since && it.date <= today }
+            .groupingBy { it.categoryId }.eachCount()
+        val used = open.filter { (uses[it.id] ?: 0) > 0 }.sortedWith(compareByDescending<Category> { uses[it.id] ?: 0 }.thenBy { it.sort })
+        return (used + open.filter { it.parentId == null }.sortedBy { it.sort }).distinctBy { it.id }.take(count)
     }
 }
