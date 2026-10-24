@@ -741,6 +741,9 @@ fun AppearanceSettings() {
         }
         Section(stringResource(R.string.security))
         SwitchRow(stringResource(R.string.lock), stringResource(R.string.lock_text), s.lock) { on -> scope.launch { container.settings.setLock(on) } }
+        Section(stringResource(R.string.widget_section))
+        Text(stringResource(R.string.widget_change_help), style = FullaType.secondary, color = FullaTheme.colors.inkMuted,
+            modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 8.dp))
         SwitchRow(stringResource(R.string.widget_hide_amounts), stringResource(R.string.widget_hide_amounts_text), s.widgetHideAmounts) { on ->
             scope.launch { container.settings.setWidgetHideAmounts(on) }
         }

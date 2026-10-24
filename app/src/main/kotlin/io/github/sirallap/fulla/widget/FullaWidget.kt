@@ -19,7 +19,10 @@ import io.github.sirallap.fulla.FullaApp
 import io.github.sirallap.fulla.MainActivity
 import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.core.design.BaseColors
+import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.widget.WidgetData
 import io.github.sirallap.fulla.core.widget.WidgetFigures
+import io.github.sirallap.fulla.core.widget.WidgetMode
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.theme.ThemeMode
 import kotlinx.coroutines.FlowPreview
@@ -37,6 +40,8 @@ class FullaWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) = redraw(context)
 
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) = redraw(context)
+
+    override fun onDeleted(context: Context, ids: IntArray) = WidgetChoices(context).forget(ids)
 
     private fun redraw(context: Context) {
         val pending = goAsync()
@@ -80,18 +85,22 @@ object FullaWidget {
         val manager = AppWidgetManager.getInstance(context)
         val ids = manager.getAppWidgetIds(ComponentName(context, FullaWidgetProvider::class.java))
         if (ids.isEmpty()) return
-        val content = content(context, container)
-        for (id in ids) manager.updateAppWidget(id, views(context, content, manager.getAppWidgetOptions(id)))
+        val choices = WidgetChoices(context)
+        val made = mutableMapOf<WidgetMode, Content>()
+        for (id in ids) {
+            val content = made.getOrPut(choices.of(id)) { content(context, container, choices.of(id)) }
+            manager.updateAppWidget(id, views(context, content, manager.getAppWidgetOptions(id)))
+        }
         scheduleMidnight(context, ids)
     }
 
     /** What the widget says, read once for every widget on the screen. */
     private class Content(
-        val label: String, val amount: String?, val detail: String?, val amountColor: Int,
+        val label: String, val amount: String?, val detail: String?, val detailLines: Int, val amountColor: Int,
         val paper: Int, val ink: Int, val inkMuted: Int, val accent: Int, val onAccent: Int,
     )
 
-    private suspend fun content(context: Context, container: AppContainer): Content {
+    private suspend fun content(context: Context, container: AppContainer, mode: WidgetMode): Content {
         val settings = container.settings.current()
         val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val dark = when (settings.theme) { ThemeMode.DARK -> true; ThemeMode.LIGHT -> false; ThemeMode.SYSTEM -> night }
@@ -100,19 +109,70 @@ object FullaWidget {
         val view = settings.activeHouseholdId?.let { id ->
             container.ledger.household(id)?.let { HouseholdView(it, container.ledger.transactions(id).first(), res.configuration.locales[0].language) }
         }
-        val t = describe(res, view, hidden = settings.widgetHideAmounts, today = LocalDate.now())
-        return Content(t.label, t.amount, t.detail, (if (t.over) settings.palette.of(dark).outText else colors.ink).toInt(),
+        val t = describe(res, view, hidden = settings.widgetHideAmounts, today = LocalDate.now(), mode = mode)
+        return Content(t.label, t.amount, t.detail, t.detailLines, (if (t.over) settings.palette.of(dark).outText else colors.ink).toInt(),
             colors.paper.toInt(), colors.ink.toInt(), colors.inkMuted.toInt(), colors.accent.toInt(), colors.onAccent.toInt())
     }
 
-    /** The widget's words: no household yet, amounts hidden, over, left (and per day), or only what was spent. */
-    internal class Texts(val label: String, val amount: String?, val detail: String?, val over: Boolean = false)
+    /** The widget's words: no household yet, amounts hidden, or what [mode] shows. */
+    internal class Texts(val label: String, val amount: String?, val detail: String?, val over: Boolean = false, val detailLines: Int = 2)
 
-    internal fun describe(res: Resources, view: HouseholdView?, hidden: Boolean, today: LocalDate): Texts {
+    internal fun describe(res: Resources, view: HouseholdView?, hidden: Boolean, today: LocalDate, mode: WidgetMode = WidgetMode.LEFT): Texts {
         if (view == null) return Texts(res.getString(R.string.app_name), null, res.getString(R.string.widget_start))
         if (hidden) return Texts(view.config.household.name, "•••", res.getString(R.string.widget_hidden))
         val f = view.formats
         val period = f.currentPeriod(today)
+        return when (mode) {
+            WidgetMode.LEFT -> left(res, view, period, today)
+            WidgetMode.TODAY -> {
+                val t = WidgetData.today(view.analytics, view.active, period, today, view.deletedIds)
+                val perDay = t.perDayMinor
+                Texts(res.getString(R.string.widget_today), f.money(t.spentMinor),
+                    if (perDay != null) res.getString(R.string.widget_today_can, f.money(perDay)) else f.day(today), over = t.over)
+            }
+            WidgetMode.BUDGET -> {
+                val b = WidgetData.budget(view.config, view.analytics, view.active, period)
+                when {
+                    b == null -> Texts(res.getString(R.string.budget_of_period), null, res.getString(R.string.widget_budget_none))
+                    b.overMinor > 0 -> Texts(res.getString(R.string.widget_budget_over), f.money(b.overMinor),
+                        res.getString(R.string.widget_of, f.money(b.limitMinor)), over = true)
+                    else -> Texts(res.getString(R.string.widget_budget_left), f.money(b.leftMinor), res.getString(R.string.widget_of, f.money(b.limitMinor)))
+                }
+            }
+            WidgetMode.ACCOUNTS -> {
+                val total = WidgetData.accounts(view.config, view.analytics, view.active, today)
+                if (total == null) Texts(res.getString(R.string.accounts_total), null, res.getString(R.string.widget_accounts_none))
+                else Texts(res.getString(R.string.accounts_total), f.money(total), f.day(today), over = total < 0)
+            }
+            WidgetMode.RECENT -> {
+                val rows = WidgetData.recent(view.active, today)
+                if (rows.isEmpty()) Texts(res.getString(R.string.widget_recent), null, res.getString(R.string.widget_recent_none))
+                else Texts(res.getString(R.string.widget_recent), null, rows.joinToString("\n") { t ->
+                    val name = when (t.kind) {
+                        TransactionKind.TRANSFER -> res.getString(R.string.transfer_between, view.accountName(t.accountId) ?: "?", view.accountName(t.toAccountId) ?: "?")
+                        TransactionKind.SETTLEMENT -> res.getString(R.string.settlement_between, view.memberName(t.paidByMemberId), view.memberName(t.toMemberId))
+                        else -> t.note.ifBlank { view.categoryName(t.categoryId) ?: res.getString(R.string.uncategorized) }
+                    }
+                    val signed = t.kind == TransactionKind.INCOME || t.kind == TransactionKind.REFUND
+                    name + "  " + f.money(t.amountMinor, signed = signed)
+                }, detailLines = 3)
+            }
+            WidgetMode.GOAL -> {
+                val found = WidgetData.goal(view.config, view.analytics, view.active, today)
+                if (found == null) Texts(res.getString(R.string.settings_goals), null, res.getString(R.string.widget_goal_none))
+                else {
+                    val (goal, p) = found
+                    Texts(goal.name, f.money(p.savedMinor), when {
+                        p.reached -> res.getString(R.string.goal_reached)
+                        else -> res.getString(R.string.widget_of, f.money(goal.targetMinor)) + " · " + res.getString(R.string.goal_left, f.money(p.leftMinor))
+                    })
+                }
+            }
+        }
+    }
+
+    private fun left(res: Resources, view: HouseholdView, period: java.time.YearMonth, today: LocalDate): Texts {
+        val f = view.formats
         val w = WidgetFigures.of(view.analytics, view.active, period, today, view.deletedIds)
         val spent = res.getString(R.string.widget_spent, f.money(w.spentMinor))
         val over = w.overMinor
@@ -148,6 +208,7 @@ object FullaWidget {
         setTextColor(R.id.widget_amount, c.amountColor)
         setTextViewText(R.id.widget_detail, c.detail ?: "")
         setTextColor(R.id.widget_detail, c.inkMuted)
+        setInt(R.id.widget_detail, "setMaxLines", c.detailLines)
         setOnClickPendingIntent(R.id.widget_figures, open(context, ACTION_OVERVIEW, null, 2))
     }
 
@@ -178,4 +239,15 @@ object FullaWidget {
         val pending = PendingIntent.getBroadcast(context, 0, update, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         context.getSystemService(AlarmManager::class.java)?.set(AlarmManager.RTC, at, pending)
     }
+}
+
+/** What each widget on the home screen was set to show, by its id. The phone's own, like every setting of the widget. */
+class WidgetChoices(context: Context) {
+    private val prefs = context.applicationContext.getSharedPreferences("widgets", Context.MODE_PRIVATE)
+
+    fun of(id: Int): WidgetMode = WidgetMode.of(prefs.getString("mode_$id", null))
+
+    fun set(id: Int, mode: WidgetMode) = prefs.edit().putString("mode_$id", mode.key).apply()
+
+    fun forget(ids: IntArray) = prefs.edit().apply { ids.forEach { remove("mode_$it") } }.apply()
 }

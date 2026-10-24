@@ -823,4 +823,30 @@
     </plurals>
     <string name="widget_preview_amount" translatable="false">642,00</string>
     <string name="widget_preview_detail">21,40 a day · Spent 812,00</string>
+    <string name="widget_today">Spent today</string>
+    <string name="widget_today_can">You can spend %1$s a day</string>
+    <string name="widget_budget_left">Left of the budget</string>
+    <string name="widget_budget_over">Over the budget</string>
+    <string name="widget_of">of %1$s</string>
+    <string name="widget_budget_none">No budgets yet: set them in Settings.</string>
+    <string name="widget_accounts_none">Set the accounts\' starting balances in Settings › Accounts.</string>
+    <string name="widget_recent">Latest</string>
+    <string name="widget_recent_none">Nothing written down yet.</string>
+    <string name="widget_goal_none">Create a goal in Settings › Savings goals.</string>
+    <string name="widget_choose">What the widget shows</string>
+    <string name="widget_choose_text">You can change it later: long-press the widget and open its settings.</string>
+    <string name="widget_mode_left">What is left</string>
+    <string name="widget_mode_left_text">Left of the period, per day, and what was spent.</string>
+    <string name="widget_mode_today">Today</string>
+    <string name="widget_mode_today_text">What was spent today, against what you can spend per day.</string>
+    <string name="widget_mode_budget">Budget</string>
+    <string name="widget_mode_budget_text">What is left of the period\'s budget, or how far over it you are.</string>
+    <string name="widget_mode_accounts">Accounts</string>
+    <string name="widget_mode_accounts_text">What your accounts hold today.</string>
+    <string name="widget_mode_recent">Latest movements</string>
+    <string name="widget_mode_recent_text">The last three things written down.</string>
+    <string name="widget_mode_goal">Savings goal</string>
+    <string name="widget_mode_goal_text">How far your first savings goal has got.</string>
+    <string name="widget_section">Widget</string>
+    <string name="widget_change_help">Each widget shows what you choose when you place it. To change it, long-press the widget and open its settings.</string>
 </resources>

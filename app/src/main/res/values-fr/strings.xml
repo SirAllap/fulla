@@ -772,4 +772,30 @@
         <item quantity="other">%1$s par jour · %2$d jours restants</item>
     </plurals>
     <string name="widget_preview_detail">21,40 par jour · Dépensé 812,00</string>
+    <string name="widget_today">Dépensé aujourd’hui</string>
+    <string name="widget_today_can">Tu peux dépenser %1$s par jour</string>
+    <string name="widget_budget_left">Reste du budget</string>
+    <string name="widget_budget_over">Au-dessus du budget</string>
+    <string name="widget_of">sur %1$s</string>
+    <string name="widget_budget_none">Pas encore de budget : définis-les dans les Réglages.</string>
+    <string name="widget_accounts_none">Indique les soldes de départ dans Réglages › Comptes.</string>
+    <string name="widget_recent">Dernières opérations</string>
+    <string name="widget_recent_none">Rien de noté pour l’instant.</string>
+    <string name="widget_goal_none">Crée un objectif dans Réglages › Objectifs d’épargne.</string>
+    <string name="widget_choose">Ce que montre le widget</string>
+    <string name="widget_choose_text">Tu peux le changer plus tard : appuie longuement sur le widget et ouvre ses réglages.</string>
+    <string name="widget_mode_left">Ce qui reste</string>
+    <string name="widget_mode_left_text">Ce qui reste de la période, par jour, et ce qui a été dépensé.</string>
+    <string name="widget_mode_today">Aujourd’hui</string>
+    <string name="widget_mode_today_text">Ce qui a été dépensé aujourd’hui, face à ce que tu peux dépenser par jour.</string>
+    <string name="widget_mode_budget">Budget</string>
+    <string name="widget_mode_budget_text">Ce qui reste du budget de la période, ou de combien tu le dépasses.</string>
+    <string name="widget_mode_accounts">Comptes</string>
+    <string name="widget_mode_accounts_text">Ce que contiennent tes comptes aujourd’hui.</string>
+    <string name="widget_mode_recent">Dernières opérations</string>
+    <string name="widget_mode_recent_text">Les trois dernières choses notées.</string>
+    <string name="widget_mode_goal">Objectif d’épargne</string>
+    <string name="widget_mode_goal_text">Où en est ton premier objectif d’épargne.</string>
+    <string name="widget_section">Widget</string>
+    <string name="widget_change_help">Chaque widget montre ce que tu choisis en le plaçant. Pour le changer, appuie longuement sur le widget et ouvre ses réglages.</string>
 </resources>

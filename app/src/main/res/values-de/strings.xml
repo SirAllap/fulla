@@ -772,4 +772,30 @@
         <item quantity="other">%1$s pro Tag · noch %2$d Tage</item>
     </plurals>
     <string name="widget_preview_detail">21,40 pro Tag · Ausgegeben 812,00</string>
+    <string name="widget_today">Heute ausgegeben</string>
+    <string name="widget_today_can">Du kannst %1$s pro Tag ausgeben</string>
+    <string name="widget_budget_left">Vom Budget übrig</string>
+    <string name="widget_budget_over">Über dem Budget</string>
+    <string name="widget_of">von %1$s</string>
+    <string name="widget_budget_none">Noch keine Budgets: lege sie in den Einstellungen fest.</string>
+    <string name="widget_accounts_none">Trage die Anfangssalden unter Einstellungen › Konten ein.</string>
+    <string name="widget_recent">Zuletzt</string>
+    <string name="widget_recent_none">Noch nichts eingetragen.</string>
+    <string name="widget_goal_none">Lege ein Ziel unter Einstellungen › Sparziele an.</string>
+    <string name="widget_choose">Was das Widget zeigt</string>
+    <string name="widget_choose_text">Du kannst es später ändern: Widget gedrückt halten und seine Einstellungen öffnen.</string>
+    <string name="widget_mode_left">Was übrig ist</string>
+    <string name="widget_mode_left_text">Was vom Zeitraum übrig ist, pro Tag, und was ausgegeben wurde.</string>
+    <string name="widget_mode_today">Heute</string>
+    <string name="widget_mode_today_text">Was heute ausgegeben wurde, gegenüber dem, was du pro Tag ausgeben kannst.</string>
+    <string name="widget_mode_budget">Budget</string>
+    <string name="widget_mode_budget_text">Was vom Budget des Zeitraums übrig ist oder wie weit du darüber liegst.</string>
+    <string name="widget_mode_accounts">Konten</string>
+    <string name="widget_mode_accounts_text">Was deine Konten heute haben.</string>
+    <string name="widget_mode_recent">Letzte Buchungen</string>
+    <string name="widget_mode_recent_text">Die letzten drei Einträge.</string>
+    <string name="widget_mode_goal">Sparziel</string>
+    <string name="widget_mode_goal_text">Wie weit dein erstes Sparziel ist.</string>
+    <string name="widget_section">Widget</string>
+    <string name="widget_change_help">Jedes Widget zeigt, was du beim Platzieren wählst. Zum Ändern das Widget gedrückt halten und seine Einstellungen öffnen.</string>
 </resources>

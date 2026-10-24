@@ -41,6 +41,13 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 | Left this period / Over this period | the overview's "if nothing more is spent": income, less what was spent, less the fixed costs still to come; over when below zero, never a negative left | `WidgetFigures.of`, `PeriodForecast.leftToSpendMinor` |
 | A day | what is left spread over the days to go, today included | `PeriodForecast.perDayMinor` |
 | Spent | spending of the period, as in the jar | `Analytics.summary` |
+| Today | what was spent today, as History adds up a day, against the per-day figure above | `WidgetData.today`, `DayTotals` |
+| Budget | the overview's "Budget of the period": left or over | `WidgetData.budget`, `Budgets.status` |
+| Accounts | the overview's "Accounts total", once a starting balance is set | `WidgetData.accounts`, `Analytics.accountsTotal` |
+| Latest | the last three rows written down, round-ups and future dates out | `WidgetData.recent` |
+| Savings goal | the first open goal, as Balances shows it | `WidgetData.goal`, `Goals.progress` |
+
+Each widget shows one of these, chosen when it is placed and changed by reconfiguring it (`WidgetMode`).
 
 No amounts when Settings asks to hide them (the app's lock alone does not).
 

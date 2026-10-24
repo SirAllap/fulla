@@ -772,4 +772,30 @@
         <item quantity="other">%1$s al día · quedan %2$d días</item>
     </plurals>
     <string name="widget_preview_detail">21,40 al día · Gastado 812,00</string>
+    <string name="widget_today">Gastado hoy</string>
+    <string name="widget_today_can">Puedes gastar %1$s al día</string>
+    <string name="widget_budget_left">Queda del presupuesto</string>
+    <string name="widget_budget_over">Te has pasado del presupuesto</string>
+    <string name="widget_of">de %1$s</string>
+    <string name="widget_budget_none">Aún no hay presupuestos: ponlos en Ajustes.</string>
+    <string name="widget_accounts_none">Pon los saldos iniciales en Ajustes › Cuentas.</string>
+    <string name="widget_recent">Lo último</string>
+    <string name="widget_recent_none">Aún no hay nada anotado.</string>
+    <string name="widget_goal_none">Crea una meta en Ajustes › Metas de ahorro.</string>
+    <string name="widget_choose">Qué muestra el widget</string>
+    <string name="widget_choose_text">Puedes cambiarlo después: mantén pulsado el widget y abre sus ajustes.</string>
+    <string name="widget_mode_left">Lo que te queda</string>
+    <string name="widget_mode_left_text">Lo que queda del periodo, al día, y lo gastado.</string>
+    <string name="widget_mode_today">Hoy</string>
+    <string name="widget_mode_today_text">Lo gastado hoy, frente a lo que puedes gastar al día.</string>
+    <string name="widget_mode_budget">Presupuesto</string>
+    <string name="widget_mode_budget_text">Lo que queda del presupuesto del periodo, o cuánto te has pasado.</string>
+    <string name="widget_mode_accounts">Cuentas</string>
+    <string name="widget_mode_accounts_text">Lo que tienen tus cuentas hoy.</string>
+    <string name="widget_mode_recent">Últimos movimientos</string>
+    <string name="widget_mode_recent_text">Las tres últimas cosas anotadas.</string>
+    <string name="widget_mode_goal">Meta de ahorro</string>
+    <string name="widget_mode_goal_text">Cuánto llevas de tu primera meta de ahorro.</string>
+    <string name="widget_section">Widget</string>
+    <string name="widget_change_help">Cada widget muestra lo que elijas al ponerlo. Para cambiarlo, mantén pulsado el widget y abre sus ajustes.</string>
 </resources>

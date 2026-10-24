@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.core.analytics
 
+import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
 import io.github.sirallap.fulla.core.sync.LocalTransaction
 import io.github.sirallap.fulla.core.sync.SyncEngine
@@ -18,11 +19,14 @@ data class DayTotals(val spentMinor: Long, val receivedMinor: Long) {
     val isEmpty: Boolean get() = spentMinor == 0L && receivedMinor == 0L
 
     companion object {
-        fun of(rows: List<LocalTransaction>): DayTotals {
+        fun of(rows: List<LocalTransaction>): DayTotals = ofCounted(SyncEngine.counted(rows))
+
+        /** The same, of rows already counted (the figures' own list). */
+        fun ofCounted(txs: Iterable<Transaction>): DayTotals {
             var expenses = 0L
             var refunds = 0L
             var income = 0L
-            for (t in SyncEngine.counted(rows)) when (t.kind) {
+            for (t in txs) when (t.kind) {
                 TransactionKind.EXPENSE -> expenses += t.amountMinor
                 TransactionKind.REFUND -> refunds += t.amountMinor
                 TransactionKind.INCOME -> income += t.amountMinor

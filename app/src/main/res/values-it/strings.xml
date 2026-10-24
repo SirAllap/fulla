@@ -772,4 +772,30 @@
         <item quantity="other">%1$s al giorno · restano %2$d giorni</item>
     </plurals>
     <string name="widget_preview_detail">21,40 al giorno · Speso 812,00</string>
+    <string name="widget_today">Speso oggi</string>
+    <string name="widget_today_can">Puoi spendere %1$s al giorno</string>
+    <string name="widget_budget_left">Resta del budget</string>
+    <string name="widget_budget_over">Oltre il budget</string>
+    <string name="widget_of">su %1$s</string>
+    <string name="widget_budget_none">Ancora nessun budget: impostali nelle Impostazioni.</string>
+    <string name="widget_accounts_none">Inserisci i saldi iniziali in Impostazioni › Conti.</string>
+    <string name="widget_recent">Ultimi movimenti</string>
+    <string name="widget_recent_none">Ancora niente annotato.</string>
+    <string name="widget_goal_none">Crea un obiettivo in Impostazioni › Obiettivi di risparmio.</string>
+    <string name="widget_choose">Cosa mostra il widget</string>
+    <string name="widget_choose_text">Puoi cambiarlo dopo: tieni premuto il widget e apri le sue impostazioni.</string>
+    <string name="widget_mode_left">Quello che resta</string>
+    <string name="widget_mode_left_text">Quello che resta del periodo, al giorno, e lo speso.</string>
+    <string name="widget_mode_today">Oggi</string>
+    <string name="widget_mode_today_text">Lo speso oggi, rispetto a quanto puoi spendere al giorno.</string>
+    <string name="widget_mode_budget">Budget</string>
+    <string name="widget_mode_budget_text">Quanto resta del budget del periodo, o di quanto lo hai superato.</string>
+    <string name="widget_mode_accounts">Conti</string>
+    <string name="widget_mode_accounts_text">Quello che hanno i tuoi conti oggi.</string>
+    <string name="widget_mode_recent">Ultimi movimenti</string>
+    <string name="widget_mode_recent_text">Le ultime tre cose annotate.</string>
+    <string name="widget_mode_goal">Obiettivo di risparmio</string>
+    <string name="widget_mode_goal_text">A che punto è il tuo primo obiettivo di risparmio.</string>
+    <string name="widget_section">Widget</string>
+    <string name="widget_change_help">Ogni widget mostra ciò che scegli quando lo aggiungi. Per cambiarlo, tieni premuto il widget e apri le sue impostazioni.</string>
 </resources>

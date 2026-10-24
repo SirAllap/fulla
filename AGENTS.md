@@ -305,8 +305,11 @@ surfaces from `Liquid`. Colours come from `core`'s `design/Colors.kt`, never
 from a hex value in a screen.
 
 The home-screen widget (`widget/FullaWidget.kt`, plain `RemoteViews`) is the
-round Add button, with the period's figures beside it when it is wide enough.
-Its figures are `core`'s `WidgetFigures` (the overview's own), it shows no
+round Add button, with figures beside it when it is wide enough: what is
+left, today, the budget, the accounts, the latest rows or a savings goal, as
+chosen for each widget (`WidgetMode`, `WidgetConfigActivity`, kept per widget
+id). Its figures are `core`'s `WidgetFigures` and `WidgetData` (the app's own
+screens' figures), it shows no
 amounts when Settings asks it to (the app's lock alone does not), and it redraws itself: `FullaApp` watches
 the active household's rows, and an inexact alarm redraws it after midnight.
 The widget and the launcher shortcuts open the app through

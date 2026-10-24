@@ -50,6 +50,17 @@
             android:screenOrientation="fullSensor"
             tools:replace="screenOrientation" />
 
+        <!-- What a widget shows, chosen when it is placed or reconfigured; the launcher starts it. -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- The home-screen widget: the launcher has to reach it, so it is exported; it only draws. -->
         <receiver
             android:name=".widget.FullaWidgetProvider"

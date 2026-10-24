@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One widget that follows its size: the Add button alone when small, the period's figures beside it when wider.
+<!-- One widget that follows its size: the Add button alone when small, its figures beside it when wider.
+     What the figures are is chosen per widget (WidgetConfigActivity): optional when placing it, and again by reconfiguring it.
      No periodic update: FullaWidget redraws it when rows change, and at midnight. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_description"
@@ -13,4 +14,6 @@
     android:targetCellHeight="1"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="0"
+    android:configure="io.github.sirallap.fulla.widget.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional"
     android:widgetCategory="home_screen" />
