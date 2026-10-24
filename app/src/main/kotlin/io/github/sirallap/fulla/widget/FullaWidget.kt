@@ -43,6 +43,9 @@ class FullaWidgetProvider : AppWidgetProvider() {
 
     override fun onDeleted(context: Context, ids: IntArray) = WidgetChoices(context).forget(ids)
 
+    /** The first widget placed: from now on it follows the rows (FullaApp starts this itself while one is placed). */
+    override fun onEnabled(context: Context) = FullaWidget.observe(context, (context.applicationContext as FullaApp).container)
+
     private fun redraw(context: Context) {
         val pending = goAsync()
         val container = (context.applicationContext as FullaApp).container
@@ -70,9 +73,21 @@ object FullaWidget {
     /** Wider than this (dp), the figures are shown beside the button. */
     private const val FIGURES_MIN_WIDTH = 180f
 
-    /** Redraws whenever what it shows changes: the household's rows, the active household or the settings. */
+    private var observing = false
+
+    /** Whether any widget of Fulla is on the home screen. */
+    fun placed(context: Context): Boolean =
+        AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, FullaWidgetProvider::class.java)).isNotEmpty()
+
+    /**
+     * Redraws whenever what it shows changes: the household's rows, the active household or the settings. Started
+     * only once a widget is placed, so a phone without one never opens the database for it; once per process.
+     */
     @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Synchronized
     fun observe(context: Context, container: AppContainer) {
+        if (observing) return
+        observing = true
         container.scope.launch {
             container.ledger.active.flatMapLatest { h -> if (h == null) flowOf(emptyList()) else container.ledger.transactions(h.id) }
                 .combine(container.settings.settings) { rows, settings -> rows to settings }

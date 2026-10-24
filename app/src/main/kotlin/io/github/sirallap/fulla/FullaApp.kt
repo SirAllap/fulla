@@ -17,7 +17,7 @@ class FullaApp : Application(), Configuration.Provider {
         SyncScheduler.schedulePeriodic(this)
         RecurringScheduler.schedulePeriodic(this)
         // The widget follows the household's rows wherever they change: a save, a sync, a fixed cost written by the worker.
-        FullaWidget.observe(this, container)
+        if (FullaWidget.placed(this)) FullaWidget.observe(this, container)
         publishShortcuts()
     }
 
