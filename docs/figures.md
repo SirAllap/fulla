@@ -42,7 +42,7 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 | A day | what is left spread over the days to go, today included | `PeriodForecast.perDayMinor` |
 | Spent | spending of the period, as in the jar | `Analytics.summary` |
 
-No amounts while the app is locked, or when Settings asks to hide them.
+No amounts when Settings asks to hide them (the app's lock alone does not).
 
 ## Analysis
 

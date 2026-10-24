@@ -764,7 +764,7 @@
     <string name="widget_spent">Speso %1$s</string>
     <string name="widget_spent_label">Speso in questo periodo</string>
     <string name="widget_hide_amounts">Nascondi gli importi nel widget</string>
-    <string name="widget_hide_amounts_text">Il widget mostra solo il pulsante per aggiungere e la tua casa. Sempre con l’app bloccata.</string>
+    <string name="widget_hide_amounts_text">Il widget mostra solo il pulsante per aggiungere e il nome della tua casa.</string>
     <string name="shortcut_add_expense">Aggiungi spesa</string>
     <string name="shortcut_add_income">Aggiungi entrata</string>
     <plurals name="widget_per_day">

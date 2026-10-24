@@ -764,7 +764,7 @@
     <string name="widget_spent">Ausgegeben %1$s</string>
     <string name="widget_spent_label">Ausgegeben in diesem Zeitraum</string>
     <string name="widget_hide_amounts">Beträge im Widget ausblenden</string>
-    <string name="widget_hide_amounts_text">Das Widget zeigt nur die Hinzufügen-Taste und deinen Haushalt. Bei gesperrter App immer.</string>
+    <string name="widget_hide_amounts_text">Das Widget zeigt nur die Hinzufügen-Taste und den Namen deines Haushalts.</string>
     <string name="shortcut_add_expense">Ausgabe eintragen</string>
     <string name="shortcut_add_income">Einnahme eintragen</string>
     <plurals name="widget_per_day">

@@ -814,7 +814,7 @@
     <string name="widget_spent">Spent %1$s</string>
     <string name="widget_spent_label">Spent this period</string>
     <string name="widget_hide_amounts">Hide amounts in the widget</string>
-    <string name="widget_hide_amounts_text">The widget shows only the Add button and your household. While the app is locked it always does.</string>
+    <string name="widget_hide_amounts_text">The widget shows only the Add button and your household\'s name.</string>
     <string name="shortcut_add_expense">Add an expense</string>
     <string name="shortcut_add_income">Add an income</string>
     <plurals name="widget_per_day">

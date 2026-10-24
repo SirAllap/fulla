@@ -307,7 +307,7 @@ from a hex value in a screen.
 The home-screen widget (`widget/FullaWidget.kt`, plain `RemoteViews`) is the
 round Add button, with the period's figures beside it when it is wide enough.
 Its figures are `core`'s `WidgetFigures` (the overview's own), it shows no
-amounts while the app is locked, and it redraws itself: `FullaApp` watches
+amounts when Settings asks it to (the app's lock alone does not), and it redraws itself: `FullaApp` watches
 the active household's rows, and an inexact alarm redraws it after midnight.
 The widget and the launcher shortcuts open the app through
 `AppContainer.pendingOpen`, which the household screen consumes.

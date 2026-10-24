@@ -53,7 +53,7 @@ data class Settings(
     val guideStep: String? = null,
     /** Set once the tour has been finished (or skipped) at least once. */
     val tourDone: Boolean = false,
-    /** The home-screen widget shows no amounts (it never does while the app is locked either). */
+    /** The home-screen widget shows no amounts: the person's choice, apart from the app's lock. */
     val widgetHideAmounts: Boolean = false,
 )
 

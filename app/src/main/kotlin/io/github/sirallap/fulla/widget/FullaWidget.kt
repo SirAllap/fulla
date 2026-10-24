@@ -51,8 +51,9 @@ class FullaWidgetProvider : AppWidgetProvider() {
  * The widget: the round Add button when small; beside it, when wider, what is
  * left of the period, per day, and what was spent. Its figures are core's
  * ([WidgetFigures], the overview's own), drawn and never worked out here.
- * Amounts are hidden when the person asks, and always while the app is locked:
- * a home screen is seen by whoever holds the phone. Works for every household,
+ * Amounts are hidden when the person asks in Settings (a home screen is seen by
+ * whoever holds the phone); the app's lock alone does not hide them, or a locked
+ * app would leave the widget with nothing to say. Works for every household,
  * phone-only ones included: it reads what the phone holds and needs no network.
  */
 object FullaWidget {
@@ -99,7 +100,7 @@ object FullaWidget {
         val view = settings.activeHouseholdId?.let { id ->
             container.ledger.household(id)?.let { HouseholdView(it, container.ledger.transactions(id).first(), res.configuration.locales[0].language) }
         }
-        val t = describe(res, view, hidden = settings.lock || settings.widgetHideAmounts, today = LocalDate.now())
+        val t = describe(res, view, hidden = settings.widgetHideAmounts, today = LocalDate.now())
         return Content(t.label, t.amount, t.detail, (if (t.over) settings.palette.of(dark).outText else colors.ink).toInt(),
             colors.paper.toInt(), colors.ink.toInt(), colors.inkMuted.toInt(), colors.accent.toInt(), colors.onAccent.toInt())
     }
