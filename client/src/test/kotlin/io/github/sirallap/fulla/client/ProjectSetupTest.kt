@@ -103,4 +103,13 @@ class ProjectSetupTest {
         assertTrue(calls.none { it.startsWith("PATCH") })
         assertTrue(calls.any { it.startsWith("POST /v1/projects/$ref/database/query") })
     }
+
+    @Test
+    fun `an update runs only the missing migrations on that project, and a bad token says so`() = runBlocking<Unit> {
+        val calls = mutableListOf<String>()
+        setup(calls).update(ref, "select 24;")
+        assertEquals(listOf("""POST /v1/projects/$ref/database/query {"query":"select 24;"}"""), calls)
+        val refused = ProjectSetup(HttpClient(MockEngine { respond("""{"message":"Unauthorized"}""", HttpStatusCode.Unauthorized, json) }), "sbp_old")
+        assertEquals(ProjectSetup.TOKEN_REFUSED, assertFailsWith<FullaError> { refused.update(ref, "select 24;") }.code)
+    }
 }

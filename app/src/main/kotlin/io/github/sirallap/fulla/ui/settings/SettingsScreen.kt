@@ -144,6 +144,10 @@ private fun LazyListScope.index(
             val context = LocalContext.current
             val clipboard = LocalClipboardManager.current
             val scope = rememberCoroutineScope()
+            val ref = projectUrl?.let(::supabaseProjectRef)
+            var asking by remember { mutableStateOf(false) }
+            if (asking && ref != null) DbUpdateDialog(ref, onDismiss = { asking = false },
+                onCopyInstead = { asking = false; scope.launch { updateDatabase(container, context, clipboard, projectUrl) } })
             ListRow(
                 stringResource(R.string.db_update_needed),
                 context = stringResource(R.string.db_update_action),
@@ -151,7 +155,8 @@ private fun LazyListScope.index(
                 icon = Icons.Outlined.Storage,
                 iconTint = FullaTheme.colors.accent,
                 titleColor = FullaTheme.colors.accent,
-                onClick = { scope.launch { updateDatabase(container, context, clipboard, projectUrl) } },
+                // A project on supabase.com updates itself with a token for the moment; any other copies the SQL, as before.
+                onClick = { if (ref != null) asking = true else scope.launch { updateDatabase(container, context, clipboard, projectUrl) } },
                 end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.accent) },
             )
         }
@@ -270,4 +275,71 @@ private suspend fun updateDatabase(container: AppContainer, context: android.con
     android.widget.Toast.makeText(context, R.string.db_update_copied, android.widget.Toast.LENGTH_LONG).show()
     val ref = projectUrl?.let(::supabaseProjectRef) ?: return
     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://supabase.com/dashboard/project/$ref/sql/new")))
+}
+
+/**
+ * "Update database" without the SQL editor: the person pastes a Supabase
+ * access token and the app runs the missing migrations itself
+ * (`AppContainer.updateDatabase`). The token lives in this dialog only and is
+ * dropped with it, as at setup: it opens the whole Supabase account. Copying
+ * the SQL stays, for whoever would rather paste it.
+ */
+@Composable
+private fun DbUpdateDialog(ref: String, onDismiss: () -> Unit, onCopyInstead: () -> Unit) {
+    val container = LocalContainer.current
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    val c = FullaTheme.colors
+    var token by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var done by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val refused = stringResource(R.string.setup_token_refused)
+    val unreachable = stringResource(R.string.project_unreachable)
+    val failed = stringResource(R.string.db_update_failed)
+    io.github.sirallap.fulla.ui.components.FullaDialog(
+        onDismissRequest = { if (!busy) onDismiss() },
+        title = { Text(stringResource(if (done) R.string.db_update_done else R.string.db_update_action)) },
+        text = {
+            Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                if (done) {
+                    Text(stringResource(R.string.setup_token_delete), style = FullaType.body, color = c.ink)
+                    androidx.compose.material3.TextButton(onClick = { uri.openUri(io.github.sirallap.fulla.client.remote.ProjectSetup.TOKEN_PAGE) }) {
+                        Text(stringResource(R.string.setup_token_delete_link), style = FullaType.body, color = c.accent)
+                    }
+                } else {
+                    Text(stringResource(R.string.db_update_token_text), style = FullaType.body, color = c.ink)
+                    androidx.compose.material3.TextButton(onClick = { uri.openUri(io.github.sirallap.fulla.client.remote.ProjectSetup.TOKEN_PAGE) }) {
+                        Text(stringResource(R.string.db_update_get_token), style = FullaType.body, color = c.accent)
+                    }
+                    androidx.compose.material3.OutlinedTextField(token, { token = it.trim() }, Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.setup_token)) }, placeholder = { Text("sbp_…") },
+                        singleLine = true, enabled = !busy,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Password, autoCorrect = false),
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
+                    if (busy) Text(stringResource(R.string.db_update_running), style = FullaType.secondary, color = c.inkMuted)
+                    error?.let { Text(it, style = FullaType.secondary, color = c.danger) }
+                }
+            }
+        },
+        confirmButton = {
+            if (done) androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.done)) }
+            else androidx.compose.material3.TextButton(enabled = token.length >= 20 && !busy, onClick = {
+                busy = true; error = null
+                scope.launch {
+                    runCatching { container.updateDatabase(token, ref) }.fold({ token = ""; done = true }, { e ->
+                        error = when ((e as? io.github.sirallap.fulla.client.remote.FullaError)?.code) {
+                            io.github.sirallap.fulla.client.remote.ProjectSetup.TOKEN_REFUSED -> refused
+                            io.github.sirallap.fulla.client.remote.FullaError.NETWORK -> unreachable
+                            else -> failed
+                        }
+                    })
+                    busy = false
+                }
+            }) { Text(stringResource(R.string.db_update_run)) }
+        },
+        dismissButton = if (done) null else ({ androidx.compose.material3.TextButton(enabled = !busy, onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }),
+        neutralButton = if (done) null else ({ androidx.compose.material3.TextButton(enabled = !busy, onClick = onCopyInstead) { Text(stringResource(R.string.db_update_copy)) } }),
+    )
 }

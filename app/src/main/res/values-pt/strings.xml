@@ -472,6 +472,13 @@
     <string name="db_update_needed">Seu banco de dados precisa ser atualizado</string>
     <string name="db_update_action">Atualizar banco de dados</string>
     <string name="db_update_instruction">Cole e toque em Run</string>
+    <string name="db_update_token_text">Cola um token de acesso do Supabase e o Fulla atualiza a base de dados sozinho. O token não é guardado: apaga-o quando terminar.</string>
+    <string name="db_update_get_token">Criar um token em supabase.com</string>
+    <string name="db_update_run">Atualizar</string>
+    <string name="db_update_copy">Copiar o SQL</string>
+    <string name="db_update_running">A atualizar a base de dados…</string>
+    <string name="db_update_done">Base de dados atualizada</string>
+    <string name="db_update_failed">Não foi possível atualizar a base de dados. Tenta outra vez ou copia o SQL.</string>
     <string name="update_check">Procurar atualizações</string>
     <string name="update_check_text">Pergunta ao GitHub qual é a última versão e propõe instalá-la aqui.</string>
     <string name="update_now">Atualizar agora</string>

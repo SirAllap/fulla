@@ -472,6 +472,13 @@
     <string name="db_update_needed">Ta base de données doit être mise à jour</string>
     <string name="db_update_action">Mettre à jour la base de données</string>
     <string name="db_update_instruction">Colle et appuie sur Run</string>
+    <string name="db_update_token_text">Colle un jeton d’accès Supabase et Fulla met la base de données à jour toute seule. Le jeton n’est pas gardé : supprime-le une fois terminé.</string>
+    <string name="db_update_get_token">Créer un jeton sur supabase.com</string>
+    <string name="db_update_run">Mettre à jour</string>
+    <string name="db_update_copy">Copier le SQL à la place</string>
+    <string name="db_update_running">Mise à jour de la base de données…</string>
+    <string name="db_update_done">Base de données à jour</string>
+    <string name="db_update_failed">La base de données n’a pas pu être mise à jour. Réessaie ou copie le SQL.</string>
     <string name="update_check">Rechercher des mises à jour</string>
     <string name="update_check_text">Demande à GitHub la dernière version et propose de l’installer ici.</string>
     <string name="update_now">Mettre à jour maintenant</string>

@@ -37,7 +37,7 @@ import java.security.SecureRandom
  * and hands back the project's address and public key.
  *
  * This is the only code that talks to Supabase's Management API
- * (api.supabase.com), and only during setup. The token is used for these calls
+ * (api.supabase.com), and only during setup and a database update. The token is used for these calls
  * and never stored; the project's database password is random and never
  * shown, since nothing in Fulla needs it.
  */
@@ -95,6 +95,16 @@ class ProjectSetup(
         onStep(Step.DONE)
         return Endpoint.parse("https://$ref.supabase.co", key)
             ?: throw FullaError(FullaError.BAD_RESPONSE, "Supabase answered with an address Fulla cannot use.")
+    }
+
+    /**
+     * Brings an existing project's database up to this build: runs [sql] (the
+     * migrations it is missing, each safe to run again) and nothing else. The
+     * same token-for-the-moment as setup, so "Update database" needs no SQL
+     * editor; the token is not kept here either.
+     */
+    suspend fun update(ref: String, sql: String) {
+        call(HttpMethod.Post, "/v1/projects/$ref/database/query", buildJsonObject { put("query", sql) })
     }
 
     /**

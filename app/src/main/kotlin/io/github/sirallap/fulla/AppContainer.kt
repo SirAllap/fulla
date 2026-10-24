@@ -143,6 +143,18 @@ class AppContainer(private val context: Context) {
     }
 
     /**
+     * "Update database" without the SQL editor: the same missing migrations as
+     * [dbUpdateSql], run on the project with a token the person pastes for the
+     * moment. The token is used for this one call and dropped, as at setup:
+     * it opens the whole Supabase account, so it is never stored. Then the
+     * schema is asked again, which clears the row in Settings.
+     */
+    suspend fun updateDatabase(token: String, ref: String) {
+        projectSetup(token).update(ref, dbUpdateSql())
+        checkDbSchema()
+    }
+
+    /**
      * The household server this build ships with, or null in a build where
      * people bring their own Supabase project.
      */

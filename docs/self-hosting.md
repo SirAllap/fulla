@@ -148,7 +148,10 @@ your project without an invite sees nothing. But it is tidier.
   can take one yourself with `pg_dump` and the connection string. Keep backups
   somewhere private: they contain the whole household's finances.
 - **Upgrades.** A new version of Fulla may come with a new `setup.sql`. Fulla
-  will ask you in Settings when your database needs an update, with a button
-  that copies the exact script for your installed version and opens your
-  project's SQL editor to paste it into. Nothing to remember between
-  releases.
+  will ask you in Settings when your database needs an update. On a project
+  at supabase.com you paste an access token for the moment and the app runs
+  the missing migrations itself; the token is used for that one call and not
+  kept (it opens your whole Supabase account), so delete it afterwards. Or
+  copy the exact script for your installed version and paste it into your
+  project's SQL editor, which the same button opens. Nothing to remember
+  between releases.
