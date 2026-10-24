@@ -34,6 +34,16 @@ down) but is never "spent so far" and never a pace (`PeriodForecast.bookedAheadM
 | Fixed costs | each charge due in the period: charged (written by the recurring item, or by hand and standing for it) or still to come; skipped ones are not waited for | `Analytics.forecast`, `Coverage` |
 | Where it went | spending per category, subcategories rolled up; "usually" is the average of the up to three earlier periods that have anything written down | `Analytics.byCategory` |
 
+## Home-screen widget (Android)
+
+| Figure | Is | Source |
+| --- | --- | --- |
+| Left this period / Over this period | the overview's "if nothing more is spent": income, less what was spent, less the fixed costs still to come; over when below zero, never a negative left | `WidgetFigures.of`, `PeriodForecast.leftToSpendMinor` |
+| A day | what is left spread over the days to go, today included | `PeriodForecast.perDayMinor` |
+| Spent | spending of the period, as in the jar | `Analytics.summary` |
+
+No amounts while the app is locked, or when Settings asks to hide them.
+
 ## Analysis
 
 | Figure | Is | Source |

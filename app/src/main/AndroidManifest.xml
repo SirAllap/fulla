@@ -50,6 +50,19 @@
             android:screenOrientation="fullSensor"
             tools:replace="screenOrientation" />
 
+        <!-- The home-screen widget: the launcher has to reach it, so it is exported; it only draws. -->
+        <receiver
+            android:name=".widget.FullaWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info" />
+        </receiver>
+
         <!-- Carries a PackageInstaller session's result back; never started by
              anyone but the system, in answer to our own PendingIntent. -->
         <receiver

@@ -806,4 +806,19 @@
     <string name="goal_per_month">%1$s a month to arrive by %2$s</string>
     <string name="goal_left">%1$s to go</string>
     <string name="goal_saved_of">%1$s of %2$s · %3$s</string>
+    <string name="widget_description">Add in one tap, and see what is left of the month.</string>
+    <string name="widget_start">Open Fulla to begin.</string>
+    <string name="widget_hidden">Amounts hidden</string>
+    <string name="widget_left">Left this period</string>
+    <string name="widget_over">Over this period</string>
+    <string name="widget_spent">Spent %1$s</string>
+    <string name="widget_spent_label">Spent this period</string>
+    <string name="widget_hide_amounts">Hide amounts in the widget</string>
+    <string name="widget_hide_amounts_text">The widget shows only the Add button and your household. While the app is locked it always does.</string>
+    <string name="shortcut_add_expense">Add an expense</string>
+    <string name="shortcut_add_income">Add an income</string>
+    <plurals name="widget_per_day">
+        <item quantity="one">%1$s a day · %2$d day left</item>
+        <item quantity="other">%1$s a day · %2$d days left</item>
+    </plurals>
 </resources>

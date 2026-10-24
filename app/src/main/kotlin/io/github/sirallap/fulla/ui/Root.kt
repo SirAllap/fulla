@@ -132,6 +132,8 @@ private fun Household(state: HouseholdState) {
     val view = remember(state, rows, language) { HouseholdView(state, rows, language) }
     val nav = rememberNavController()
     var tab by rememberSaveable { mutableStateOf(Tab.ADD) }
+    /** An income asked for from outside (a shortcut), until Add has turned to it. */
+    var incomeAsked by remember { mutableStateOf(false) }
     var syncOpen by remember { mutableStateOf(false) }
     var updateOpen by remember { mutableStateOf(false) }
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
@@ -149,6 +151,19 @@ private fun Household(state: HouseholdState) {
         if (s.guideHousehold == null && io.github.sirallap.fulla.client.remote.UpdateAnnouncement.due(version, s.updateAnnouncedVersion, s.updateAnnouncedAt, now)) {
             container.settings.setUpdateAnnounced(version, now)
             updateOpen = true
+        }
+    }
+
+    // The widget and the launcher shortcuts: back to the tabs, on Add or on the overview.
+    val open by container.pendingOpen.collectAsStateWithLifecycle()
+    LaunchedEffect(open) {
+        val request = open ?: return@LaunchedEffect
+        container.pendingOpen.value = null
+        nav.popBackStack("tabs", inclusive = false)
+        when (request) {
+            io.github.sirallap.fulla.OpenRequest.ADD -> tab = Tab.ADD
+            io.github.sirallap.fulla.OpenRequest.ADD_INCOME -> { tab = Tab.ADD; incomeAsked = true }
+            io.github.sirallap.fulla.OpenRequest.OVERVIEW -> tab = Tab.OVERVIEW
         }
     }
 
@@ -184,7 +199,8 @@ private fun Household(state: HouseholdState) {
                         (fadeIn(fade) + slideInHorizontally(enterSpec) { if (toRight) it / 20 else -it / 20 }) togetherWith fadeOut(fade)
                     }) { shown ->
                         when (shown) {
-                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW })
+                            Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW },
+                                incomeAsked = incomeAsked, onIncomeShown = { incomeAsked = false })
                             Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { tab = Tab.INSIGHTS }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
                             Tab.INSIGHTS -> io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { tab = Tab.OVERVIEW }, onFixedCosts = { nav.navigate("settings/recurring") }, headerActions = headerActions)

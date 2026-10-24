@@ -756,4 +756,19 @@
     <string name="goal_per_month">%1$s al mes para llegar el %2$s</string>
     <string name="goal_left">Faltan %1$s</string>
     <string name="goal_saved_of">%1$s de %2$s · %3$s</string>
+    <string name="widget_description">Anota con un toque y mira cuánto te queda del mes.</string>
+    <string name="widget_start">Abre Fulla para empezar.</string>
+    <string name="widget_hidden">Importes ocultos</string>
+    <string name="widget_left">Te queda este periodo</string>
+    <string name="widget_over">Te has pasado este periodo</string>
+    <string name="widget_spent">Gastado %1$s</string>
+    <string name="widget_spent_label">Gastado este periodo</string>
+    <string name="widget_hide_amounts">Ocultar importes en el widget</string>
+    <string name="widget_hide_amounts_text">El widget solo muestra el botón de añadir y tu hogar. Con la app bloqueada, siempre.</string>
+    <string name="shortcut_add_expense">Añadir gasto</string>
+    <string name="shortcut_add_income">Añadir ingreso</string>
+    <plurals name="widget_per_day">
+        <item quantity="one">%1$s al día · queda %2$d día</item>
+        <item quantity="other">%1$s al día · quedan %2$d días</item>
+    </plurals>
 </resources>

@@ -53,6 +53,8 @@ data class Settings(
     val guideStep: String? = null,
     /** Set once the tour has been finished (or skipped) at least once. */
     val tourDone: Boolean = false,
+    /** The home-screen widget shows no amounts (it never does while the app is locked either). */
+    val widgetHideAmounts: Boolean = false,
 )
 
 class SettingsStore(context: Context) {
@@ -83,6 +85,7 @@ class SettingsStore(context: Context) {
         val guideOrigin = stringPreferencesKey("guide_origin")
         val guideStep = stringPreferencesKey("guide_step")
         val tourDone = booleanPreferencesKey("tour_done")
+        val widgetHideAmounts = booleanPreferencesKey("widget_hide_amounts")
     }
 
     val settings: Flow<Settings> = store.data.map { p ->
@@ -110,6 +113,7 @@ class SettingsStore(context: Context) {
             guideOrigin = p[Keys.guideOrigin],
             guideStep = p[Keys.guideStep],
             tourDone = p[Keys.tourDone] ?: false,
+            widgetHideAmounts = p[Keys.widgetHideAmounts] ?: false,
         )
     }
 
@@ -128,6 +132,7 @@ class SettingsStore(context: Context) {
     suspend fun setPalette(palette: MoneyPalette) { store.edit { it[Keys.palette] = palette.name } }
     suspend fun setAccent(accent: Accent) { store.edit { it[Keys.accent] = accent.name } }
     suspend fun setLock(on: Boolean) { store.edit { it[Keys.lock] = on } }
+    suspend fun setWidgetHideAmounts(on: Boolean) { store.edit { it[Keys.widgetHideAmounts] = on } }
     suspend fun setOnboarded(done: Boolean) { store.edit { it[Keys.onboarded] = done } }
     suspend fun setLanguageChosen(done: Boolean) { store.edit { it[Keys.languageChosen] = done } }
     suspend fun setCheckForUpdates(on: Boolean) { store.edit { it[Keys.checkForUpdates] = on } }

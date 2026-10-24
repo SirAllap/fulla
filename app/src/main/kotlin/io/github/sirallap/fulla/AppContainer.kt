@@ -178,6 +178,9 @@ class AppContainer(private val context: Context) {
     /** Counts every time the app comes to the front, so the screen can look again at what needs saying (a new version). */
     val foreground = MutableStateFlow(0)
 
+    /** Where the widget or a launcher shortcut asked the app to open, until the household screen goes there. */
+    val pendingOpen = MutableStateFlow<OpenRequest?>(null)
+
     /** An invite link the app was opened with, waiting for the person to act on it. */
     val pendingInvite = MutableStateFlow<InviteLink?>(null)
 
@@ -274,3 +277,6 @@ class AppContainer(private val context: Context) {
         private val MIGRATION_FILENAME = Regex("""^(\d{4})_.+\.sql$""")
     }
 }
+
+/** Where the widget or a launcher shortcut opens the app: Add (an expense, or an income) or the overview. */
+enum class OpenRequest { ADD, ADD_INCOME, OVERVIEW }

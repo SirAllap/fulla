@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import io.github.sirallap.fulla.client.remote.InviteLink
 import io.github.sirallap.fulla.ui.FullaRoot
 import io.github.sirallap.fulla.ui.LanguageApplier
+import io.github.sirallap.fulla.widget.FullaWidget
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -40,12 +41,14 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         readInvite(intent)
+        readOpen(intent)
         setContent { FullaRoot(container, this) }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         readInvite(intent)
+        readOpen(intent)
     }
 
     override fun onStart() {
@@ -93,6 +96,15 @@ class MainActivity : FragmentActivity() {
     private fun millisUntilTomorrow(): Long {
         val now = ZonedDateTime.now()
         return Duration.between(now, now.toLocalDate().plusDays(1).atStartOfDay(now.zone)).toMillis() + 1_000
+    }
+
+    /** The widget and the launcher shortcuts: straight to Add (an expense, or an income) or to the overview. */
+    private fun readOpen(intent: Intent?) {
+        container.pendingOpen.value = when (intent?.action) {
+            FullaWidget.ACTION_ADD -> if (intent.getStringExtra(FullaWidget.EXTRA_KIND) == FullaWidget.KIND_INCOME) OpenRequest.ADD_INCOME else OpenRequest.ADD
+            FullaWidget.ACTION_OVERVIEW -> OpenRequest.OVERVIEW
+            else -> return
+        }
     }
 
     private fun readInvite(intent: Intent?) {

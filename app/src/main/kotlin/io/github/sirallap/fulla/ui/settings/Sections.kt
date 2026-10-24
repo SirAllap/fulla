@@ -741,6 +741,9 @@ fun AppearanceSettings() {
         }
         Section(stringResource(R.string.security))
         SwitchRow(stringResource(R.string.lock), stringResource(R.string.lock_text), s.lock) { on -> scope.launch { container.settings.setLock(on) } }
+        SwitchRow(stringResource(R.string.widget_hide_amounts), stringResource(R.string.widget_hide_amounts_text), s.widgetHideAmounts) { on ->
+            scope.launch { container.settings.setWidgetHideAmounts(on) }
+        }
     }
 }
 
