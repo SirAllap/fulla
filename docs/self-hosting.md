@@ -39,18 +39,20 @@ pause one, or set up by hand below.
 
 ## A new phone, or the app reinstalled
 
-Nothing is lost: the household lives in your Supabase project. To connect
-again, create a fresh token at
-[supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens)
-and paste it in **Shared**. The app finds your project called `fulla` and
-connects to it, without creating another or touching your data (running the
-setup again is safe). If your project has another name, it lists your projects
-to choose from; a project Fulla did not create keeps its own sign-in settings.
-Then choose **I already have an account** and sign in with your email and
-password.
+Nothing is lost: the household lives in your Supabase project. On the welcome
+screen tap **I use Fulla already: sign in** and pick whichever is at hand:
 
-People who joined with an invite do not need a token: they scan a new invite
-from someone already in the household, or sign in again on the same project.
+- **Scan a QR code from another phone** of the household (Settings › Sync ›
+  Sign in on another device there). Then only your email and password.
+- **Open a backup.** The backup of a shared household says which project it
+  lives in, so opening it leads straight to signing in there; everything comes
+  back from the project, newer than the file.
+- **With a Supabase token**: the app finds your project called `fulla` and
+  connects to it, without creating another or touching your data.
+- **Advanced**: the project's ID and its public (anon) key, by hand.
+
+People who joined with an invite do the same; nobody needs an invite again for
+a household they are in already.
 
 ## By hand
 

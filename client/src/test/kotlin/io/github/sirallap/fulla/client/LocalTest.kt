@@ -307,6 +307,16 @@ class BackupTest {
     }
 
     @Test
+    fun `a shared household's backup says where it lives, an older one says nothing`() {
+        val bundle = io.github.sirallap.fulla.client.local.LocalHousehold.create("Demo household", "EUR", "en-GB", "Alice", "A", 0)
+        val project = io.github.sirallap.fulla.client.remote.Endpoint.parse("abcdefghijklmnopqrst", "public-anon-key")!!
+        val shared = io.github.sirallap.fulla.client.local.Backup.write(bundle, emptyList(), "2030-01-15T12:00:00.000Z", project)
+        assertEquals(project, io.github.sirallap.fulla.client.local.Backup.read(shared).project)
+        val older = io.github.sirallap.fulla.client.local.Backup.write(bundle, emptyList(), "2030-01-15T12:00:00.000Z")
+        assertEquals(null, io.github.sirallap.fulla.client.local.Backup.read(older).project)
+    }
+
+    @Test
     fun `anything that is not a backup is refused with a reason`() {
         fun reason(text: String) = runCatching { io.github.sirallap.fulla.client.local.Backup.read(text) }.exceptionOrNull()
             .let { (it as io.github.sirallap.fulla.client.local.Backup.Unreadable).reason }

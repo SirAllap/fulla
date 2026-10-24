@@ -109,5 +109,6 @@ class MainActivity : FragmentActivity() {
 
     private fun readInvite(intent: Intent?) {
         intent?.dataString?.let(InviteLink::parse)?.let { container.pendingInvite.value = it }
+        intent?.dataString?.let(io.github.sirallap.fulla.client.remote.ConnectLink::parse)?.let { container.pendingConnect.value = it }
     }
 }

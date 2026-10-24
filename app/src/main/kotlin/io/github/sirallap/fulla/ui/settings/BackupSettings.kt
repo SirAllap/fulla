@@ -35,6 +35,14 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 /** Reads a backup file and restores it; the message to show, or null on success. */
+/** The project a shared household's backup lives in, or null (a phone-only household, an older file, not a backup). */
+suspend fun backupProject(context: Context, uri: Uri): io.github.sirallap.fulla.client.remote.Endpoint? {
+    val text = withContext(Dispatchers.IO) {
+        runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } }.getOrNull()
+    } ?: return null
+    return runCatching { Backup.read(text).project }.getOrNull()
+}
+
 suspend fun restoreBackup(context: Context, ledger: Ledger, uri: Uri): Int? {
     val text = withContext(Dispatchers.IO) {
         runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } }.getOrNull()

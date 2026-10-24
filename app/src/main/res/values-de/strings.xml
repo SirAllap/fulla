@@ -800,4 +800,18 @@
     <string name="widget_change_help">Jedes Widget zeigt, was du beim Platzieren wählst. Zum Ändern das Widget gedrückt halten und seine Einstellungen öffnen.</string>
     <string name="project_bad_key">Dieser Schlüssel gehört nicht zu diesem Projekt oder ist unvollständig. Kopiere den anon-Schlüssel erneut mit seiner Copy-Taste.</string>
     <string name="project_busy">Das Projekt antwortet gerade nicht. Versuche es gleich noch einmal.</string>
+    <string name="back_in">Ich nutze Fulla schon: anmelden</string>
+    <string name="back_in_text">Dein Haushalt ist in seinem Projekt sicher. Wähle, wie dieses Handy es findet; dann meldest du dich nur mit E-Mail und Passwort an.</string>
+    <string name="back_in_scan">QR-Code von einem anderen Handy scannen</string>
+    <string name="back_in_scan_text">Auf einem Handy mit geöffnetem Fulla: Einstellungen › Synchronisierung › Auf einem anderen Gerät anmelden.</string>
+    <string name="back_in_backup">Eine Sicherung öffnen</string>
+    <string name="back_in_backup_text">Die Sicherung eines gemeinsamen Haushalts weiß, wo er liegt. Die eines Haushalts nur auf dem Handy wird so wiederhergestellt.</string>
+    <string name="back_in_token">Mit einem Supabase-Token</string>
+    <string name="back_in_token_text">Fulla findet dein Projekt selbst in deinem Supabase-Konto.</string>
+    <string name="back_in_by_hand">Erweitert: Projekt und Schlüssel von Hand</string>
+    <string name="back_in_by_hand_text">Die ID des Projekts und sein öffentlicher Schlüssel, aus Supabase.</string>
+    <string name="back_in_not_a_link">Dieser QR-Code ist nicht von Fulla.</string>
+    <string name="other_device">Auf einem anderen Gerät anmelden</string>
+    <string name="other_device_text">Ein QR-Code mit dem Ort deines Haushalts. Das andere Handy fragt nur nach E-Mail und Passwort.</string>
+    <string name="other_device_steps">Auf dem anderen Handy: Fulla öffnen, „Ich nutze Fulla schon: anmelden“ tippen, dann „QR-Code von einem anderen Handy scannen“, und mit eigener E-Mail und eigenem Passwort anmelden. Wer neu ist, braucht eine Einladung.</string>
 </resources>

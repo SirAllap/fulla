@@ -85,6 +85,7 @@ fun FullaRoot(container: AppContainer, activity: androidx.fragment.app.FragmentA
                 var unlocked by rememberSaveable { mutableStateOf(false) }
                 val adding by container.addingHousehold.collectAsStateWithLifecycle()
                 val invite by container.pendingInvite.collectAsStateWithLifecycle()
+                val connect by container.pendingConnect.collectAsStateWithLifecycle()
                 // A new active household (created, joined, restored or switched to) ends the adding flow.
                 androidx.compose.runtime.LaunchedEffect(l?.household?.id) { container.addingHousehold.value = false }
                 when {
@@ -104,9 +105,10 @@ fun FullaRoot(container: AppContainer, activity: androidx.fragment.app.FragmentA
                     }
                     s.lock && !unlocked -> LockScreen(activity) { unlocked = true }
                     l.household == null -> Onboarding(onCancel = null)
-                    adding || invite != null -> Onboarding(onCancel = {
+                    adding || invite != null || connect != null -> Onboarding(onCancel = {
                         container.addingHousehold.value = false
                         container.pendingInvite.value = null
+                        container.pendingConnect.value = null
                     })
                     else -> Household(l.household)
                 }

@@ -184,6 +184,9 @@ class AppContainer(private val context: Context) {
     /** An invite link the app was opened with, waiting for the person to act on it. */
     val pendingInvite = MutableStateFlow<InviteLink?>(null)
 
+    /** A link to sign back in to a household's project (from another phone of it), waiting for the welcome to follow it. */
+    val pendingConnect = MutableStateFlow<io.github.sirallap.fulla.client.remote.ConnectLink?>(null)
+
     /** The welcome flow shown on top of an existing household, to add another one. */
     val addingHousehold = MutableStateFlow(false)
 

@@ -21,6 +21,8 @@ class FullaError(val code: String, override val message: String, val status: Int
         const val NETWORK = "network"
         /** The project answered, but not to this public key: it is another project's, or cut short. */
         const val INVALID_KEY = "invalid_key"
+        /** The project has no Fulla database: its functions are not there at all. */
+        const val NOT_SET_UP = "not_set_up"
         const val SERVER = "server"
         const val RATE_LIMITED = "too_many_attempts"
         const val NOT_AUTHENTICATED = "not_authenticated"

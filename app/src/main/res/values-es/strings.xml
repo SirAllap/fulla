@@ -800,4 +800,18 @@
     <string name="widget_change_help">Cada widget muestra lo que elijas al ponerlo. Para cambiarlo, mantén pulsado el widget y abre sus ajustes.</string>
     <string name="project_bad_key">Esa clave no es la de este proyecto, o está cortada. Vuelve a copiar la clave anon con su botón Copy.</string>
     <string name="project_busy">El proyecto no responde ahora mismo. Inténtalo de nuevo en un momento.</string>
+    <string name="back_in">Ya uso Fulla: entrar</string>
+    <string name="back_in_text">Tu hogar está a salvo en su proyecto. Elige cómo lo encuentra este móvil; luego solo entras con tu email y contraseña.</string>
+    <string name="back_in_scan">Escanear el QR de otro móvil</string>
+    <string name="back_in_scan_text">En un móvil con Fulla abierto: Ajustes › Sincronización › Entrar en otro dispositivo.</string>
+    <string name="back_in_backup">Abrir una copia de seguridad</string>
+    <string name="back_in_backup_text">La copia de un hogar compartido sabe dónde vive. La de uno solo del móvil se restaura tal cual.</string>
+    <string name="back_in_token">Con un token de Supabase</string>
+    <string name="back_in_token_text">Fulla encuentra solo tu proyecto en tu cuenta de Supabase.</string>
+    <string name="back_in_by_hand">Avanzado: proyecto y clave a mano</string>
+    <string name="back_in_by_hand_text">El ID del proyecto y su clave pública, de Supabase.</string>
+    <string name="back_in_not_a_link">Ese QR no es de Fulla.</string>
+    <string name="other_device">Entrar en otro dispositivo</string>
+    <string name="other_device_text">Un QR con dónde vive tu hogar. El otro móvil solo pide email y contraseña.</string>
+    <string name="other_device_steps">En el otro móvil: abre Fulla, toca «Ya uso Fulla: entrar», luego «Escanear el QR de otro móvil», y entra con tu propio email y contraseña. Alguien nuevo necesita una invitación.</string>
 </resources>

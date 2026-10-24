@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,6 +60,7 @@ fun SyncSettings(view: HouseholdView, onBack: () -> Unit, onInvite: () -> Unit) 
     var forgetting by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
     var deleteError by remember { mutableStateOf<String?>(null) }
+    var showingConnect by remember { mutableStateOf(false) }
     val failed = stringResource(R.string.something_failed)
     val context = androidx.compose.ui.platform.LocalContext.current
     val wrong = stringResource(R.string.wrong_credentials)
@@ -81,6 +83,32 @@ fun SyncSettings(view: HouseholdView, onBack: () -> Unit, onInvite: () -> Unit) 
         )
         if (session != null) {
             ListRow(stringResource(R.string.signed_in_as), context = session?.email ?: "")
+        }
+        // Another phone of yours, or this one after a reinstall: a QR code instead of a project address and key.
+        val here = endpoint
+        if (view.state.connected && here != null && container.hosted == null) {
+            ListRow(stringResource(R.string.other_device), context = stringResource(R.string.other_device_text),
+                icon = androidx.compose.material.icons.Icons.Outlined.QrCode, onClick = { showingConnect = true })
+            if (showingConnect) {
+                val link = io.github.sirallap.fulla.client.remote.ConnectLink(here).toUri()
+                io.github.sirallap.fulla.ui.components.FullaDialog(
+                    onDismissRequest = { showingConnect = false },
+                    title = { Text(stringResource(R.string.other_device)) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(Modifier.padding(horizontal = 24.dp)) { io.github.sirallap.fulla.ui.components.QrImage(link, stringResource(R.string.other_device)) }
+                            Text(stringResource(R.string.other_device_steps), style = FullaType.secondary, color = c.inkMuted)
+                        }
+                    },
+                    confirmButton = { androidx.compose.material3.TextButton(onClick = { showingConnect = false }) { Text(stringResource(R.string.done)) } },
+                    dismissButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            context.startActivity(android.content.Intent.createChooser(
+                                android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT, link), null))
+                        }) { Text(stringResource(R.string.share_link)) }
+                    },
+                )
+            }
         }
 
         if (!view.state.connected || session == null) {

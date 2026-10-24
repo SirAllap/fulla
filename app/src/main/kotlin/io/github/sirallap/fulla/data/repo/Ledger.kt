@@ -284,11 +284,12 @@ class Ledger(
         return id
     }
 
-    /** The household and every row, as a backup file's text. */
+    /** The household and every row, as a backup file's text; a shared one says which project it lives in, to sign back in there. */
     suspend fun backup(householdId: String): String? {
         val h = households.get(householdId) ?: return null
         val rows = transactions.all(householdId).map { Rows.local(it).transaction }
-        return Backup.write(Wire.json.parseToJsonElement(h.configJson).jsonObject, rows, SyncEngine.iso(now()))
+        val project = if (h.mode == CONNECTED) settings.current().endpoint else null
+        return Backup.write(Wire.json.parseToJsonElement(h.configJson).jsonObject, rows, SyncEngine.iso(now()), project)
     }
 
     /**

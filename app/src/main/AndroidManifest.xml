@@ -42,6 +42,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="fulla" android:host="join" />
             </intent-filter>
+            <!-- Signing back in from another phone of the household: fulla://connect?u=…&k=… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="fulla" android:host="connect" />
+            </intent-filter>
         </activity>
 
         <!-- The invite scanner, in whatever orientation the phone is held. -->

@@ -157,12 +157,25 @@ class Supabase(
             throw FullaError(FullaError.NETWORK, "Could not reach the server.")
         }
         val status = response.status.value
-        if (status in 200..299) return
+        if (status in 200..299) { checkInstalled(); return }
         throw when (status) {
             401, 403 -> FullaError(FullaError.INVALID_KEY, "The project refused this key.", status)
             in 500..599 -> FullaError(FullaError.SERVER, "The project could not answer.", status)
             else -> FullaError(FullaError.BAD_RESPONSE, "The project answered in a way Fulla cannot use.", status)
         }
+    }
+
+    /**
+     * Whether Fulla's database is there, asked anonymously: a function that does
+     * not exist is answered "not found" (PostgREST's PGRST202) whoever asks,
+     * while one that exists refuses an anonymous caller. Only that "not found"
+     * counts as missing; anything else lets the person go on and sign in.
+     */
+    private suspend fun checkInstalled() {
+        val response = runCatching { send("/rest/v1/rpc/fulla_ping", JsonObject(emptyMap()), bearer = null) }.getOrNull() ?: return
+        if (response.status.value != 404) return
+        val code = runCatching { Wire.json.parseToJsonElement(response.bodyAsText()).jsonObject.string("code") }.getOrNull()
+        if (code == "PGRST202") throw FullaError(FullaError.NOT_SET_UP, "This project does not have Fulla's database set up.", 404)
     }
 
     suspend fun rpc(function: String, args: JsonObject = JsonObject(emptyMap())): JsonElement {

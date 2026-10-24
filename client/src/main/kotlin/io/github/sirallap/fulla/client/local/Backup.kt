@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.client.local
 
+import io.github.sirallap.fulla.client.remote.Endpoint
 import io.github.sirallap.fulla.client.wire.Wire
 import io.github.sirallap.fulla.core.model.Transaction
 import kotlinx.serialization.json.JsonArray
@@ -19,6 +20,10 @@ import kotlinx.serialization.json.put
  * the phone maker's cloud are off on purpose), so this file is its only
  * insurance against a lost or reset phone. It restores as a phone-only
  * household with every id kept, and can be shared again afterwards.
+ *
+ * A shared household's file also says which project it lives in ([Contents.project]):
+ * on a reinstalled phone, restoring it leads straight to signing in there,
+ * with nobody looking for a project address or key.
  */
 object Backup {
     const val FORMAT = "fulla-backup"
@@ -28,15 +33,16 @@ object Backup {
 
     enum class Reason { NOT_A_BACKUP, NEWER_VERSION, DAMAGED }
 
-    data class Contents(val bundle: JsonObject, val transactions: List<Transaction>) {
+    data class Contents(val bundle: JsonObject, val transactions: List<Transaction>, val project: Endpoint? = null) {
         val householdId: String get() = Wire.config(bundle).household.id
         val householdName: String get() = Wire.config(bundle).household.name
     }
 
-    fun write(bundle: JsonObject, rows: List<Transaction>, createdAt: String): String = buildJsonObject {
+    fun write(bundle: JsonObject, rows: List<Transaction>, createdAt: String, project: Endpoint? = null): String = buildJsonObject {
         put("format", FORMAT)
         put("version", VERSION)
         put("created_at", createdAt)
+        if (project != null) put("project", buildJsonObject { put("url", project.url); put("anon_key", project.anonKey) })
         put("config", bundle)
         put("transactions", JsonArray(rows.map { t -> JsonObject(Wire.transaction(t) + ("server_seq" to JsonPrimitive(t.serverSeq))) }))
     }.toString()
@@ -50,7 +56,11 @@ object Backup {
         return runCatching {
             val bundle = o["config"]!!.jsonObject
             Wire.config(bundle) // must parse
-            Contents(bundle, Wire.list(o["transactions"]).map(Wire::transaction))
+            // An older file, or one whose project cannot be read, simply has none: the household still restores.
+            val project = (o["project"] as? JsonObject)?.let { p ->
+                Endpoint.parse((p["url"] as? JsonPrimitive)?.content ?: "", (p["anon_key"] as? JsonPrimitive)?.content ?: "")
+            }
+            Contents(bundle, Wire.list(o["transactions"]).map(Wire::transaction), project)
         }.getOrElse { throw Unreadable(Reason.DAMAGED) }
     }
 }

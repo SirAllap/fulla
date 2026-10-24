@@ -800,4 +800,18 @@
     <string name="widget_change_help">Chaque widget montre ce que tu choisis en le plaçant. Pour le changer, appuie longuement sur le widget et ouvre ses réglages.</string>
     <string name="project_bad_key">Cette clé n’est pas celle de ce projet, ou elle est coupée. Recopie la clé anon avec son bouton Copy.</string>
     <string name="project_busy">Le projet ne répond pas pour l’instant. Réessaie dans un moment.</string>
+    <string name="back_in">J’utilise déjà Fulla : me connecter</string>
+    <string name="back_in_text">Ton foyer est en sécurité dans son projet. Choisis comment ce téléphone le trouve ; ensuite tu te connectes seulement avec ton e-mail et ton mot de passe.</string>
+    <string name="back_in_scan">Scanner le QR d’un autre téléphone</string>
+    <string name="back_in_scan_text">Sur un téléphone où Fulla est ouvert : Réglages › Synchronisation › Se connecter sur un autre appareil.</string>
+    <string name="back_in_backup">Ouvrir une sauvegarde</string>
+    <string name="back_in_backup_text">La sauvegarde d’un foyer partagé sait où il se trouve. Celle d’un foyer sur le téléphone seul est restaurée telle quelle.</string>
+    <string name="back_in_token">Avec un jeton Supabase</string>
+    <string name="back_in_token_text">Fulla trouve tout seul ton projet dans ton compte Supabase.</string>
+    <string name="back_in_by_hand">Avancé : projet et clé à la main</string>
+    <string name="back_in_by_hand_text">L’ID du projet et sa clé publique, depuis Supabase.</string>
+    <string name="back_in_not_a_link">Ce QR n’est pas de Fulla.</string>
+    <string name="other_device">Se connecter sur un autre appareil</string>
+    <string name="other_device_text">Un QR avec l’endroit où vit ton foyer. L’autre téléphone ne demande qu’un e-mail et un mot de passe.</string>
+    <string name="other_device_steps">Sur l’autre téléphone : ouvre Fulla, touche « J’utilise déjà Fulla : me connecter », puis « Scanner le QR d’un autre téléphone », et connecte-toi avec ton propre e-mail et mot de passe. Une nouvelle personne a besoin d’une invitation.</string>
 </resources>

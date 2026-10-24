@@ -219,10 +219,17 @@ class SupabaseTest {
         val asked = mutableListOf<String>()
         val ok = client(MemorySessionStore()) { req ->
             asked += "${req.method.value} ${req.url.encodedPath} ${req.headers["apikey"]}"
-            respond("{}", HttpStatusCode.OK, json)
+            // Fulla's functions refuse an anonymous caller: installed, and nothing more is learnt before signing in.
+            if (req.url.encodedPath.startsWith("/rest/")) respond("""{"code":"42501","message":"permission denied for function fulla_ping"}""", HttpStatusCode.Unauthorized, json)
+            else respond("{}", HttpStatusCode.OK, json)
         }
         ok.checkKey()
-        assertEquals(listOf("GET /auth/v1/settings anon-key"), asked)
+        assertEquals(listOf("GET /auth/v1/settings anon-key", "POST /rest/v1/rpc/fulla_ping anon-key"), asked)
+        val bare = client(MemorySessionStore()) { req ->
+            if (req.url.encodedPath.startsWith("/rest/")) respond("""{"code":"PGRST202","message":"Could not find the function public.fulla_ping"}""", HttpStatusCode.NotFound, json)
+            else respond("{}", HttpStatusCode.OK, json)
+        }
+        assertEquals(FullaError.NOT_SET_UP, assertFailsWith<FullaError> { bare.checkKey() }.code)
         val refused = client(MemorySessionStore()) { respond("""{"message":"Invalid API key"}""", HttpStatusCode.Unauthorized, json) }
         assertEquals(FullaError.INVALID_KEY, assertFailsWith<FullaError> { refused.checkKey() }.code)
         val down = client(MemorySessionStore()) { respond("", HttpStatusCode.ServiceUnavailable) }
@@ -244,6 +251,16 @@ class InviteLinkTest {
         assertNull(io.github.sirallap.fulla.client.remote.InviteLink.parse("fulla://join?u=https%3A%2F%2Fexample.com&k=x&c=ABCD"))
         assertNull(io.github.sirallap.fulla.client.remote.InviteLink.parse("https://join?u=x"))
         assertNull(io.github.sirallap.fulla.client.remote.InviteLink.parse("fulla://join?u=abcdefghijklmnopqrst.supabase.co&k=x"))
+    }
+
+    @Test
+    fun `a sign-in link carries the project only, and is never taken for an invite`() {
+        val endpoint = Endpoint.parse("https://abcdefghijklmnopqrst.supabase.co", "public-anon-key")!!
+        val link = io.github.sirallap.fulla.client.remote.ConnectLink(endpoint)
+        assertEquals(link, io.github.sirallap.fulla.client.remote.ConnectLink.parse(link.toUri()))
+        assertNull(io.github.sirallap.fulla.client.remote.InviteLink.parse(link.toUri()))
+        assertNull(io.github.sirallap.fulla.client.remote.ConnectLink.parse(io.github.sirallap.fulla.client.remote.InviteLink(endpoint, "ABC123").toUri()))
+        assertNull(io.github.sirallap.fulla.client.remote.ConnectLink.parse("fulla://connect?u=https://example.com&k=x"))
     }
 }
 

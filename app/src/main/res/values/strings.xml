@@ -851,4 +851,18 @@
     <string name="widget_change_help">Each widget shows what you choose when you place it. To change it, long-press the widget and open its settings.</string>
     <string name="project_bad_key">That key is not this project\'s, or it is cut short. Copy the anon key again with its Copy button.</string>
     <string name="project_busy">The project is not answering right now. Try again in a moment.</string>
+    <string name="back_in">I use Fulla already: sign in</string>
+    <string name="back_in_text">Your household is safe in its project. Choose how this phone finds it; then you only sign in with your email and password.</string>
+    <string name="back_in_scan">Scan a QR code from another phone</string>
+    <string name="back_in_scan_text">On a phone where Fulla is open: Settings › Sync › Sign in on another device.</string>
+    <string name="back_in_backup">Open a backup</string>
+    <string name="back_in_backup_text">A shared household\'s backup knows where it lives. A phone-only one is restored as it is.</string>
+    <string name="back_in_token">With a Supabase token</string>
+    <string name="back_in_token_text">Fulla finds your project in your Supabase account by itself.</string>
+    <string name="back_in_by_hand">Advanced: project and key by hand</string>
+    <string name="back_in_by_hand_text">The project\'s ID and its public key, from Supabase.</string>
+    <string name="back_in_not_a_link">That QR code is not one of Fulla\'s.</string>
+    <string name="other_device">Sign in on another device</string>
+    <string name="other_device_text">A QR code with where your household lives. The other phone only asks for an email and password.</string>
+    <string name="other_device_steps">On the other phone: open Fulla, tap “I use Fulla already: sign in”, then “Scan a QR code from another phone”, and sign in with your own email and password. Anybody new needs an invite instead.</string>
 </resources>

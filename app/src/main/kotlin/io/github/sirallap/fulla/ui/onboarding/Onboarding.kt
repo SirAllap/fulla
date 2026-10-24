@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.Tune
 import androidx.activity.compose.rememberLauncherForActivityResult
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -80,7 +81,7 @@ import io.github.sirallap.fulla.ui.theme.FullaType
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-private enum class Step { WELCOME, LOCAL, AUTO, PROJECT, ACCOUNT, CHOOSE, CREATE, JOIN }
+private enum class Step { WELCOME, BACK, LOCAL, AUTO, PROJECT, ACCOUNT, CHOOSE, CREATE, JOIN }
 
 /**
  * The first run. Three ways in: keep everything on this phone, share it
@@ -180,10 +181,27 @@ fun Onboarding(onCancel: (() -> Unit)?) {
             dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmInvite = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
+    /**
+     * Back into a household this account is in already, on a project known without typing it (a QR code from another
+     * phone of the household, a link, or the backup of a shared household): only the email and password are asked.
+     */
+    val connectTo: (Endpoint) -> Unit = { endpoint ->
+        scope.launch {
+            val effective = container.settings.current().endpoint
+            if (effective != null && effective != endpoint) container.sessions.save(null)
+            container.settings.setEndpoint(endpoint)
+            url = endpoint.url; anonKey = endpoint.anonKey; code = ""
+            if (container.supabase(endpoint)?.currentSession() != null) afterSignIn(null) else step = Step.ACCOUNT
+        }
+    }
+    val connect by container.pendingConnect.collectAsStateWithLifecycle()
+    LaunchedEffect(connect) {
+        connect?.let { container.pendingConnect.value = null; connectTo(it.endpoint) }
+    }
     BackHandler(enabled = step == Step.WELCOME && onCancel != null) { onCancel?.invoke() }
     BackHandler(enabled = step != Step.WELCOME) {
         step = when (step) {
-            Step.ACCOUNT -> if (hosted) Step.WELCOME else Step.PROJECT
+            Step.ACCOUNT -> if (hosted || url.isBlank()) Step.WELCOME else Step.BACK
             Step.PROJECT -> Step.AUTO
             Step.CREATE, Step.JOIN -> Step.CHOOSE
             else -> Step.WELCOME
@@ -196,8 +214,10 @@ fun Onboarding(onCancel: (() -> Unit)?) {
                 if (onCancel != null) BackHeader(stringResource(R.string.add_household), onCancel)
                 Welcome(hosted = hosted, google = google, error = signInError, onLocal = { step = Step.LOCAL },
                     onShared = { step = if (hosted) Step.ACCOUNT else Step.AUTO },
-                    onScanned = { container.pendingInvite.value = it })
+                    onScanned = { container.pendingInvite.value = it }, onConnect = connectTo, onBackIn = { step = Step.BACK })
             }
+            Step.BACK -> BackIn(onBack = { step = Step.WELCOME }, onConnect = connectTo,
+                onInvite = { container.pendingInvite.value = it }, onToken = { step = Step.AUTO }, onByHand = { step = Step.PROJECT })
             Step.LOCAL -> HouseholdForm(title = stringResource(R.string.on_this_phone), onBack = { step = Step.WELCOME }) { name, me, currency ->
                 val id = container.ledger.createLocal(name, currency, appLocale.toLanguageTag(), me, initials(me), 0)
                 container.settings.setOnboarded(true)
@@ -236,7 +256,8 @@ private fun initials(name: String): String =
     name.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.take(2).joinToString("") { it.take(1).uppercase() }.ifEmpty { "?" }
 
 @Composable
-private fun Welcome(hosted: Boolean, google: (() -> Unit)?, error: String?, onLocal: () -> Unit, onShared: () -> Unit, onScanned: (InviteLink) -> Unit) {
+private fun Welcome(hosted: Boolean, google: (() -> Unit)?, error: String?, onLocal: () -> Unit, onShared: () -> Unit, onScanned: (InviteLink) -> Unit,
+                    onConnect: (Endpoint) -> Unit, onBackIn: () -> Unit) {
     val appLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
@@ -246,15 +267,20 @@ private fun Welcome(hosted: Boolean, google: (() -> Unit)?, error: String?, onLo
     val context = androidx.compose.ui.platform.LocalContext.current
     val restore = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
-            restoreProblem = io.github.sirallap.fulla.ui.settings.restoreBackup(context, container.ledger, uri)
+            // A shared household's backup knows its project: signing in there brings everything back, newer than the file.
+            val project = io.github.sirallap.fulla.ui.settings.backupProject(context, uri)
+            if (project != null) onConnect(project)
+            else restoreProblem = io.github.sirallap.fulla.ui.settings.restoreBackup(context, container.ledger, uri)
         }
     }
     val prompt = stringResource(R.string.scan_prompt)
     val scan = rememberLauncherForActivityResult(ScanContract()) { result ->
         val text = result.contents ?: return@rememberLauncherForActivityResult
         val link = InviteLink.parse(text)
-        notAnInvite = link == null
+        val back = if (link == null) io.github.sirallap.fulla.client.remote.ConnectLink.parse(text) else null
+        notAnInvite = link == null && back == null
         if (link != null) onScanned(link)
+        if (back != null) onConnect(back.endpoint)
     }
     // The welcome's one moment: the band draws itself, the liquid rises and
     // settles with a small slosh, then the words and the actions come in.
@@ -300,6 +326,9 @@ private fun Welcome(hosted: Boolean, google: (() -> Unit)?, error: String?, onLo
                 error?.let { Text(it, style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(top = 6.dp)) }
                 Spacer(Modifier.height(10.dp))
                 SecondaryButton(stringResource(R.string.have_invite), scanInvite)
+                Spacer(Modifier.height(10.dp))
+                // Somebody who uses Fulla already (a new phone, a reinstall): never a project address or key to look for.
+                if (!hosted) SecondaryButton(stringResource(R.string.back_in), onBackIn)
                 if (notAnInvite) {
                     Text(stringResource(R.string.not_an_invite), style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(top = 6.dp))
                 }
@@ -405,6 +434,7 @@ private fun ProjectForm(url: String, anonKey: String, onUrl: (String) -> Unit, o
     val unreachable = stringResource(R.string.project_unreachable)
     val badKey = stringResource(R.string.project_bad_key)
     val busyNow = stringResource(R.string.project_busy)
+    val notSetUp = stringResource(R.string.project_not_set_up)
     FormScaffold(stringResource(R.string.shared), onBack, stringResource(R.string.connect), problem == null, error, busy, onAction = {
         val endpoint = Endpoint.parse(url, anonKey) ?: return@FormScaffold
         busy = true
@@ -419,6 +449,7 @@ private fun ProjectForm(url: String, anonKey: String, onUrl: (String) -> Unit, o
                 error = when ((failure as? FullaError)?.code) {
                     FullaError.NETWORK -> unreachable
                     FullaError.INVALID_KEY -> badKey
+                    FullaError.NOT_SET_UP -> notSetUp
                     else -> busyNow
                 }
             }
@@ -668,5 +699,55 @@ private fun JoinForm(code: String, onCode: (String) -> Unit, onBack: () -> Unit,
     }) {
         OutlinedTextField(code, { onCode(it.uppercase().take(20)) }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.invite_code)) }, singleLine = true)
         OutlinedTextField(me, { me = it.take(40) }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.your_name)) }, singleLine = true)
+    }
+}
+
+/**
+ * Back into Fulla on this phone, for somebody whose household exists already: the ways that need nothing typed
+ * first, then the token, and the project's address and key by hand last, for whoever has neither.
+ */
+@Composable
+private fun BackIn(onBack: () -> Unit, onConnect: (Endpoint) -> Unit, onInvite: (InviteLink) -> Unit, onToken: () -> Unit, onByHand: () -> Unit) {
+    val container = LocalContainer.current
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val c = FullaTheme.colors
+    var problem by remember { mutableStateOf<String?>(null) }
+    val notALink = stringResource(R.string.back_in_not_a_link)
+    val prompt = stringResource(R.string.scan_prompt)
+    val scan = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val text = result.contents ?: return@rememberLauncherForActivityResult
+        val back = io.github.sirallap.fulla.client.remote.ConnectLink.parse(text)
+        val invite = if (back == null) InviteLink.parse(text) else null
+        problem = if (back == null && invite == null) notALink else null
+        back?.let { onConnect(it.endpoint) }
+        invite?.let(onInvite)
+    }
+    var restoreProblem by remember { mutableStateOf<Int?>(null) }
+    val restore = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            val project = io.github.sirallap.fulla.ui.settings.backupProject(context, uri)
+            if (project != null) onConnect(project)
+            else restoreProblem = io.github.sirallap.fulla.ui.settings.restoreBackup(context, container.ledger, uri)
+        }
+    }
+    Column(Modifier.fillMaxSize()) {
+        BackHeader(stringResource(R.string.back_in), onBack)
+        Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+            Text(stringResource(R.string.back_in_text), style = FullaType.body, color = c.inkMuted, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            ListRow(stringResource(R.string.back_in_scan), context = stringResource(R.string.back_in_scan_text),
+                icon = Icons.Outlined.QrCodeScanner, onClick = {
+                    scan.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt(prompt).setBeepEnabled(false).setOrientationLocked(false))
+                })
+            ListRow(stringResource(R.string.back_in_backup), context = stringResource(R.string.back_in_backup_text),
+                icon = Icons.Outlined.Restore, onClick = { restore.launch(arrayOf("*/*")) })
+            ListRow(stringResource(R.string.back_in_token), context = stringResource(R.string.back_in_token_text),
+                icon = Icons.Outlined.Cloud, onClick = onToken)
+            ListRow(stringResource(R.string.back_in_by_hand), context = stringResource(R.string.back_in_by_hand_text),
+                icon = Icons.Outlined.Tune, divider = false, onClick = onByHand)
+            (problem ?: restoreProblem?.let { stringResource(it) })?.let {
+                Text(it, style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            }
+        }
     }
 }

@@ -800,4 +800,18 @@
     <string name="widget_change_help">Cada widget mostra o que escolheres ao colocá-lo. Para mudar, mantém o widget premido e abre as definições dele.</string>
     <string name="project_bad_key">Essa chave não é deste projeto, ou está cortada. Copia de novo a chave anon com o botão Copy.</string>
     <string name="project_busy">O projeto não está a responder agora. Tenta de novo daqui a pouco.</string>
+    <string name="back_in">Já uso o Fulla: entrar</string>
+    <string name="back_in_text">A tua casa está segura no seu projeto. Escolhe como este telemóvel a encontra; depois só entras com email e palavra-passe.</string>
+    <string name="back_in_scan">Ler o QR de outro telemóvel</string>
+    <string name="back_in_scan_text">Num telemóvel com o Fulla aberto: Definições › Sincronização › Entrar noutro dispositivo.</string>
+    <string name="back_in_backup">Abrir uma cópia de segurança</string>
+    <string name="back_in_backup_text">A cópia de uma casa partilhada sabe onde ela vive. A de uma casa só no telemóvel é restaurada tal como está.</string>
+    <string name="back_in_token">Com um token do Supabase</string>
+    <string name="back_in_token_text">O Fulla encontra sozinho o teu projeto na tua conta Supabase.</string>
+    <string name="back_in_by_hand">Avançado: projeto e chave à mão</string>
+    <string name="back_in_by_hand_text">O ID do projeto e a sua chave pública, do Supabase.</string>
+    <string name="back_in_not_a_link">Esse QR não é do Fulla.</string>
+    <string name="other_device">Entrar noutro dispositivo</string>
+    <string name="other_device_text">Um QR com onde vive a tua casa. O outro telemóvel só pede email e palavra-passe.</string>
+    <string name="other_device_steps">No outro telemóvel: abre o Fulla, toca em «Já uso o Fulla: entrar», depois em «Ler o QR de outro telemóvel», e entra com o teu próprio email e palavra-passe. Alguém novo precisa de um convite.</string>
 </resources>
