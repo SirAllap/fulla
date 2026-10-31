@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.insights
 
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import io.github.sirallap.fulla.ui.components.TileRow
 import io.github.sirallap.fulla.ui.components.LiquidTone
@@ -213,20 +219,24 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
             }
             if (repeating.isNotEmpty()) {
                 item { Section(stringResource(R.string.looks_recurring)) }
+                // As in the Análisis board: each in a highlighted card, its amount, how often, and the button that makes it fixed.
                 items(repeating, key = { "r-" + it.note }) { r ->
                     val done = r.note in made
-                    ListRow(r.note, context = stringResource(R.string.seen_in_months, r.months),
-                        detail = if (done) stringResource(R.string.now_recurring)
-                            else stringResource(R.string.last_seen, f.day(r.lastDate)),
-                        onClick = if (canEdit && !done) ({ makeRecurring(r) }) else null,
-                        // A button that says what it does, not "tap to…" in grey (docs/ux.md, piece 1).
-                        below = if (canEdit && !done) ({
-                            androidx.compose.material3.TextButton(onClick = { makeRecurring(r) },
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = androidx.compose.ui.unit.Dp(0f))) {
-                                androidx.compose.material3.Text(stringResource(R.string.make_recurring))
-                            }
-                        }) else null,
-                        end = { AmountText(f.money(r.typicalMinor)) })
+                    val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp())
+                    androidx.compose.foundation.layout.Column(
+                        Modifier.fillMaxWidth().padding(horizontal = 20.dp(), vertical = 5.dp()).clip(shape)
+                            .background(if (done) c.paperHigh else c.highlight.copy(alpha = 0.18f))
+                            .border(1.dp(), if (done) c.line else c.highlight, shape).padding(14.dp()),
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp()),
+                    ) {
+                        io.github.sirallap.fulla.ui.components.Spread(start = {
+                            Text(r.note, style = io.github.sirallap.fulla.ui.theme.FullaType.body, color = c.ink)
+                        }, end = { AmountText(f.money(r.typicalMinor)) })
+                        Text(listOf(stringResource(R.string.seen_in_months, r.months),
+                            if (done) stringResource(R.string.now_recurring) else stringResource(R.string.last_seen, f.day(r.lastDate))).joinToString(" · "),
+                            style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = c.inkMuted)
+                        if (canEdit && !done) io.github.sirallap.fulla.ui.components.PrimaryButton(stringResource(R.string.make_recurring), { makeRecurring(r) })
+                    }
                 }
             }
         }

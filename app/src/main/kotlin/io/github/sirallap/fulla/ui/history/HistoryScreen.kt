@@ -124,8 +124,15 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
                     export.launch("fulla-${java.time.LocalDate.now()}.csv")
                 },
             ))
-        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-            placeholder = { Text(stringResource(R.string.search)) }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true)
+        // A pill, as in the Historial board: raised paper, no outline.
+        androidx.compose.material3.TextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+            placeholder = { Text(stringResource(R.string.search)) }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+            colors = androidx.compose.material3.TextFieldDefaults.colors(
+                focusedContainerColor = c.paperHigh, unfocusedContainerColor = c.paperHigh,
+                focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            ))
         ChipRow(HistoryFilter.entries.map { it to stringResource(it.label) }, filter, { filter = it })
         val accounts = view.config.accounts.filter { !it.archived }
         if (accounts.size >= 2) {
