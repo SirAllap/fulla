@@ -891,4 +891,7 @@
     <string name="paid_this_period">Pagato questo mese</string>
     <string name="total_short">Totale %1$s</string>
     <string name="see_insights">Vedi analisi</string>
+    <string name="welcome_start_sub">Senza account. Potrai condividerlo dopo.</string>
+    <string name="welcome_invite_sub">Qualcuno della tua casa usa già Fulla.</string>
+    <string name="welcome_back_sub">Un telefono nuovo, o Fulla reinstallato.</string>
 </resources>

@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.onboarding
 
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.activity.compose.BackHandler
@@ -318,17 +323,18 @@ private fun Welcome(hosted: Boolean, google: (() -> Unit)?, error: String?, onLo
         }
         Column(Modifier.arrive(actions.value)) {
             Column(Modifier.padding(horizontal = 20.dp)) {
+                // As in the Bienvenida board: two large choices that say what each means, the first in ink.
                 when {
-                    google != null -> PrimaryButton(stringResource(R.string.continue_google), google)
-                    hosted -> PrimaryButton(stringResource(R.string.continue_email), onShared)
-                    else -> PrimaryButton(stringResource(R.string.get_started), onLocal)
+                    google != null -> BigChoice(stringResource(R.string.continue_google), null, dark = true, onClick = google)
+                    hosted -> BigChoice(stringResource(R.string.continue_email), null, dark = true, onClick = onShared)
+                    else -> BigChoice(stringResource(R.string.get_started), stringResource(R.string.welcome_start_sub), dark = true, onClick = onLocal)
                 }
                 error?.let { Text(it, style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(top = 6.dp)) }
                 Spacer(Modifier.height(10.dp))
-                SecondaryButton(stringResource(R.string.have_invite), scanInvite)
+                BigChoice(stringResource(R.string.have_invite), stringResource(R.string.welcome_invite_sub), dark = false, onClick = scanInvite)
                 Spacer(Modifier.height(10.dp))
                 // Somebody who uses Fulla already (a new phone, a reinstall): never a project address or key to look for.
-                if (!hosted) SecondaryButton(stringResource(R.string.back_in), onBackIn)
+                if (!hosted) BigChoice(stringResource(R.string.back_in), stringResource(R.string.welcome_back_sub), dark = false, onClick = onBackIn)
                 if (notAnInvite) {
                     Text(stringResource(R.string.not_an_invite), style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(top = 6.dp))
                 }
@@ -361,6 +367,22 @@ private fun Welcome(hosted: Boolean, google: (() -> Unit)?, error: String?, onLo
             }
             Spacer(Modifier.height(16.dp))
         }
+    }
+}
+
+/** One of the welcome's choices: a large card, what it does and, under it, what it means. */
+@Composable
+private fun BigChoice(title: String, text: String?, dark: Boolean, onClick: () -> Unit) {
+    val c = FullaTheme.colors
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    Column(
+        Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(shape).background(if (dark) c.ink else c.paperHigh)
+            .then(if (dark) Modifier else Modifier.border(1.dp, c.line, shape))
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(title, style = FullaType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = if (dark) c.paper else c.ink)
+        text?.let { Text(it, style = FullaType.secondary, color = if (dark) c.paper.copy(alpha = 0.75f) else c.inkMuted) }
     }
 }
 

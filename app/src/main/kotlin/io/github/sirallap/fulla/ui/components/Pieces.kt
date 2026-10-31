@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.components
 
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.LocalIndication
@@ -771,20 +772,28 @@ fun GuideSheet(
 ) {
     val c = FullaTheme.colors
     val onOutsideTap: () -> Unit = if (dismissOnOutsideTap) onSkip else ({})
-    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onOutsideTap, containerColor = c.paper, modifier = modifier) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(title, style = FullaType.title, color = c.ink, modifier = Modifier.weight(1f).semantics { heading() })
-                stepOf?.let { (i, n) -> Text(stringResource(R.string.guide_step_of, i, n), style = FullaType.secondary, color = c.inkMuted) }
+    // As in the guide's boards: the step bar with Skip beside it, "Step 2 of 4" over the title, the button at the end;
+    // opened at its full height and clear of the keyboard.
+    val state = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onOutsideTap, sheetState = state, containerColor = c.paper, modifier = modifier) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().imePadding().padding(bottom = 16.dp)) {
+            Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (stepOf != null) Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    for (i in 1..stepOf.second) {
+                        Box(Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(if (i <= stepOf.first) c.ink else c.line))
+                    }
+                } else Spacer(Modifier.weight(1f))
+                androidx.compose.material3.TextButton(onClick = onSkip) { Text(stringResource(R.string.guide_skip)) }
             }
+            stepOf?.let { (i, n) -> Text(stringResource(R.string.guide_step_of, i, n), style = FullaType.secondary, color = c.inkMuted,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp)) }
+            Text(title, style = FullaType.screenTitle, color = c.ink, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp).semantics { heading() })
             body?.let { Text(it, style = FullaType.body, color = c.inkMuted, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) }
             Column(Modifier.padding(horizontal = 20.dp), content = content)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
             Column(Modifier.padding(horizontal = 20.dp)) {
                 PrimaryButton(primaryLabel, onPrimary, enabled = primaryEnabled)
-            }
-            androidx.compose.material3.TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp)) {
-                Text(stringResource(R.string.guide_skip))
             }
         }
     }
