@@ -869,4 +869,5 @@
     <string name="trip_add_expense">Anotar un gasto del viaje</string>
     <string name="trip_rows">Cada gasto</string>
     <string name="categories_archived_note">Las archivadas siguen en el historial.</string>
+    <string name="account_today">Hoy: %1$s.</string>
 </resources>

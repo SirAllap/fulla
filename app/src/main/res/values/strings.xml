@@ -920,4 +920,5 @@
     <string name="trip_add_expense">Add an expense for the trip</string>
     <string name="trip_rows">Every expense</string>
     <string name="categories_archived_note">Archived categories stay in the history.</string>
+    <string name="account_today">Today: %1$s.</string>
 </resources>

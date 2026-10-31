@@ -443,11 +443,22 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
     var editing by remember { mutableStateOf<JsonObject?>(null) }
-    Column {
+    // A card per account with what it holds today, as the Saldos board draws them.
+    val today = io.github.sirallap.fulla.ui.components.rememberToday()
+    val balances = remember(view, today) { view.analytics.accountBalances(view.active, view.config.accounts, today) }
+    Column(Modifier.padding(top = 8.dp)) {
         for (a in view.config.accounts.sortedWith(compareBy({ it.archived }, { it.sort }))) {
-            ListRow(a.name, titleColor = if (a.archived) c.inkMuted else c.ink,
-                context = if (a.archived) stringResource(R.string.archived) else null,
-                onClick = if (canEdit) ({ editing = bundleItem(view, Structure.ACCOUNT, a.id) }) else null)
+            io.github.sirallap.fulla.ui.components.ItemCard(dimmed = a.archived,
+                onClick = if (canEdit) ({ editing = bundleItem(view, Structure.ACCOUNT, a.id) }) else null) {
+                io.github.sirallap.fulla.ui.components.Spread(startShare = 0.5f, start = {
+                    Column {
+                        Text(a.name, style = FullaType.body, color = if (a.archived) c.inkMuted else c.ink)
+                        val notes = listOfNotNull(stringResource(R.string.archived).takeIf { a.archived },
+                            stringResource(R.string.round_up_title).takeIf { a.roundUp != null })
+                        if (notes.isNotEmpty()) Text(notes.joinToString(" · "), style = FullaType.secondary, color = c.inkMuted)
+                    }
+                }, end = { AmountText(view.formats.money(balances[a.id] ?: 0L), color = if (a.archived) c.inkMuted else c.ink) })
+            }
         }
     }
     if (canEdit) io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.add_account)) {
@@ -464,6 +475,7 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         val isNew = "opening_balance_date" !in item
         val itemId = (item["id"] as? JsonPrimitive)?.content
         StructureDialog(item, onDismiss = { editing = null }, iconPicker = false, formats = view.formats, isNewAccount = isNew,
+            todayMinor = itemId?.takeIf { !isNew }?.let { balances[it] ?: 0L },
             otherAccounts = io.github.sirallap.fulla.core.roundup.RoundUps.destinations(view.config.accounts, itemId, view.config.accounts.firstOrNull { it.id == itemId }?.roundUp?.toAccountId),
             roundUpBackfill = itemId?.takeIf { view.config.account(it)?.roundUp != null }?.let { id ->
                 val today = LocalDate.now()
@@ -510,6 +522,8 @@ private fun StructureDialog(
     /** Deleting, for what can be deleted: it closes this dialog and the caller asks what the deletion needs. [deleteBlockedText] says why it cannot be done now. */
     onDeleteClick: (() -> Unit)? = null,
     deleteBlockedText: String? = null,
+    /** An account's balance today, said under its opening balance (the account board). */
+    todayMinor: Long? = null,
     /** What else belongs in this dialog, above the archive switch: a category's subcategories. */
     extra: (@Composable () -> Unit)? = null,
     onSave: (JsonObject) -> Unit,
@@ -578,7 +592,7 @@ private fun StructureDialog(
                         icon = Icons.Outlined.Event)
                     if (balanceInvalid) Text(stringResource(R.string.opening_balance_invalid),
                         style = FullaType.secondary, color = FullaTheme.colors.danger)
-                    Text(stringResource(R.string.opening_balance_help),
+                    Text(stringResource(R.string.opening_balance_help) + (todayMinor?.let { " " + stringResource(R.string.account_today, formats.money(it)) } ?: ""),
                         style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
                     SwitchRow(stringResource(R.string.opening_balance_debt), stringResource(R.string.opening_balance_debt_help), debt) {
                         debt = it; balanceTouched = true
