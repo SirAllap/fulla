@@ -116,6 +116,22 @@ internal fun EditDialog(
     onSave: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initial) }
+    // With more than its one field it is a form, and a form is a screen of
+    // its own (docs/ux.md, piece 2); a lone name stays a small dialog.
+    if (extra != null) {
+        io.github.sirallap.fulla.ui.components.FormScreen(
+            title = title,
+            onClose = onDismiss,
+            primaryLabel = stringResource(R.string.save),
+            primaryEnabled = text.isNotBlank() && enabledFor(text.trim()),
+            onPrimary = { onSave(text.trim()); onDismiss() },
+        ) {
+            OutlinedTextField(text, { text = it }, label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = if (number) KeyboardType.Decimal else KeyboardType.Text))
+            extra()
+        }
+        return
+    }
     FullaDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },

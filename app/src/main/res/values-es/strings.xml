@@ -818,4 +818,5 @@
     <string name="recurring_soon">Próximos 7 días</string>
     <string name="recurring_later">Más adelante</string>
     <string name="recurring_stopped">En pausa o terminados</string>
+    <string name="make_recurring">Convertir en gasto fijo</string>
 </resources>

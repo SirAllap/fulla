@@ -110,9 +110,15 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                     itemsIndexed(plan, key = { _, p -> "${p.fromMemberId}-${p.toMemberId}" }) { i, p ->
                         CardItem(CardSlot.of(i, plan.size)) { ListRow(
                             title = stringResource(R.string.pays, view.memberName(p.fromMemberId), view.memberName(p.toMemberId)),
-                            context = stringResource(R.string.tap_to_record),
                             clickLabel = stringResource(R.string.record_payment),
                             onClick = { confirming = p },
+                            // A button that says what it does, not "tap to…" in grey (docs/ux.md, piece 1).
+                            below = {
+                                androidx.compose.material3.TextButton(onClick = { confirming = p },
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp)) {
+                                    Text(stringResource(R.string.record_payment))
+                                }
+                            },
                             end = { AmountText(f.money(p.amountMinor)) },
                         ) }
                     }
