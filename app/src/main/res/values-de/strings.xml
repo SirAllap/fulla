@@ -885,4 +885,10 @@
     <string name="import_columns_title">Was ist welche Spalte?</string>
     <string name="import_first_line">Erste Zeile der Datei</string>
     <string name="import_column_n">Spalte %1$d</string>
+    <string name="owes_you">%1$s schuldet dir</string>
+    <string name="you_owe">Du schuldest %1$s</string>
+    <string name="settle_with">Mit %1$s abrechnen</string>
+    <string name="paid_this_period">Diesen Monat bezahlt</string>
+    <string name="total_short">Gesamt %1$s</string>
+    <string name="see_insights">Analyse ansehen</string>
 </resources>

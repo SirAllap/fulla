@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.balances
 
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import io.github.sirallap.fulla.ui.components.listEndPadding
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -58,7 +64,7 @@ import java.util.UUID
  * stay hidden, and come back if the household splits again.
  */
 @Composable
-fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}, onGoals: () -> Unit = {}) {
+fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}, onGoals: () -> Unit = {}, onAccounts: () -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
@@ -82,37 +88,40 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                         action = { io.github.sirallap.fulla.ui.components.SecondaryButton(stringResource(R.string.shared_pot_change), onHouseholdSettings) })
                 }
             } else if (members.size >= 2) {
-                item { Section(stringResource(R.string.between_you), top = 8.dp) }
-                val shownBalances = balances.filter { b -> view.config.member(b.memberId)?.isActive == true || b.balanceMinor != 0L }
-                itemsIndexed(shownBalances, key = { _, b -> b.memberId }) { i, b ->
-                    val m = view.config.member(b.memberId)
-                    CardItem(CardSlot.of(i, shownBalances.size)) { ListRow(
-                        title = m?.displayName ?: "?",
-                        start = { MemberBadge(m?.initials ?: "?", m?.colorIndex ?: 0) },
-                        context = when {
-                            b.balanceMinor > 0 -> stringResource(R.string.is_owed)
-                            b.balanceMinor < 0 -> stringResource(R.string.owes)
-                            else -> stringResource(R.string.settled)
-                        },
-                        end = {
-                            AmountText(f.money(b.balanceMinor, signed = true), color = when {
-                                b.balanceMinor > 0 -> c.moneyIn
-                                b.balanceMinor < 0 -> c.moneyOut
-                                else -> c.inkMuted
-                            })
-                        },
-                    ) }
+                // As in the Saldos board: what matters to me in a dark card with its button, then who paid what this month.
+                val me = view.config.meMemberId
+                val mine = plan.firstOrNull { it.fromMemberId == me || it.toMemberId == me }
+                if (mine != null) item(key = "mine") {
+                    val other = if (mine.toMemberId == me) mine.fromMemberId else mine.toMemberId
+                    val m = view.config.member(other)
+                    Column(
+                        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp)).background(c.ink).padding(18.dp),
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(14.dp),
+                    ) {
+                        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                            MemberBadge(m?.initials ?: "?", m?.colorIndex ?: 0, size = 40.dp)
+                            Column {
+                                Text(if (mine.toMemberId == me) stringResource(R.string.owes_you, view.memberName(other)) else stringResource(R.string.you_owe, view.memberName(other)),
+                                    style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = c.paper.copy(alpha = 0.75f))
+                                Text(f.money(mine.amountMinor), style = io.github.sirallap.fulla.ui.theme.FullaType.screenTitle, color = c.paper)
+                            }
+                        }
+                        io.github.sirallap.fulla.ui.components.PrimaryButton(stringResource(R.string.settle_with, view.memberName(other)), { confirming = mine })
+                    }
                 }
-                item { Section(stringResource(R.string.to_settle)) }
-                if (plan.isEmpty()) {
+                val others = plan.filter { it !== mine }
+                if (mine == null && plan.isEmpty()) {
                     item { EmptyState(Icons.Outlined.CheckCircle, stringResource(R.string.all_settled_title), stringResource(R.string.all_settled_text)) }
-                } else {
-                    itemsIndexed(plan, key = { _, p -> "${p.fromMemberId}-${p.toMemberId}" }) { i, p ->
-                        CardItem(CardSlot.of(i, plan.size)) { ListRow(
+                }
+                if (others.isNotEmpty()) {
+                    item { Section(stringResource(R.string.to_settle)) }
+                    itemsIndexed(others, key = { _, p -> "${p.fromMemberId}-${p.toMemberId}" }) { i, p ->
+                        CardItem(CardSlot.of(i, others.size)) { ListRow(
                             title = stringResource(R.string.pays, view.memberName(p.fromMemberId), view.memberName(p.toMemberId)),
                             clickLabel = stringResource(R.string.record_payment),
                             onClick = { confirming = p },
-                            // A button that says what it does, not "tap to…" in grey (docs/ux.md, piece 1).
                             below = {
                                 androidx.compose.material3.TextButton(onClick = { confirming = p },
                                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp)) {
@@ -123,24 +132,55 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                         ) }
                     }
                 }
-            }
-            item { Section(stringResource(R.string.accounts)) }
-            val open = view.config.accounts.filter { !it.archived }
-            // In one shared pot the household's total closes the accounts' card.
-            val cardRows = open.size + if (shared) 1 else 0
-            itemsIndexed(open, key = { _, a -> a.id }) { i, a ->
-                val amount = accounts[a.id] ?: 0
-                CardItem(CardSlot.of(i, cardRows)) {
-                    ListRow(a.name, end = { AmountText(f.money(amount), color = if (amount < 0) c.moneyOut else c.ink) })
+                // Who paid how much of this month's spending, each against the most.
+                val period = f.currentPeriod(today)
+                val paid = view.active.filter { it.kind == io.github.sirallap.fulla.core.model.TransactionKind.EXPENSE && it.paidByMemberId != null &&
+                    f.periodRule.periodOf(it.date, it.kind, it.recurrence) == period }
+                    .groupBy { it.paidByMemberId!! }.mapValues { (_, ts) -> ts.sumOf { it.amountMinor } }
+                if (paid.isNotEmpty()) {
+                    item { Section(stringResource(R.string.paid_this_period)) }
+                    val most = paid.values.max().coerceAtLeast(1)
+                    items(members.filter { it.id in paid }, key = { "paid-" + it.id }) { m ->
+                        val amount = paid[m.id] ?: 0
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp)) {
+                            io.github.sirallap.fulla.ui.components.Spread(start = {
+                                Text(if (m.id == me) stringResource(R.string.you).replaceFirstChar { it.titlecase() } else m.displayName,
+                                    style = io.github.sirallap.fulla.ui.theme.FullaType.body, color = c.ink)
+                            }, end = { AmountText(f.money(amount)) })
+                            io.github.sirallap.fulla.ui.components.ProgressLine(amount.toFloat() / most, c.member(m.colorIndex))
+                        }
+                    }
                 }
             }
-            if (shared) {
-                item {
-                    val total = view.analytics.accountsTotal(view.active, view.config.accounts, today)
-                    CardItem(CardSlot.of(cardRows - 1, cardRows)) {
-                        ListRow(stringResource(R.string.household_total),
-                            end = { AmountText(f.money(total), color = if (total < 0) c.moneyOut else c.ink) })
+            // The accounts as tiles, two by two, with the total in the title and a tile to add one.
+            val open = view.config.accounts.filter { !it.archived }
+            item {
+                val total = view.analytics.accountsTotal(view.active, view.config.accounts, today)
+                Section(stringResource(R.string.accounts), trailing = {
+                    Text(stringResource(R.string.total_short, f.money(total)), style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = c.inkMuted)
+                })
+            }
+            val tiles: List<io.github.sirallap.fulla.core.model.Account?> = open + listOf(null)
+            items(tiles.chunked(2), key = { row -> row.joinToString { it?.id ?: "new" } }) { row ->
+                io.github.sirallap.fulla.ui.components.TileRow {
+                    for (a in row) {
+                        val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                        if (a == null) {
+                            Box(Modifier.weight(1f).heightIn(min = 84.dp).clip(shape).border(1.dp, c.line, shape)
+                                .clickable(onClick = onAccounts).padding(12.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                                Text("+ " + stringResource(R.string.add_account), style = io.github.sirallap.fulla.ui.theme.FullaType.body, color = c.ink)
+                            }
+                        } else {
+                            val amount = accounts[a.id] ?: 0
+                            Column(Modifier.weight(1f).heightIn(min = 84.dp).clip(shape).background(c.paperHigh).border(1.dp, c.line, shape).padding(12.dp),
+                                verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
+                                Text(a.name, style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = c.inkMuted)
+                                Text(f.money(amount), style = io.github.sirallap.fulla.ui.theme.FullaType.title, color = if (amount < 0) c.moneyOut else c.ink,
+                                    maxLines = 1, softWrap = false)
+                            }
+                        }
                     }
+                    if (row.size == 1) Box(Modifier.weight(1f))
                 }
             }
             // Savings goals, each with how far its account has got; tapping one opens them in Settings.

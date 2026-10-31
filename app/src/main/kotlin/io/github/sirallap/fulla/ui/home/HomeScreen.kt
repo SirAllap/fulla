@@ -227,13 +227,18 @@ fun HomeScreen(
                         )
                     }
                 }
-                if (forecast != null) item(key = "fixed") { FixedCostsSection(view, forecast, onFixedCosts) }
                 if (categories.isEmpty()) {
                     item {
                         EmptyState(Icons.Outlined.Opacity, stringResource(R.string.empty_period_title), stringResource(R.string.empty_period_text))
                     }
                 } else {
-                    item { Section(stringResource(R.string.where_it_went)) }
+                    // As in the Resumen board: where the money went, each against the largest, with the analysis one tap away.
+                    item {
+                        Section(stringResource(R.string.where_it_went), trailing = {
+                            androidx.compose.material3.TextButton(onClick = onInsights) { Text(stringResource(R.string.see_insights)) }
+                        })
+                    }
+                    val largest = categories.maxOf { it.amountMinor }.coerceAtLeast(1)
                     items(categories, key = { it.categoryId }) { row ->
                         val cat = view.config.category(row.categoryId)
                         val budget = budgets[row.categoryId]
@@ -250,13 +255,16 @@ fun HomeScreen(
                                 row.previousAverageMinor > 0 -> stringResource(R.string.usually, f.money(row.previousAverageMinor))
                                 else -> null
                             },
-                            below = if (budget != null) ({ ProgressLine(forBudget.toFloat() / budget, c.moneyOut, over = forBudget > budget) }) else null,
+                            below = if (budget != null) ({ ProgressLine(forBudget.toFloat() / budget, c.moneyOut, over = forBudget > budget) })
+                                else ({ ProgressLine(row.amountMinor.toFloat() / largest, c.category(cat?.colorIndex ?: 0)) }),
                             onClick = { expanded = if (expanded == row.categoryId) null else row.categoryId },
                             end = { AmountText(f.money(row.amountMinor)) },
                         )
                         if (expanded == row.categoryId) CategoryBreakdown(view, period, row.categoryId, onOpen)
                     }
                 }
+                // What is coming next, after where it went (the board's order).
+                if (forecast != null) item(key = "fixed") { FixedCostsSection(view, forecast, onFixedCosts) }
             }
         }
     }

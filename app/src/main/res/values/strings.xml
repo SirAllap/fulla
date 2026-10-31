@@ -936,4 +936,10 @@
     <string name="import_columns_title">What is each column?</string>
     <string name="import_first_line">First line of the file</string>
     <string name="import_column_n">Column %1$d</string>
+    <string name="owes_you">%1$s owes you</string>
+    <string name="you_owe">You owe %1$s</string>
+    <string name="settle_with">Settle up with %1$s</string>
+    <string name="paid_this_period">Paid this month</string>
+    <string name="total_short">Total %1$s</string>
+    <string name="see_insights">See insights</string>
 </resources>
