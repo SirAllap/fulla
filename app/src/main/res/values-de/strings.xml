@@ -828,4 +828,6 @@
     <string name="budget_spent_left">%1$s ausgegeben · %2$s übrig</string>
     <string name="budget_spent_over">%1$s ausgegeben · %2$s darüber</string>
     <string name="budget_none_yet">Noch keine Budgets. Gib einer Kategorie einen Betrag für den Monat, und die Übersicht zeigt, wie viel davon verbraucht ist.</string>
+    <string name="goal_in_account">Auf %1$s</string>
+    <string name="rule_if_says">Wenn dort steht</string>
 </resources>

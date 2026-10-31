@@ -154,9 +154,7 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                 }
             } else {
                 itemsIndexed(goals, key = { _, g -> "goal-" + g.id }) { i, g ->
-                    CardItem(CardSlot.of(i, goals.size)) {
-                        io.github.sirallap.fulla.ui.settings.GoalRow(view, g, divider = i < goals.lastIndex, onClick = onGoals)
-                    }
+                    io.github.sirallap.fulla.ui.settings.GoalRow(view, g, onClick = onGoals)
                 }
             }
         }

@@ -43,6 +43,7 @@ import io.github.sirallap.fulla.ui.components.ListRow
 import io.github.sirallap.fulla.ui.components.PrimaryButton
 import io.github.sirallap.fulla.ui.components.ProgressLine
 import io.github.sirallap.fulla.ui.components.Section
+import io.github.sirallap.fulla.ui.theme.FullaType
 import io.github.sirallap.fulla.ui.components.SwitchRow
 import io.github.sirallap.fulla.ui.components.rememberToday
 import io.github.sirallap.fulla.ui.theme.FullaTheme
@@ -60,27 +61,20 @@ fun GoalsSettings(view: HouseholdView, change: Change) {
     val canEdit = view.me?.let { Permissions.canEditTrips(it) } == true
     val live = view.config.goals.filter { !it.archived }
 
-    Column {
+    // As in the mockup: a card per goal, a line on how saving works, "New goal" as the screen's button.
+    if (canEdit) io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.goal_new)) { creating = true }
+    Column(Modifier.padding(top = 8.dp)) {
         if (live.isEmpty()) {
             EmptyState(Icons.Outlined.Flag, stringResource(R.string.goals_empty_title), stringResource(R.string.goals_empty_text))
         } else {
-            Box(Modifier.padding(top = 12.dp)) {
-                CardGroup {
-                    live.forEachIndexed { i, g ->
-                        GoalRow(view, g, divider = i < live.lastIndex, onClick = if (canEdit) ({ editing = g }) else null)
-                    }
-                }
-            }
+            live.forEach { g -> GoalRow(view, g, onClick = if (canEdit) ({ editing = g }) else null) }
+            Text(stringResource(R.string.goal_help), style = FullaType.secondary, color = FullaTheme.colors.inkMuted,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
         }
         val archived = view.config.goals.filter { it.archived }
         if (archived.isNotEmpty()) {
             Section(stringResource(R.string.archived))
-            archived.forEach { g -> ListRow(g.name, titleColor = FullaTheme.colors.inkMuted, onClick = if (canEdit) ({ editing = g }) else null) }
-        }
-        if (canEdit) {
-            Box(Modifier.padding(20.dp)) {
-                PrimaryButton(stringResource(R.string.goal_new), onClick = { creating = true }, icon = Icons.Outlined.Add)
-            }
+            archived.forEach { g -> GoalRow(view, g, dimmed = true, onClick = if (canEdit) ({ editing = g }) else null) }
         }
     }
 
@@ -93,7 +87,7 @@ fun GoalsSettings(view: HouseholdView, change: Change) {
 
 /** A goal and how far it has got: saved of target, what to put aside a month, and a line that fills up. */
 @Composable
-fun GoalRow(view: HouseholdView, goal: Goal, divider: Boolean = true, onClick: (() -> Unit)? = null) {
+fun GoalRow(view: HouseholdView, goal: Goal, dimmed: Boolean = false, onClick: (() -> Unit)? = null) {
     val c = FullaTheme.colors
     val f = view.formats
     val today = rememberToday()
@@ -106,15 +100,21 @@ fun GoalRow(view: HouseholdView, goal: Goal, divider: Boolean = true, onClick: (
         p.perMonthMinor != null -> stringResource(R.string.goal_per_month, f.money(p.perMonthMinor!!), f.day(goal.targetDate!!))
         else -> stringResource(R.string.goal_left, f.money(p.leftMinor))
     }
-    ListRow(
-        goal.name,
-        context = stringResource(R.string.goal_saved_of, f.money(p.savedMinor), f.money(goal.targetMinor), account),
-        detail = detail,
-        detailColor = if (p.late) c.warning else c.inkMuted,
-        divider = divider,
-        onClick = onClick,
-        below = { ProgressLine(p.fraction.toFloat(), if (p.reached) c.moneyIn else c.highlight, Modifier.padding(vertical = 6.dp)) },
-    )
+    // A card, as in the mockup: name and date, a thick bar, saved of target and what it takes, the account.
+    io.github.sirallap.fulla.ui.components.ItemCard(dimmed = dimmed, onClick = onClick) {
+        io.github.sirallap.fulla.ui.components.Spread(startShare = 0.6f, start = {
+            Text(goal.name, style = FullaType.title, color = if (dimmed) c.inkMuted else c.ink)
+        }, end = {
+            Text(goal.targetDate?.let { f.day(it) } ?: stringResource(R.string.goal_no_date), style = FullaType.secondary, color = c.inkMuted)
+        })
+        ProgressLine(p.fraction.toFloat(), if (p.reached) c.moneyIn else c.highlight)
+        io.github.sirallap.fulla.ui.components.Spread(startShare = 0.5f, start = {
+            Text(stringResource(R.string.budget_of, f.money(p.savedMinor), f.money(goal.targetMinor)), style = FullaType.secondary, color = c.ink)
+        }, end = {
+            Text(detail, style = FullaType.secondary, color = if (p.late) c.warning else c.inkMuted)
+        })
+        Text(stringResource(R.string.goal_in_account, account), style = FullaType.label, color = c.inkMuted)
+    }
 }
 
 @Composable

@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.window.DialogProperties
@@ -124,17 +129,35 @@ fun MembersSettings(view: HouseholdView, change: Change, onShare: () -> Unit) {
     }
 
     Column {
-        for (m in view.config.members.filter { it.isActive }) {
-            ListRow(
-                title = m.displayName + if (m.id == view.config.meMemberId) " · ${stringResource(R.string.you)}" else "",
-                start = { MemberBadge(m.initials, m.colorIndex) },
-                context = stringResource(roleName(m.role)),
-                detail = if (!m.hasAccount) stringResource(R.string.no_account_member) else null,
-                onClick = { selected = m },
-            )
+        // A card per person, as in the mockup: their colour and initial, name, what they can do, their role on the right.
+        Column(Modifier.padding(top = 8.dp)) {
+            for (m in view.config.members.filter { it.isActive }) {
+                val c = FullaTheme.colors
+                io.github.sirallap.fulla.ui.components.ItemCard(onClick = { selected = m }) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MemberBadge(m.initials, m.colorIndex)
+                        io.github.sirallap.fulla.ui.components.Spread(Modifier.weight(1f), startShare = 0.55f, start = {
+                            Column {
+                                Text(m.displayName + if (m.id == view.config.meMemberId) " · ${stringResource(R.string.you)}" else "",
+                                    style = FullaType.body, color = c.ink)
+                                if (!m.hasAccount) Text(stringResource(R.string.no_account_member), style = FullaType.secondary, color = c.warning)
+                            }
+                        }, end = {
+                            Text(stringResource(roleName(m.role)), style = FullaType.label,
+                                color = if (m.role == Role.OWNER) c.paper else c.ink,
+                                modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                    .background(if (m.role == Role.OWNER) c.ink else c.paper).padding(horizontal = 10.dp, vertical = 4.dp))
+                        })
+                    }
+                }
+            }
         }
         if (me != null && Permissions.canAddMemberWithoutAccount(me)) {
-            ListRow(stringResource(R.string.add_member), context = stringResource(R.string.add_member_text), icon = Icons.Outlined.PersonAdd, onClick = { adding = true })
+            Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                io.github.sirallap.fulla.ui.components.SecondaryButton(stringResource(R.string.add_member), { adding = true })
+                Text(stringResource(R.string.add_member_text), style = FullaType.secondary, color = FullaTheme.colors.inkMuted,
+                    modifier = Modifier.padding(top = 4.dp))
+            }
         }
         error?.let { Text(it, color = FullaTheme.colors.danger, style = FullaType.secondary, modifier = Modifier.padding(horizontal = 20.dp)) }
 

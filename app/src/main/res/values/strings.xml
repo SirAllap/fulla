@@ -879,4 +879,6 @@
     <string name="budget_spent_left">%1$s spent · %2$s left</string>
     <string name="budget_spent_over">%1$s spent · %2$s over</string>
     <string name="budget_none_yet">No budgets yet. Give a category an amount for the month and the overview shows how much of it is used.</string>
+    <string name="goal_in_account">In %1$s</string>
+    <string name="rule_if_says">If it says</string>
 </resources>

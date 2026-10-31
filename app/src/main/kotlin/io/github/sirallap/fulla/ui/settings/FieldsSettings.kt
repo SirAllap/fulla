@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Arrangement
@@ -73,10 +75,21 @@ fun FieldsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         Text(stringResource(R.string.fields_text), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
         if (view.config.fields.isEmpty()) EmptyState(Icons.Outlined.Tune, stringResource(R.string.no_fields_title), stringResource(R.string.no_fields_text))
         for (f in view.config.fields.sortedWith(compareBy({ it.archived }, { it.sort }))) {
-            ListRow(f.label(language), titleColor = if (f.archived) c.inkMuted else c.ink,
-                context = stringResource(typeName(f.type)) + if (f.options.isNotEmpty()) " · " + f.options.joinToString(", ") else "",
-                detail = if (f.archived) stringResource(R.string.archived) else null,
-                onClick = if (canEdit) ({ editing = f }) else null)
+            // A card per field, as in the mockup: its name, what it holds, its type on the right.
+            io.github.sirallap.fulla.ui.components.ItemCard(dimmed = f.archived, onClick = if (canEdit) ({ editing = f }) else null) {
+                io.github.sirallap.fulla.ui.components.Spread(startShare = 0.55f, start = {
+                    Column {
+                        Text(f.label(language), style = FullaType.body, color = if (f.archived) c.inkMuted else c.ink)
+                        val holds = listOfNotNull(f.options.takeIf { it.isNotEmpty() }?.joinToString(", "),
+                            stringResource(R.string.archived).takeIf { f.archived }).joinToString(" · ")
+                        if (holds.isNotBlank()) Text(holds, style = FullaType.secondary, color = c.inkMuted)
+                    }
+                }, end = {
+                    Text(stringResource(typeName(f.type)), style = FullaType.label, color = c.ink,
+                        modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).background(c.paper)
+                            .padding(horizontal = 10.dp, vertical = 4.dp))
+                })
+            }
         }
     }
     if (creating || editing != null) {

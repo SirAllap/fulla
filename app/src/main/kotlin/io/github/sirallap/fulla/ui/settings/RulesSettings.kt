@@ -37,15 +37,23 @@ fun RulesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
         Text(stringResource(R.string.rules_text), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
         if (rules.isEmpty()) EmptyState(Icons.Outlined.Rule, stringResource(R.string.no_rules_title), stringResource(R.string.no_rules_text))
         for (r in rules) {
-            ListRow("“${r.pattern}”", titleColor = if (r.active) c.ink else c.inkMuted,
-                context = "→ " + (view.categoryName(r.categoryId) ?: stringResource(R.string.uncategorized)),
-                detail = if (!r.active) stringResource(R.string.paused) else null,
-                // Pausing is a switch in sight (docs/ux.md, piece 7); the row takes the tap.
-                end = { androidx.compose.material3.Switch(checked = r.active, onCheckedChange = null, enabled = canEdit) },
-                onClick = if (canEdit) ({
-                    val stored = Wire.list(view.state.bundle["categorization_rules"]).firstOrNull { (it["id"] as? JsonPrimitive)?.content == r.id }
-                    if (stored != null) change { api -> ledger.upsert(view.id, Structure.RULE, JsonObject(stored + ("active" to JsonPrimitive(!r.active))), api) }
-                }) else null)
+            val toggle: (() -> Unit)? = if (canEdit) ({
+                val stored = Wire.list(view.state.bundle["categorization_rules"]).firstOrNull { (it["id"] as? JsonPrimitive)?.content == r.id }
+                if (stored != null) change { api -> ledger.upsert(view.id, Structure.RULE, JsonObject(stored + ("active" to JsonPrimitive(!r.active))), api) }
+            }) else null
+            // A card per rule, as in the mockup: what it looks for and where it sends it, the switch in sight (docs/ux.md, piece 7), dimmed while paused.
+            io.github.sirallap.fulla.ui.components.ItemCard(dimmed = !r.active, onClick = toggle) {
+                androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                    androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.rule_if_says) + if (!r.active) " · " + stringResource(R.string.paused) else "",
+                            style = FullaType.label, color = c.inkMuted)
+                        Text("${r.pattern} → " + (view.categoryName(r.categoryId) ?: stringResource(R.string.uncategorized)),
+                            style = FullaType.body, color = if (r.active) c.ink else c.inkMuted)
+                    }
+                    androidx.compose.material3.Switch(checked = r.active, onCheckedChange = null, enabled = canEdit)
+                }
+            }
         }
     }
 }
