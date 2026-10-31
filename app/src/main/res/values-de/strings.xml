@@ -881,4 +881,8 @@
     <string name="settle_account">Auf welches Konto?</string>
     <string name="settle_help">Du kannst weniger eintragen, wenn nur ein Teil zurückgezahlt wird.</string>
     <string name="settle_record">Zahlung von %1$s erfassen</string>
+    <string name="danger_zone">Gefahrenbereich</string>
+    <string name="import_columns_title">Was ist welche Spalte?</string>
+    <string name="import_first_line">Erste Zeile der Datei</string>
+    <string name="import_column_n">Spalte %1$d</string>
 </resources>

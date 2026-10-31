@@ -881,4 +881,8 @@
     <string name="settle_account">Sur quel compte ?</string>
     <string name="settle_help">Vous pouvez mettre moins si seule une partie est remboursée.</string>
     <string name="settle_record">Enregistrer le paiement de %1$s</string>
+    <string name="danger_zone">Zone sensible</string>
+    <string name="import_columns_title">Que contient chaque colonne ?</string>
+    <string name="import_first_line">Première ligne du fichier</string>
+    <string name="import_column_n">Colonne %1$d</string>
 </resources>

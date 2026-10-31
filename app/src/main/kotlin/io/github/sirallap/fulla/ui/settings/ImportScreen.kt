@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.window.DialogProperties
@@ -192,15 +194,20 @@ fun ImportScreen(view: HouseholdView, change: Change) {
         }
         if (format == Format.CSV && preview.isNotEmpty()) {
             val header = preview.first()
+            // As in the Importar board: the file's first line in sight, then each column as the field it is.
+            val sample = preview.drop(1).firstOrNull() ?: header
+            Section(stringResource(R.string.import_columns_title))
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                .background(c.paperHigh).padding(12.dp)) {
+                Text(stringResource(R.string.import_first_line), style = FullaType.label, color = c.inkMuted)
+                Text(sample.joinToString(" · "), style = FullaType.secondary, color = c.ink)
+            }
             for ((label, selected, set) in listOf(
                 Triple(R.string.column_date, dateColumn) { i: Int -> dateColumn = i },
                 Triple(R.string.column_amount, amountColumn) { i: Int -> amountColumn = i },
                 Triple(R.string.column_description, descriptionColumn) { i: Int -> descriptionColumn = i },
             )) {
-                Section(stringResource(label))
-                FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    header.forEachIndexed { i, name -> Chip(name.ifBlank { "#${i + 1}" }.take(24), i == selected, { set(i) }) }
-                }
+                ColumnField(stringResource(label), selected, optional = false, header = header, sample = sample) { it?.let(set) }
             }
             // Columns a file may or may not have: "None" first.
             val optional = buildList {
@@ -211,11 +218,7 @@ fun ImportScreen(view: HouseholdView, change: Change) {
                 add(Triple(R.string.column_fixed, fixedColumn) { i: Int? -> fixedColumn = i; fixedValues = emptyList() })
             }
             for ((label, selected, set) in optional) {
-                Section(stringResource(label))
-                FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Chip(stringResource(R.string.column_none), selected == null, { set(null) })
-                    header.forEachIndexed { i, name -> Chip(name.ifBlank { "#${i + 1}" }.take(24), i == selected, { set(i) }) }
-                }
+                ColumnField(stringResource(label), selected, optional = true, header = header, sample = sample) { set(it) }
                 // Which of the column's values mean income, or a fixed amount.
                 val choice = when {
                     label == R.string.column_kind && selected != null ->
@@ -403,4 +406,24 @@ private fun CategoryChooser(view: HouseholdView, p: ProposedTransaction, onDismi
         },
         dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+/** One column of a statement as a field: what it is, which column, and that column's value on the first line; a sheet picks it. */
+@Composable
+private fun ColumnField(label: String, selected: Int?, optional: Boolean, header: List<String>, sample: List<String>, onPick: (Int?) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val name: (Int) -> String = { i -> listOf(header.getOrNull(i)?.takeIf { it.isNotBlank() }, sample.getOrNull(i)?.takeIf { it.isNotBlank() })
+        .filterNotNull().distinct().joinToString(" · ").take(48) }
+    val column = stringResource(R.string.import_column_n, (selected ?: 0) + 1)
+    io.github.sirallap.fulla.ui.components.ValueField(label,
+        selected?.let { "$column · ${name(it)}" } ?: stringResource(R.string.column_none), onClick = { open = true })
+    if (open) {
+        io.github.sirallap.fulla.ui.components.PickSheet(label, onDismiss = { open = false }) {
+            if (optional) io.github.sirallap.fulla.ui.components.PickRow(stringResource(R.string.column_none), selected == null, { open = false; onPick(null) })
+            header.indices.forEach { i ->
+                io.github.sirallap.fulla.ui.components.PickRow(stringResource(R.string.import_column_n, i + 1), i == selected,
+                    { open = false; onPick(i) }, context = name(i))
+            }
+        }
+    }
 }

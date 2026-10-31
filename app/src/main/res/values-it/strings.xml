@@ -881,4 +881,8 @@
     <string name="settle_account">Su quale conto?</string>
     <string name="settle_help">Puoi mettere meno se viene restituita solo una parte.</string>
     <string name="settle_record">Registra pagamento di %1$s</string>
+    <string name="danger_zone">Zona pericolosa</string>
+    <string name="import_columns_title">Cos\'è ogni colonna?</string>
+    <string name="import_first_line">Prima riga del file</string>
+    <string name="import_column_n">Colonna %1$d</string>
 </resources>

@@ -932,4 +932,8 @@
     <string name="settle_account">Into which account?</string>
     <string name="settle_help">You can enter less if only part is paid back.</string>
     <string name="settle_record">Record payment of %1$s</string>
+    <string name="danger_zone">Danger zone</string>
+    <string name="import_columns_title">What is each column?</string>
+    <string name="import_first_line">First line of the file</string>
+    <string name="import_column_n">Column %1$d</string>
 </resources>

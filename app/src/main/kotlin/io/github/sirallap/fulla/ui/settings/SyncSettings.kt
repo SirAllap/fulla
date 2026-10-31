@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Arrangement
@@ -72,16 +74,22 @@ fun SyncSettings(view: HouseholdView, onBack: () -> Unit, onInvite: () -> Unit) 
     }
 
     Column {
-        Section(stringResource(R.string.where_it_lives), top = 8.dp)
-        ListRow(
-            title = stringResource(if (view.state.connected) R.string.shared else R.string.on_this_phone),
-            context = when {
-                !view.state.connected -> stringResource(R.string.local_only_explained)
+        // As in the Sincronización board: where the household lives, in a card at the top; dark while it is shared.
+        val shared = view.state.connected
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp)).background(if (shared) c.ink else c.paperHigh).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(stringResource(if (shared) R.string.shared else R.string.on_this_phone), style = FullaType.title, color = if (shared) c.paper else c.ink)
+            Text(when {
+                !shared -> stringResource(R.string.local_only_explained)
                 container.hosted != null && endpoint == container.hosted -> stringResource(R.string.fulla_cloud)
-                else -> endpoint?.host
-            },
-        )
+                else -> endpoint?.host ?: ""
+            }, style = FullaType.secondary, color = if (shared) c.paper.copy(alpha = 0.75f) else c.inkMuted)
+        }
         if (session != null) {
+            Section(stringResource(R.string.your_account))
             ListRow(stringResource(R.string.signed_in_as), context = session?.email ?: "")
         }
         // Another phone of yours, or this one after a reinstall: a QR code instead of a project address and key.
@@ -182,15 +190,15 @@ fun SyncSettings(view: HouseholdView, onBack: () -> Unit, onInvite: () -> Unit) 
                 })
             }
         }
+        // What cannot be undone, together at the end.
+        Section(stringResource(R.string.danger_zone))
+        ListRow(stringResource(R.string.forget_household), context = stringResource(R.string.forget_household_text),
+            titleColor = c.danger, onClick = { forgetting = true })
         if (session != null) {
-            Section(stringResource(R.string.your_account))
             ListRow(stringResource(R.string.delete_account), context = stringResource(R.string.delete_account_text),
                 titleColor = c.danger, onClick = { deleting = true })
             deleteError?.let { Text(it, style = FullaType.secondary, color = c.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
         }
-        Section(stringResource(R.string.this_phone))
-        ListRow(stringResource(R.string.forget_household), context = stringResource(R.string.forget_household_text),
-            titleColor = c.danger, onClick = { forgetting = true })
     }
 
     if (deleting) {

@@ -881,4 +881,8 @@
     <string name="settle_account">¿A qué cuenta llega?</string>
     <string name="settle_help">Puedes poner menos si solo te paga una parte.</string>
     <string name="settle_record">Registrar pago de %1$s</string>
+    <string name="danger_zone">Zona peligrosa</string>
+    <string name="import_columns_title">¿Qué es cada columna?</string>
+    <string name="import_first_line">Primera línea del archivo</string>
+    <string name="import_column_n">Columna %1$d</string>
 </resources>
