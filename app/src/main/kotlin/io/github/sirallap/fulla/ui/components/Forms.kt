@@ -106,13 +106,12 @@ fun FormScreen(
     scrollState: ScrollState = rememberScrollState(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Dialog(
-        onDismissRequest = onClose,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
+    val body: @Composable () -> Unit = {
         val c = FullaTheme.colors
         Column(
             Modifier.fillMaxSize().background(c.paper)
+                // Taps on the form never reach the screen under it.
+                .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars).only(WindowInsetsSides.Bottom)),
         ) {
@@ -132,6 +131,40 @@ fun FormScreen(
                 neutral?.invoke(this)
             }
         }
+    }
+    val layer = LocalFormLayer.current
+    if (layer == null) {
+        // Only where no FormLayerHost is drawn (a test): a dialog window of its own.
+        Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) { body() }
+        return
+    }
+    // Drawn in the app's own window, over everything, by FormLayerHost: a
+    // dialog window of its own got the phone's edges wrong (it sat under the
+    // status bar and ran past the bottom, the button out of reach).
+    val latest = androidx.compose.runtime.rememberUpdatedState(body)
+    val close = androidx.compose.runtime.rememberUpdatedState(onClose)
+    androidx.compose.runtime.DisposableEffect(layer) {
+        val entry: @Composable () -> Unit = {
+            androidx.activity.compose.BackHandler { close.value() }
+            latest.value()
+        }
+        layer.entries.add(entry)
+        onDispose { layer.entries.remove(entry) }
+    }
+}
+
+/** Forms open in the app's own window, over the screen that opened them; [FormLayerHost] draws them. */
+class FormLayer {
+    internal val entries = androidx.compose.runtime.mutableStateListOf<@Composable () -> Unit>()
+}
+
+val LocalFormLayer = androidx.compose.runtime.staticCompositionLocalOf<FormLayer?> { null }
+
+/** Draws the open forms over everything else; the last one on top. Goes last in the app's root box. */
+@Composable
+fun FormLayerHost(layer: FormLayer) {
+    for (entry in layer.entries.toList()) androidx.compose.runtime.key(entry) {
+        Box(Modifier.fillMaxSize()) { entry() }
     }
 }
 

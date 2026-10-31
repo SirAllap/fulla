@@ -876,3 +876,24 @@ fun FitText(text: String, style: androidx.compose.ui.text.TextStyle, color: Colo
         },
     )
 }
+
+/**
+ * One item as a card of its own, as the Settings lists are drawn in the
+ * mockups (docs/ux.md, piece 11): a line round it, 16 dp corners, 14 dp in.
+ * Cards sit 8 dp apart and 20 dp from the screen's edges. [dimmed] is for
+ * what is paused or archived.
+ */
+@Composable
+fun ItemCard(modifier: Modifier = Modifier, dimmed: Boolean = false, onClick: (() -> Unit)? = null,
+             content: @Composable ColumnScope.() -> Unit) {
+    val c = FullaTheme.colors
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).clip(shape)
+            .background(if (dimmed) c.paper else c.paperHigh).border(1.dp, c.line, shape)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .heightIn(min = 56.dp).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        content = content,
+    )
+}

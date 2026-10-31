@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.border
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Alignment
@@ -635,32 +638,80 @@ fun BudgetsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     var editing by remember { mutableStateOf<String?>(null) }
     val defaults = view.config.budgets.filter { it.period == null }.associateBy { it.categoryId }
     val overrides = month?.let { m -> view.config.budgets.filter { it.period == m.toString() }.associateBy { it.categoryId } }.orEmpty()
+    var picking by remember { mutableStateOf(false) }
+    val period = month ?: current
+    val spent = remember(view, period) {
+        view.analytics.budgetSpend(view.active, period, view.config.trips).associate { it.categoryId to it.amountMinor }
+    }
+    val tops = view.config.categories.filter { !it.archived && it.appliesTo != AppliesTo.INCOME && it.parentId == null }
+    // A month of its own takes its own amount, else the one for every month.
+    fun budgetOf(id: String) = if (month == null) defaults[id] else overrides[id] ?: defaults[id]
+    val budgeted = tops.filter { (budgetOf(it.id)?.amountMinor ?: 0L) > 0L }
+    if (canEdit) io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.budget_other_category)) { picking = true }
+    // As in the mockup: the month's total in a dark card, then one card per budgeted category.
     Column {
-        Text(stringResource(R.string.budgets_text), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
-        Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Chip(stringResource(R.string.every_month), month == null, { month = null })
-            Chip(f.period(current), month == current, { month = current })
-            Chip(f.period(current.plusMonths(1)), month == current.plusMonths(1), { month = current.plusMonths(1) })
-        }
-        month?.let { m ->
-            Text(stringResource(R.string.month_budget_help), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
-            if (canEdit) ListRow(stringResource(R.string.copy_budgets_from, f.period(m.minusMonths(1))), icon = Icons.Outlined.ContentCopy, onClick = {
-                val from = m.minusMonths(1).toString()
-                change { api ->
-                    val next = if (api == null) LocalHousehold.copyBudgets(view.state.bundle, from, m.toString())
-                    else api.budgetCopy(view.id, from, m.toString())
-                    ledger.storeConfig(view.id, next)
+        val total = budgeted.sumOf { budgetOf(it.id)!!.amountMinor }
+        val used = budgeted.sumOf { spent[it.id] ?: 0L }
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                .background(c.ink).padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            io.github.sirallap.fulla.ui.components.Spread(startShare = 0.5f, start = {
+                Column {
+                    Text(f.period(period), style = FullaType.secondary, color = c.paper.copy(alpha = 0.75f))
+                    Text(stringResource(R.string.budget_of, f.money(used), f.money(total)), style = FullaType.title, color = c.paper)
                 }
+            }, end = {
+                Text(if (month == null) stringResource(R.string.budget_every_month_same) else stringResource(R.string.budget_only_month, f.period(period)),
+                    style = FullaType.secondary, color = c.paper.copy(alpha = 0.75f))
             })
         }
-        for (cat in view.config.categories.filter { !it.archived && it.appliesTo != AppliesTo.INCOME && it.parentId == null }) {
-            val own = if (month == null) defaults[cat.id] else overrides[cat.id]
-            val inherited = if (month != null && own == null) defaults[cat.id] else null
-            ListRow(cat.name, icon = CategoryIcons.of(cat.icon), iconTint = c.category(cat.colorIndex),
-                context = inherited?.let { stringResource(R.string.from_default) },
-                onClick = if (canEdit) ({ editing = cat.id }) else null,
-                end = { AmountText((own ?: inherited)?.let { f.money(it.amountMinor) } ?: "—", color = if (own != null) c.ink else c.inkMuted) })
+        if (budgeted.isEmpty()) {
+            Text(stringResource(R.string.budget_none_yet), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
+        }
+        for (cat in budgeted) {
+            val b = budgetOf(cat.id)!!
+            val out = spent[cat.id] ?: 0L
+            val inherited = month != null && overrides[cat.id] == null
+            io.github.sirallap.fulla.ui.components.ItemCard {
+                io.github.sirallap.fulla.ui.components.Spread(startShare = 0.5f, start = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(CategoryIcons.of(cat.icon), null, tint = c.category(cat.colorIndex))
+                        Text(cat.name, style = FullaType.body, color = c.ink)
+                    }
+                }, end = { AmountBox(f.money(b.amountMinor), if (canEdit) ({ editing = cat.id }) else null) })
+                io.github.sirallap.fulla.ui.components.ProgressLine(out.toFloat() / b.amountMinor, c.category(cat.colorIndex), over = out > b.amountMinor)
+                Text(
+                    if (out <= b.amountMinor) stringResource(R.string.budget_spent_left, f.money(out), f.money(b.amountMinor - out))
+                    else stringResource(R.string.budget_spent_over, f.money(out), f.money(out - b.amountMinor)),
+                    style = FullaType.label, color = if (out > b.amountMinor) c.danger else c.inkMuted,
+                )
+                if (inherited) Text(stringResource(R.string.from_default), style = FullaType.label, color = c.inkMuted)
+            }
+        }
+        if (canEdit) Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (month == null) {
+                io.github.sirallap.fulla.ui.components.SecondaryButton(stringResource(R.string.budget_this_month_only), { month = current })
+            } else {
+                Text(stringResource(R.string.month_budget_help), style = FullaType.secondary, color = c.inkMuted)
+                io.github.sirallap.fulla.ui.components.SecondaryButton(stringResource(R.string.copy_budgets_from, f.period(period.minusMonths(1))), {
+                    val from = period.minusMonths(1).toString()
+                    change { api ->
+                        val next = if (api == null) LocalHousehold.copyBudgets(view.state.bundle, from, period.toString())
+                        else api.budgetCopy(view.id, from, period.toString())
+                        ledger.storeConfig(view.id, next)
+                    }
+                })
+                io.github.sirallap.fulla.ui.components.SecondaryButton(stringResource(R.string.budget_back_every_month), { month = null })
+            }
+        }
+    }
+    if (picking) {
+        io.github.sirallap.fulla.ui.components.PickSheet(stringResource(R.string.budget_other_category), onDismiss = { picking = false }) {
+            for (cat in tops - budgeted.toSet()) {
+                io.github.sirallap.fulla.ui.components.PickRow(cat.name, false, { picking = false; editing = cat.id },
+                    start = { io.github.sirallap.fulla.ui.entry.CategoryBadge(cat) })
+            }
         }
     }
     editing?.let { catId ->
@@ -677,6 +728,19 @@ fun BudgetsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             change { api -> ledger.upsert(view.id, Structure.BUDGET, item, api) }
         }
     }
+}
+
+/** An amount that looks like the field it opens (the budgets' cards, as in the mockup). */
+@Composable
+private fun AmountBox(text: String, onClick: (() -> Unit)?) {
+    val c = FullaTheme.colors
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+    Box(
+        Modifier.clip(shape).background(c.paper).border(1.dp, c.line, shape)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .heightIn(min = 44.dp).padding(horizontal = 12.dp, vertical = 10.dp),
+        contentAlignment = Alignment.CenterEnd,
+    ) { AmountText(text) }
 }
 
 // ── import ───────────────────────────────────────────────────────────────────

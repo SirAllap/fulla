@@ -819,4 +819,13 @@
     <string name="recurring_later">Später</string>
     <string name="recurring_stopped">Pausiert oder beendet</string>
     <string name="make_recurring">Zu Fixkosten machen</string>
+    <string name="budget_other_category">Budget für eine weitere Kategorie</string>
+    <string name="budget_this_month_only">Nur für diesen Monat …</string>
+    <string name="budget_every_month_same">Jeden Monat gleich</string>
+    <string name="budget_only_month">Nur %1$s</string>
+    <string name="budget_back_every_month">Zurück zu jeden Monat gleich</string>
+    <string name="budget_of">%1$s von %2$s</string>
+    <string name="budget_spent_left">%1$s ausgegeben · %2$s übrig</string>
+    <string name="budget_spent_over">%1$s ausgegeben · %2$s darüber</string>
+    <string name="budget_none_yet">Noch keine Budgets. Gib einer Kategorie einen Betrag für den Monat, und die Übersicht zeigt, wie viel davon verbraucht ist.</string>
 </resources>

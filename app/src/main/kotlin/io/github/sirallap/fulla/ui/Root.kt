@@ -78,7 +78,9 @@ fun FullaRoot(container: AppContainer, activity: androidx.fragment.app.FragmentA
     val s = settings
     FullaTheme(mode = s?.theme ?: ThemeMode.SYSTEM, palette = s?.palette ?: io.github.sirallap.fulla.core.design.MoneyPalette.DEFAULT,
         accent = s?.accent ?: io.github.sirallap.fulla.core.design.Accent.DEFAULT) {
-        CompositionLocalProvider(LocalContainer provides container) {
+        val forms = remember { io.github.sirallap.fulla.ui.components.FormLayer() }
+        CompositionLocalProvider(LocalContainer provides container, io.github.sirallap.fulla.ui.components.LocalFormLayer provides forms) {
+          Box(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize().background(FullaTheme.colors.paper)) {
                 val l = loaded
                 val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -113,6 +115,9 @@ fun FullaRoot(container: AppContainer, activity: androidx.fragment.app.FragmentA
                     else -> Household(l.household)
                 }
             }
+            // Forms, over everything, in this window (FormScreen).
+            io.github.sirallap.fulla.ui.components.FormLayerHost(forms)
+          }
         }
     }
 }
