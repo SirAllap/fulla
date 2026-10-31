@@ -814,4 +814,8 @@
     <string name="other_device">Auf einem anderen Gerät anmelden</string>
     <string name="other_device_text">Ein QR-Code mit dem Ort deines Haushalts. Das andere Handy fragt nur nach E-Mail und Passwort.</string>
     <string name="other_device_steps">Auf dem anderen Handy: Fulla öffnen, „Ich nutze Fulla schon: anmelden“ tippen, dann „QR-Code von einem anderen Handy scannen“, und mit eigener E-Mail und eigenem Passwort anmelden. Wer neu ist, braucht eine Einladung.</string>
+    <string name="recurring_month_share">Jeden Monat im Schnitt</string>
+    <string name="recurring_soon">Nächste 7 Tage</string>
+    <string name="recurring_later">Später</string>
+    <string name="recurring_stopped">Pausiert oder beendet</string>
 </resources>

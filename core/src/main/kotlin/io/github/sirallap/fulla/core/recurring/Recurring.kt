@@ -131,6 +131,18 @@ object Scheduler {
         return all.count { it <= today } to all.size
     }
 
+    /** The next day [rule] falls due, [today] included, within five years: null when it never does again (paused, archived, ended). */
+    fun nextDue(rule: RecurringRule, today: LocalDate): LocalDate? = occurrences(rule, today, today.plusYears(5)).firstOrNull()
+
+    /**
+     * What [rules] write in the year from [today], as one month's share in
+     * minor units: the fixed costs' "every month, on average", whatever their
+     * calendar (weekly, every three months, the last payments of a plan).
+     * Rounded down. Paused and archived rules write nothing.
+     */
+    fun monthlyShare(rules: List<RecurringRule>, today: LocalDate): Long =
+        rules.sumOf { r -> r.template.amountMinor * occurrences(r, today, today.plusYears(1).minusDays(1)).size } / 12
+
     /** Which payment of its run [date] is, and how many there are, for a rule with an end ("2 of 6"). Null for one that never ends, or a day it does not fall due. */
     fun installment(rule: RecurringRule, date: LocalDate): Pair<Int, Int>? {
         val end = rule.endDate ?: return null

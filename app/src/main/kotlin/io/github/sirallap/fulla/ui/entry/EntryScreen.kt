@@ -30,6 +30,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import io.github.sirallap.fulla.ui.components.DetailChip
+import io.github.sirallap.fulla.ui.components.PickRow
+import io.github.sirallap.fulla.ui.components.PickSheet
+import io.github.sirallap.fulla.ui.components.PrimaryButton
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.RestoreFromTrash
@@ -206,7 +216,8 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         if (editingId == null && view.config.category(asked)?.archived == false) { draft.kind = TransactionKind.EXPENSE; draft.categoryId = asked }
         onCategoryShown()
     }
-    var detailsOpen by remember { mutableStateOf(false) }
+    // The detail being changed, in its own sheet: one at a time, opened from its chip.
+    var detail by remember { mutableStateOf<Detail?>(null) }
     var allCategories by remember { mutableStateOf(false) }
     var problem by remember { mutableStateOf<String?>(null) }
     val c = FullaTheme.colors
@@ -302,7 +313,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
                 SubcategoryChips(view, draft)
                 CategoryFieldChips(view, draft)
             }
-            DetailsLine(view, draft) { detailsOpen = true }
+            DetailChips(view, draft) { detail = it }
             if (draft.offersStartsMonth) StartsMonthSwitch(view, draft)
             if (draft.kind == TransactionKind.INCOME) {
                 // A salary a recurring item wrote on its own starts no period until somebody saves it.
@@ -325,7 +336,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         )
     }
 
-    if (detailsOpen) DetailsSheet(view, draft, onDismiss = { detailsOpen = false })
+    detail?.let { DetailSheet(view, draft, it, onDismiss = { detail = null }) }
 }
 
 /** "Starts the month", with what it does to the income already starting this month, if any. */
@@ -439,119 +450,149 @@ internal fun androidx.compose.foundation.layout.FlowRowScope.Tile(label: String,
     }
 }
 
-/** Date · account · who paid · split, in one tappable line. In one shared pot nobody is asked who paid. */
+/** Which detail of the row a sheet changes. */
+private sealed interface Detail {
+    data object Date : Detail
+    data object Account : Detail
+    data object ToAccount : Detail
+    data object Payer : Detail
+    data object Split : Detail
+    data object Note : Detail
+    data class Field(val key: String) : Detail
+}
+
+/**
+ * Every detail of the row in plain sight (docs/ux.md, piece 6): what it is
+ * now, on a chip that opens what changes it; what can be added, dashed with
+ * a +. Nothing waits behind a summary line. In one shared pot nobody is
+ * asked who paid.
+ */
 @Composable
-private fun DetailsLine(view: HouseholdView, draft: Draft, onClick: () -> Unit) {
-    val c = FullaTheme.colors
-    val parts = buildList {
-        add(if (draft.date == LocalDate.now()) stringResource(R.string.today) else view.formats.day(draft.date))
-        view.accountName(draft.accountId)?.let(::add)
-        if (draft.kind == TransactionKind.TRANSFER) view.accountName(draft.toAccountId)?.let { add("→ $it") }
-        if (view.config.activeMembers.size > 1 && draft.kind != TransactionKind.TRANSFER && !SharedPot.isShared(view.config.household)) {
-            add(stringResource(R.string.paid_by, view.memberName(draft.paidBy)))
-            if (draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND) {
-                add(if (draft.splitWith.size == view.config.activeMembers.size) stringResource(R.string.split_everyone)
-                    else stringResource(R.string.split_between, draft.splitWith.size))
-            }
+private fun DetailChips(view: HouseholdView, draft: Draft, onOpen: (Detail) -> Unit) {
+    val today = LocalDate.now()
+    val language = java.util.Locale.getDefault().language
+    val people = view.config.activeMembers.size > 1 && draft.kind != TransactionKind.TRANSFER && !SharedPot.isShared(view.config.household)
+    val splits = draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND
+    FlowRow(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        DetailChip(
+            when (draft.date) {
+                today -> stringResource(R.string.today)
+                today.minusDays(1) -> stringResource(R.string.yesterday)
+                else -> view.formats.day(draft.date)
+            },
+            { onOpen(Detail.Date) }, icon = Icons.Outlined.Event,
+        )
+        DetailChip(view.accountName(draft.accountId) ?: stringResource(R.string.account), { onOpen(Detail.Account) },
+            icon = Icons.Outlined.AccountBalanceWallet)
+        if (draft.kind == TransactionKind.TRANSFER) {
+            val to = view.accountName(draft.toAccountId)
+            DetailChip(to?.let { "→ $it" } ?: stringResource(R.string.to_account), { onOpen(Detail.ToAccount) }, empty = to == null)
         }
-        view.config.trip(draft.tripId)?.let { add(it.name) }
-        if (draft.note.isNotBlank()) add("“${draft.note}”")
-    }
-    Row(
-        Modifier.fillMaxWidth().clickable(onClickLabel = stringResource(R.string.details), onClick = onClick)
-            .heightIn(min = 48.dp).padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(parts.joinToString(" · "), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.weight(1f),
-            maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Icon(Icons.Outlined.ExpandMore, null, tint = c.accent)
+        if (people) {
+            DetailChip(stringResource(R.string.paid_by, view.memberName(draft.paidBy)), { onOpen(Detail.Payer) }, icon = Icons.Outlined.Person)
+            if (splits) DetailChip(
+                if (draft.splitWith.size == view.config.activeMembers.size) stringResource(R.string.split_everyone)
+                else stringResource(R.string.split_between, draft.splitWith.size),
+                { onOpen(Detail.Split) }, icon = Icons.Outlined.Group,
+            )
+        }
+        for (field in SchemaEngine.fieldsForForm(view.config.fields, draft.kind)) {
+            val label = field.label(language)
+            val shown = fieldValueText(view, draft.extras[field.key])
+            if (shown == null) DetailChip(label, { onOpen(Detail.Field(field.key)) }, empty = true)
+            else DetailChip("$label: $shown", { onOpen(Detail.Field(field.key)) })
+        }
+        if (draft.kind == TransactionKind.INCOME && !draft.offersStartsMonth) {
+            Chip(stringResource(R.string.starts_month), draft.startsMonth, { draft.startsMonthChoice = !draft.startsMonth })
+        }
+        if (draft.kind == TransactionKind.INCOME || draft.kind == TransactionKind.EXPENSE) {
+            Chip(stringResource(R.string.fixed), draft.fixed, { draft.fixed = !draft.fixed })
+        }
+        if (draft.note.isBlank()) DetailChip(stringResource(R.string.note), { onOpen(Detail.Note) }, empty = true)
+        else DetailChip("“${draft.note}”", { onOpen(Detail.Note) })
     }
 }
 
+/** A custom field's value as a chip says it; null when it has none. */
 @Composable
-private fun DetailsSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Unit) {
-    val c = FullaTheme.colors
-    var pickingDate by remember { mutableStateOf(false) }
+private fun fieldValueText(view: HouseholdView, value: Any?): String? = when (value) {
+    null -> null
+    is Boolean -> if (value) "✓" else null
+    is List<*> -> value.filterIsInstance<String>().takeIf { it.isNotEmpty() }?.joinToString(", ")
+    is String -> value.takeIf { it.isNotBlank() }?.let { v -> view.config.activeMembers.firstOrNull { it.id == v }?.displayName ?: v }
+    else -> value.toString()
+}
+
+/** The sheet that changes one [detail]: a tap picks and closes it; the people a cost is split between, and the note, end with Done. */
+@Composable
+private fun DetailSheet(view: HouseholdView, draft: Draft, detail: Detail, onDismiss: () -> Unit) {
     val accounts = view.config.accounts.filter { !it.archived }
     val members = view.config.activeMembers
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.paper) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
-            Section(stringResource(R.string.date), top = 0.dp)
-            FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val today = LocalDate.now()
-                Chip(stringResource(R.string.today), draft.date == today, { draft.pickDate(today) })
-                Chip(stringResource(R.string.yesterday), draft.date == today.minusDays(1), { draft.pickDate(today.minusDays(1)) })
-                Chip(if (draft.date < today.minusDays(1) || draft.date > today) view.formats.day(draft.date) else stringResource(R.string.other_day),
-                    draft.date < today.minusDays(1) || draft.date > today, { pickingDate = true })
-            }
-            if (draft.kind == TransactionKind.INCOME && !draft.offersStartsMonth) StartsMonthSwitch(view, draft)
-            Section(stringResource(if (draft.kind == TransactionKind.TRANSFER) R.string.from_account else R.string.account))
-            ChoiceFlow(accounts.map { it.id to it.name }, draft.accountId) { draft.accountId = it }
-            if (draft.kind == TransactionKind.TRANSFER) {
-                Section(stringResource(R.string.to_account))
-                ChoiceFlow(accounts.filter { it.id != draft.accountId }.map { it.id to it.name }, draft.toAccountId) { draft.toAccountId = it }
-            }
-            if (members.size > 1 && draft.kind != TransactionKind.TRANSFER && !SharedPot.isShared(view.config.household)) {
-                Section(stringResource(if (draft.kind == TransactionKind.INCOME) R.string.received_by else R.string.who_paid))
-                ChoiceFlow(members.map { it.id to it.displayName }, draft.paidBy) { draft.paidBy = it }
-                if (draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND) {
-                    Section(stringResource(R.string.split_between_title))
-                    FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (m in members) {
-                            val on = m.id in draft.splitWith
-                            Chip(m.displayName, on, {
-                                val next = if (on) draft.splitWith - m.id else draft.splitWith + m.id
-                                if (next.isNotEmpty()) draft.splitWith = next
-                            }, leading = { MemberBadge(m.initials, m.colorIndex, size = 20.dp) })
-                        }
-                    }
-                }
-            }
-            if (draft.kind == TransactionKind.EXPENSE || draft.kind == TransactionKind.REFUND) {
-                val onTrip = view.config.trips.filter { !it.archived && it.startDate <= draft.date && draft.date <= it.endDate }
-                // A row's current trip stays choosable even once its date no longer falls
-                // inside it (an out-of-range or archived trip), so it can still be cleared.
-                val current = draft.tripId?.let { id -> view.config.trips.firstOrNull { it.id == id } }
-                val chips = if (current != null && current.id !in onTrip.map { it.id }) onTrip + current else onTrip
-                if (chips.isNotEmpty()) {
-                    Section(stringResource(R.string.settings_trips))
-                    FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Chip(stringResource(R.string.trip_none), draft.tripId == null, { draft.pickTrip(null) })
-                        for (t in chips) Chip(t.name, draft.tripId == t.id, { draft.pickTrip(t.id) })
-                    }
-                }
-            }
-            for (field in SchemaEngine.fieldsForForm(view.config.fields, draft.kind)) {
-                FieldControl(view, field, draft.extras[field.key]) { v -> draft.extras = draft.extras + (field.key to v) }
-            }
-            if (draft.kind == TransactionKind.INCOME || draft.kind == TransactionKind.EXPENSE) {
-                SwitchRow(stringResource(R.string.fixed), stringResource(R.string.fixed_help), draft.fixed) { draft.fixed = it }
-            }
-            Section(stringResource(R.string.note))
-            OutlinedTextField(draft.note, { if (it.length <= 500) draft.note = it }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                placeholder = { Text(stringResource(R.string.note_hint)) }, singleLine = false, maxLines = 3)
-            TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp)) { Text(stringResource(R.string.done)) }
+    val done = stringResource(R.string.done)
+    when (detail) {
+        Detail.Date -> DateSheet(view, draft, onDismiss)
+        Detail.Account -> PickSheet(stringResource(if (draft.kind == TransactionKind.TRANSFER) R.string.from_account else R.string.account), onDismiss) {
+            for (a in accounts) PickRow(a.name, a.id == draft.accountId, { draft.accountId = a.id; onDismiss() })
         }
+        Detail.ToAccount -> PickSheet(stringResource(R.string.to_account), onDismiss) {
+            for (a in accounts.filter { it.id != draft.accountId }) PickRow(a.name, a.id == draft.toAccountId, { draft.toAccountId = a.id; onDismiss() })
+        }
+        Detail.Payer -> PickSheet(stringResource(if (draft.kind == TransactionKind.INCOME) R.string.received_by else R.string.who_paid), onDismiss) {
+            for (m in members) PickRow(m.displayName, m.id == draft.paidBy, { draft.paidBy = m.id; onDismiss() },
+                start = { MemberBadge(m.initials, m.colorIndex) })
+        }
+        Detail.Split -> PickSheet(stringResource(R.string.split_between_title), onDismiss) {
+            for (m in members) {
+                val on = m.id in draft.splitWith
+                PickRow(m.displayName, on, {
+                    val next = if (on) draft.splitWith - m.id else draft.splitWith + m.id
+                    if (next.isNotEmpty()) draft.splitWith = next
+                }, start = { MemberBadge(m.initials, m.colorIndex) })
+            }
+            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp)) { PrimaryButton(done, onDismiss) }
+        }
+        Detail.Note -> PickSheet(stringResource(R.string.note), onDismiss) {
+            // Typed in a short sheet that rides on the keyboard: the amount and the category stay in sight above it.
+            val focus = remember { FocusRequester() }
+            OutlinedTextField(draft.note, { if (it.length <= 500) draft.note = it },
+                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).focusRequester(focus),
+                placeholder = { Text(stringResource(R.string.note_hint)) }, singleLine = false, maxLines = 3)
+            LaunchedEffect(Unit) { focus.requestFocus() }
+            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp)) { PrimaryButton(done, onDismiss) }
+        }
+        is Detail.Field -> {
+            val field = view.config.fields.firstOrNull { it.key == detail.key } ?: return
+            PickSheet(field.label(java.util.Locale.getDefault().language), onDismiss) {
+                FieldControl(view, field, draft.extras[field.key]) { v -> draft.extras = draft.extras + (field.key to v) }
+                Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp)) { PrimaryButton(done, onDismiss) }
+            }
+        }
+    }
+}
+
+/** Today, yesterday, or another day from the calendar. */
+@Composable
+private fun DateSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Unit) {
+    val today = LocalDate.now()
+    var pickingDate by remember { mutableStateOf(false) }
+    if (!pickingDate) PickSheet(stringResource(R.string.date), onDismiss) {
+        PickRow(stringResource(R.string.today), draft.date == today, { draft.pickDate(today); onDismiss() })
+        PickRow(stringResource(R.string.yesterday), draft.date == today.minusDays(1), { draft.pickDate(today.minusDays(1)); onDismiss() })
+        val other = draft.date < today.minusDays(1) || draft.date > today
+        PickRow(if (other) view.formats.day(draft.date) else stringResource(R.string.other_day), other, { pickingDate = true })
     }
     if (pickingDate) {
         val state = rememberDatePickerState(initialSelectedDateMillis = draft.date.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli())
         DatePickerDialog(
-            onDismissRequest = { pickingDate = false },
+            onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
                     state.selectedDateMillis?.let { draft.pickDate(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
-                    pickingDate = false
+                    onDismiss()
                 }) { Text(stringResource(R.string.done)) }
             },
-            dismissButton = { TextButton(onClick = { pickingDate = false }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
         ) { DatePicker(state) }
-    }
-}
-
-@Composable
-private fun ChoiceFlow(options: List<Pair<String, String>>, selected: String?, onPick: (String) -> Unit) {
-    FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        for ((id, label) in options) Chip(label, id == selected, { onPick(id) })
     }
 }
 

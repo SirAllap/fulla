@@ -814,4 +814,8 @@
     <string name="other_device">Entrar noutro dispositivo</string>
     <string name="other_device_text">Um QR com onde vive a tua casa. O outro telemóvel só pede email e palavra-passe.</string>
     <string name="other_device_steps">No outro telemóvel: abre o Fulla, toca em «Já uso o Fulla: entrar», depois em «Ler o QR de outro telemóvel», e entra com o teu próprio email e palavra-passe. Alguém novo precisa de um convite.</string>
+    <string name="recurring_month_share">Todos os meses, em média</string>
+    <string name="recurring_soon">Próximos 7 dias</string>
+    <string name="recurring_later">Mais tarde</string>
+    <string name="recurring_stopped">Em pausa ou terminados</string>
 </resources>
