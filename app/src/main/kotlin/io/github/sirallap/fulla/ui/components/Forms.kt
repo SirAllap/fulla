@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.components
 
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -374,4 +376,29 @@ fun ScreenPrimaryAction(label: String, icon: ImageVector? = Icons.Outlined.Add, 
 fun PrimaryActionBar(holder: PrimaryActionHolder) {
     val action = holder.action ?: return
     ActionBar { PrimaryButton(action.label, action.onClick, icon = action.icon) }
+}
+
+/**
+ * A setting shown as the field it opens (the Hogar board): its label above,
+ * its value in a box the shape of a text field, and its help under it. A
+ * value that cannot be changed shows a lock and no ripple.
+ */
+@Composable
+fun ValueField(label: String, value: String, modifier: Modifier = Modifier, help: String? = null, onClick: (() -> Unit)? = null) {
+    val c = FullaTheme.colors
+    val shape = RoundedCornerShape(12.dp)
+    Column(modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(label, style = FullaType.label, color = c.inkMuted)
+        Row(
+            Modifier.fillMaxWidth().clip(shape).background(if (onClick != null) c.paper else c.paperHigh)
+                .then(if (onClick != null) Modifier.border(1.dp, c.line, shape).clickable(onClick = onClick) else Modifier)
+                .heightIn(min = 52.dp).padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(value, style = FullaType.body, color = c.ink, modifier = Modifier.weight(1f))
+            Icon(if (onClick != null) androidx.compose.material.icons.Icons.Outlined.Edit else androidx.compose.material.icons.Icons.Outlined.Lock,
+                null, tint = c.inkMuted, modifier = Modifier.size(18.dp))
+        }
+        help?.let { Text(it, style = FullaType.secondary, color = c.inkMuted) }
+    }
 }

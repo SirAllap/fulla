@@ -720,14 +720,14 @@
     <string name="db_update_copied">Update kopiert. Füge es im SQL-Editor ein und drücke Run.</string>
     <string name="fixed_charged_group">Schon abgebucht (%1$d)</string>
     <string name="fixed_charged_skipped_group">Abgebucht und ausgelassen (%1$d)</string>
-    <string name="settings_group_home">Haushalt</string>
-    <string name="settings_group_home_help">Wer ihn teilt und wie er sich abgleicht.</string>
-    <string name="settings_group_money">Geld</string>
-    <string name="settings_group_money_help">Konten, Sparziele, Kategorien, Budgets und Wiederkehrendes.</string>
-    <string name="settings_group_data">Daten</string>
-    <string name="settings_group_data_help">Auszüge importieren, Regeln, Felder und Sicherungen.</string>
-    <string name="settings_group_app">App</string>
-    <string name="settings_group_app_help">Wie Fulla auf diesem Telefon aussieht, und seine Version.</string>
+    <string name="settings_group_home">Dein Haushalt</string>
+    <string name="settings_group_home_help">Wer dabei ist, Konten und Kategorien.</string>
+    <string name="settings_group_money">Planen</string>
+    <string name="settings_group_money_help">Fixkosten, Budgets, Ziele und Reisen.</string>
+    <string name="settings_group_data">Deine Daten</string>
+    <string name="settings_group_data_help">Kontoauszüge, Sicherungen und Synchronisierung.</string>
+    <string name="settings_group_app">Erweitert</string>
+    <string name="settings_group_app_help">Regeln, eigene Felder, Aussehen, andere Haushalte und Version.</string>
     <string name="settings_goals">Sparziele</string>
     <string name="all_accounts">Alle Konten</string>
     <string name="demo_notice">Beispieldaten · Meine verwenden</string>
@@ -870,4 +870,6 @@
     <string name="trip_rows">Jede Ausgabe</string>
     <string name="categories_archived_note">Archivierte Kategorien bleiben im Verlauf.</string>
     <string name="account_today">Heute: %1$s.</string>
+    <string name="settings_search">Einstellungen durchsuchen</string>
+    <string name="settings_search_none">Nichts in den Einstellungen heißt so.</string>
 </resources>

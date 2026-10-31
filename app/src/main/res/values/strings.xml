@@ -770,14 +770,14 @@
     <string name="db_update_copied">Update copied. Paste it in the SQL editor and press Run.</string>
     <string name="fixed_charged_group">Already charged (%1$d)</string>
     <string name="fixed_charged_skipped_group">Charged and skipped (%1$d)</string>
-    <string name="settings_group_home">Household</string>
-    <string name="settings_group_home_help">Who shares it and how it syncs.</string>
-    <string name="settings_group_money">Money</string>
-    <string name="settings_group_money_help">Accounts, goals, categories, budgets and what repeats.</string>
-    <string name="settings_group_data">Data</string>
-    <string name="settings_group_data_help">Bring in statements, rules, fields and backups.</string>
-    <string name="settings_group_app">App</string>
-    <string name="settings_group_app_help">How Fulla looks on this phone, and its version.</string>
+    <string name="settings_group_home">Your household</string>
+    <string name="settings_group_home_help">Who is in it, its accounts and categories.</string>
+    <string name="settings_group_money">Planning</string>
+    <string name="settings_group_money_help">Fixed costs, budgets, goals and trips.</string>
+    <string name="settings_group_data">Your data</string>
+    <string name="settings_group_data_help">Statements, backups and sync.</string>
+    <string name="settings_group_app">Advanced</string>
+    <string name="settings_group_app_help">Rules, your own fields, how it looks, other households and the version.</string>
     <string name="settings_goals">Savings goals</string>
     <string name="all_accounts">All accounts</string>
     <string name="demo_notice">Sample data · Use mine</string>
@@ -921,4 +921,6 @@
     <string name="trip_rows">Every expense</string>
     <string name="categories_archived_note">Archived categories stay in the history.</string>
     <string name="account_today">Today: %1$s.</string>
+    <string name="settings_search">Search settings</string>
+    <string name="settings_search_none">Nothing in Settings is called that.</string>
 </resources>

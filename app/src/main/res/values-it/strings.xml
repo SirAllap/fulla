@@ -720,14 +720,14 @@
     <string name="db_update_copied">Aggiornamento copiato. Incollalo nell’editor SQL e premi Run.</string>
     <string name="fixed_charged_group">Già addebitate (%1$d)</string>
     <string name="fixed_charged_skipped_group">Addebitate e saltate (%1$d)</string>
-    <string name="settings_group_home">Casa</string>
-    <string name="settings_group_home_help">Chi la condivide e come si sincronizza.</string>
-    <string name="settings_group_money">Soldi</string>
-    <string name="settings_group_money_help">Conti, obiettivi, categorie, budget e ciò che si ripete.</string>
-    <string name="settings_group_data">Dati</string>
-    <string name="settings_group_data_help">Importare estratti, regole, campi e backup.</string>
-    <string name="settings_group_app">App</string>
-    <string name="settings_group_app_help">Come appare Fulla su questo telefono, e la sua versione.</string>
+    <string name="settings_group_home">La tua casa</string>
+    <string name="settings_group_home_help">Chi ne fa parte, conti e categorie.</string>
+    <string name="settings_group_money">Pianificare</string>
+    <string name="settings_group_money_help">Spese fisse, budget, obiettivi e viaggi.</string>
+    <string name="settings_group_data">I tuoi dati</string>
+    <string name="settings_group_data_help">Estratti, backup e sincronizzazione.</string>
+    <string name="settings_group_app">Avanzate</string>
+    <string name="settings_group_app_help">Regole, campi personalizzati, aspetto, altre case e versione.</string>
     <string name="settings_goals">Obiettivi di risparmio</string>
     <string name="all_accounts">Tutti i conti</string>
     <string name="demo_notice">Dati di esempio · Usa i miei</string>
@@ -870,4 +870,6 @@
     <string name="trip_rows">Ogni spesa</string>
     <string name="categories_archived_note">Le categorie archiviate restano nello storico.</string>
     <string name="account_today">Oggi: %1$s.</string>
+    <string name="settings_search">Cerca nelle impostazioni</string>
+    <string name="settings_search_none">Niente nelle impostazioni si chiama così.</string>
 </resources>

@@ -231,18 +231,27 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     }
 
     Column {
-        ListRow(stringResource(R.string.household_name), context = h.name, onClick = if (canEdit) ({ editing = "name" }) else null)
-        ListRow(stringResource(R.string.currency), context = h.currency,
-            detail = stringResource(R.string.currency_change_note),
+        // As in the Hogar board: each setting as the field it opens, and how money is shared as one choice in sight.
+        io.github.sirallap.fulla.ui.components.ValueField(stringResource(R.string.household_name), h.name,
+            onClick = if (canEdit) ({ editing = "name" }) else null, modifier = Modifier.padding(top = 8.dp))
+        io.github.sirallap.fulla.ui.components.ValueField(stringResource(R.string.currency), h.currency, help = stringResource(R.string.currency_change_note),
             onClick = if (me != null && Permissions.canChangeCurrencyOrLimit(me)) ({ editing = "currency" }) else null)
-        ListRow(stringResource(R.string.period_start_day), context = stringResource(R.string.period_start_day_value, h.periodStartDay),
-            detail = stringResource(R.string.period_start_day_help), onClick = if (canEdit) ({ editing = "period_start_day" }) else null)
-        ListRow(stringResource(R.string.income_shift_day), context = h.incomeShiftDay?.let { stringResource(R.string.income_shift_day_value, it) }
-            ?: stringResource(R.string.off), detail = stringResource(R.string.income_shift_day_help),
-            onClick = if (canEdit) ({ editing = "income_shift_day" }) else null)
-        ListRow(stringResource(R.string.money_between_members),
-            context = stringResource(if (shared) R.string.shared_pot_card_title else R.string.money_mode_split_value),
-            onClick = if (canEdit && !switching) ({ choosingMode = true }) else null)
+        io.github.sirallap.fulla.ui.components.ValueField(stringResource(R.string.period_start_day), stringResource(R.string.period_start_day_value, h.periodStartDay),
+            help = stringResource(R.string.period_start_day_help), onClick = if (canEdit) ({ editing = "period_start_day" }) else null)
+        io.github.sirallap.fulla.ui.components.ValueField(stringResource(R.string.income_shift_day),
+            h.incomeShiftDay?.let { stringResource(R.string.income_shift_day_value, it) } ?: stringResource(R.string.off),
+            help = stringResource(R.string.income_shift_day_help), onClick = if (canEdit) ({ editing = "income_shift_day" }) else null)
+        Column(Modifier.padding(horizontal = 20.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.money_between_members), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+            if (canEdit && !switching) {
+                io.github.sirallap.fulla.ui.components.SegmentedChoice(
+                    listOf(MoneyMode.SPLIT to stringResource(R.string.money_mode_split_value), MoneyMode.SHARED to stringResource(R.string.shared_pot_card_title)),
+                    h.moneyMode, { choose(it) })
+            } else {
+                Text(stringResource(if (shared) R.string.shared_pot_card_title else R.string.money_mode_split_value), style = FullaType.body, color = FullaTheme.colors.ink)
+            }
+            Text(stringResource(if (shared) R.string.shared_pot_card_text else R.string.money_mode_split_help), style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
+        }
         modeError?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
     }
     if (choosingMode) {

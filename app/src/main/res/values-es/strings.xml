@@ -720,14 +720,14 @@
     <string name="db_update_copied">Actualización copiada. Pégala en el editor SQL y pulsa Run.</string>
     <string name="fixed_charged_group">Ya cobrados (%1$d)</string>
     <string name="fixed_charged_skipped_group">Cobrados y omitidos (%1$d)</string>
-    <string name="settings_group_home">Hogar</string>
-    <string name="settings_group_home_help">Quién lo comparte y cómo se sincroniza.</string>
-    <string name="settings_group_money">Dinero</string>
-    <string name="settings_group_money_help">Cuentas, metas, categorías, presupuestos y lo que se repite.</string>
-    <string name="settings_group_data">Datos</string>
-    <string name="settings_group_data_help">Traer extractos, reglas, campos y copias de seguridad.</string>
-    <string name="settings_group_app">App</string>
-    <string name="settings_group_app_help">Cómo se ve Fulla en este móvil y su versión.</string>
+    <string name="settings_group_home">Tu hogar</string>
+    <string name="settings_group_home_help">Quién está, sus cuentas y categorías.</string>
+    <string name="settings_group_money">Planificar</string>
+    <string name="settings_group_money_help">Gastos fijos, presupuestos, metas y viajes.</string>
+    <string name="settings_group_data">Tus datos</string>
+    <string name="settings_group_data_help">Extractos, copias de seguridad y sincronización.</string>
+    <string name="settings_group_app">Avanzado</string>
+    <string name="settings_group_app_help">Reglas, campos propios, apariencia, otros hogares y la versión.</string>
     <string name="settings_goals">Metas de ahorro</string>
     <string name="all_accounts">Todas las cuentas</string>
     <string name="demo_notice">Datos de ejemplo · Usar los míos</string>
@@ -870,4 +870,6 @@
     <string name="trip_rows">Cada gasto</string>
     <string name="categories_archived_note">Las archivadas siguen en el historial.</string>
     <string name="account_today">Hoy: %1$s.</string>
+    <string name="settings_search">Buscar en ajustes</string>
+    <string name="settings_search_none">Nada en Ajustes se llama así.</string>
 </resources>

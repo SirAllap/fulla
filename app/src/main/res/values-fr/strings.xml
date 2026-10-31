@@ -720,14 +720,14 @@
     <string name="db_update_copied">Mise à jour copiée. Collez-la dans l’éditeur SQL et appuyez sur Run.</string>
     <string name="fixed_charged_group">Déjà prélevés (%1$d)</string>
     <string name="fixed_charged_skipped_group">Prélevés et ignorés (%1$d)</string>
-    <string name="settings_group_home">Foyer</string>
-    <string name="settings_group_home_help">Qui le partage et comment il se synchronise.</string>
-    <string name="settings_group_money">Argent</string>
-    <string name="settings_group_money_help">Comptes, objectifs, catégories, budgets et ce qui se répète.</string>
-    <string name="settings_group_data">Données</string>
-    <string name="settings_group_data_help">Importer des relevés, règles, champs et sauvegardes.</string>
-    <string name="settings_group_app">App</string>
-    <string name="settings_group_app_help">L\'apparence de Fulla sur ce téléphone, et sa version.</string>
+    <string name="settings_group_home">Votre foyer</string>
+    <string name="settings_group_home_help">Qui en fait partie, ses comptes et catégories.</string>
+    <string name="settings_group_money">Planifier</string>
+    <string name="settings_group_money_help">Dépenses fixes, budgets, objectifs et voyages.</string>
+    <string name="settings_group_data">Vos données</string>
+    <string name="settings_group_data_help">Relevés, sauvegardes et synchronisation.</string>
+    <string name="settings_group_app">Avancé</string>
+    <string name="settings_group_app_help">Règles, champs personnalisés, apparence, autres foyers et version.</string>
     <string name="settings_goals">Objectifs d\'épargne</string>
     <string name="all_accounts">Tous les comptes</string>
     <string name="demo_notice">Données d\'exemple · Utiliser les miennes</string>
@@ -870,4 +870,6 @@
     <string name="trip_rows">Chaque dépense</string>
     <string name="categories_archived_note">Les catégories archivées restent dans l\'historique.</string>
     <string name="account_today">Aujourd\'hui : %1$s.</string>
+    <string name="settings_search">Rechercher dans les réglages</string>
+    <string name="settings_search_none">Rien dans les réglages ne s\'appelle ainsi.</string>
 </resources>

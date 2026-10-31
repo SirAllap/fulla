@@ -720,14 +720,14 @@
     <string name="db_update_copied">Atualização copiada. Cola-a no editor SQL e prime Run.</string>
     <string name="fixed_charged_group">Já cobradas (%1$d)</string>
     <string name="fixed_charged_skipped_group">Cobradas e ignoradas (%1$d)</string>
-    <string name="settings_group_home">Casa</string>
-    <string name="settings_group_home_help">Quem a partilha e como sincroniza.</string>
-    <string name="settings_group_money">Dinheiro</string>
-    <string name="settings_group_money_help">Contas, metas, categorias, orçamentos e o que se repete.</string>
-    <string name="settings_group_data">Dados</string>
-    <string name="settings_group_data_help">Importar extratos, regras, campos e cópias de segurança.</string>
-    <string name="settings_group_app">App</string>
-    <string name="settings_group_app_help">Como o Fulla aparece neste telemóvel, e a sua versão.</string>
+    <string name="settings_group_home">A tua casa</string>
+    <string name="settings_group_home_help">Quem faz parte, contas e categorias.</string>
+    <string name="settings_group_money">Planear</string>
+    <string name="settings_group_money_help">Gastos fixos, orçamentos, metas e viagens.</string>
+    <string name="settings_group_data">Os teus dados</string>
+    <string name="settings_group_data_help">Extratos, cópias de segurança e sincronização.</string>
+    <string name="settings_group_app">Avançado</string>
+    <string name="settings_group_app_help">Regras, campos próprios, aspeto, outras casas e versão.</string>
     <string name="settings_goals">Metas de poupança</string>
     <string name="all_accounts">Todas as contas</string>
     <string name="demo_notice">Dados de exemplo · Usar os meus</string>
@@ -870,4 +870,6 @@
     <string name="trip_rows">Cada gasto</string>
     <string name="categories_archived_note">As arquivadas continuam no histórico.</string>
     <string name="account_today">Hoje: %1$s.</string>
+    <string name="settings_search">Procurar nas definições</string>
+    <string name="settings_search_none">Nada nas definições tem esse nome.</string>
 </resources>

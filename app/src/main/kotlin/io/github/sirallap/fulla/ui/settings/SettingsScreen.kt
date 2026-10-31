@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.material.icons.outlined.Search
 import io.github.sirallap.fulla.ui.components.listEndPadding
 import android.content.Intent
 import android.net.Uri
@@ -167,17 +168,38 @@ private fun LazyListScope.index(
             )
         }
     }
-    // Four blocks, each with what it is for, instead of one long list: the household, its money, its data, the app.
-    for (group in SettingsGroup.entries) {
-        item(key = "group-${group.name}") {
+    // As in the board: a search over every section, then four blocks, each row with what it holds on the right.
+    item(key = "groups") {
+        var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+        androidx.compose.material3.OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+            placeholder = { Text(stringResource(R.string.settings_search)) }, singleLine = true,
+            leadingIcon = { Icon(Icons.Outlined.Search, null) })
+        val q = query.trim().lowercase()
+        @Composable
+        fun row(s: SettingsSection, divider: Boolean) {
+            val count: String? = when (s) {
+                SettingsSection.MEMBERS -> view.config.activeMembers.size.toString()
+                SettingsSection.ACCOUNTS -> view.config.accounts.count { !it.archived }.toString()
+                SettingsSection.RECURRING -> view.config.recurringRules.count { !it.archived && it.active }.takeIf { it > 0 }?.toString()
+                SettingsSection.GOALS -> view.config.goals.count { !it.archived }.takeIf { it > 0 }?.toString()
+                SettingsSection.TRIPS -> view.config.trips.count { !it.archived }.takeIf { it > 0 }?.toString()
+                else -> null
+            }
+            ListRow(stringResource(s.title), icon = s.icon, onClick = { onOpen(s) }, divider = divider,
+                end = {
+                    count?.let { Text(it, style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = FullaTheme.colors.inkMuted) }
+                    Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.inkMuted)
+                })
+        }
+        if (q.isNotEmpty()) {
+            val found = SettingsGroup.entries.flatMap { it.sections }.filter { stringResource(it.title).lowercase().contains(q) }
+            CardGroup { found.forEachIndexed { i, s -> row(s, i < found.lastIndex) } }
+            if (found.isEmpty()) Text(stringResource(R.string.settings_search_none), color = FullaTheme.colors.inkMuted, modifier = Modifier.padding(20.dp))
+        } else for (group in SettingsGroup.entries) {
             GroupTitle(stringResource(group.title), stringResource(group.help), top = if (group.ordinal == 0) 12.dp else 28.dp)
             CardGroup {
                 val sections = group.sections
-                sections.forEachIndexed { i, s ->
-                    ListRow(stringResource(s.title), icon = s.icon, onClick = { onOpen(s) },
-                        divider = i < sections.lastIndex || group == SettingsGroup.APP,
-                        end = { Icon(Icons.Outlined.ChevronRight, null, tint = FullaTheme.colors.inkMuted) })
-                }
+                sections.forEachIndexed { i, s -> row(s, i < sections.lastIndex || group == SettingsGroup.APP) }
                 if (group == SettingsGroup.APP) {
                     val container = LocalContainer.current
                     val scope = rememberCoroutineScope()
@@ -195,17 +217,16 @@ private fun LazyListScope.index(
     }
 }
 
-/** The blocks of Settings and the sections in each. Every section but the index is in exactly one (SettingsGroupsTest). */
 enum class SettingsGroup(val title: Int, val help: Int, val sections: List<SettingsSection>) {
+    // As in the Ajustes board: the household, planning, its data, and what is rarely touched.
     HOME(R.string.settings_group_home, R.string.settings_group_home_help,
-        listOf(SettingsSection.HOUSEHOLD, SettingsSection.MEMBERS, SettingsSection.SYNC, SettingsSection.HOUSEHOLDS)),
+        listOf(SettingsSection.HOUSEHOLD, SettingsSection.MEMBERS, SettingsSection.ACCOUNTS, SettingsSection.CATEGORIES)),
     MONEY(R.string.settings_group_money, R.string.settings_group_money_help,
-        listOf(SettingsSection.ACCOUNTS, SettingsSection.GOALS, SettingsSection.CATEGORIES, SettingsSection.BUDGETS,
-            SettingsSection.RECURRING, SettingsSection.TRIPS)),
+        listOf(SettingsSection.RECURRING, SettingsSection.BUDGETS, SettingsSection.GOALS, SettingsSection.TRIPS)),
     DATA(R.string.settings_group_data, R.string.settings_group_data_help,
-        listOf(SettingsSection.IMPORT, SettingsSection.RULES, SettingsSection.FIELDS, SettingsSection.BACKUP)),
+        listOf(SettingsSection.IMPORT, SettingsSection.BACKUP, SettingsSection.SYNC)),
     APP(R.string.settings_group_app, R.string.settings_group_app_help,
-        listOf(SettingsSection.APPEARANCE, SettingsSection.ABOUT)),
+        listOf(SettingsSection.RULES, SettingsSection.FIELDS, SettingsSection.APPEARANCE, SettingsSection.HOUSEHOLDS, SettingsSection.ABOUT)),
 }
 
 /** A new version, impossible to miss: what it is for and the button, at the top of Settings. */
