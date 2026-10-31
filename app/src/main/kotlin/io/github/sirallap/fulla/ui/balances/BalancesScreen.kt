@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import io.github.sirallap.fulla.ui.components.listEndPadding
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
