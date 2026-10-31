@@ -334,6 +334,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         }
 
         KeypadPad(
+            aboveTabBar = headerActions != null,
             keypad = draft.keypad,
             decimal = view.formats.decimalStyle.decimal,
             amount = view.formats.money(draft.keypad.totalMinor),
@@ -612,11 +613,14 @@ private fun DateSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Unit) 
  * figure, "Save · €12.50", never a bare grey tick.
  */
 @Composable
-private fun KeypadPad(keypad: Keypad, decimal: Char, amount: String, onChange: (Keypad) -> Unit, onSave: () -> Unit, saveLabel: String, saved: Boolean = false) {
+private fun KeypadPad(keypad: Keypad, decimal: Char, amount: String, onChange: (Keypad) -> Unit, onSave: () -> Unit, saveLabel: String, saved: Boolean = false,
+                      aboveTabBar: Boolean = false) {
     val c = FullaTheme.colors
     val gap = 6.dp
     val key = 52.dp
-    Column(Modifier.fillMaxWidth().guideTarget(TourStop.ADD_AND_KEYPAD).background(c.paperHigh).navigationBarsPadding().padding(8.dp),
+    Column(Modifier.fillMaxWidth().guideTarget(TourStop.ADD_AND_KEYPAD).background(c.paperHigh)
+        // On the Add tab the tab bar under it already keeps clear of the navigation bar: padding twice left a gap under Save.
+        .then(if (aboveTabBar) Modifier else Modifier.navigationBarsPadding()).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
             Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(gap)) {
