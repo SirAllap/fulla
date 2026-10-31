@@ -201,8 +201,9 @@ private fun GoalScreen(view: HouseholdView, goal: Goal, canEdit: Boolean, onDism
     ) {
         cheer?.let { q ->
             // A cheer at each quarter of the way, popping in.
-            val pop = remember(q) { Animatable(if (FullaMotion.reduced()) 1f else 0.6f) }
-            val settle = FullaMotion.settle<Float>(FullaMotion.reduced())
+            val reduced = FullaMotion.reduced()
+            val pop = remember(q) { Animatable(if (reduced) 1f else 0.6f) }
+            val settle = FullaMotion.settle<Float>(reduced)
             LaunchedEffect(q) { pop.animateTo(1f, settle) }
             Text(
                 stringResource(when (q) { 25 -> R.string.goal_quarter_25; 50 -> R.string.goal_quarter_50; 75 -> R.string.goal_quarter_75; else -> R.string.goal_quarter_100 }),
