@@ -40,6 +40,8 @@ fun RulesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             ListRow("“${r.pattern}”", titleColor = if (r.active) c.ink else c.inkMuted,
                 context = "→ " + (view.categoryName(r.categoryId) ?: stringResource(R.string.uncategorized)),
                 detail = if (!r.active) stringResource(R.string.paused) else null,
+                // Pausing is a switch in sight (docs/ux.md, piece 7); the row takes the tap.
+                end = { androidx.compose.material3.Switch(checked = r.active, onCheckedChange = null, enabled = canEdit) },
                 onClick = if (canEdit) ({
                     val stored = Wire.list(view.state.bundle["categorization_rules"]).firstOrNull { (it["id"] as? JsonPrimitive)?.content == r.id }
                     if (stored != null) change { api -> ledger.upsert(view.id, Structure.RULE, JsonObject(stored + ("active" to JsonPrimitive(!r.active))), api) }

@@ -865,4 +865,9 @@
     <string name="other_device">Sign in on another device</string>
     <string name="other_device_text">A QR code with where your household lives. The other phone only asks for an email and password.</string>
     <string name="other_device_steps">On the other phone: open Fulla, tap “I use Fulla already: sign in”, then “Scan a QR code from another phone”, and sign in with your own email and password. Anybody new needs an invite instead.</string>
+    <string name="recurring_month_share">Every month, on average</string>
+    <string name="recurring_soon">Next 7 days</string>
+    <string name="recurring_later">Later</string>
+    <string name="recurring_stopped">Paused or ended</string>
+    <string name="make_recurring">Make it a fixed cost</string>
 </resources>

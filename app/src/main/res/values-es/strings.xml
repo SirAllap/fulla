@@ -814,4 +814,9 @@
     <string name="other_device">Entrar en otro dispositivo</string>
     <string name="other_device_text">Un QR con dónde vive tu hogar. El otro móvil solo pide email y contraseña.</string>
     <string name="other_device_steps">En el otro móvil: abre Fulla, toca «Ya uso Fulla: entrar», luego «Escanear el QR de otro móvil», y entra con tu propio email y contraseña. Alguien nuevo necesita una invitación.</string>
+    <string name="recurring_month_share">Cada mes, de media</string>
+    <string name="recurring_soon">Próximos 7 días</string>
+    <string name="recurring_later">Más adelante</string>
+    <string name="recurring_stopped">En pausa o terminados</string>
+    <string name="make_recurring">Convertir en gasto fijo</string>
 </resources>

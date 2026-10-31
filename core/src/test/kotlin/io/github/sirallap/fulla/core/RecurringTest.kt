@@ -22,6 +22,29 @@ class RecurringTest {
         Scheduler.occurrences(r, LocalDate.parse(from), LocalDate.parse(to)).map { it.toString() }
 
     @Test
+    fun `the next payment is the first one from today, and none once it has ended or is paused`() {
+        val r = rule(Schedule(Frequency.MONTHLY, byMonthDay = 15), end = "2030-03-15")
+        assertEquals(LocalDate.parse("2030-01-15"), Scheduler.nextDue(r, LocalDate.parse("2030-01-15")))
+        assertEquals(LocalDate.parse("2030-02-15"), Scheduler.nextDue(r, LocalDate.parse("2030-01-16")))
+        assertEquals(null, Scheduler.nextDue(r, LocalDate.parse("2030-03-16")))
+        assertEquals(null, Scheduler.nextDue(r.copy(active = false), LocalDate.parse("2030-01-01")))
+    }
+
+    @Test
+    fun `a month's share counts the year ahead, whatever the calendar`() {
+        val amount = Fixtures.expense().amountMinor
+        val monthly = rule(Schedule(Frequency.MONTHLY, byMonthDay = 1))
+        val quarterly = rule(Schedule(Frequency.MONTHLY, interval = 3, byMonthDay = 1))
+        val twoLeft = rule(Schedule(Frequency.MONTHLY, byMonthDay = 1), end = "2030-02-01")
+        val today = LocalDate.parse("2030-01-01")
+        assertEquals(amount, Scheduler.monthlyShare(listOf(monthly), today))
+        assertEquals(amount * 4 / 12, Scheduler.monthlyShare(listOf(quarterly), today))
+        assertEquals(amount * 2 / 12, Scheduler.monthlyShare(listOf(twoLeft), today))
+        assertEquals(0L, Scheduler.monthlyShare(listOf(monthly.copy(active = false)), today))
+        assertEquals((amount * 12 + amount * 4 + amount * 2) / 12, Scheduler.monthlyShare(listOf(monthly, quarterly, twoLeft), today))
+    }
+
+    @Test
     fun `the last day of the month is the last day of every month`() {
         assertEquals(listOf("2030-01-31", "2030-02-28", "2030-03-31", "2030-04-30"),
             dates(rule(Schedule(Frequency.MONTHLY, byMonthDay = -1)), "2030-01-01", "2030-04-30"))

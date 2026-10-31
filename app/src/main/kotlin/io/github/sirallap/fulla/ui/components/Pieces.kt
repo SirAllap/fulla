@@ -118,7 +118,7 @@ fun TabHeader(
 ) {
     val c = FullaTheme.colors
     Row(
-        modifier.fillMaxWidth().height(64.dp).background(c.paper).padding(start = 20.dp, end = 4.dp),
+        modifier.fillMaxWidth().heightIn(min = 64.dp).background(c.paper).padding(start = 20.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -135,7 +135,7 @@ fun TabHeader(
 fun BackHeader(title: String, onBack: () -> Unit, menu: List<MenuItem> = emptyList(), modifier: Modifier = Modifier) {
     val c = FullaTheme.colors
     Row(
-        modifier.fillMaxWidth().height(64.dp).background(c.paper).padding(horizontal = 4.dp),
+        modifier.fillMaxWidth().heightIn(min = 64.dp).background(c.paper).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {

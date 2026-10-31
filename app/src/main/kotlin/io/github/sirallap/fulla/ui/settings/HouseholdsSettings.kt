@@ -2,6 +2,10 @@
 package io.github.sirallap.fulla.ui.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
@@ -33,7 +37,8 @@ fun HouseholdsSettings(view: HouseholdView, onBack: () -> Unit) {
                 end = { if (h.id == view.id) Icon(Icons.Outlined.Check, stringResource(R.string.current), tint = FullaTheme.colors.accent) },
             )
         }
-        ListRow(stringResource(R.string.add_household), context = stringResource(R.string.add_household_text), icon = Icons.Outlined.Add,
-            onClick = { container.addingHousehold.value = true })
+        Text(stringResource(R.string.add_household_text), style = io.github.sirallap.fulla.ui.theme.FullaType.secondary,
+            color = FullaTheme.colors.inkMuted, modifier = Modifier.padding(20.dp))
     }
+    io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.add_household)) { container.addingHousehold.value = true }
 }

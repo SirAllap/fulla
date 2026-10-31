@@ -76,3 +76,4 @@ states. If two screens need the same thing, it is a component.
 
 - 48 dp minimum targets; primary actions in the bottom third.
 - One primary action per screen.
+- How each piece behaves, its measures and its alignment: `docs/ux.md`.

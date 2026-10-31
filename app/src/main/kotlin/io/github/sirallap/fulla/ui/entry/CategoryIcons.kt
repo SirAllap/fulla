@@ -35,6 +35,10 @@ import androidx.compose.material.icons.outlined.Subscriptions
 import androidx.compose.material.icons.outlined.TheaterComedy
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 
 /**
  * Category icons by their stored name (Material Symbols names), so a
@@ -78,4 +82,22 @@ object CategoryIcons {
     )
 
     fun of(name: String): ImageVector = all[name] ?: Icons.Outlined.Label
+}
+
+/**
+ * A row's category at a glance: its icon in its colour on a tile of that
+ * colour (docs/ux.md, piece 11). A row with no category gets the label icon
+ * in the muted ink, never an empty space.
+ */
+@androidx.compose.runtime.Composable
+fun CategoryBadge(category: io.github.sirallap.fulla.core.model.Category?, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+    val c = io.github.sirallap.fulla.ui.theme.FullaTheme.colors
+    val tint = category?.let { c.category(it.colorIndex) } ?: c.inkMuted
+    androidx.compose.foundation.layout.Box(
+        modifier.size(40.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(tint.copy(alpha = 0.14f)),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
+    ) {
+        androidx.compose.material3.Icon(category?.let { CategoryIcons.of(it.icon) } ?: Icons.Outlined.Label, null,
+            tint = tint, modifier = androidx.compose.ui.Modifier.size(22.dp))
+    }
 }

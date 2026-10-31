@@ -217,9 +217,15 @@ fun InsightsScreen(view: HouseholdView, onBack: () -> Unit, onFixedCosts: () -> 
                     val done = r.note in made
                     ListRow(r.note, context = stringResource(R.string.seen_in_months, r.months),
                         detail = if (done) stringResource(R.string.now_recurring)
-                            else if (canEdit) stringResource(R.string.tap_to_make_recurring)
                             else stringResource(R.string.last_seen, f.day(r.lastDate)),
                         onClick = if (canEdit && !done) ({ makeRecurring(r) }) else null,
+                        // A button that says what it does, not "tap to…" in grey (docs/ux.md, piece 1).
+                        below = if (canEdit && !done) ({
+                            androidx.compose.material3.TextButton(onClick = { makeRecurring(r) },
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = androidx.compose.ui.unit.Dp(0f))) {
+                                androidx.compose.material3.Text(stringResource(R.string.make_recurring))
+                            }
+                        }) else null,
                         end = { AmountText(f.money(r.typicalMinor)) })
                 }
             }
