@@ -254,12 +254,16 @@ The History draws it under its purchase, as a line of that row, not as a row of 
 phone says nothing when it writes one: a message over the tab bar was tried and was in the way. A person can ask for
 the rounding of the current period's purchases once (`RoundUps.backfill`, `Ledger.applyRoundUpBackfill`).
 
-### A savings goal stores no progress
+### A savings goal is a jar of its own, or an account
 
-A goal (`fulla.goals`, migration 0023; `core/.../goals/Goals.kt`) is a name, an amount, an account and maybe a date.
-What has been saved is that account's balance, so a goal can never disagree with the account. It is structure, in the
-config bundle like a trip; a phone-only household that is shared uploads its goals one by one right after the
-household (`Ledger.connect`), because each names an account the upload has just saved.
+A goal (`fulla.goals`, migrations 0023 and 0024; `core/.../goals/Goals.kt`) is a name, an amount and maybe a date.
+Usually it keeps a jar of its own: what is put in and taken out, one entry each, in `contributions`; nothing moves
+between accounts. A goal that names an account instead reads that account's balance. The server merges a goal's
+entries by id and never drops one it already has (`fulla.save_goal`), so two phones putting money in at once both
+count; an entry is taken back by marking it `deleted`. It is structure, in the config bundle like a trip; a
+phone-only household that is shared uploads its goals one by one right after the household (`Ledger.connect`).
+Before writing a jar to a connected household the app checks the backend has 0024 (`AppContainer.backendBehind`),
+as an older one would drop the entries without a word.
 
 ### Migrations
 

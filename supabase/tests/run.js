@@ -625,8 +625,43 @@ test('savings goals: a member saves one, it names an account of the household, a
   fails({ id: uuid(), name: 'Car', target_minor: 0, account_id: account });
   fails({ id: uuid(), name: 'Car', target_minor: -5, account_id: account });
   fails({ id: uuid(), name: 'Car', target_minor: 100, account_id: uuid() });
-  fails({ id: uuid(), name: 'Car', target_minor: 100 });
   fails({ id: uuid(), name: 'Car', target_minor: 100, account_id: account, target_date: 'soon' });
+});
+
+test('a goal with a jar of its own: no account, entries merged by id so two phones never lose one, taken back by marking', (ctx) => {
+  const bob = join(ctx, 'Bob');
+  const id = uuid();
+  const goal = { id, name: 'New car', target_minor: 900000, account_id: null };
+  const save = (who, g) => rpc(ctx.db, who, 'fulla_goal_upsert', { p_household_id: ctx.hh, p_goal: g });
+  const fails = (g) => expectError(ctx.db, ctx.alice, 'fulla_goal_upsert', { p_household_id: ctx.hh, p_goal: g }, 'validation_failed');
+  const a = { id: uuid(), date: '2030-01-05', amount_minor: 20000, member_id: null };
+  const b = { id: uuid(), date: '2030-01-20', amount_minor: 15000, note: 'Bonus' };
+  const out = { id: uuid(), date: '2030-02-02', amount_minor: -5000 };
+
+  let cfg = save(ctx.alice, { ...goal, contributions: [a] });
+  assert.equal(cfg.goals[0].account_id, null, 'no account: a jar of its own');
+  assert.equal(cfg.goals[0].contributions.length, 1);
+  // Bob's phone has not heard of Alice's entry: it still counts.
+  cfg = save(bob.user, { ...goal, contributions: [b] });
+  assert.deepEqual(cfg.goals[0].contributions.map((e) => e.amount_minor), [20000, 15000]);
+  assert.equal(cfg.goals[0].contributions[1].note, 'Bonus');
+  // Renaming the goal without any entries keeps them all.
+  cfg = save(ctx.alice, { ...goal, name: 'Car' });
+  assert.equal(cfg.goals[0].name, 'Car');
+  assert.equal(cfg.goals[0].contributions.length, 2);
+  // Taking money out is a negative entry; taking an entry back marks it.
+  cfg = save(ctx.alice, { ...goal, contributions: [out, { ...b, deleted: true }] });
+  const entries = cfg.goals[0].contributions;
+  assert.equal(entries.length, 3);
+  assert.equal(entries.find((e) => e.id === b.id).deleted, true);
+  assert.equal(entries.filter((e) => !e.deleted).reduce((sum, e) => sum + e.amount_minor, 0), 15000);
+
+  fails({ ...goal, id: uuid(), contributions: [{ id: uuid(), date: '2030-01-01', amount_minor: 0 }] });
+  fails({ ...goal, id: uuid(), contributions: [{ id: uuid(), date: 'soon', amount_minor: 100 }] });
+  fails({ ...goal, id: uuid(), contributions: [{ date: '2030-01-01', amount_minor: 100 }] });
+  fails({ ...goal, id: uuid(), contributions: [{ id: uuid(), date: '2030-01-01', amount_minor: 100, note: 'x'.repeat(81) }] });
+  fails({ ...goal, id: uuid(), contributions: 'lots' });
+  fails({ ...goal, id: uuid(), account_id: uuid() });
 });
 
 test('categories nest one level deep', (ctx) => {

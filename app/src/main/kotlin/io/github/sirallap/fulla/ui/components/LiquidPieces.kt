@@ -82,6 +82,21 @@ private fun DrawScope.liquidSheet(level: Float, surface: Color, body: Color, ver
 }
 
 /**
+ * The jar's liquid behind whatever this modifies, filled to [level] (0..1),
+ * rising to it when first shown and whenever it changes: a goal's card and
+ * its jar. [vertical] fills from the bottom, otherwise from the left.
+ */
+@Composable
+fun Modifier.liquid(level: Float, tone: LiquidTone = LiquidTone.IN, vertical: Boolean = false, phase: Float = 0f): Modifier {
+    val c = FullaTheme.colors
+    val (surface, body) = toneColors(tone)
+    val reduced = FullaMotion.reduced()
+    val shown = remember { Animatable(if (reduced) level else 0f) }
+    LaunchedEffect(level) { shown.animateTo(level, FullaMotion.liquid(reduced)) }
+    return drawBehind { liquidSheet(shown.value, surface, body, vertical = vertical, phase = phase, alpha = if (c.isDark) 0.42f else 0.30f) }
+}
+
+/**
  * A figure on a glass tile that fills with the jar's liquid to [level]: how
  * much of the income is gone, how far through the period, how many days had
  * no spending. Null [level] leaves the glass empty, for a figure with nothing

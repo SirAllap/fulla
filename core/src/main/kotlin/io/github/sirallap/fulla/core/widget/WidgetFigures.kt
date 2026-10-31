@@ -108,7 +108,7 @@ object WidgetData {
     /** The first savings goal still open, with its progress as Balances shows it; null without one. */
     fun goal(config: Config, analytics: Analytics, txs: List<Transaction>, today: LocalDate): Pair<Goal, GoalProgress>? {
         val goal = config.goals.firstOrNull { !it.archived } ?: return null
-        val balance = analytics.accountBalances(txs, config.accounts, today)[goal.accountId] ?: 0
+        val balance = Goals.saved(goal, analytics.accountBalances(txs, config.accounts, today))
         return goal to Goals.progress(goal, balance, today)
     }
 

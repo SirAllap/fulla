@@ -275,6 +275,17 @@ class AppContainer(private val context: Context) {
         }
     }
 
+    /**
+     * True only when the connected backend is known to be older than this
+     * build (offline or nothing connected: false), for a change an old
+     * backend would drop without a word: a goal's jar (0024_goal_jars.sql).
+     */
+    suspend fun backendBehind(): Boolean {
+        val supabase = supabase() ?: return false
+        if (supabase.currentSession() == null) return false
+        return checkSchemaVersion(supabase) == DbUpdateStatus.NeedsUpdate
+    }
+
     companion object {
         const val UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000L
         private val MIGRATION_FILENAME = Regex("""^(\d{4})_.+\.sql$""")

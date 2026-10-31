@@ -4,6 +4,7 @@ package io.github.sirallap.fulla.client.wire
 import io.github.sirallap.fulla.core.importers.CategorizationRule
 import io.github.sirallap.fulla.core.model.Account
 import io.github.sirallap.fulla.core.goals.Goal
+import io.github.sirallap.fulla.core.goals.GoalEntry
 import io.github.sirallap.fulla.core.model.RoundUp
 import io.github.sirallap.fulla.core.roundup.RoundUps
 import io.github.sirallap.fulla.core.model.AccountType
@@ -237,17 +238,33 @@ object Wire {
 
     fun goal(o: JsonObject): Goal? {
         val id = o.str("id") ?: return null
-        val account = o.str("account_id") ?: return null
         return Goal(
-            id = id, name = o.str("name") ?: "", targetMinor = o.long("target_minor") ?: return null, accountId = account,
+            id = id, name = o.str("name") ?: "", targetMinor = o.long("target_minor") ?: return null,
+            // No account: a jar of its own (0024_goal_jars.sql).
+            accountId = o.str("account_id"),
             targetDate = o.str("target_date")?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
             archived = o.bool("archived") ?: false,
+            contributions = o.arr("contributions").mapNotNull { e ->
+                val entry = e as? JsonObject ?: return@mapNotNull null
+                GoalEntry(
+                    id = entry.str("id") ?: return@mapNotNull null,
+                    date = entry.str("date")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return@mapNotNull null,
+                    amountMinor = entry.long("amount_minor") ?: return@mapNotNull null,
+                    note = entry.str("note"), memberId = entry.str("member_id"), deleted = entry.bool("deleted") ?: false,
+                )
+            },
         )
     }
 
     fun goal(g: Goal): JsonObject = buildJsonObject {
         put("id", g.id); put("name", g.name); put("target_minor", g.targetMinor); put("account_id", g.accountId)
         put("target_date", g.targetDate?.toString()); put("archived", g.archived)
+        put("contributions", kotlinx.serialization.json.JsonArray(g.contributions.map { e ->
+            buildJsonObject {
+                put("id", e.id); put("date", e.date.toString()); put("amount_minor", e.amountMinor)
+                put("note", e.note); put("member_id", e.memberId); put("deleted", e.deleted)
+            }
+        }))
     }
 
     fun trip(o: JsonObject): Trip = Trip(

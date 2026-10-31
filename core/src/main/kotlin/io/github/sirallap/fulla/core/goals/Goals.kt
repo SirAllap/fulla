@@ -5,17 +5,42 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /**
- * A savings goal: an amount to reach, kept in one account, by a date if there is one. What has been saved is that
- * account's balance; nothing else is written down for it, so the goal and the account can never disagree.
+ * One movement of a goal's own jar: money put in (positive) or taken out (negative), on a day, by someone. Taken back
+ * by [deleted], never removed: the server merges a goal's entries by id (0024_goal_jars.sql), so an entry another
+ * phone has not heard of yet is never lost.
+ */
+data class GoalEntry(
+    val id: String,
+    val date: LocalDate,
+    val amountMinor: Long,
+    val note: String? = null,
+    val memberId: String? = null,
+    val deleted: Boolean = false,
+)
+
+/**
+ * A savings goal: an amount to reach, by a date if there is one. What has been saved is either the goal's own jar
+ * (no [accountId]: the sum of its [contributions]) or, for a goal that names an account, that account's balance;
+ * either way nothing else is written down for it, so the goal never disagrees with what it is made of.
  */
 data class Goal(
     val id: String,
     val name: String,
     val targetMinor: Long,
-    val accountId: String,
+    val accountId: String? = null,
     val targetDate: LocalDate? = null,
     val archived: Boolean = false,
-)
+    val contributions: List<GoalEntry> = emptyList(),
+) {
+    /** A jar of its own, rather than an account's balance. */
+    val ownJar: Boolean get() = accountId == null
+
+    /** The entries that count, newest first. */
+    val entries: List<GoalEntry> get() = contributions.filter { !it.deleted }.sortedWith(compareByDescending<GoalEntry> { it.date }.thenByDescending { it.id })
+
+    /** What the jar holds: everything put in, less everything taken out. */
+    val jarMinor: Long get() = contributions.filter { !it.deleted }.sumOf { it.amountMinor }
+}
 
 /**
  * Where a goal stands. [savedMinor] is the account's balance, never below zero; [leftMinor] what is still missing,
@@ -48,6 +73,19 @@ object Goals {
         val months = date?.takeIf { it >= today }?.let { monthsBetween(YearMonth.from(today), YearMonth.from(it)) + 1 }
         val perMonth = if (months != null && left > 0) (left + months - 1) / months else null
         return GoalProgress(saved, left, fraction, perMonth, months, late)
+    }
+
+    /** What [goal] has saved: its own jar, or its account's balance from [balances]. */
+    fun saved(goal: Goal, balances: Map<String, Long>): Long =
+        goal.accountId?.let { balances[it] ?: 0L } ?: goal.jarMinor
+
+    /**
+     * The quarter of the way (25, 50, 75 or 100 %) that putting money in has just crossed, going from [beforeMinor]
+     * to [afterMinor] of [targetMinor]; null when none was crossed, or when money was taken out.
+     */
+    fun milestone(beforeMinor: Long, afterMinor: Long, targetMinor: Long): Int? {
+        if (afterMinor <= beforeMinor || targetMinor <= 0) return null
+        return listOf(100, 75, 50, 25).firstOrNull { q -> beforeMinor * 100 < targetMinor * q && afterMinor * 100 >= targetMinor * q }
     }
 
     private fun monthsBetween(from: YearMonth, to: YearMonth): Int = (to.year - from.year) * 12 + (to.monthValue - from.monthValue)

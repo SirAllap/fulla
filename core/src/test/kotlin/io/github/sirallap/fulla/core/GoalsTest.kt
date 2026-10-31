@@ -63,4 +63,27 @@ class GoalsTest {
         assertEquals(1, p.monthsLeft)
         assertEquals(10_000, p.perMonthMinor)
     }
+
+    @Test
+    fun `a goal of its own counts what was put in less what was taken out, and an account's goal its balance`() {
+        val jar = io.github.sirallap.fulla.core.goals.Goal("g", "New car", 900_000, contributions = listOf(
+            io.github.sirallap.fulla.core.goals.GoalEntry("a", java.time.LocalDate.of(2030, 1, 5), 20_000),
+            io.github.sirallap.fulla.core.goals.GoalEntry("b", java.time.LocalDate.of(2030, 1, 20), 15_000, deleted = true),
+            io.github.sirallap.fulla.core.goals.GoalEntry("c", java.time.LocalDate.of(2030, 2, 2), -5_000),
+        ))
+        kotlin.test.assertEquals(15_000, io.github.sirallap.fulla.core.goals.Goals.saved(jar, mapOf("acc" to 99_999)))
+        kotlin.test.assertEquals(listOf("c", "a"), jar.entries.map { it.id }, "newest first, taken-back ones left out")
+        val linked = jar.copy(accountId = "acc")
+        kotlin.test.assertEquals(99_999, io.github.sirallap.fulla.core.goals.Goals.saved(linked, mapOf("acc" to 99_999)))
+    }
+
+    @Test
+    fun `putting money in says which quarter of the way it crossed, and taking it out never celebrates`() {
+        val goals = io.github.sirallap.fulla.core.goals.Goals
+        kotlin.test.assertEquals(25, goals.milestone(0, 25_000, 100_000))
+        kotlin.test.assertEquals(50, goals.milestone(20_000, 60_000, 100_000), "the highest quarter crossed")
+        kotlin.test.assertEquals(100, goals.milestone(90_000, 120_000, 100_000))
+        kotlin.test.assertEquals(null, goals.milestone(26_000, 30_000, 100_000))
+        kotlin.test.assertEquals(null, goals.milestone(60_000, 40_000, 100_000))
+    }
 }
