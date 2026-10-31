@@ -872,4 +872,13 @@
     <string name="account_today">Heute: %1$s.</string>
     <string name="settings_search">Einstellungen durchsuchen</string>
     <string name="settings_search_none">Nichts in den Einstellungen heißt so.</string>
+    <string name="backup_last_days">Die letzte Sicherung ist %1$d Tage alt</string>
+    <string name="backup_last_today">Heute gesichert</string>
+    <string name="backup_never">Noch keine Sicherung</string>
+    <string name="backup_export_text">Jede Bewegung in einer CSV-Datei, für eine Tabelle.</string>
+    <string name="settle_pays">%1$s zahlt %2$s</string>
+    <string name="settle_amount">Betrag</string>
+    <string name="settle_account">Auf welches Konto?</string>
+    <string name="settle_help">Du kannst weniger eintragen, wenn nur ein Teil zurückgezahlt wird.</string>
+    <string name="settle_record">Zahlung von %1$s erfassen</string>
 </resources>

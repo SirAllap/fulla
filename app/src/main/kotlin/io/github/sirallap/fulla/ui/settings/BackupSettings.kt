@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -85,13 +91,40 @@ fun BackupSettings(view: HouseholdView) {
         scope.launch { message = restoreBackup(context, container.ledger, uri) ?: R.string.backup_restored }
     }
 
-    Column {
-        Text(stringResource(if (view.state.connected) R.string.backup_text_shared else R.string.backup_text_local),
-            style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
-        ListRow(stringResource(R.string.backup_save), context = stringResource(R.string.backup_save_text), icon = Icons.Outlined.FileDownload,
-            onClick = { save.launch("fulla-${view.config.household.name.filter { it.isLetterOrDigit() }.lowercase()}-${LocalDate.now()}.json") })
-        ListRow(stringResource(R.string.backup_restore), context = stringResource(R.string.backup_restore_text), icon = Icons.Outlined.FileUpload,
-            onClick = { open.launch(arrayOf("*/*")) })
-        message?.let { Text(stringResource(it), style = FullaType.body, color = c.ink, modifier = Modifier.padding(20.dp)) }
+    val last by remember(view.id) { container.settings.lastBackup(view.id) }.collectAsStateWithLifecycle(initialValue = -1L)
+    val csv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val text = io.github.sirallap.fulla.client.local.CsvExport.write(view.config, view.rows.map { it.transaction })
+            val ok = runCatching { withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray(Charsets.UTF_8)) } } }.isSuccess
+            message = if (ok) R.string.backup_saved else R.string.something_failed
+        }
+    }
+    val c2 = FullaTheme.colors
+    // As in the Copia board: how old the last backup is and why it matters, then the three things to do, each a card.
+    Column(Modifier.padding(top = 8.dp)) {
+        val age = (last ?: 0L).takeIf { it > 0 }?.let { ((System.currentTimeMillis() - it) / (24 * 3600 * 1000L)).toInt() }
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).clip(RoundedCornerShape(18.dp))
+                .background(if (!view.state.connected && (age == null || age > 30)) c2.ink else c2.paperHigh).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            val dark = !view.state.connected && (age == null || age > 30)
+            Text(when { age == null -> stringResource(R.string.backup_never); age == 0 -> stringResource(R.string.backup_last_today)
+                else -> stringResource(R.string.backup_last_days, age) }, style = FullaType.title, color = if (dark) c2.paper else c2.ink)
+            Text(stringResource(if (view.state.connected) R.string.backup_text_shared else R.string.backup_text_local),
+                style = FullaType.secondary, color = if (dark) c2.paper.copy(alpha = 0.75f) else c2.inkMuted)
+        }
+        for ((title, text, action) in listOf(
+            Triple(R.string.backup_save, R.string.backup_save_text) { save.launch("fulla-${view.config.household.name.filter { it.isLetterOrDigit() }.lowercase()}-${LocalDate.now()}.json") },
+            Triple(R.string.backup_restore, R.string.backup_restore_text) { open.launch(arrayOf("*/*")) },
+            Triple(R.string.export_csv, R.string.backup_export_text) { csv.launch("fulla-${LocalDate.now()}.csv") },
+        )) {
+            io.github.sirallap.fulla.ui.components.ItemCard(onClick = action) {
+                Text(stringResource(title), style = FullaType.body, color = c2.ink)
+                Text(stringResource(text), style = FullaType.secondary, color = c2.inkMuted)
+            }
+        }
+        message?.let { Text(stringResource(it), style = FullaType.body, color = c2.ink, modifier = Modifier.padding(20.dp)) }
     }
 }

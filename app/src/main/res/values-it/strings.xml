@@ -872,4 +872,13 @@
     <string name="account_today">Oggi: %1$s.</string>
     <string name="settings_search">Cerca nelle impostazioni</string>
     <string name="settings_search_none">Niente nelle impostazioni si chiama così.</string>
+    <string name="backup_last_days">L\'ultimo backup è di %1$d giorni fa</string>
+    <string name="backup_last_today">Backup fatto oggi</string>
+    <string name="backup_never">Ancora nessun backup</string>
+    <string name="backup_export_text">Tutti i movimenti in un CSV, per un foglio di calcolo.</string>
+    <string name="settle_pays">%1$s paga %2$s</string>
+    <string name="settle_amount">Importo</string>
+    <string name="settle_account">Su quale conto?</string>
+    <string name="settle_help">Puoi mettere meno se viene restituita solo una parte.</string>
+    <string name="settle_record">Registra pagamento di %1$s</string>
 </resources>

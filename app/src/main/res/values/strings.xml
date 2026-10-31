@@ -923,4 +923,13 @@
     <string name="account_today">Today: %1$s.</string>
     <string name="settings_search">Search settings</string>
     <string name="settings_search_none">Nothing in Settings is called that.</string>
+    <string name="backup_last_days">The last backup is %1$d days old</string>
+    <string name="backup_last_today">Backed up today</string>
+    <string name="backup_never">No backup yet</string>
+    <string name="backup_export_text">Every movement in a CSV file, for a spreadsheet.</string>
+    <string name="settle_pays">%1$s pays %2$s</string>
+    <string name="settle_amount">Amount</string>
+    <string name="settle_account">Into which account?</string>
+    <string name="settle_help">You can enter less if only part is paid back.</string>
+    <string name="settle_record">Record payment of %1$s</string>
 </resources>

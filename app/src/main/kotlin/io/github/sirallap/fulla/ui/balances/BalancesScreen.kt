@@ -160,25 +160,50 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
         }
     }
 
+    // Settling up as a screen, as in the Saldar board: who pays whom, an amount that can be less, the account it lands in.
     confirming?.let { p ->
-        FullaDialog(
-            onDismissRequest = { confirming = null },
-            title = { Text(stringResource(R.string.record_payment)) },
-            text = { Text(stringResource(R.string.record_payment_text, view.memberName(p.fromMemberId), f.money(p.amountMinor), view.memberName(p.toMemberId))) },
-            confirmButton = {
-                TextButton(onClick = {
+        var text by remember(p) { mutableStateOf(f.plain(p.amountMinor)) }
+        var account by remember(p) { mutableStateOf(view.config.accounts.firstOrNull { !it.archived }?.id) }
+        val amount = io.github.sirallap.fulla.core.money.MoneyParser.parseTyped(text, f.currency, f.decimalStyle)?.takeIf { it > 0 }
+        val from = view.config.member(p.fromMemberId)
+        val to = view.config.member(p.toMemberId)
+        io.github.sirallap.fulla.ui.components.FormScreen(
+            title = stringResource(R.string.record_payment),
+            onClose = { confirming = null },
+            primaryLabel = amount?.let { stringResource(R.string.settle_record, f.money(it)) } ?: stringResource(R.string.record_payment),
+            primaryEnabled = amount != null,
+            onPrimary = {
+                val minor = amount
+                if (minor != null) scope.launch {
                     confirming = null
-                    scope.launch {
-                        container.ledger.save(view.id, Transaction(
-                            id = UUID.randomUUID().toString(), kind = TransactionKind.SETTLEMENT, date = LocalDate.now(),
-                            amountMinor = p.amountMinor, paidByMemberId = p.fromMemberId, toMemberId = p.toMemberId,
-                            createdAt = "", clientUpdatedAt = "", createdByMemberId = view.config.meMemberId,
-                        ))
-                    }
-                }) { Text(stringResource(R.string.record)) }
+                    container.ledger.save(view.id, Transaction(
+                        id = UUID.randomUUID().toString(), kind = TransactionKind.SETTLEMENT, date = LocalDate.now(),
+                        amountMinor = minor, paidByMemberId = p.fromMemberId, toMemberId = p.toMemberId, accountId = account,
+                        createdAt = "", clientUpdatedAt = "", createdByMemberId = view.config.meMemberId,
+                    ))
+                }
             },
-            dismissButton = { TextButton(onClick = { confirming = null }) { Text(stringResource(R.string.cancel)) } },
-        )
+        ) {
+            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                from?.let { io.github.sirallap.fulla.ui.components.MemberBadge(it.initials, it.colorIndex) }
+                Text("→", style = io.github.sirallap.fulla.ui.theme.FullaType.title, color = FullaTheme.colors.inkMuted)
+                to?.let { io.github.sirallap.fulla.ui.components.MemberBadge(it.initials, it.colorIndex) }
+                Text(stringResource(R.string.settle_pays, view.memberName(p.fromMemberId), view.memberName(p.toMemberId)),
+                    style = io.github.sirallap.fulla.ui.theme.FullaType.body, color = FullaTheme.colors.ink)
+            }
+            androidx.compose.material3.OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.settle_amount)) }, singleLine = true, suffix = { Text(f.currency.code) },
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                supportingText = { Text(stringResource(R.string.settle_help)) })
+            io.github.sirallap.fulla.ui.components.FormLabel(stringResource(R.string.settle_account))
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                for (a in view.config.accounts.filter { !it.archived }) {
+                    io.github.sirallap.fulla.ui.components.Chip(a.name, a.id == account, { account = a.id })
+                }
+            }
+        }
     }
 }
 

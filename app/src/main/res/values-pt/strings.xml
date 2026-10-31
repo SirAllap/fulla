@@ -872,4 +872,13 @@
     <string name="account_today">Hoje: %1$s.</string>
     <string name="settings_search">Procurar nas definições</string>
     <string name="settings_search_none">Nada nas definições tem esse nome.</string>
+    <string name="backup_last_days">A última cópia é de há %1$d dias</string>
+    <string name="backup_last_today">Cópia feita hoje</string>
+    <string name="backup_never">Ainda não há nenhuma cópia</string>
+    <string name="backup_export_text">Todos os movimentos num CSV, para uma folha de cálculo.</string>
+    <string name="settle_pays">%1$s paga a %2$s</string>
+    <string name="settle_amount">Valor</string>
+    <string name="settle_account">Para que conta?</string>
+    <string name="settle_help">Podes pôr menos se só pagar uma parte.</string>
+    <string name="settle_record">Registar pagamento de %1$s</string>
 </resources>
