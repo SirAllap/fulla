@@ -3,6 +3,9 @@ package io.github.sirallap.fulla.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -66,6 +69,12 @@ class FitTest {
     }
 
     private fun fits(content: @Composable () -> Unit) {
+        val outside = outsideOf(content)
+        assertTrue("past the side of the screen:\n" + outside.joinToString("\n"), outside.isEmpty())
+    }
+
+    /** What ends up past the side of the screen, unclipped: a node cut off by the edge still counts. */
+    private fun outsideOf(content: @Composable () -> Unit): List<String> {
         rule.setContent {
             val d = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale = 2f)) {
@@ -79,22 +88,35 @@ class FitTest {
         rule.waitForIdle()
         val outside = mutableListOf<String>()
         for (root in rule.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes()) {
-            val width = root.boundsInRoot.width
+            val width = root.size.width
             fun walk(node: SemanticsNode) {
                 // A row that scrolls sideways is meant to run past the edge.
                 if (node.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange) != null) return
-                val b = node.boundsInRoot
-                if (b.width > 0f && (b.left < -0.5f || b.right > width + 0.5f)) {
+                // positionInRoot and size are not clipped to the screen, unlike boundsInRoot.
+                val left = node.positionInRoot.x
+                val right = left + node.size.width
+                if (node.size.width > 0 && (left < -0.5f || right > width + 0.5f)) {
                     val text = node.config.getOrNull(SemanticsProperties.Text)?.joinToString()
                         ?: node.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString()
                         ?: "node ${node.id}"
-                    outside += "\"$text\" spans ${b.left.toInt()}..${b.right.toInt()} of $width px"
+                    outside += "\"$text\" spans ${left.toInt()}..${right.toInt()} of $width px"
                 }
                 node.children.forEach(::walk)
             }
             walk(root)
         }
-        assertTrue("past the side of the screen:\n" + outside.joinToString("\n"), outside.isEmpty())
+        return outside
+    }
+
+    /** The check itself: a row too wide for the phone must be caught. */
+    @Test fun catchesARowPastTheEdge() {
+        val outside = outsideOf {
+            Row(Modifier.wrapContentWidth(unbounded = true)) {
+                Text("Alice paid Bob back for the groceries", softWrap = false)
+                Text("€1,234.56", softWrap = false)
+            }
+        }
+        assertTrue("a too-wide row was not caught", outside.isNotEmpty())
     }
 
     @Test fun welcome() = fits { Onboarding(onCancel = null) }
