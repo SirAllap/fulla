@@ -858,4 +858,15 @@
     <string name="goal_balance_of">O poupado é o saldo de %1$s.</string>
     <string name="goal_db_update">Para guardar o mealheiro de uma meta, primeiro é preciso atualizar a base de dados da casa: Definições › Sincronização.</string>
     <string name="goal_quick">+%1$s</string>
+    <string name="trip_day_of">dia %1$d de %2$d</string>
+    <string name="trip_spent">%1$s gastos</string>
+    <string name="trip_no_budget">Sem orçamento</string>
+    <string name="trips_empty_text">Uma viagem junta o que gastas fora, com orçamento próprio, para não desacertar o mês.</string>
+    <string name="trip_left_label">Faltam</string>
+    <string name="trip_spent_of">%1$s gastos de %2$s</string>
+    <string name="trip_going">Vão</string>
+    <string name="trip_on_what">Em quê</string>
+    <string name="trip_add_expense">Apontar um gasto da viagem</string>
+    <string name="trip_rows">Cada gasto</string>
+    <string name="categories_archived_note">As arquivadas continuam no histórico.</string>
 </resources>

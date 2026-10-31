@@ -858,4 +858,15 @@
     <string name="goal_balance_of">L\'épargne est le solde de %1$s.</string>
     <string name="goal_db_update">Pour garder la tirelire d\'un objectif, la base de données du foyer doit d\'abord être mise à jour : Réglages › Synchronisation.</string>
     <string name="goal_quick">+%1$s</string>
+    <string name="trip_day_of">jour %1$d sur %2$d</string>
+    <string name="trip_spent">%1$s dépensés</string>
+    <string name="trip_no_budget">Sans budget</string>
+    <string name="trips_empty_text">Un voyage regroupe ce que vous dépensez en déplacement, avec son propre budget, sans fausser le mois.</string>
+    <string name="trip_left_label">Reste</string>
+    <string name="trip_spent_of">%1$s dépensés sur %2$s</string>
+    <string name="trip_going">Participants</string>
+    <string name="trip_on_what">Pour quoi</string>
+    <string name="trip_add_expense">Noter une dépense du voyage</string>
+    <string name="trip_rows">Chaque dépense</string>
+    <string name="categories_archived_note">Les catégories archivées restent dans l\'historique.</string>
 </resources>

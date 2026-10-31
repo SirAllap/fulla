@@ -858,4 +858,15 @@
     <string name="goal_balance_of">Lo ahorrado es el saldo de %1$s.</string>
     <string name="goal_db_update">Para guardar la hucha de una meta, antes hay que actualizar la base de datos del hogar: Ajustes › Sincronización.</string>
     <string name="goal_quick">+%1$s</string>
+    <string name="trip_day_of">día %1$d de %2$d</string>
+    <string name="trip_spent">%1$s gastados</string>
+    <string name="trip_no_budget">Sin presupuesto</string>
+    <string name="trips_empty_text">Un viaje reúne lo que gastas fuera, con su propio presupuesto, para que no te descuadre el mes.</string>
+    <string name="trip_left_label">Quedan</string>
+    <string name="trip_spent_of">%1$s gastados de %2$s</string>
+    <string name="trip_going">Van</string>
+    <string name="trip_on_what">En qué</string>
+    <string name="trip_add_expense">Anotar un gasto del viaje</string>
+    <string name="trip_rows">Cada gasto</string>
+    <string name="categories_archived_note">Las archivadas siguen en el historial.</string>
 </resources>

@@ -909,4 +909,15 @@
     <string name="goal_balance_of">What is saved is the balance of %1$s.</string>
     <string name="goal_db_update">To keep a goal\'s jar, the household\'s database needs an update first: Settings › Sync.</string>
     <string name="goal_quick">+%1$s</string>
+    <string name="trip_day_of">day %1$d of %2$d</string>
+    <string name="trip_spent">%1$s spent</string>
+    <string name="trip_no_budget">No budget</string>
+    <string name="trips_empty_text">A trip gathers what you spend away, with its own budget, so it does not spoil the month.</string>
+    <string name="trip_left_label">Left</string>
+    <string name="trip_spent_of">%1$s spent of %2$s</string>
+    <string name="trip_going">Going</string>
+    <string name="trip_on_what">On what</string>
+    <string name="trip_add_expense">Add an expense for the trip</string>
+    <string name="trip_rows">Every expense</string>
+    <string name="categories_archived_note">Archived categories stay in the history.</string>
 </resources>

@@ -858,4 +858,15 @@
     <string name="goal_balance_of">Il risparmiato è il saldo di %1$s.</string>
     <string name="goal_db_update">Per tenere il salvadanaio di un obiettivo, prima va aggiornato il database della casa: Impostazioni › Sincronizzazione.</string>
     <string name="goal_quick">+%1$s</string>
+    <string name="trip_day_of">giorno %1$d di %2$d</string>
+    <string name="trip_spent">%1$s spesi</string>
+    <string name="trip_no_budget">Senza budget</string>
+    <string name="trips_empty_text">Un viaggio raccoglie quello che spendi fuori, con un suo budget, così il mese resta in ordine.</string>
+    <string name="trip_left_label">Restano</string>
+    <string name="trip_spent_of">%1$s spesi di %2$s</string>
+    <string name="trip_going">Vanno</string>
+    <string name="trip_on_what">In cosa</string>
+    <string name="trip_add_expense">Annota una spesa del viaggio</string>
+    <string name="trip_rows">Ogni spesa</string>
+    <string name="categories_archived_note">Le categorie archiviate restano nello storico.</string>
 </resources>

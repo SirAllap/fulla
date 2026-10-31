@@ -226,7 +226,8 @@ private fun Household(state: HouseholdState) {
             composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }, onFixedCosts = { nav.navigate("settings/recurring") }) }
             composable("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
                 io.github.sirallap.fulla.ui.trips.TripScreen(view, tripId = entry.arguments?.getString("id") ?: "",
-                    onBack = { nav.popBackStack() }, onOpenTransaction = { nav.navigate("edit/$it") })
+                    onBack = { nav.popBackStack() }, onOpenTransaction = { nav.navigate("edit/$it") },
+                    onAdd = { nav.popBackStack("tabs", inclusive = false); tab = Tab.ADD })
             }
             composable("settings") {
                 SettingsScreen(view, SettingsSection.INDEX, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("settings/${it.route}") },

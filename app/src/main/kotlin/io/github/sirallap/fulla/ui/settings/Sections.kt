@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.border
@@ -321,6 +322,7 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val referenced = remember(view.config, view.active) { runCatching { io.github.sirallap.fulla.core.categories.CategoryUse.referenced(view.config, view.active) }.getOrNull() }
     // One kind at a time, chosen at the top; the screen's button adds to the kind shown (docs/ux.md, pieces 1 and 11).
     var showing by remember { mutableStateOf(AppliesTo.EXPENSE) }
+    var expanded by remember { mutableStateOf<String?>(null) }
     if (canEdit) io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.add_category)) { creating = showing }
     Column {
         io.github.sirallap.fulla.ui.components.SegmentedChoice(
@@ -333,16 +335,49 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                 .filter { referenced == null || !io.github.sirallap.fulla.core.categories.CategoryUse.isGone(view.config, referenced, it.id) }
             // Each category, then its subcategories just under it.
             val tops = list.filter { cat -> cat.parentId == null || list.none { it.id == cat.parentId } }.sortedWith(order)
+            // A card per category, as in the mockup: its tile, name and how many subcategories; open, its subcategories
+            // as chips and "+ Subcategory" right there.
             for (top in tops) {
-                for (cat in listOf(top) + list.filter { it.parentId == top.id }.sortedWith(order)) {
-                    ListRow(cat.name, icon = CategoryIcons.of(cat.icon), iconTint = c.category(cat.colorIndex),
-                        indent = if (cat.parentId != null) 24.dp else 0.dp,
-                        titleColor = if (cat.archived) c.inkMuted else c.ink,
-                        context = if (cat.archived) stringResource(R.string.archived) else null,
-                        onClick = if (canEdit) ({ editing = listOfNotNull(bundleItem(view, Structure.CATEGORY, cat.id)) }) else null)
+                val children = list.filter { it.parentId == top.id }.sortedWith(order)
+                val open = expanded == top.id
+                val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                Column(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).clip(shape)
+                        .background(if (top.archived) c.paper else c.paperHigh).border(1.dp, c.line, shape),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().clickable { expanded = if (open) null else top.id }.heightIn(min = 56.dp)
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        io.github.sirallap.fulla.ui.entry.CategoryBadge(top)
+                        Column(Modifier.weight(1f)) {
+                            Text(top.name, style = FullaType.body, color = if (top.archived) c.inkMuted else c.ink)
+                            if (top.archived) Text(stringResource(R.string.archived), style = FullaType.secondary, color = c.inkMuted)
+                        }
+                        if (children.isNotEmpty()) Text("${children.size}", style = FullaType.secondary, color = c.inkMuted)
+                        Icon(if (open) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, tint = c.inkMuted)
+                    }
+                    if (open) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (canEdit) io.github.sirallap.fulla.ui.components.DetailChip(stringResource(R.string.edit),
+                                { editing = listOfNotNull(bundleItem(view, Structure.CATEGORY, top.id)) }, icon = Icons.Outlined.Edit)
+                            for (child in children) {
+                                Chip(child.name + if (child.archived) " · " + stringResource(R.string.archived) else "", false,
+                                    { if (canEdit) bundleItem(view, Structure.CATEGORY, child.id)?.let { editing = listOf(it) } })
+                            }
+                            if (canEdit && !top.archived) io.github.sirallap.fulla.ui.components.DetailChip(stringResource(R.string.add_subcategory),
+                                { creatingUnder = top }, empty = true)
+                        }
+                    }
                 }
             }
         }
+        Text(stringResource(R.string.categories_archived_note), style = FullaType.secondary, color = c.inkMuted,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
     }
     for (item in editing) androidx.compose.runtime.key((item["id"] as? JsonPrimitive)?.content) {
         val use = view.config.category((item["id"] as? JsonPrimitive)?.content)?.let {

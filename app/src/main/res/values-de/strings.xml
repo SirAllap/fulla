@@ -858,4 +858,15 @@
     <string name="goal_balance_of">Gespart ist der Saldo von %1$s.</string>
     <string name="goal_db_update">Für die Spardose eines Ziels muss zuerst die Datenbank des Haushalts aktualisiert werden: Einstellungen › Synchronisierung.</string>
     <string name="goal_quick">+%1$s</string>
+    <string name="trip_day_of">Tag %1$d von %2$d</string>
+    <string name="trip_spent">%1$s ausgegeben</string>
+    <string name="trip_no_budget">Kein Budget</string>
+    <string name="trips_empty_text">Eine Reise sammelt, was du unterwegs ausgibst, mit eigenem Budget, damit der Monat stimmt.</string>
+    <string name="trip_left_label">Übrig</string>
+    <string name="trip_spent_of">%1$s von %2$s ausgegeben</string>
+    <string name="trip_going">Dabei</string>
+    <string name="trip_on_what">Wofür</string>
+    <string name="trip_add_expense">Ausgabe für die Reise erfassen</string>
+    <string name="trip_rows">Jede Ausgabe</string>
+    <string name="categories_archived_note">Archivierte Kategorien bleiben im Verlauf.</string>
 </resources>

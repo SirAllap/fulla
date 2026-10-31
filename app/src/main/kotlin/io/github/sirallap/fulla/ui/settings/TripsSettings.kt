@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import io.github.sirallap.fulla.ui.theme.FullaType
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,40 +80,72 @@ fun TripsSettings(view: HouseholdView, change: Change) {
     val active = live.filter { Trips.phase(it, today) == TripPhase.ACTIVE }
     val finished = live.filter { Trips.phase(it, today) == TripPhase.FINISHED }
 
+    val c = FullaTheme.colors
+    val range: (Trip) -> String = { t -> if (t.startDate == t.endDate) f.day(t.startDate) else f.day(t.startDate) + " – " + f.day(t.endDate) }
+
+    // A trip under way, as in the mockup: a dark card with its dates, how much of the budget is gone and which day it is.
     @Composable
-    fun row(t: Trip) {
-        ListRow(
-            t.name, icon = tripKindIcon(t.kind),
-            context = t.budgetMinor?.let { stringResource(R.string.of_budget, f.money(it)) },
-            onClick = { editing = t },
-        )
+    fun current(t: Trip) {
+        val totals = remember(view, t) { Trips.totals(t, view.active) }
+        val day = (java.time.temporal.ChronoUnit.DAYS.between(t.startDate, today) + 1).toInt()
+        val days = (java.time.temporal.ChronoUnit.DAYS.between(t.startDate, t.endDate) + 1).toInt()
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp).clip(RoundedCornerShape(18.dp)).background(c.ink)
+                .then(if (canEdit) Modifier.clickable { editing = t } else Modifier).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            io.github.sirallap.fulla.ui.components.Spread(startShare = 0.5f, start = {
+                Text(t.name, style = FullaType.title, color = c.paper)
+            }, end = { Text(range(t), style = FullaType.secondary, color = c.paper.copy(alpha = 0.75f)) })
+            t.budgetMinor?.let { b -> io.github.sirallap.fulla.ui.components.ProgressLine(totals.spentMinor.toFloat() / b, c.highlight, over = totals.overMinor > 0) }
+            Text(listOfNotNull(
+                t.budgetMinor?.let { b -> if (totals.overMinor > 0) stringResource(R.string.trip_over, f.money(totals.overMinor)) else stringResource(R.string.trip_left, f.money(totals.leftMinor ?: 0), f.money(b)) }
+                    ?: stringResource(R.string.trip_spent, f.money(totals.spentMinor)),
+                stringResource(R.string.trip_day_of, day, days),
+            ).joinToString(" · "), style = FullaType.secondary, color = c.paper.copy(alpha = 0.75f))
+        }
     }
 
+    // Any other trip: a card with its name, dates and kind, and its budget, or what it cost once over.
+    @Composable
+    fun card(t: Trip, finishedTrip: Boolean) {
+        val totals = remember(view, t) { Trips.totals(t, view.active) }
+        io.github.sirallap.fulla.ui.components.ItemCard(dimmed = finishedTrip || t.archived, onClick = if (canEdit) ({ editing = t }) else null) {
+            io.github.sirallap.fulla.ui.components.Spread(startShare = 0.55f, start = {
+                Column {
+                    Text(t.name, style = FullaType.body, color = c.ink)
+                    Text(range(t) + " · " + stringResource(tripKindLabel(t.kind)), style = FullaType.secondary, color = c.inkMuted)
+                }
+            }, end = {
+                Text(when {
+                    finishedTrip || t.archived -> stringResource(R.string.trip_spent, f.money(totals.spentMinor))
+                    else -> t.budgetMinor?.let { f.money(it) } ?: stringResource(R.string.trip_no_budget)
+                }, style = FullaType.secondary, color = if (finishedTrip) c.inkMuted else c.ink)
+            })
+        }
+    }
+
+    if (canEdit) io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.trip_new)) { creating = true }
     Column {
         if (trips.isEmpty()) {
-            EmptyState(Icons.Outlined.Luggage, stringResource(R.string.settings_trips), stringResource(R.string.trip_name))
-        }
-        if (upcoming.isNotEmpty()) {
-            Section(stringResource(R.string.trip_upcoming))
-            upcoming.forEach { row(it) }
+            EmptyState(Icons.Outlined.Luggage, stringResource(R.string.settings_trips), stringResource(R.string.trips_empty_text))
         }
         if (active.isNotEmpty()) {
             Section(stringResource(R.string.trip_active))
-            active.forEach { row(it) }
+            active.forEach { current(it) }
+        }
+        if (upcoming.isNotEmpty()) {
+            Section(stringResource(R.string.trip_upcoming))
+            upcoming.sortedBy { it.startDate }.forEach { card(it, false) }
         }
         if (finished.isNotEmpty()) {
             Section(stringResource(R.string.trip_finished))
-            finished.forEach { row(it) }
+            finished.sortedByDescending { it.startDate }.forEach { card(it, true) }
         }
         if (archived.isNotEmpty()) {
             ListRow(stringResource(R.string.archived), onClick = { archivedOpen = !archivedOpen },
                 end = { Icon(if (archivedOpen) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null) })
-            if (archivedOpen) archived.forEach { row(it) }
-        }
-        if (canEdit) {
-            Box(Modifier.padding(20.dp)) {
-                PrimaryButton(stringResource(R.string.trip_new), onClick = { creating = true }, icon = Icons.Outlined.Add)
-            }
+            if (archivedOpen) archived.forEach { card(it, true) }
         }
     }
 
