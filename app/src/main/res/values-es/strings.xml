@@ -894,4 +894,7 @@
     <string name="welcome_start_sub">Sin cuenta. Podrás compartirlo luego.</string>
     <string name="welcome_invite_sub">Alguien de tu hogar ya usa Fulla.</string>
     <string name="welcome_back_sub">Un móvil nuevo, o Fulla instalado otra vez.</string>
+    <string name="goal_delete">Eliminar meta</string>
+    <string name="goal_delete_confirm">¿Eliminar %1$s? Desaparece para todo el hogar. Para apartarla sin perderla, mejor archívala.</string>
+    <string name="goal_db_update_delete">Para eliminar una meta, antes hay que actualizar la base de datos del hogar: Ajustes › Sincronización.</string>
 </resources>

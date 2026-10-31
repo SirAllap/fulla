@@ -894,4 +894,7 @@
     <string name="welcome_start_sub">Senza account. Potrai condividerlo dopo.</string>
     <string name="welcome_invite_sub">Qualcuno della tua casa usa già Fulla.</string>
     <string name="welcome_back_sub">Un telefono nuovo, o Fulla reinstallato.</string>
+    <string name="goal_delete">Elimina obiettivo</string>
+    <string name="goal_delete_confirm">Eliminare %1$s? Sparisce per tutta la casa. Per metterlo da parte senza perderlo, meglio archiviarlo.</string>
+    <string name="goal_db_update_delete">Per eliminare un obiettivo, prima va aggiornato il database della casa: Impostazioni › Sincronizzazione.</string>
 </resources>

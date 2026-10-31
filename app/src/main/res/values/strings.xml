@@ -945,4 +945,7 @@
     <string name="welcome_start_sub">No account. You can share it later.</string>
     <string name="welcome_invite_sub">Someone in your household already uses Fulla.</string>
     <string name="welcome_back_sub">A new phone, or Fulla installed again.</string>
+    <string name="goal_delete">Delete goal</string>
+    <string name="goal_delete_confirm">Delete %1$s? It disappears for everyone in the household. To keep it out of the way without losing it, archive it instead.</string>
+    <string name="goal_db_update_delete">To delete a goal, the household\'s database needs an update first: Settings › Sync.</string>
 </resources>

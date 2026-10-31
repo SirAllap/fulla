@@ -37,7 +37,7 @@ this page explains them.
 | `import_profiles` | How to read a particular CSV layout |
 | `transactions` | Everything that happened |
 | `trips` | A trip or event with its own optional budget: name, date range, `in_category_budgets` |
-| `goals` | A savings goal: name, `target_minor`, an optional `target_date`, `archived`, and either a jar of its own (`contributions`: entries of `id`, `date`, signed `amount_minor`, `note`, `member_id`, `deleted`, merged by id on the server) or an account whose balance is what it has saved (`account_id`) |
+| `goals` | A savings goal: name, `target_minor`, an optional `target_date`, `archived`, and either a jar of its own (`contributions`: entries of `id`, `date`, signed `amount_minor`, `note`, `member_id`, `deleted`, merged by id on the server) or an account whose balance is what it has saved (`account_id`); `deleted` hides it from the bundle |
 
 ## Trips
 

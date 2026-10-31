@@ -145,6 +145,10 @@ class FullaApi(private val supabase: Supabase) : SyncBackend {
     suspend fun tripDelete(householdId: String, tripId: String): JsonObject =
         obj("fulla_trip_delete", "p_household_id" to householdId, "p_trip_id" to tripId)
 
+    /** Tombstones a goal (0025_goal_delete.sql): the config bundle stops listing it. */
+    suspend fun goalDelete(householdId: String, goalId: String): JsonObject =
+        obj("fulla_goal_delete", "p_household_id" to householdId, "p_goal_id" to goalId)
+
     // ── sync ─────────────────────────────────────────────────────────────────
 
     override suspend fun push(householdId: String, mutations: List<Mutation>): List<PushResult> {

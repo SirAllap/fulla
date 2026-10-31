@@ -894,4 +894,7 @@
     <string name="welcome_start_sub">Ohne Konto. Teilen geht später.</string>
     <string name="welcome_invite_sub">Jemand in deinem Haushalt nutzt Fulla schon.</string>
     <string name="welcome_back_sub">Ein neues Handy oder Fulla neu installiert.</string>
+    <string name="goal_delete">Ziel löschen</string>
+    <string name="goal_delete_confirm">%1$s löschen? Es verschwindet für den ganzen Haushalt. Um es nur wegzulegen, archiviere es lieber.</string>
+    <string name="goal_db_update_delete">Um ein Ziel zu löschen, muss zuerst die Datenbank des Haushalts aktualisiert werden: Einstellungen › Synchronisierung.</string>
 </resources>

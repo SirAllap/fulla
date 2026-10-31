@@ -87,7 +87,8 @@ import java.util.UUID
  */
 @Composable
 fun GoalsSettings(view: HouseholdView, change: Change) {
-    val ledger = LocalContainer.current.ledger
+    val container = LocalContainer.current
+    val ledger = container.ledger
     var open by remember { mutableStateOf<String?>(null) }
     var creating by remember { mutableStateOf(false) }
     val canEdit = view.me?.let { Permissions.canEditTrips(it) } == true
@@ -111,7 +112,15 @@ fun GoalsSettings(view: HouseholdView, change: Change) {
     if (canEdit && creating) GoalForm(view, null, onDismiss = { creating = false }, onSave = save)
     // Looked up by id each time, so the screen shows what another phone has just put in.
     open?.let { id -> view.config.goals.firstOrNull { it.id == id } }?.let { g ->
-        GoalScreen(view, g, canEdit, onDismiss = { open = null }, save = save)
+        GoalScreen(view, g, canEdit, onDismiss = { open = null }, save = save, delete = {
+            open = null
+            val connected = view.state.connected
+            // On the container's scope: this screen is gone before a connected delete has answered.
+            container.scope.launch {
+                val api = if (connected) container.api() else null
+                runCatching { ledger.deleteGoal(view.id, g.id, api) }
+            }
+        })
     }
 }
 
@@ -166,7 +175,7 @@ fun GoalRow(view: HouseholdView, goal: Goal, dimmed: Boolean = false, onClick: (
  * crosses a quarter of the way says so.
  */
 @Composable
-private fun GoalScreen(view: HouseholdView, goal: Goal, canEdit: Boolean, onDismiss: () -> Unit, save: (Goal) -> Unit) {
+private fun GoalScreen(view: HouseholdView, goal: Goal, canEdit: Boolean, onDismiss: () -> Unit, save: (Goal) -> Unit, delete: () -> Unit) {
     val c = FullaTheme.colors
     val f = view.formats
     val container = LocalContainer.current
@@ -175,9 +184,11 @@ private fun GoalScreen(view: HouseholdView, goal: Goal, canEdit: Boolean, onDism
     var editing by remember { mutableStateOf(false) }
     var moving by remember { mutableStateOf<Int?>(null) } // +1 put in, -1 take out
     var removing by remember { mutableStateOf<GoalEntry?>(null) }
+    var deleting by remember { mutableStateOf(false) }
     var cheer by remember { mutableStateOf<Int?>(null) }
     var problem by remember { mutableStateOf<String?>(null) }
     val dbUpdate = stringResource(R.string.goal_db_update)
+    val dbUpdateDelete = stringResource(R.string.goal_db_update_delete)
 
     // Writes an entry; on a connected household whose database is too old to keep it, says so instead of losing it.
     fun record(entry: GoalEntry) {
@@ -197,7 +208,10 @@ private fun GoalScreen(view: HouseholdView, goal: Goal, canEdit: Boolean, onDism
         primaryLabel = stringResource(if (goal.ownJar) R.string.goal_put_in else R.string.goal_edit),
         onPrimary = { if (goal.ownJar) moving = 1 else editing = true },
         primaryEnabled = canEdit,
-        neutral = if (canEdit && goal.ownJar) ({ SecondaryButton(stringResource(R.string.goal_edit), { editing = true }) }) else null,
+        neutral = if (canEdit) ({
+            if (goal.ownJar) SecondaryButton(stringResource(R.string.goal_edit), { editing = true })
+            io.github.sirallap.fulla.ui.components.DeleteButton({ deleting = true }, stringResource(R.string.goal_delete))
+        }) else null,
     ) {
         cheer?.let { q ->
             // A cheer at each quarter of the way, popping in.
@@ -267,6 +281,17 @@ private fun GoalScreen(view: HouseholdView, goal: Goal, canEdit: Boolean, onDism
             }, onDismiss = { removing = null })
     }
     if (editing) GoalForm(view, goal, onDismiss = { editing = false }, onSave = save)
+    if (deleting) {
+        ConfirmDialog(stringResource(R.string.goal_delete), stringResource(R.string.goal_delete_confirm, goal.name),
+            stringResource(R.string.goal_delete), onConfirm = {
+                scope.launch {
+                    // An older database has no way to delete a goal: say so rather than fail silently.
+                    if (view.state.connected && container.backendBehind()) { deleting = false; problem = dbUpdateDelete; return@launch }
+                    deleting = false
+                    delete()
+                }
+            }, onDismiss = { deleting = false })
+    }
 }
 
 /** How much to put in or take out, and a note: a sheet over the goal, its button saying the amount. */

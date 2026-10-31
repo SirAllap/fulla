@@ -430,6 +430,18 @@ class Ledger(
         }
     }
 
+    /** Deletes a goal: on the server it is tombstoned (fulla_goal_delete), on a phone-only household it leaves the config. */
+    suspend fun deleteGoal(householdId: String, goalId: String, api: FullaApi?) {
+        val h = households.get(householdId) ?: return
+        require((h.mode == CONNECTED) == (api != null)) { "A shared household changes through the server, a local one on the phone." }
+        if (api != null) {
+            storeConfig(householdId, api.goalDelete(householdId, goalId))
+        } else {
+            val next = LocalHousehold.deleteGoal(Wire.json.parseToJsonElement(h.configJson).jsonObject, goalId)
+            households.setConfig(householdId, next.toString(), LocalHousehold.version(next))
+        }
+    }
+
     /** Stores whatever config a structure call answered with. A pot waiting from before sharing survives it. */
     suspend fun storeConfig(householdId: String, bundle: JsonObject) {
         val stored = households.get(householdId)?.configJson?.let { Wire.json.parseToJsonElement(it).jsonObject }

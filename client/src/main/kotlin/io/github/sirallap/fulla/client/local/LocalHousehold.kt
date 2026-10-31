@@ -185,6 +185,13 @@ object LocalHousehold {
         return bump(JsonObject(bundle + ("trips" to JsonArray(next))))
     }
 
+    /** A goal on a household that lives on this phone alone: gone from the config. */
+    fun deleteGoal(bundle: JsonObject, goalId: String): JsonObject {
+        val list = (bundle["goals"] as? JsonArray).orEmpty()
+        val next = list.filterNot { (it as? JsonObject)?.text("id") == goalId }
+        return bump(JsonObject(bundle + ("goals" to JsonArray(next))))
+    }
+
     // ── the pot chosen before sharing ────────────────────────────────────────
 
     /**

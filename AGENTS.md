@@ -262,7 +262,8 @@ between accounts. A goal that names an account instead reads that account's bala
 entries by id and never drops one it already has (`fulla.save_goal`), so two phones putting money in at once both
 count; an entry is taken back by marking it `deleted`. It is structure, in the config bundle like a trip; a
 phone-only household that is shared uploads its goals one by one right after the household (`Ledger.connect`).
-Before writing a jar to a connected household the app checks the backend has 0024 (`AppContainer.backendBehind`),
+Deleting a goal tombstones it (`deleted`, migration 0025, `fulla_goal_delete`); the bundle no longer lists it, and on a
+phone-only household it simply leaves the config. Before writing a jar to a connected household the app checks the backend has 0024 (`AppContainer.backendBehind`),
 as an older one would drop the entries without a word.
 
 ### Migrations

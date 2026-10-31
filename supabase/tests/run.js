@@ -238,6 +238,7 @@ test('a stranger gets not_member from every function that takes a household', (c
     ['fulla_import_profile_upsert', { p_household_id: hh, p_profile: {} }],
     ['fulla_trip_upsert', { p_household_id: hh, p_trip: {} }],
     ['fulla_trip_delete', { p_household_id: hh, p_trip_id: uuid() }],
+    ['fulla_goal_delete', { p_household_id: hh, p_goal_id: uuid() }],
     ['fulla_goal_upsert', { p_household_id: hh, p_goal: {} }],
     ['fulla_sync_push', { p_household_id: hh, p_mutations: [] }],
     ['fulla_sync_pull', { p_household_id: hh }],
@@ -626,6 +627,21 @@ test('savings goals: a member saves one, it names an account of the household, a
   fails({ id: uuid(), name: 'Car', target_minor: -5, account_id: account });
   fails({ id: uuid(), name: 'Car', target_minor: 100, account_id: uuid() });
   fails({ id: uuid(), name: 'Car', target_minor: 100, account_id: account, target_date: 'soon' });
+});
+
+test('deleting a goal leaves it out of the bundle for everybody, and only a member can', (ctx) => {
+  const id = uuid();
+  const save = (g) => rpc(ctx.db, ctx.alice, 'fulla_goal_upsert', { p_household_id: ctx.hh, p_goal: g });
+  save({ id, name: 'Trial', target_minor: 1000, account_id: null });
+  save({ id: uuid(), name: 'Keep', target_minor: 2000, account_id: null });
+  const cfg = rpc(ctx.db, ctx.alice, 'fulla_goal_delete', { p_household_id: ctx.hh, p_goal_id: id });
+  assert.deepEqual(cfg.goals.map((g) => g.name), ['Keep']);
+  assert.ok(!ctx.config().goals.some((g) => g.id === id));
+  // A phone that still holds the goal saves it again: it stays deleted.
+  assert.deepEqual(save({ id, name: 'Trial', target_minor: 1000, account_id: null }).goals.map((g) => g.name), ['Keep']);
+  expectError(ctx.db, ctx.alice, 'fulla_goal_delete', { p_household_id: ctx.hh, p_goal_id: id }, 'not_found', 404);
+  const stranger = newUser(ctx.db, 'mallory@example.com');
+  expectError(ctx.db, stranger, 'fulla_goal_delete', { p_household_id: ctx.hh, p_goal_id: uuid() }, 'not_member', 403);
 });
 
 test('a goal with a jar of its own: no account, entries merged by id so two phones never lose one, taken back by marking', (ctx) => {
