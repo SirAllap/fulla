@@ -213,4 +213,8 @@ tasks.withType<Test>().configureEach {
     systemProperty("fulla.screenshots.dir", rootProject.file("screenshots").absolutePath)
     // Rendering with native graphics is slow; ordinary runs skip it.
     if (System.getenv("FULLA_SCREENSHOTS") != "true") exclude("**/Screenshot*")
+    // One line per test class, so CI's log shows which ran (FitTest among them).
+    afterSuite(KotlinClosure2<TestDescriptor, TestResult, Unit>({ suite, result ->
+        if (suite.className != null) println("${suite.className}: ${result.testCount} tests, ${result.failedTestCount} failed")
+    }))
 }
