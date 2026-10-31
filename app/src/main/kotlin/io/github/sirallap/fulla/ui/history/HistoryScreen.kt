@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.history
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import io.github.sirallap.fulla.ui.components.listEndPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
@@ -46,7 +48,6 @@ import io.github.sirallap.fulla.ui.components.EmptyState
 import io.github.sirallap.fulla.ui.components.CardItem
 import io.github.sirallap.fulla.ui.components.CardSlot
 import io.github.sirallap.fulla.ui.components.ListRow
-import io.github.sirallap.fulla.ui.components.MemberBadge
 import io.github.sirallap.fulla.ui.components.MenuItem
 import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.TabHeader
@@ -146,11 +147,17 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
                         item(key = "day-$day") {
                             // What was spent and what was received that day, worked out in core; nothing is said of a day that moved no money.
                             val totals = DayTotals.of(rows)
-                            val spent = stringResource(R.string.day_spent, f.money(totals.spentMinor))
-                            val received = stringResource(R.string.day_received, f.money(totals.receivedMinor))
+                            // Short, as the day's line has little room: −12,50 € · +20,00 €.
+                            val spent = f.money(-totals.spentMinor, signed = true)
+                            val received = f.money(totals.receivedMinor, signed = true)
                             val summary = listOfNotNull(spent.takeIf { totals.spentMinor > 0 }, received.takeIf { totals.receivedMinor > 0 }).joinToString(" · ")
+                            val described = listOfNotNull(
+                                stringResource(R.string.day_spent, f.money(totals.spentMinor)).takeIf { totals.spentMinor > 0 },
+                                stringResource(R.string.day_received, f.money(totals.receivedMinor)).takeIf { totals.receivedMinor > 0 },
+                            ).joinToString(". ")
                             val trailing: (@Composable RowScope.() -> Unit)? = if (totals.isEmpty) null else {
-                                { Text(summary, style = FullaType.label, color = c.inkMuted, textAlign = TextAlign.End, modifier = Modifier.padding(start = 12.dp)) }
+                                { Text(summary, style = FullaType.label, color = c.inkMuted,
+                                    modifier = Modifier.semantics { contentDescription = described }) }
                             }
                             Section(f.day(day), top = 16.dp, trailing = trailing)
                         }
@@ -180,10 +187,17 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
         TransactionKind.SETTLEMENT -> stringResource(R.string.settlement_between, view.memberName(t.paidByMemberId), view.memberName(t.toMemberId))
         else -> t.note.ifBlank { category?.name ?: stringResource(R.string.uncategorized) }
     }
+    val payer = view.config.member(t.paidByMemberId)
+    // Who paid, in words, when more than one person shares the household (ux.md, piece 11: the row starts with its category).
+    val shared = io.github.sirallap.fulla.core.split.SharedPot.isShared(view.config.household)
+    val paidBy = payer?.takeIf { view.config.activeMembers.size >= 2 && t.kind != TransactionKind.SETTLEMENT }?.let {
+        stringResource(if (shared) R.string.added_by else R.string.paid_by, it.displayName)
+    }
     val context = listOfNotNull(
         category?.name?.takeIf { t.note.isNotBlank() },
         view.accountName(t.accountId)?.takeIf { t.kind != TransactionKind.TRANSFER },
         stringResource(R.string.kind_refund).takeIf { t.kind == TransactionKind.REFUND },
+        paidBy,
     ).plus(io.github.sirallap.fulla.core.schema.SchemaEngine.fieldsForList(view.config.fields).mapNotNull { f ->
         io.github.sirallap.fulla.ui.entry.fieldText(view, f, t.extras[f.key])
     }).joinToString(" · ")
@@ -194,7 +208,6 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
         SyncState.PENDING -> stringResource(R.string.not_sent_yet)
         else -> null
     }, rounded).joinToString(" · ").ifBlank { null }
-    val payer = view.config.member(t.paidByMemberId)
     val deleted = t.status == Status.DELETED
     ListRow(
         title = title,
@@ -202,13 +215,7 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
         context = context.ifBlank { null },
         detail = detail,
         detailColor = if (row.state == SyncState.REJECTED) c.warning else c.inkMuted,
-        icon = if (payer == null || view.config.activeMembers.size < 2) CategoryIcons.of(category?.icon ?: "label") else null,
-        iconTint = c.category(category?.colorIndex ?: 0),
-        start = if (payer != null && view.config.activeMembers.size >= 2) ({
-            // In one shared pot who paid is only who added it.
-            val badge = if (io.github.sirallap.fulla.core.split.SharedPot.isShared(view.config.household)) R.string.added_by else R.string.paid_by
-            MemberBadge(payer.initials, payer.colorIndex, description = stringResource(badge, payer.displayName))
-        }) else null,
+        start = { io.github.sirallap.fulla.ui.entry.CategoryBadge(category) },
         onClick = onClick,
         end = {
             val amount = when (t.kind) {

@@ -179,9 +179,10 @@ fun HomeScreen(
                 val accounts = view.config.accounts.filter { !it.archived }
                 if (accounts.any { it.openingBalanceMinor != 0L }) item {
                     val total = view.analytics.accountsTotal(view.active, accounts, today)
-                    ListRow(stringResource(R.string.accounts_total), detail = f.money(total),
+                    ListRow(stringResource(R.string.accounts_total),
                         context = stringResource(R.string.accounts_total_help),
-                        icon = Icons.Outlined.AccountBalance, onClick = onAccounts)
+                        icon = Icons.Outlined.AccountBalance, onClick = onAccounts,
+                        end = { AmountText(f.money(total)) })
                 }
                 item {
                     // A period that is still running has not saved anything yet: what is left of the income so far is "left", not "saved".
@@ -265,18 +266,20 @@ fun HomeScreen(
 private fun Figures(view: HouseholdView, income: Long, expense: Long, rate: Double?, running: Boolean) {
     val c = FullaTheme.colors
     val f = view.formats
-    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
-        Figure(stringResource(R.string.money_in), f.money(income, signed = true), c.moneyIn, Modifier.weight(1f))
-        Figure(stringResource(R.string.money_out), f.money(expense), c.moneyOut, Modifier.weight(1f))
-        Figure(stringResource(if (running) R.string.left_now else R.string.saved), rate?.let { "${Math.round(it * 100)} %" } ?: "—", c.ink, Modifier.weight(1f))
+    // Tiles, as in the mockup; one under the other when a figure no longer fits a third of the width.
+    io.github.sirallap.fulla.ui.components.EvenRow(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), gap = 8.dp) {
+        Figure(stringResource(R.string.money_in), f.money(income, signed = true), c.moneyIn)
+        Figure(stringResource(R.string.money_out), f.money(expense), c.moneyOut)
+        Figure(stringResource(if (running) R.string.left_now else R.string.saved), rate?.let { "${Math.round(it * 100)} %" } ?: "—", c.ink)
     }
 }
 
 @Composable
-private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
-    Column(modifier) {
+private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color) {
+    Column(Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)).background(FullaTheme.colors.paperHigh)
+        .padding(horizontal = 12.dp, vertical = 10.dp)) {
         Text(label, style = FullaType.label, color = FullaTheme.colors.inkMuted)
-        Text(value, style = FullaType.amount, color = color, maxLines = 1)
+        Text(value, style = FullaType.amount, color = color, maxLines = 1, softWrap = false)
     }
 }
 

@@ -109,19 +109,57 @@ fun LiquidTile(
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = FullaType.label, color = c.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(value, style = FullaType.title, color = if (valueColor == Color.Unspecified) c.ink else valueColor, maxLines = 1,
-                overflow = TextOverflow.Ellipsis)
-            if (context != null) Text(context, style = FullaType.label, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            // Words wrap; the figure stays on one line, and the row stacks the tiles when it would not fit.
+            Text(title, style = FullaType.label, color = c.inkMuted)
+            Text(value, style = FullaType.title, color = if (valueColor == Color.Unspecified) c.ink else valueColor, maxLines = 1, softWrap = false)
+            if (context != null) Text(context, style = FullaType.label, color = c.ink)
         }
     }
 }
 
-/** Two tiles side by side, as tall as the taller. */
+/** Two tiles side by side, as tall as the taller; one under the other when a figure no longer fits half the width. */
 @Composable
 fun TileRow(content: @Composable RowScope.() -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Top, content = content)
+    EvenRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp), gap = 10.dp, content = content)
+}
+
+/** What [EvenRow]'s children see: a row, whose weights it ignores, as every child gets an equal share. */
+private object EvenRowScope : RowScope {
+    override fun Modifier.weight(weight: Float, fill: Boolean): Modifier = this
+    override fun Modifier.align(alignment: Alignment.Vertical): Modifier = this
+    override fun Modifier.alignBy(alignmentLine: androidx.compose.ui.layout.HorizontalAlignmentLine): Modifier = this
+    override fun Modifier.alignByBaseline(): Modifier = this
+    override fun Modifier.alignBy(alignmentLineBlock: (androidx.compose.ui.layout.Measured) -> Int): Modifier = this
+}
+
+/**
+ * Children side by side in equal shares, all as tall as the tallest, while
+ * each fits its share (its longest word, or its one-line figure); otherwise,
+ * with big text or on a narrow phone, one under the other at full width.
+ * Nothing is cut or ends in "…" (docs/ux.md, "Every phone, every text size").
+ */
+@Composable
+fun EvenRow(modifier: Modifier = Modifier, gap: androidx.compose.ui.unit.Dp = 10.dp, content: @Composable RowScope.() -> Unit) {
+    androidx.compose.ui.layout.Layout(content = { EvenRowScope.content() }, modifier = modifier) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val gapPx = gap.roundToPx()
+        val n = measurables.size.coerceAtLeast(1)
+        val share = (width - gapPx * (n - 1)) / n
+        val fits = measurables.all { it.minIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) <= share }
+        if (fits) {
+            val h = measurables.maxOfOrNull { it.minIntrinsicHeight(share) } ?: 0
+            val placeables = measurables.map { it.measure(androidx.compose.ui.unit.Constraints(share, share, h, androidx.compose.ui.unit.Constraints.Infinity)) }
+            val height = placeables.maxOfOrNull { it.height } ?: 0
+            layout(width, height) { placeables.forEachIndexed { i, p -> p.place(i * (share + gapPx), 0) } }
+        } else {
+            val placeables = measurables.map { it.measure(androidx.compose.ui.unit.Constraints(width, width, 0, androidx.compose.ui.unit.Constraints.Infinity)) }
+                .filter { it.height > 0 }
+            layout(width, placeables.sumOf { it.height } + gapPx * (placeables.size - 1).coerceAtLeast(0)) {
+                var y = 0
+                placeables.forEach { it.place(0, y); y += it.height + gapPx }
+            }
+        }
+    }
 }
 
 /**

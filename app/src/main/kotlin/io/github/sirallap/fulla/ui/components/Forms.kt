@@ -242,18 +242,21 @@ fun <T> SegmentedChoice(options: List<Pair<T, String>>, selected: T, onSelect: (
         val minHeight = 40.dp.roundToPx()
         val width = constraints.maxWidth
         val n = measurables.size.coerceAtLeast(1)
-        val share = (width - gap * (n - 1)) / n
-        val fits = measurables.all { it.maxIntrinsicWidth(Constraints.Infinity) <= share }
-        if (fits) {
-            val h = maxOf(minHeight, measurables.maxOf { it.minIntrinsicHeight(share) })
-            val placeables = measurables.map { it.measure(Constraints.fixed(share, h)) }
-            layout(width, h) { placeables.forEachIndexed { i, p -> p.place(i * (share + gap), 0) } }
-        } else {
-            val placeables = measurables.map { it.measure(Constraints(minWidth = width, maxWidth = width, minHeight = minHeight)) }
-            val h = placeables.sumOf { it.height } + gap * (placeables.size - 1)
-            layout(width, h) {
-                var y = 0
-                placeables.forEach { it.place(0, y); y += it.height + gap }
+        // All in one row; when they don't fit (big text, a narrow phone),
+        // two columns for four or more; else one under the other.
+        val columns = listOf(n, if (n >= 4) (n + 1) / 2 else n, 1).first { cols ->
+            val share = (width - gap * (cols - 1)) / cols
+            cols == 1 || measurables.all { it.maxIntrinsicWidth(Constraints.Infinity) <= share }
+        }
+        val share = (width - gap * (columns - 1)) / columns
+        val rows = measurables.chunked(columns)
+        val heights = rows.map { row -> maxOf(minHeight, row.maxOf { it.minIntrinsicHeight(share) }) }
+        val placeables = rows.mapIndexed { r, row -> row.map { it.measure(Constraints.fixed(share, heights[r])) } }
+        layout(width, heights.sum() + gap * (rows.size - 1)) {
+            var y = 0
+            placeables.forEachIndexed { r, row ->
+                row.forEachIndexed { i, p -> p.place(i * (share + gap), y) }
+                y += heights[r] + gap
             }
         }
     }

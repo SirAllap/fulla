@@ -79,7 +79,7 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
             if (shared) {
                 item {
                     EmptyState(Icons.Outlined.Savings, stringResource(R.string.shared_pot_card_title), stringResource(R.string.shared_pot_card_text),
-                        action = { TextButton(onClick = onHouseholdSettings) { Text(stringResource(R.string.shared_pot_change)) } })
+                        action = { io.github.sirallap.fulla.ui.components.SecondaryButton(stringResource(R.string.shared_pot_change), onHouseholdSettings) })
                 }
             } else if (members.size >= 2) {
                 item { Section(stringResource(R.string.between_you), top = 8.dp) }
@@ -148,10 +148,9 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
             item(key = "goals-title") { Section(stringResource(R.string.settings_goals)) }
             if (goals.isEmpty()) {
                 item(key = "goals-empty") {
-                    CardItem(CardSlot.ONLY) {
-                        ListRow(stringResource(R.string.goal_new), context = stringResource(R.string.goals_empty_text),
-                            icon = Icons.Outlined.Flag, onClick = onGoals)
-                    }
+                    // An empty list says what goes here and carries the button that makes the first (ux.md, piece 9), never a row that looks like one more goal.
+                    EmptyState(Icons.Outlined.Flag, stringResource(R.string.goals_empty_title), stringResource(R.string.goals_empty_text),
+                        action = { io.github.sirallap.fulla.ui.components.SecondaryButton(stringResource(R.string.goal_new), onGoals) })
                 }
             } else {
                 itemsIndexed(goals, key = { _, g -> "goal-" + g.id }) { i, g ->

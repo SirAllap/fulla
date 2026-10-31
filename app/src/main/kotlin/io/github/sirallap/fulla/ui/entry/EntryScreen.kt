@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.entry
 
+import androidx.compose.ui.zIndex
 import io.github.sirallap.fulla.core.rules.PeriodAnchors
 import androidx.compose.foundation.layout.width
 import io.github.sirallap.fulla.ui.components.yields
@@ -304,8 +305,14 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         }
 
         // Categories and details sit just above the keypad, where the thumb already is.
-        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
+        // Right under the amount, as in the mockup: no empty gap above them; what runs under the keypad fades and scrolls.
+        val detailsScroll = rememberScrollState()
+        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        if (detailsScroll.canScrollForward) {
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(32.dp).zIndex(1f)
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(c.paper.copy(alpha = 0f), c.paper))))
+        }
+        Column(Modifier.verticalScroll(detailsScroll).padding(bottom = 8.dp)) {
             if (draft.kind.isCategorised) {
                 val top = view.config.category(draft.categoryId)?.let { it.parentId ?: it.id }
                 CategoryTiles(view, draft.kind, top, showAll = allCategories,
@@ -329,6 +336,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         KeypadPad(
             keypad = draft.keypad,
             decimal = view.formats.decimalStyle.decimal,
+            amount = view.formats.money(draft.keypad.totalMinor),
             onChange = { draft.keypad = it; problem = null },
             onSave = ::save,
             saved = saved,
@@ -360,9 +368,9 @@ private fun KindRow(kind: TransactionKind, onPick: (TransactionKind) -> Unit) {
         TransactionKind.REFUND to R.string.kind_refund,
         TransactionKind.TRANSFER to R.string.kind_transfer,
     )
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        for ((k, label) in kinds) Chip(stringResource(label), k == kind, { onPick(k) })
-    }
+    // One segmented choice, as in the mockup: two by two, or one under the other, when big text doesn't fit four across.
+    io.github.sirallap.fulla.ui.components.SegmentedChoice(kinds.map { (k, label) -> k to stringResource(label) }, kind, onPick,
+        Modifier.padding(horizontal = 20.dp))
 }
 
 @Composable
@@ -506,7 +514,9 @@ private fun DetailChips(view: HouseholdView, draft: Draft, onOpen: (Detail) -> U
             Chip(stringResource(R.string.starts_month), draft.startsMonth, { draft.startsMonthChoice = !draft.startsMonth })
         }
         if (draft.kind == TransactionKind.INCOME || draft.kind == TransactionKind.EXPENSE) {
-            Chip(stringResource(R.string.fixed), draft.fixed, { draft.fixed = !draft.fixed })
+            // Off, it is a detail with no value yet: "+ Fixed" (ux.md, piece 6).
+            if (draft.fixed) Chip(stringResource(R.string.fixed), true, { draft.fixed = false })
+            else DetailChip(stringResource(R.string.fixed), { draft.fixed = true }, empty = true)
         }
         if (draft.note.isBlank()) DetailChip(stringResource(R.string.note), { onOpen(Detail.Note) }, empty = true)
         else DetailChip("“${draft.note}”", { onOpen(Detail.Note) })
@@ -596,59 +606,42 @@ private fun DateSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Unit) 
     }
 }
 
-/** Digits, the decimal key (when the currency has decimals), delete, "+", and save. */
+/**
+ * Digits, the decimal key (when the currency has decimals), delete and "+",
+ * then the screen's primary button (ux.md, piece 1): the action and its
+ * figure, "Save · €12.50", never a bare grey tick.
+ */
 @Composable
-private fun KeypadPad(keypad: Keypad, decimal: Char, onChange: (Keypad) -> Unit, onSave: () -> Unit, saveLabel: String, saved: Boolean = false) {
+private fun KeypadPad(keypad: Keypad, decimal: Char, amount: String, onChange: (Keypad) -> Unit, onSave: () -> Unit, saveLabel: String, saved: Boolean = false) {
     val c = FullaTheme.colors
-    val keyModifier = Modifier.height(56.dp)
-    Row(Modifier.fillMaxWidth().guideTarget(TourStop.ADD_AND_KEYPAD).background(c.paperHigh).navigationBarsPadding().padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            for (row in listOf("123", "456", "789")) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    for (d in row) Key(d.toString(), keyModifier.weight(1f)) { onChange(keypad.digit(d)) }
+    val gap = 6.dp
+    val key = 52.dp
+    Column(Modifier.fillMaxWidth().guideTarget(TourStop.ADD_AND_KEYPAD).background(c.paperHigh).navigationBarsPadding().padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+            Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(gap)) {
+                for (row in listOf("123", "456", "789")) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        for (d in row) Key(d.toString(), Modifier.height(key).weight(1f)) { onChange(keypad.digit(d)) }
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    if (keypad.hasDecimalKey) Key(decimal.toString(), Modifier.height(key).weight(1f)) { onChange(keypad.decimal()) }
+                    Key("0", Modifier.height(key).weight(if (keypad.hasDecimalKey) 2f else 3f)) { onChange(keypad.digit('0')) }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (keypad.hasDecimalKey) Key(decimal.toString(), keyModifier.weight(1f)) { onChange(keypad.decimal()) }
-                else Spacer(keyModifier.weight(1f))
-                Key("0", keyModifier.weight(1f)) { onChange(keypad.digit('0')) }
-                Key("+", keyModifier.weight(1f), description = stringResource(R.string.add_another)) { onChange(keypad.plus()) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(gap)) {
+                Key(null, Modifier.fillMaxWidth().height(key * 2 + gap), icon = Icons.AutoMirrored.Outlined.Backspace,
+                    description = stringResource(R.string.delete_digit)) { onChange(keypad.delete()) }
+                Key("+", Modifier.fillMaxWidth().height(key * 2 + gap), description = stringResource(R.string.add_another)) { onChange(keypad.plus()) }
             }
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Key(null, keyModifier.fillMaxWidth(), icon = Icons.AutoMirrored.Outlined.Backspace, description = stringResource(R.string.delete_digit)) {
-                onChange(keypad.delete())
-            }
-            // Saving: the tall key gathers into a circle of the accent and the ✓ pops.
-            val reduced = io.github.sirallap.fulla.ui.theme.FullaMotion.reduced()
-            val settle = io.github.sirallap.fulla.ui.theme.FullaMotion.settle<androidx.compose.ui.unit.Dp>(reduced)
-            val height by androidx.compose.animation.core.animateDpAsState(if (saved) 72.dp else 56.dp * 3 + 12.dp, settle, label = "saveH")
-            val corner by androidx.compose.animation.core.animateDpAsState(if (saved) 36.dp else 16.dp, settle, label = "saveR")
-            val pop by androidx.compose.animation.core.animateFloatAsState(if (saved) 1.25f else 1f,
-                io.github.sirallap.fulla.ui.theme.FullaMotion.settle(reduced), label = "savePop")
-            val fill by androidx.compose.animation.animateColorAsState(when {
-                saved -> c.highlight
-                keypad.canSave -> c.accent
-                else -> c.line
-            }, io.github.sirallap.fulla.ui.theme.FullaMotion.functional(reduced), label = "saveFill")
-            val source = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-            Box(Modifier.fillMaxWidth().height(56.dp * 3 + 12.dp), contentAlignment = Alignment.Center) {
-                Box(
-                    Modifier.then(if (saved) Modifier.width(72.dp) else Modifier.fillMaxWidth()).height(height)
-                        .yields(source).clip(RoundedCornerShape(corner)).background(fill)
-                        .clickable(source, androidx.compose.foundation.LocalIndication.current, enabled = keypad.canSave && !saved,
-                            onClickLabel = saveLabel, onClick = onSave),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Outlined.Check, saveLabel, tint = when {
-                        saved -> c.onHighlight
-                        keypad.canSave -> c.onAccent
-                        else -> c.inkMuted
-                    }, modifier = Modifier.size(32.dp).graphicsLayer { scaleX = pop; scaleY = pop })
-                }
-            }
-        }
+        PrimaryButton(
+            if (keypad.canSave) "$saveLabel · $amount" else saveLabel,
+            onClick = onSave,
+            icon = if (saved) Icons.Outlined.Check else null,
+            enabled = keypad.canSave && !saved,
+        )
     }
 }
 

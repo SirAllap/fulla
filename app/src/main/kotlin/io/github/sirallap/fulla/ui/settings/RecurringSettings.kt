@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.settings
 
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Box
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.Arrangement
@@ -129,7 +132,7 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     }
     if (canEdit) ScreenPrimaryAction(stringResource(R.string.add_recurring)) { creating = true }
     Column {
-        Text(stringResource(R.string.recurring_text), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
+        val shown = view.config.recurringRules.filter { !it.archived }
         if (canEdit && leftOut.isNotEmpty()) {
             Notice(
                 title = stringResource(R.string.fixed_missed),
@@ -144,19 +147,19 @@ fun RecurringSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                     end = { AmountText(f.money(o.rule.template.amountMinor), color = c.ink) })
             }
         }
-        val shown = view.config.recurringRules.filter { !it.archived }
         if (shown.isEmpty()) {
             EmptyState(Icons.Outlined.Event, stringResource(R.string.no_recurring_title), stringResource(R.string.no_recurring_text))
             return@Column
         }
         // What they come to in a month: the year ahead of every cost, a twelfth of it.
         val costs = shown.filter { it.template.kind == TransactionKind.EXPENSE }
+        // The figure first, in the dark card of the mockup.
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clip(RoundedCornerShape(20.dp))
-                .background(c.paperHigh).padding(16.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).clip(RoundedCornerShape(20.dp))
+                .background(c.ink).padding(16.dp),
         ) {
-            Text(stringResource(R.string.recurring_month_share), style = FullaType.secondary, color = c.inkMuted)
-            Text(f.money(Scheduler.monthlyShare(costs, today)), style = FullaType.screenTitle, color = c.ink)
+            Text(stringResource(R.string.recurring_month_share), style = FullaType.secondary, color = c.paper.copy(alpha = 0.75f))
+            Text(f.money(Scheduler.monthlyShare(costs, today)), style = FullaType.screenTitle, color = c.paper)
         }
         // By when they are next charged, never by name: what is coming first is what a person looks for.
         val next = shown.associateWith { runCatching { Scheduler.nextDue(it, today) }.getOrNull() }
@@ -218,9 +221,15 @@ private fun RuleRow(view: HouseholdView, r: RecurringRule, next: LocalDate?, tod
             },
             category?.name,
         ).joinToString(" · "),
-        detail = scheduleText(r.schedule, r.startDate) +
-            (progress?.let { (done, all) -> " · " + stringResource(R.string.payment_progress, done, all) } ?: ""),
-        below = if (progress != null) ({ ProgressLine(progress.first.toFloat() / progress.second, category?.let { c.category(it.colorIndex) } ?: c.accent) }) else null,
+        // A plan in payments shows as a short bar and "1 of 3 paid" under the date, as in the mockup; how it repeats is in its form.
+        below = if (progress != null) ({
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.width(72.dp)) {
+                    ProgressLine(progress.first.toFloat() / progress.second, category?.let { c.category(it.colorIndex) } ?: c.accent)
+                }
+                Text(stringResource(R.string.payment_progress, progress.first, progress.second), style = FullaType.label, color = c.inkMuted)
+            }
+        }) else null,
         end = { AmountText(f.money(r.template.amountMinor, signed = income), color = if (income) c.moneyIn else c.ink) },
         onClick = onClick,
     )

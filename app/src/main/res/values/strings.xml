@@ -655,7 +655,7 @@
     <string name="trip_kind_other">Other</string>
     <!-- Overview row: the total money in all accounts today (opening balance + movements). -->
     <string name="accounts_total">In your accounts</string>
-    <string name="accounts_total_help">What they hold today. Tap for each account.</string>
+    <string name="accounts_total_help">What they hold today.</string>
     <string name="add_subcategory">Add a subcategory</string>
     <string name="subcategories">Subcategories</string>
     <string name="subcategory_general">General</string>

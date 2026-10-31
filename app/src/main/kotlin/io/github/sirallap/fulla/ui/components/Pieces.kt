@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.components
 
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.asPaddingValues
@@ -187,13 +189,51 @@ val LocalRowInset = androidx.compose.runtime.staticCompositionLocalOf { 20.dp }
 @Composable
 fun Section(text: String, modifier: Modifier = Modifier, top: Dp = 24.dp, trailing: (@Composable RowScope.() -> Unit)? = null) {
     Column(modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = LocalRowInset.current, end = LocalRowInset.current, top = top, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        val title = @Composable {
             Text(text.uppercase(), style = FullaType.section, color = FullaTheme.colors.inkMuted,
-                modifier = Modifier.weight(1f).semantics { heading() })
-            trailing?.invoke(this)
+                modifier = Modifier.semantics { heading() })
+        }
+        val pad = Modifier.fillMaxWidth().padding(start = LocalRowInset.current, end = LocalRowInset.current, top = top, bottom = 8.dp)
+        if (trailing == null) Box(pad) { title() }
+        // With big text the trailing figure goes under the title, never squeezing it to a letter a line.
+        else Spread(pad, startShare = 1f, start = title, end = { Row(verticalAlignment = Alignment.CenterVertically) { trailing() } })
+    }
+}
+
+/**
+ * [start] and [end] side by side, [end] at its natural width on the right,
+ * while [start] keeps at least [startShare] of the width (1f: all it needs,
+ * on one line). Past that [end] goes under [start], left-aligned: nothing is
+ * ever squeezed to a sliver (a date one letter a line) or pushed off screen.
+ */
+@Composable
+fun Spread(modifier: Modifier = Modifier, startShare: Float = 0.5f, gap: Dp = 12.dp,
+           start: @Composable () -> Unit, end: @Composable () -> Unit) {
+    androidx.compose.ui.layout.Layout(content = { Box { start() }; Box { end() } }, modifier = modifier) { measurables, constraints ->
+        val (s, e) = measurables
+        val width = constraints.maxWidth
+        val gapPx = gap.roundToPx()
+        val endWidth = e.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity)
+        val startNeeds = s.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity)
+        val room = width - endWidth - gapPx
+        val sideBySide = room > 0 && (startNeeds <= room || (startShare < 1f && room >= width * startShare))
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        if (sideBySide) {
+            val ep = e.measure(loose.copy(maxWidth = endWidth))
+            val sp = s.measure(loose.copy(maxWidth = room))
+            val h = maxOf(sp.height, ep.height, constraints.minHeight)
+            layout(width, h) {
+                sp.place(0, (h - sp.height) / 2)
+                ep.place(width - ep.width, (h - ep.height) / 2)
+            }
+        } else {
+            val sp = s.measure(loose.copy(maxWidth = width))
+            val ep = e.measure(loose.copy(maxWidth = width))
+            val space = 4.dp.roundToPx()
+            layout(width, maxOf(sp.height + space + ep.height, constraints.minHeight)) {
+                sp.place(0, 0)
+                ep.place(0, sp.height + space)
+            }
         }
     }
 }
@@ -239,19 +279,25 @@ fun ListRow(
         ) {
             start?.invoke()
             if (icon != null) Icon(icon, null, tint = if (iconTint == Color.Unspecified) c.inkMuted else iconTint)
-            Column(Modifier.weight(1f)) {
-                Text(title, style = FullaType.body, color = if (titleColor == Color.Unspecified) c.ink else titleColor,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
-                below?.invoke(this)
-                if (!context.isNullOrBlank()) {
-                    Text(context, style = FullaType.secondary, color = c.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-                if (!detail.isNullOrBlank()) {
-                    Text(detail, style = FullaType.secondary, color = if (detailColor == Color.Unspecified) c.inkMuted else detailColor,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+            val text = @Composable {
+                Column {
+                    // Text wraps rather than being cut (ux.md, "Every phone, every text size").
+                    Text(title, style = FullaType.body, color = if (titleColor == Color.Unspecified) c.ink else titleColor,
+                        maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    if (!context.isNullOrBlank()) {
+                        Text(context, style = FullaType.secondary, color = c.inkMuted, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                    }
+                    if (!detail.isNullOrBlank()) {
+                        Text(detail, style = FullaType.secondary, color = if (detailColor == Color.Unspecified) c.inkMuted else detailColor,
+                            maxLines = 4, overflow = TextOverflow.Ellipsis)
+                    }
+                    // Under the words: a bar, a button.
+                    below?.invoke(this)
                 }
             }
-            end?.invoke(this)
+            if (end == null) Box(Modifier.weight(1f)) { text() }
+            // The amount stays beside the text while the text keeps half the row; past that it goes under it.
+            else Spread(Modifier.weight(1f), startShare = 0.5f, start = text, end = { Row(verticalAlignment = Alignment.CenterVertically) { end() } })
         }
         if (divider) Hairline(inset = inset + indent)
     }
@@ -377,11 +423,20 @@ fun Chip(label: String, selected: Boolean, onClick: () -> Unit, leading: (@Compo
 
 @Composable
 fun <T> ChipRow(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        for ((value, label) in options) Chip(label, value == selected, { onSelect(value) })
+    val scroll = rememberScrollState()
+    val paper = FullaTheme.colors.paper
+    Box(modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(scroll).padding(horizontal = 20.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            for ((value, label) in options) Chip(label, value == selected, { onSelect(value) })
+        }
+        // More to the side shows as a fade, not a chip cut in half (ux.md, piece 11).
+        if (scroll.canScrollForward) {
+            Box(Modifier.matchParentSize().wrapContentWidth(Alignment.End).width(48.dp)
+                .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(paper.copy(alpha = 0f), paper))))
+        }
     }
 }
 
@@ -801,4 +856,23 @@ fun listEndPadding(aboveTabBar: Boolean = false): androidx.compose.foundation.la
     val bar = if (aboveTabBar) 0.dp
     else androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     return androidx.compose.foundation.layout.PaddingValues(bottom = bar + 32.dp)
+}
+
+/**
+ * One line that shrinks a step at a time, down to [minScale] of its size,
+ * until it fits its width (a tab's name with big text), and only then ends
+ * in "…". Its full text is always its content description.
+ */
+@Composable
+fun FitText(text: String, style: androidx.compose.ui.text.TextStyle, color: Color, modifier: Modifier = Modifier, minScale: Float = 0.7f) {
+    var scale by remember(text, style) { androidx.compose.runtime.mutableFloatStateOf(1f) }
+    var settled by remember(text, style) { androidx.compose.runtime.mutableStateOf(false) }
+    Text(
+        text, style = style.copy(fontSize = style.fontSize * scale), color = color, maxLines = 1, softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier.drawWithContent { if (settled) drawContent() },
+        onTextLayout = { layout ->
+            if (layout.hasVisualOverflow && scale > minScale) scale = (scale - 0.05f).coerceAtLeast(minScale) else settled = true
+        },
+    )
 }

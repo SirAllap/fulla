@@ -75,7 +75,9 @@ fun LiquidTabBar(items: List<TabItem>, selected: Int, center: Int? = null, onSel
     val right by animateFloatAsState(selected + 1f, if (rightward) lead else lag, label = "right")
     Column(Modifier.fillMaxWidth().background(c.paper).navigationBarsPadding()) {
         Hairline()
-        BoxWithConstraints(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp, vertical = 8.dp)) {
+        // As tall as its icon and a line of label at the person's text size, never less than 64 dp.
+        val barHeight = with(androidx.compose.ui.platform.LocalDensity.current) { maxOf(64.dp, 22.dp + FullaType.label.lineHeight.toDp() + 24.dp) }
+        BoxWithConstraints(Modifier.fillMaxWidth().height(barHeight).padding(horizontal = 12.dp, vertical = 8.dp)) {
             val slot = maxWidth / items.size
             // The round button in the middle is its own highlight: the pill fades out while it is the one on.
             val pill by animateFloatAsState(if (selected == center) 0f else 1f, FullaMotion.snappy<Float>(reduced), label = "pill")
@@ -123,7 +125,8 @@ fun LiquidTabBar(items: List<TabItem>, selected: Int, center: Int? = null, onSel
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(item.icon, null, tint = tint, modifier = Modifier.size(22.dp))
-                        Text(item.label, style = FullaType.label, color = tint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        // Big text shrinks a step to fit its tab rather than ending in "…".
+                        FitText(item.label, FullaType.label, tint)
                     }
                 }
             }
