@@ -246,7 +246,7 @@ fun HouseholdSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             if (canEdit && !switching) {
                 io.github.sirallap.fulla.ui.components.SegmentedChoice(
                     listOf(MoneyMode.SPLIT to stringResource(R.string.money_mode_split_value), MoneyMode.SHARED to stringResource(R.string.shared_pot_card_title)),
-                    h.moneyMode, { choose(it) })
+                    if (shared) MoneyMode.SHARED else MoneyMode.SPLIT, { choose(it) })
             } else {
                 Text(stringResource(if (shared) R.string.shared_pot_card_title else R.string.money_mode_split_value), style = FullaType.body, color = FullaTheme.colors.ink)
             }
