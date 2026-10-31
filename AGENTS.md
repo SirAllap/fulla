@@ -299,7 +299,9 @@ one, for every household, and a test with a phone-only household.
 
 Four tabs (Add, Overview, History, Balances); everything else hangs off the
 gear. Screens are built from `ui/components/Pieces.kt`; if two screens need
-the same thing, it is a component. The overview's jar (`HeroJar`) is the only
+the same thing, it is a component. How a screen behaves (forms, the keyboard,
+lists, sheets, alignment and the one set of measures) is `docs/ux.md`: read it
+before building or changing a screen, and keep every screen to it. The overview's jar (`HeroJar`) is the only
 element allowed visual weight, and its levels come from `core`'s `Hero`, its
 surfaces from `Liquid`. Colours come from `core`'s `design/Colors.kt`, never
 from a hex value in a screen.

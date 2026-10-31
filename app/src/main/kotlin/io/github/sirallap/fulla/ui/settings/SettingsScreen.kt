@@ -104,10 +104,14 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
 
     val change = rememberChange(view) { error = it }
 
+    // A section's own primary action ("Add a fixed cost") is pinned at the bottom of the screen, not a row of its list.
+    val primary = remember(section) { io.github.sirallap.fulla.ui.components.PrimaryActionHolder() }
     Column(Modifier.fillMaxSize()) {
         BackHeader(stringResource(section.title), onBack)
         error?.let { Text(it, style = FullaType.secondary, color = FullaTheme.colors.danger, modifier = Modifier.padding(horizontal = 20.dp)) }
-        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = listEndPadding()) {
+        androidx.compose.runtime.CompositionLocalProvider(io.github.sirallap.fulla.ui.components.LocalPrimaryAction provides primary) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = if (primary.action != null) androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp) else listEndPadding()) {
             when (section) {
                 SettingsSection.INDEX -> index(view, onBack, onOpen, pendingUpdate, onUpdate, dbNeedsUpdate, projectUrl)
                 SettingsSection.HOUSEHOLDS -> item { HouseholdsSettings(view, onBack) }
@@ -128,6 +132,8 @@ fun SettingsScreen(view: HouseholdView, section: SettingsSection, onBack: () -> 
                 SettingsSection.ABOUT -> item { AboutSettings(onUpdate) }
             }
         }
+        }
+        io.github.sirallap.fulla.ui.components.PrimaryActionBar(primary)
     }
 }
 
