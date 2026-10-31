@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Add
@@ -299,9 +300,16 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val order = compareBy<io.github.sirallap.fulla.core.model.Category>({ it.archived }, { it.sort })
     // A category deleted (archived) that nothing refers to any more is not listed: it is gone. One with history stays, archived.
     val referenced = remember(view.config, view.active) { runCatching { io.github.sirallap.fulla.core.categories.CategoryUse.referenced(view.config, view.active) }.getOrNull() }
+    // One kind at a time, chosen at the top; the screen's button adds to the kind shown (docs/ux.md, pieces 1 and 11).
+    var showing by remember { mutableStateOf(AppliesTo.EXPENSE) }
+    if (canEdit) io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.add_category)) { creating = showing }
     Column {
-        for ((title, applies) in listOf(R.string.spending to AppliesTo.EXPENSE, R.string.income to AppliesTo.INCOME)) {
-            Section(stringResource(title))
+        io.github.sirallap.fulla.ui.components.SegmentedChoice(
+            listOf(AppliesTo.EXPENSE to stringResource(R.string.spending), AppliesTo.INCOME to stringResource(R.string.income)),
+            showing, { showing = it }, Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+        )
+        run {
+            val applies = showing
             val list = view.config.categories.filter { it.appliesTo == applies || (applies == AppliesTo.EXPENSE && it.appliesTo == AppliesTo.BOTH) }
                 .filter { referenced == null || !io.github.sirallap.fulla.core.categories.CategoryUse.isGone(view.config, referenced, it.id) }
             // Each category, then its subcategories just under it.
@@ -315,7 +323,6 @@ fun CategoriesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                         onClick = if (canEdit) ({ editing = listOfNotNull(bundleItem(view, Structure.CATEGORY, cat.id)) }) else null)
                 }
             }
-            if (canEdit) ListRow(stringResource(R.string.add_category), icon = Icons.Outlined.Add, onClick = { creating = applies })
         }
     }
     for (item in editing) androidx.compose.runtime.key((item["id"] as? JsonPrimitive)?.content) {
@@ -388,12 +395,12 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                 context = if (a.archived) stringResource(R.string.archived) else null,
                 onClick = if (canEdit) ({ editing = bundleItem(view, Structure.ACCOUNT, a.id) }) else null)
         }
-        if (canEdit) ListRow(stringResource(R.string.add_account), icon = Icons.Outlined.Add, onClick = {
-            editing = buildJsonObject {
-                put("id", UUID.randomUUID().toString()); put("name", ""); put("type", "checking")
-                put("opening_balance_minor", 0); put("sort", view.config.accounts.size); put("archived", false)
-            }
-        })
+    }
+    if (canEdit) io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.add_account)) {
+        editing = buildJsonObject {
+            put("id", UUID.randomUUID().toString()); put("name", ""); put("type", "checking")
+            put("opening_balance_minor", 0); put("sort", view.config.accounts.size); put("archived", false)
+        }
     }
     editing?.let { item ->
         // A new account has no `opening_balance_date` key at all (built just
@@ -484,21 +491,37 @@ private fun StructureDialog(
     // What is in the field, as an amount; null when it is not one, which is said under the field and stops Save.
     val balanceValue = formats?.let { io.github.sirallap.fulla.core.guide.OpeningBalances.parse(balanceText, it.currency, it.decimalStyle, debt) }
     val balanceInvalid = formats != null && balanceValue == null
-    FullaDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.edit)) },
-        text = {
-            // Scrolls: the icons of a category are many, and the buttons stay where they are.
-            androidx.compose.runtime.CompositionLocalProvider(io.github.sirallap.fulla.ui.components.LocalRowInset provides 0.dp) {
-            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(name, { name = it.take(40) }, label = { Text(stringResource(R.string.name)) }, singleLine = true)
+    // A form as a screen of its own (docs/ux.md, piece 2): the icons of a category are many, and Save stays where it is.
+    io.github.sirallap.fulla.ui.components.FormScreen(
+        title = stringResource(R.string.edit),
+        onClose = onDismiss,
+        primaryLabel = stringResource(R.string.save),
+        primaryEnabled = name.isNotBlank() && !balanceInvalid,
+        onPrimary = {
+            onSave(JsonObject(item + mapOf("name" to JsonPrimitive(name.trim()), "archived" to JsonPrimitive(archived)) +
+                (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap()) +
+                (if (showRoundUp && roundTouched) mapOf(
+                    "round_up_to" to (roundTo?.let { JsonPrimitive(it) } ?: JsonNull),
+                    "round_up_multiplier" to (if (roundTo != null) JsonPrimitive(roundMultiplier) else JsonNull),
+                ) else emptyMap()) +
+                (if (balanceValue != null && balanceTouched) mapOf(
+                    "opening_balance_minor" to JsonPrimitive(balanceValue),
+                    "opening_balance_date" to JsonPrimitive(balanceDate.toString()),
+                ) else emptyMap())))
+            onDismiss()
+        },
+        neutral = if (onDeleteClick != null && deleteBlockedText == null) ({
+            io.github.sirallap.fulla.ui.components.DeleteButton(onClick = { onDeleteClick(); onDismiss() })
+        }) else null,
+    ) {
+                OutlinedTextField(name, { name = it.take(40) }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.name)) }, singleLine = true)
                 if (formats != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(balanceText, { balanceText = it; balanceTouched = true }, modifier = Modifier.weight(1f),
-                            label = { Text(stringResource(R.string.opening_balance)) }, isError = balanceInvalid,
-                            singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                        Chip(formats.day(balanceDate), false, { pickingBalanceDate = true })
-                    }
+                    // The amount and its date one above the other: side by side, a large font squeezed the field.
+                    OutlinedTextField(balanceText, { balanceText = it; balanceTouched = true }, modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.opening_balance)) }, isError = balanceInvalid,
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    io.github.sirallap.fulla.ui.components.DetailChip(formats.day(balanceDate), { pickingBalanceDate = true },
+                        icon = Icons.Outlined.Event)
                     if (balanceInvalid) Text(stringResource(R.string.opening_balance_invalid),
                         style = FullaType.secondary, color = FullaTheme.colors.danger)
                     Text(stringResource(R.string.opening_balance_help),
@@ -515,7 +538,7 @@ private fun StructureDialog(
                             roundTo = if (on) (otherAccounts.firstOrNull { it.type == io.github.sirallap.fulla.core.model.AccountType.SAVINGS } ?: otherAccounts.first()).id else null
                             roundTouched = true
                         }
-                        if (roundTo != null) {
+                        if (roundTo != null) io.github.sirallap.fulla.ui.components.Revealed {
                             Text(stringResource(R.string.round_up_multiplier), style = FullaType.label, color = FullaTheme.colors.inkMuted)
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 for (m in io.github.sirallap.fulla.core.roundup.RoundUps.MULTIPLIERS) {
@@ -567,29 +590,7 @@ private fun StructureDialog(
                 if (deleteBlockedText != null) {
                     Text(deleteBlockedText, style = FullaType.secondary, color = FullaTheme.colors.inkMuted)
                 }
-            }
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = name.isNotBlank() && !balanceInvalid, onClick = {
-                onSave(JsonObject(item + mapOf("name" to JsonPrimitive(name.trim()), "archived" to JsonPrimitive(archived)) +
-                    (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap()) +
-                    (if (showRoundUp && roundTouched) mapOf(
-                        "round_up_to" to (roundTo?.let { JsonPrimitive(it) } ?: JsonNull),
-                        "round_up_multiplier" to (if (roundTo != null) JsonPrimitive(roundMultiplier) else JsonNull),
-                    ) else emptyMap()) +
-                    (if (balanceValue != null && balanceTouched) mapOf(
-                        "opening_balance_minor" to JsonPrimitive(balanceValue),
-                        "opening_balance_date" to JsonPrimitive(balanceDate.toString()),
-                    ) else emptyMap())))
-                onDismiss()
-            }) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-        neutralButton = if (onDeleteClick != null && deleteBlockedText == null) ({
-            io.github.sirallap.fulla.ui.components.DeleteButton(onClick = { onDeleteClick(); onDismiss() })
-        }) else null,
-    )
+    }
     if (pickingBalanceDate) {
         val state = androidx.compose.material3.rememberDatePickerState(
             initialSelectedDateMillis = balanceDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli())

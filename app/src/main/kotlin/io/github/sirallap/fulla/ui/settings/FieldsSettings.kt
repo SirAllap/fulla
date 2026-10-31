@@ -68,6 +68,7 @@ fun FieldsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
     val language = Locale.getDefault().language
     var editing by remember { mutableStateOf<CustomField?>(null) }
     var creating by remember { mutableStateOf(false) }
+    if (canEdit) io.github.sirallap.fulla.ui.components.ScreenPrimaryAction(stringResource(R.string.add_field)) { creating = true }
     Column {
         Text(stringResource(R.string.fields_text), style = FullaType.secondary, color = c.inkMuted, modifier = Modifier.padding(20.dp))
         if (view.config.fields.isEmpty()) EmptyState(Icons.Outlined.Tune, stringResource(R.string.no_fields_title), stringResource(R.string.no_fields_text))
@@ -77,7 +78,6 @@ fun FieldsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                 detail = if (f.archived) stringResource(R.string.archived) else null,
                 onClick = if (canEdit) ({ editing = f }) else null)
         }
-        if (canEdit) ListRow(stringResource(R.string.add_field), icon = Icons.Outlined.Add, onClick = { creating = true })
     }
     if (creating || editing != null) {
         val before = editing?.categoryIds.orEmpty()
@@ -103,11 +103,30 @@ private fun FieldDialog(view: HouseholdView, existing: CustomField?, language: S
     val needsOptions = type == FieldType.SELECT || type == FieldType.MULTISELECT
     val optionList = options.split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
     val valid = label.isNotBlank() && kinds.isNotEmpty() && (!needsOptions || optionList.isNotEmpty())
-    FullaDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(if (existing == null) R.string.add_field else R.string.edit)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    // A form as a screen of its own (docs/ux.md, piece 2).
+    io.github.sirallap.fulla.ui.components.FormScreen(
+        title = stringResource(if (existing == null) R.string.add_field else R.string.edit),
+        onClose = onDismiss,
+        primaryLabel = stringResource(R.string.save),
+        primaryEnabled = valid,
+        onPrimary = {
+                val key = existing?.key ?: FieldKeys.from(label, view.config.fields.map { it.key }.toSet())
+                val labels = (existing?.labels ?: emptyMap()) + (language to label.trim())
+                onSave(JsonObject(mapOf(
+                    "id" to JsonPrimitive(existing?.id ?: UUID.randomUUID().toString()),
+                    "key" to JsonPrimitive(key),
+                    "labels" to JsonObject(labels.mapValues { JsonPrimitive(it.value) }),
+                    "type" to JsonPrimitive(type.key),
+                    "applies_to" to JsonArray(kinds.map { JsonPrimitive(it.key) }),
+                    "required" to JsonPrimitive(false),
+                    "options" to JsonArray(if (needsOptions) optionList.map(::JsonPrimitive) else emptyList()),
+                    "show_in_list" to JsonPrimitive(inList),
+                    "sort" to JsonPrimitive(existing?.sort ?: view.config.fields.size),
+                    "archived" to JsonPrimitive(archived),
+                )), categories)
+                onDismiss()
+        },
+    ) {
                 OutlinedTextField(label, { label = it.take(40) }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.name)) }, singleLine = true)
                 if (existing == null) {
                     Text(stringResource(R.string.field_type), style = FullaType.label, color = FullaTheme.colors.inkMuted)
@@ -140,27 +159,5 @@ private fun FieldDialog(view: HouseholdView, existing: CustomField?, language: S
                 }
                 SwitchRow(stringResource(R.string.field_in_list), stringResource(R.string.field_in_list_help), inList) { inList = it }
                 if (existing != null) SwitchRow(stringResource(R.string.archive), stringResource(R.string.archive_help), archived) { archived = it }
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = valid, onClick = {
-                val key = existing?.key ?: FieldKeys.from(label, view.config.fields.map { it.key }.toSet())
-                val labels = (existing?.labels ?: emptyMap()) + (language to label.trim())
-                onSave(JsonObject(mapOf(
-                    "id" to JsonPrimitive(existing?.id ?: UUID.randomUUID().toString()),
-                    "key" to JsonPrimitive(key),
-                    "labels" to JsonObject(labels.mapValues { JsonPrimitive(it.value) }),
-                    "type" to JsonPrimitive(type.key),
-                    "applies_to" to JsonArray(kinds.map { JsonPrimitive(it.key) }),
-                    "required" to JsonPrimitive(false),
-                    "options" to JsonArray(if (needsOptions) optionList.map(::JsonPrimitive) else emptyList()),
-                    "show_in_list" to JsonPrimitive(inList),
-                    "sort" to JsonPrimitive(existing?.sort ?: view.config.fields.size),
-                    "archived" to JsonPrimitive(archived),
-                )), categories)
-                onDismiss()
-            }) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
+    }
 }
