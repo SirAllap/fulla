@@ -71,6 +71,7 @@ right-aligned.
   two seconds, the surface tilts and settles, and at rest it is flat and
   nothing is redrawn. Used for what is chosen (tiles, segmented choices),
   for the Save pill and for holding to confirm.
+- **Nothing is flat at rest** (`Modifier.glass`): cards, buttons and tiles carry a soft sheen, a light edge and a little shade. Bars, filters, tiles, switches, search fields, selectors, the goal's jar and the guide's steps fill with the same liquid (`LiquidSurface`, `drawLiquidAcross`), so a chosen thing is always a liquid that rose, never a flat colour.
 - **Choosing wobbles** (`Modifier.jelly`): the thing squashes and stretches a
   little and settles, once per change.
 - **What cannot be undone is held** (`HoldToConfirm`): press and hold and the

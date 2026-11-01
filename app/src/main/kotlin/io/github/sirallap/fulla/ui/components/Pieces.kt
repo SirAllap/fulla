@@ -782,7 +782,10 @@ fun GuideSheet(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (stepOf != null) Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (i in 1..stepOf.second) {
-                        Box(Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(if (i <= stepOf.first) c.ink else c.line))
+                        // Each step of the guide fills with the liquid when it is reached, like a tube being filled one after another.
+                        val tube = rememberLiquidState(if (i <= stepOf.first) 1f else 0f)
+                        Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(c.line)
+                            .drawBehind { drawLiquidAcross(tube, listOf(c.ink.copy(alpha = 0.9f), c.ink), 2.dp) })
                     }
                 } else Spacer(Modifier.weight(1f))
                 androidx.compose.material3.TextButton(onClick = onSkip) { Text(stringResource(R.string.guide_skip)) }

@@ -100,7 +100,7 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                     Column(
                         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
                             .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp)).background(c.ink)
-                            .liquid(0.4f, vertical = true).glass().padding(18.dp),
+                            .glass().padding(18.dp),
                         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(14.dp),
                     ) {
                         androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
