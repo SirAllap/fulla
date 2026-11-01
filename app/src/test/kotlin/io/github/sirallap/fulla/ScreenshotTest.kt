@@ -25,6 +25,9 @@ import io.github.sirallap.fulla.ui.components.AddPhase
 import io.github.sirallap.fulla.ui.components.LiquidTabBar
 import io.github.sirallap.fulla.ui.components.TabItem
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import io.github.sirallap.fulla.ui.entry.EntryScreen
 import io.github.sirallap.fulla.ui.history.HistoryScreen
@@ -108,12 +111,28 @@ open class ScreenshotTest {
         for ((name, paper) in listOf("light" to 0xFFFAF8F3.toInt(), "dark" to 0xFF1B1830.toInt())) {
             val sets = listOf(
                 "pebble" to io.github.sirallap.fulla.widget.WidgetArt.card(700, 340, 50f, 0.3f, paper, 0xFFE9B949.toInt(), 0xFFC9971F.toInt(), 4f),
+                "pebbleQuick" to io.github.sirallap.fulla.widget.WidgetArt.card(700, 340, 50f, 0.5f, paper, 0xFFE9B949.toInt(), 0xFFC9971F.toInt(), 4f, quick = true),
                 "bubble" to io.github.sirallap.fulla.widget.WidgetArt.card(320, 320, 50f, 0.5f, paper, 0xFFE9B949.toInt(), 0xFFC9971F.toInt(), 4f, io.github.sirallap.fulla.widget.WidgetArt.Shape.BUBBLE),
             )
             for ((shape, bitmap) in sets) {
                 val file = java.io.File("$dir/$prefix-11-widget-$shape-$name.png").apply { parentFile?.mkdirs() }
                 file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
             }
+        }
+    }
+    @Test fun edit() = shot("12-edit") {
+        EntryScreen(view, editingId = view.rows.first { it.transaction.kind == io.github.sirallap.fulla.core.model.TransactionKind.EXPENSE }.transaction.id,
+            headerActions = null, onDone = {})
+    }
+    @Test fun saveDock() = shot("13-save-dock") {
+        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            io.github.sirallap.fulla.ui.components.SaveDock("No changes", {}, enabled = false, busy = false, onDiscard = {})
+            io.github.sirallap.fulla.ui.components.SaveDock("Apply changes · 6.00", {}, enabled = true, busy = false, onDiscard = {})
+            io.github.sirallap.fulla.ui.components.SegmentedChoice(listOf("a" to "Expense", "b" to "Income", "c" to "Refund", "d" to "Transfer"), "b", {})
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                io.github.sirallap.fulla.ui.components.LiquidSwitch(false); io.github.sirallap.fulla.ui.components.LiquidSwitch(true)
+            }
+            io.github.sirallap.fulla.ui.components.SearchPill("", {}, "Search")
         }
     }
     @Test fun appearance() = shot("9-appearance") { SettingsScreen(view, SettingsSection.APPEARANCE, {}, {}) }
