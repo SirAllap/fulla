@@ -7,6 +7,28 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material3.Text
+import io.github.sirallap.fulla.ui.theme.FullaTheme
+import io.github.sirallap.fulla.ui.theme.FullaType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -167,4 +189,47 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNeck(
     path.close()
     drawPath(path, color)
     drawCircle(color, dropRadius, Offset(dropCenter, centerY))
+}
+
+/**
+ * The button for something that cannot be undone: press and hold, and the
+ * danger colour rises inside it like a liquid; let go early and it drains
+ * away and nothing happens. A screen reader's double tap confirms at once
+ * (holding is not something it can do).
+ */
+@Composable
+fun HoldToConfirm(label: String, onConfirmed: () -> Unit, modifier: Modifier = Modifier) {
+    val c = FullaTheme.colors
+    val reduced = FullaMotion.reduced()
+    val progress = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    var done by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(24.dp)
+    Box(
+        modifier.fillMaxWidth().heightIn(min = 48.dp).clip(shape).border(2.dp, c.danger, shape)
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                onClick(label = label) { if (!done) { done = true; onConfirmed() }; true }
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(onPress = {
+                    if (done) return@detectTapGestures
+                    val fill = scope.launch {
+                        progress.animateTo(1f, tween(if (reduced) 1 else 1100, easing = LinearEasing))
+                        if (!done) { done = true; onConfirmed() }
+                    }
+                    tryAwaitRelease()
+                    if (!done) {
+                        fill.cancel()
+                        scope.launch { progress.animateTo(0f, spring(dampingRatio = 0.8f, stiffness = 200f)) }
+                    }
+                })
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        LiquidSurface(progress.value, c.danger, Modifier.matchParentSize(), maxAmplitude = 4.dp)
+        Text(label, style = FullaType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+            color = if (progress.value > 0.55f) androidx.compose.ui.graphics.Color.White else c.danger,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+    }
 }

@@ -407,7 +407,7 @@ fun Chip(label: String, selected: Boolean, onClick: () -> Unit, leading: (@Compo
         selected = selected,
         onClick = onClick,
         interactionSource = source,
-        modifier = Modifier.yields(source),
+        modifier = Modifier.yields(source).jelly(selected),
         border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selected, borderColor = c.line,
             selectedBorderColor = container),
         label = { Text(label, maxLines = 1) },

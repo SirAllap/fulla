@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
@@ -261,13 +263,17 @@ fun <T> SegmentedChoice(options: List<Pair<T, String>>, selected: T, onSelect: (
         content = {
             for ((value, label) in options) {
                 val on = value == selected
+                val ink by androidx.compose.animation.animateColorAsState(if (on) c.onHighlight else c.ink,
+                    androidx.compose.animation.core.tween(220), label = "choice")
                 Box(
-                    Modifier.clip(RoundedCornerShape(10.dp)).background(if (on) c.highlight else Color.Transparent)
+                    Modifier.jelly(on).clip(RoundedCornerShape(10.dp))
                         .selectable(on, role = Role.RadioButton, onClick = { onSelect(value) })
                         .padding(horizontal = 10.dp, vertical = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(label, style = FullaType.secondary, color = if (on) c.onHighlight else c.ink, textAlign = TextAlign.Center)
+                    // The choice that is on is filled with a liquid that rises (LiquidSurface), not painted flat.
+                    LiquidSurface(if (on) 1.05f else 0f, c.highlight, Modifier.matchParentSize(), maxAmplitude = 3.dp)
+                    Text(label, style = FullaType.secondary, color = ink, textAlign = TextAlign.Center)
                 }
             }
         },
@@ -309,8 +315,14 @@ fun ConfirmDialog(title: String, text: String, confirmLabel: String, onConfirm: 
         title = { Text(title) },
         text = { Text(text, style = FullaType.secondary) },
         confirmButton = {
-            TextButton(onClick = onConfirm,
-                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = if (danger) c.danger else c.accent)) {
+            if (danger) {
+                // Cannot be undone: press and hold, and the red rises (HoldToConfirm).
+                Column(Modifier.widthIn(min = 160.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    HoldToConfirm(confirmLabel, onConfirm)
+                    Text(stringResource(R.string.hold_hint), style = FullaType.label, color = c.inkMuted, modifier = Modifier.padding(top = 4.dp))
+                }
+            } else TextButton(onClick = onConfirm,
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = c.accent)) {
                 Text(confirmLabel)
             }
         },

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
@@ -92,6 +93,8 @@ import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AddDock
 import io.github.sirallap.fulla.ui.components.AddPhase
 import io.github.sirallap.fulla.ui.components.BackHeader
+import io.github.sirallap.fulla.ui.components.LiquidSurface
+import io.github.sirallap.fulla.ui.components.jelly
 import io.github.sirallap.fulla.ui.components.Chip
 import io.github.sirallap.fulla.ui.components.MemberBadge
 import io.github.sirallap.fulla.ui.components.MenuItem
@@ -482,16 +485,25 @@ private fun CategoryFieldChips(view: HouseholdView, draft: Draft) {
 @Composable
 internal fun androidx.compose.foundation.layout.FlowRowScope.Tile(label: String, icon: ImageVector, selected: Boolean, tint: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
     val c = FullaTheme.colors
-    Column(
-        Modifier.weight(1f).heightIn(min = 72.dp).clip(RoundedCornerShape(16.dp))
-            .background(if (selected) c.highlight else c.paperHigh)
-            .clickable(onClickLabel = label, onClick = onClick).padding(vertical = 10.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+    val ink by androidx.compose.animation.animateColorAsState(if (selected) c.onHighlight else c.ink,
+        androidx.compose.animation.core.tween(220), label = "tileInk")
+    Box(
+        Modifier.weight(1f).heightIn(min = 72.dp).jelly(selected).clip(RoundedCornerShape(16.dp))
+            .background(c.paperHigh)
+            .clickable(onClickLabel = label, onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(if (selected) Icons.Outlined.Check else icon, null, tint = if (selected) c.onHighlight else tint, modifier = Modifier.size(24.dp))
-        Spacer(Modifier.height(4.dp))
-        Text(label, style = FullaType.label, color = if (selected) c.onHighlight else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        // What is chosen fills with a liquid that rises, not a flat colour.
+        LiquidSurface(if (selected) 1.05f else 0f, c.highlight, Modifier.matchParentSize(), maxAmplitude = 4.dp)
+        Column(
+            Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(if (selected) Icons.Outlined.Check else icon, null, tint = if (selected) ink else tint, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.height(4.dp))
+            Text(label, style = FullaType.label, color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        }
     }
 }
 

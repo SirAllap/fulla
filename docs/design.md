@@ -59,8 +59,23 @@ right-aligned.
   (`Modifier.yields`).
 - **The tab pill is a drop.** Its two edges ride different springs, so it
   stretches towards the new tab and gathers there (`LiquidTabBar`).
-- **Saving gathers into a ✓.** The keypad's save key shrinks to a circle of
-  the accent, the check pops, then the screen moves on.
+- **Saving is the round button.** On Add, the "+" in the middle of the tab
+  bar is Save. It grows into a pill with a liquid rising in it, says what is
+  missing ("Pick a category", "Enter the amount") until it is all there, then
+  "Save · amount"; a red drop beside it throws the entry away, leaving the
+  pill and going back into it. Saving gathers it into a ✓ of the accent
+  (the accent is the person's own, Settings › Appearance). The bar is 80 dp,
+  so the button never sits on the keypad. Editing an entry keeps its Save key.
+- **Liquid is physics, not a loop** (`LiquidSurface`): the level follows a
+  spring, the waves are as tall as the change was sudden and die in under
+  two seconds, the surface tilts and settles, and at rest it is flat and
+  nothing is redrawn. Used for what is chosen (tiles, segmented choices),
+  for the Save pill and for holding to confirm.
+- **Choosing wobbles** (`Modifier.jelly`): the thing squashes and stretches a
+  little and settles, once per change.
+- **What cannot be undone is held** (`HoldToConfirm`): press and hold and the
+  danger colour rises; let go early and it drains away. A screen reader's
+  double tap confirms at once.
 - **Screens slide a little.** What opens comes in from the side while what
   was there steps back and dims; back is the same, reversed.
 - **The welcome plays once.** The band draws itself, the liquid rises and

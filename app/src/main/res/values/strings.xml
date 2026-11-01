@@ -951,4 +951,5 @@
     <string name="add_pick_category">Pick a category</string>
     <string name="add_need_amount">Enter the amount</string>
     <string name="discard_entry">Discard</string>
+    <string name="hold_hint">Press and hold</string>
 </resources>

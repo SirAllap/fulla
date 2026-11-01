@@ -900,4 +900,5 @@
     <string name="add_pick_category">Scegli la categoria</string>
     <string name="add_need_amount">Inserisci l’importo</string>
     <string name="discard_entry">Scarta</string>
+    <string name="hold_hint">Tieni premuto</string>
 </resources>
