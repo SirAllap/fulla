@@ -171,9 +171,7 @@ private fun LazyListScope.index(
     // As in the board: a search over every section, then four blocks, each row with what it holds on the right.
     item(key = "groups") {
         var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
-        androidx.compose.material3.OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-            placeholder = { Text(stringResource(R.string.settings_search)) }, singleLine = true,
-            leadingIcon = { Icon(Icons.Outlined.Search, null) })
+        io.github.sirallap.fulla.ui.components.SearchPill(query, { query = it }, stringResource(R.string.settings_search))
         val q = query.trim().lowercase()
         @Composable
         fun row(s: SettingsSection, divider: Boolean) {
