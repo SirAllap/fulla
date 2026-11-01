@@ -904,4 +904,6 @@
     <string name="save_colour">Bouton Enregistrer</string>
     <string name="save_colour_text">La couleur du bouton Enregistrer de la saisie.</string>
     <string name="save_colour_ink">Par défaut</string>
+    <string name="apply_changes">Appliquer les changements</string>
+    <string name="no_changes">Aucun changement</string>
 </resources>

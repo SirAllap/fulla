@@ -904,4 +904,6 @@
     <string name="save_colour">Botón Guardar</string>
     <string name="save_colour_text">El color del botón Guardar de Anotar.</string>
     <string name="save_colour_ink">Predeterminado</string>
+    <string name="apply_changes">Aplicar cambios</string>
+    <string name="no_changes">Sin cambios</string>
 </resources>

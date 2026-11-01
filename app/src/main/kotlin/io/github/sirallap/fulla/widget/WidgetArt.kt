@@ -33,11 +33,13 @@ object WidgetArt {
     enum class Shape { PEBBLE, BUBBLE }
 
     /** The share of the card's height the liquid stands at: low, and never above a third. */
-    private fun level(fill: Float?): Float = if (fill == null) 0.14f else 0.14f + 0.19f * fill.coerceIn(0f, 1f)
+    private fun level(fill: Float?, quick: Boolean): Float =
+        if (quick) (if (fill == null) 0.26f else 0.26f + 0.12f * fill.coerceIn(0f, 1f)) // above the row of shortcuts, so it shows around them
+        else if (fill == null) 0.14f else 0.14f + 0.19f * fill.coerceIn(0f, 1f)
 
     fun card(
         width: Int, height: Int, radius: Float, fill: Float?, paper: Int, surface: Int, body: Int, stroke: Float,
-        shape: Shape = Shape.PEBBLE,
+        shape: Shape = Shape.PEBBLE, quick: Boolean = false,
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -57,7 +59,7 @@ object WidgetArt {
         })
 
         // The liquid: a fainter surface behind the first gives it depth, as two layers do in the jar.
-        val top = h * (1f - level(fill))
+        val top = h * (1f - level(fill, quick))
         wave(canvas, w, h, top - h * 0.03f, Liquid.surface(48, 0.03f, 0.62f, 1.1f), surface, body, alpha = 110)
         wave(canvas, w, h, top, Liquid.surface(48, 0.03f, 0.08f, 1.45f, meniscus = 0.01f), surface, body, alpha = 255)
         bubbles(canvas, w, h, top, unit)

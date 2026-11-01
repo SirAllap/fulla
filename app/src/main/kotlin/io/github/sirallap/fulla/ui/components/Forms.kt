@@ -272,13 +272,14 @@ fun <T> SegmentedChoice(options: List<Pair<T, String>>, selected: T, onSelect: (
                     androidx.compose.animation.core.tween(220), label = "choice")
                 Box(
                     Modifier.jelly(on).clip(RoundedCornerShape(10.dp))
-                        .selectable(on, role = Role.RadioButton, onClick = { onSelect(value) })
-                        .padding(horizontal = 10.dp, vertical = 12.dp),
+                        .selectable(on, role = Role.RadioButton, onClick = { onSelect(value) }),
                     contentAlignment = Alignment.Center,
                 ) {
                     // The choice that is on is filled with a liquid that rises (LiquidSurface), not painted flat.
+                    // The liquid fills the whole choice, so the padding is on the words, not on the box.
                     LiquidSurface(if (on) 1.05f else 0f, c.highlight, Modifier.matchParentSize(), maxAmplitude = 3.dp)
-                    Text(label, style = FullaType.secondary, color = ink, textAlign = TextAlign.Center)
+                    Text(label, style = FullaType.secondary, color = ink, textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp))
                 }
             }
         },

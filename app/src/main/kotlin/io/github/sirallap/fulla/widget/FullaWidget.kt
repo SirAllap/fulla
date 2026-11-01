@@ -231,8 +231,9 @@ object FullaWidget {
         val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH).takeIf { it > 0 } ?: 250
         val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT).takeIf { it > 0 } ?: 110
         val scale = minOf(context.resources.displayMetrics.density, 480f / widthDp)
+        val withQuick = heightDp >= QUICK_MIN_HEIGHT && c.quick.isNotEmpty()
         val card = WidgetArt.card((widthDp * scale).toInt(), (heightDp * scale).toInt(), 24 * scale, c.fill,
-            c.paper, c.liquidSurface, c.liquidBody, 2 * scale)
+            c.paper, c.liquidSurface, c.liquidBody, 2 * scale, quick = withQuick)
         // Resizing calls onAppWidgetOptionsChanged, which redraws: the shortcuts follow the height it has now.
         val wide = wide(context, c, card, quick = heightDp >= QUICK_MIN_HEIGHT)
         // The small one is a bubble; it needs no more than a square of the widget's smaller side.
@@ -274,7 +275,7 @@ object FullaWidget {
             val category = c.quick.getOrNull(i)
             setViewVisibility(slot, if (shown && category != null) android.view.View.VISIBLE else android.view.View.INVISIBLE)
             if (category != null) {
-                setInt(bg, "setColorFilter", c.chip)
+                setInt(bg, "setColorFilter", androidx.core.graphics.ColorUtils.setAlphaComponent(c.chip, 205))
                 setTextViewText(text, category.second)
                 setTextColor(text, c.ink)
                 setOnClickPendingIntent(slot, PendingIntent.getActivity(context, 100 + i,

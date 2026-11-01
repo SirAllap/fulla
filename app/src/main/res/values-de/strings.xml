@@ -904,4 +904,6 @@
     <string name="save_colour">Speichern-Taste</string>
     <string name="save_colour_text">Die Farbe der Speichern-Taste beim Erfassen.</string>
     <string name="save_colour_ink">Standard</string>
+    <string name="apply_changes">Änderungen übernehmen</string>
+    <string name="no_changes">Keine Änderungen</string>
 </resources>

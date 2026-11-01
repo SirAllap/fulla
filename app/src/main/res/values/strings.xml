@@ -955,4 +955,6 @@
     <string name="save_colour">Save button</string>
     <string name="save_colour_text">The colour of the Save button on Add.</string>
     <string name="save_colour_ink">Default</string>
+    <string name="apply_changes">Apply changes</string>
+    <string name="no_changes">No changes</string>
 </resources>

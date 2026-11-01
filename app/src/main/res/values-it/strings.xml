@@ -904,4 +904,6 @@
     <string name="save_colour">Pulsante Salva</string>
     <string name="save_colour_text">Il colore del pulsante Salva di Aggiungi.</string>
     <string name="save_colour_ink">Predefinito</string>
+    <string name="apply_changes">Applica le modifiche</string>
+    <string name="no_changes">Nessuna modifica</string>
 </resources>

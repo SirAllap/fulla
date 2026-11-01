@@ -233,6 +233,9 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
     val fieldProblem = stringResource(R.string.field_value_problem)
 
     var saved by remember { mutableStateOf(false) }
+    // Editing: nothing to apply until something is changed.
+    val baseline = remember(editingId, view.id) { existing?.let { Draft(view, it).build() } }
+    val dirty = baseline != null && draft.build() != baseline
     val reducedMotion = io.github.sirallap.fulla.ui.theme.FullaMotion.reduced()
 
     fun save() {
@@ -373,6 +376,9 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         KeypadPad(
             aboveTabBar = headerActions != null,
             showSave = dock == null,
+            edit = if (editingId != null) EditSave(
+                label = if (dirty) stringResource(R.string.apply_changes) + " · " + view.formats.money(draft.keypad.totalMinor) else stringResource(R.string.no_changes),
+                enabled = dirty && draft.keypad.canSave && !saved, onDiscard = onDone) else null,
             keypad = draft.keypad,
             decimal = view.formats.decimalStyle.decimal,
             amount = view.formats.money(draft.keypad.totalMinor),
@@ -654,6 +660,9 @@ private fun DateSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Unit) 
     }
 }
 
+/** What the Save of an entry being edited says and does: nothing to apply until something changes. */
+private class EditSave(val label: String, val enabled: Boolean, val onDiscard: () -> Unit)
+
 /**
  * Digits, the decimal key (when the currency has decimals), delete and "+",
  * then the screen's primary button (ux.md, piece 1): the action and its
@@ -661,7 +670,7 @@ private fun DateSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Unit) 
  */
 @Composable
 private fun KeypadPad(keypad: Keypad, decimal: Char, amount: String, onChange: (Keypad) -> Unit, onSave: () -> Unit, saveLabel: String, saved: Boolean = false,
-                      aboveTabBar: Boolean = false, showSave: Boolean = true) {
+                      aboveTabBar: Boolean = false, showSave: Boolean = true, edit: EditSave? = null) {
     val c = FullaTheme.colors
     val gap = 6.dp
     val key = 52.dp
@@ -687,7 +696,8 @@ private fun KeypadPad(keypad: Keypad, decimal: Char, amount: String, onChange: (
                 Key("+", Modifier.fillMaxWidth().height(key * 2 + gap), description = stringResource(R.string.add_another)) { onChange(keypad.plus()) }
             }
         }
-        if (showSave) PrimaryButton(
+        if (edit != null) io.github.sirallap.fulla.ui.components.SaveDock(edit.label, onSave, edit.enabled, busy = false, onDiscard = edit.onDiscard)
+        else if (showSave) PrimaryButton(
             if (keypad.canSave) "$saveLabel · $amount" else saveLabel,
             onClick = onSave,
             icon = if (saved) Icons.Outlined.Check else null,
