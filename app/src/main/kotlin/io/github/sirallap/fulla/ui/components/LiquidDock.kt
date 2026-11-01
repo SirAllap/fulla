@@ -90,7 +90,8 @@ fun SaveDock(label: String, onSave: () -> Unit, enabled: Boolean, busy: Boolean,
         Box(
             Modifier.size(width = with(density) { right.coerceIn(0f, w).toDp() }, height = 56.dp)
                 .yields(source).clip(RoundedCornerShape(50)).background(base)
-                .clickable(source, indication = null, enabled = enabled, role = Role.Button, onClick = onSave),
+                .clickable(source, indication = null, enabled = enabled, role = Role.Button, onClick = onSave)
+                .glass(if (enabled) 0.8f else 0.4f),
             contentAlignment = Alignment.Center,
         ) {
             LiquidSurface(if (enabled) 1.05f else 0f, lerp(c.accent, Color.White, 0.08f), Modifier.fillMaxSize(), maxAmplitude = 5.dp, gloss = false)

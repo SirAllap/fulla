@@ -34,6 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.ui.components.glass
+import io.github.sirallap.fulla.ui.components.liquid
 import io.github.sirallap.fulla.core.balance.Balances
 import io.github.sirallap.fulla.core.balance.Payment
 import io.github.sirallap.fulla.core.balance.SettlementPlanner
@@ -97,7 +99,8 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                     val m = view.config.member(other)
                     Column(
                         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp)).background(c.ink).padding(18.dp),
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp)).background(c.ink)
+                            .liquid(0.4f, vertical = true).glass().padding(18.dp),
                         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(14.dp),
                     ) {
                         androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -109,7 +112,15 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                                 Text(f.money(mine.amountMinor), style = io.github.sirallap.fulla.ui.theme.FullaType.screenTitle, color = c.paper)
                             }
                         }
-                        io.github.sirallap.fulla.ui.components.PrimaryButton(stringResource(R.string.settle_with, view.memberName(other)), { confirming = mine })
+                        // Ink on the ink card would vanish: the button is the highlight, a glass pill.
+                        Box(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(26.dp))
+                            .background(c.highlight).glass(0.9f)
+                            .clickable(role = androidx.compose.ui.semantics.Role.Button) { confirming = mine },
+                            contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            Text(stringResource(R.string.settle_with, view.memberName(other)),
+                                style = io.github.sirallap.fulla.ui.theme.FullaType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                color = c.onHighlight, modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp))
+                        }
                     }
                 }
                 val others = plan.filter { it !== mine }
@@ -173,7 +184,11 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                             }
                         } else {
                             val amount = accounts[a.id] ?: 0
-                            Column(Modifier.weight(1f).heightIn(min = 84.dp).clip(shape).background(c.paperHigh).border(1.dp, c.line, shape).padding(12.dp),
+                            // Each account is a glass tile filled as far as its share of what is held.
+                            val held = accounts.values.filter { it > 0 }.sum().coerceAtLeast(1)
+                            val share = if (amount > 0) (amount.toFloat() / held).coerceIn(0f, 1f) else 0f
+                            Column(Modifier.weight(1f).heightIn(min = 84.dp).clip(shape).background(c.paperHigh)
+                                .liquid(share, vertical = true).glass().border(1.dp, c.line, shape).padding(12.dp),
                                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
                                 Text(a.name, style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = c.inkMuted)
                                 Text(f.money(amount), style = io.github.sirallap.fulla.ui.theme.FullaType.title, color = if (amount < 0) c.moneyOut else c.ink,

@@ -77,6 +77,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -336,7 +339,7 @@ fun Modifier.card(slot: CardSlot): Modifier = composed {
         CardSlot.LAST -> RoundedCornerShape(bottomStart = CardRadius, bottomEnd = CardRadius)
         CardSlot.MIDDLE -> androidx.compose.ui.graphics.RectangleShape
     }
-    padding(horizontal = CardMargin).clip(shape).background(FullaTheme.colors.paperHigh, shape)
+    padding(horizontal = CardMargin).clip(shape).background(FullaTheme.colors.paperHigh, shape).glass(rim = slot == CardSlot.ONLY)
 }
 
 /** One row of a lazy list inside a card: [slot] says which part of the card it is, and whether it draws the line under it. */
@@ -395,31 +398,28 @@ fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boo
     }
 }
 
-/** A chip: a check when it is on, never colour alone. */
+/** A chip: a check when it is on, never colour alone. What is chosen fills with a liquid that rises, and the chip wobbles once. */
 @Composable
 fun Chip(label: String, selected: Boolean, onClick: () -> Unit, leading: (@Composable () -> Unit)? = null) {
     val c = FullaTheme.colors
     val reduced = FullaMotion.reduced()
-    val container by animateColorAsState(if (selected) c.highlight else c.paper, FullaMotion.functional(reduced), label = "chip")
-    val content by animateColorAsState(if (selected) c.onHighlight else c.ink, FullaMotion.functional(reduced), label = "chipText")
+    val ink by animateColorAsState(if (selected) c.onHighlight else c.ink, FullaMotion.functional(reduced), label = "chipText")
     val source = remember { MutableInteractionSource() }
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        interactionSource = source,
-        modifier = Modifier.yields(source).jelly(selected),
-        border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selected, borderColor = c.line,
-            selectedBorderColor = container),
-        label = { Text(label, maxLines = 1) },
-        leadingIcon = if (selected) ({ Icon(Icons.Outlined.Check, null, Modifier.size(18.dp)) }) else leading,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = container,
-            selectedContainerColor = container,
-            selectedLabelColor = content,
-            selectedLeadingIconColor = content,
-            labelColor = content,
-        ),
-    )
+    val shape = RoundedCornerShape(10.dp)
+    Box(Modifier.minimumInteractiveComponentSize().yields(source).jelly(selected), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.clip(shape).background(c.paper).border(1.dp, if (selected) c.highlight else c.line, shape)
+                .semantics { role = Role.Checkbox; this.selected = selected }
+                .clickable(source, null, onClick = onClick),
+        ) {
+            LiquidSurface(if (selected) 1.05f else 0f, c.highlight, Modifier.matchParentSize(), maxAmplitude = 3.dp)
+            Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (selected) Icon(Icons.Outlined.Check, null, tint = ink, modifier = Modifier.size(18.dp)) else leading?.invoke()
+                Text(label, style = FullaType.secondary, color = ink, maxLines = 1)
+            }
+        }
+    }
 }
 
 @Composable
@@ -571,7 +571,7 @@ fun PrimaryButton(
     val tint = if (enabled || busy) c.onAccent else c.inkMuted
     val source = remember { MutableInteractionSource() }
     Row(
-        modifier.fillMaxWidth().heightIn(min = 56.dp).yields(source).clip(RoundedCornerShape(16.dp)).background(background)
+        modifier.fillMaxWidth().heightIn(min = 56.dp).yields(source).clip(RoundedCornerShape(16.dp)).background(background).glass(0.8f)
             .clickable(source, LocalIndication.current, enabled = enabled && !busy, role = Role.Button, onClick = onClick).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -654,14 +654,14 @@ fun MemberBadge(initials: String, colorIndex: Int, modifier: Modifier = Modifier
     }
 }
 
-/** A thin bar for how much of something is used: a budget, a share. */
+/** A bar for how much of something is used: a budget, a share. A liquid that fills it from the left, with the jar's physics. */
 @Composable
 fun ProgressLine(fraction: Float, color: Color, modifier: Modifier = Modifier, over: Boolean = false) {
     val c = FullaTheme.colors
-    Box(modifier.fillMaxWidth().padding(vertical = 6.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(c.line)) {
-        Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(4.dp).clip(RoundedCornerShape(2.dp))
-            .background(if (over) c.danger else color))
-    }
+    val state = rememberLiquidState(fraction.coerceIn(0f, 1f))
+    val fill = if (over) c.danger else color
+    Box(modifier.fillMaxWidth().padding(vertical = 6.dp).height(12.dp).clip(RoundedCornerShape(6.dp)).background(c.line)
+        .drawBehind { drawLiquidAcross(state, listOf(fill.copy(alpha = 0.85f), fill), 3.dp) })
 }
 
 /** A password, hidden by default, with an eye that shows it while someone checks what they typed. */
@@ -899,7 +899,7 @@ fun ItemCard(modifier: Modifier = Modifier, dimmed: Boolean = false, onClick: ((
     val shape = RoundedCornerShape(16.dp)
     Column(
         modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp).clip(shape)
-            .background(if (dimmed) c.paper else c.paperHigh).border(1.dp, c.line, shape)
+            .background(if (dimmed) c.paper else c.paperHigh).glass().border(1.dp, c.line, shape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .heightIn(min = 56.dp).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),

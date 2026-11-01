@@ -40,6 +40,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.ui.theme.FullaMotion
@@ -249,4 +251,28 @@ internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLiquidAcross(
         translate(across, 0f)
         rotate(90f, Offset.Zero)
     }) { drawLiquid(state, colors, maxAmplitude, gloss, rim = false, width = tall, height = across) }
+}
+
+/**
+ * What makes a flat surface read as glass at rest: a soft sheen across it from the top left, a light edge along its top
+ * and a little shade along its bottom. Draw it over a surface that is already clipped to its shape. [rim] off for rows
+ * that sit one under another inside a card, where a light edge on each would stripe it.
+ */
+fun Modifier.glass(strength: Float = 1f, rim: Boolean = true): Modifier = composed {
+    val dark = FullaTheme.colors.isDark
+    drawWithContent {
+        drawContent()
+        val w = size.width
+        val h = size.height
+        drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = (if (dark) 0.07f else 0.32f) * strength), Color.Transparent),
+            start = Offset.Zero, end = Offset(w * 0.7f, h * 0.9f)))
+        if (rim) {
+            val edge = min(h, 6.dp.toPx())
+            drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = (if (dark) 0.10f else 0.55f) * strength), Color.Transparent),
+                startY = 0f, endY = edge), size = androidx.compose.ui.geometry.Size(w, edge))
+            val shade = min(h, 10.dp.toPx())
+            drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = (if (dark) 0.18f else 0.05f) * strength)),
+                startY = h - shade, endY = h), topLeft = Offset(0f, h - shade), size = androidx.compose.ui.geometry.Size(w, shade))
+        }
+    }
 }

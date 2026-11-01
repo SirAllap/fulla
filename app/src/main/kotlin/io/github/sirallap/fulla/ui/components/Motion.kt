@@ -258,6 +258,7 @@ private fun CenterButton(item: TabItem, onAdd: Boolean, dock: AddDock?, phase: A
                 .yields(source)
                 .clip(RoundedCornerShape(50))
                 .background(base)
+                .glass(if (phase == AddPhase.READY || phase == AddPhase.IDLE) 0.8f else 0f)
                 .drawBehind {
                     if (dashed > 0.01f) {
                         val inset = 1.dp.toPx()
