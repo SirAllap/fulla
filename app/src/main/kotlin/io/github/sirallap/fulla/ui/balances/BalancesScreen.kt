@@ -190,7 +190,8 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                             Column(Modifier.weight(1f).heightIn(min = 84.dp).clip(shape).background(c.paperHigh)
                                 .liquid(share, vertical = true).glass().border(1.dp, c.line, shape).padding(12.dp),
                                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
-                                Text(a.name, style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = c.inkMuted)
+                                // On a filled tile the account's name must still read: full ink once the liquid reaches it.
+                                Text(a.name, style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = if (share > 0.4f) c.ink else c.inkMuted)
                                 Text(f.money(amount), style = io.github.sirallap.fulla.ui.theme.FullaType.title, color = if (amount < 0) c.moneyOut else c.ink,
                                     maxLines = 1, softWrap = false)
                             }
