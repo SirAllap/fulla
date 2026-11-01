@@ -235,7 +235,10 @@ object FullaWidget {
             c.paper, c.liquidSurface, c.liquidBody, 2 * scale)
         // Resizing calls onAppWidgetOptionsChanged, which redraws: the shortcuts follow the height it has now.
         val wide = wide(context, c, card, quick = heightDp >= QUICK_MIN_HEIGHT)
-        val small = small(context, c)
+        // The small one is a bubble; it needs no more than a square of the widget's smaller side.
+        val side = (minOf(widthDp, heightDp) * minOf(scale, 480f / minOf(widthDp, heightDp))).toInt().coerceAtLeast(1)
+        val bubble = WidgetArt.card(side, side, 24 * scale, c.fill, c.paper, c.liquidSurface, c.liquidBody, 2 * scale, WidgetArt.Shape.BUBBLE)
+        val small = small(context, c, bubble)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             RemoteViews(mapOf(SizeF(40f, 40f) to small, SizeF(FIGURES_MIN_WIDTH, 40f) to wide))
         } else {
@@ -243,8 +246,8 @@ object FullaWidget {
         }
     }
 
-    private fun small(context: Context, c: Content) = RemoteViews(context.packageName, R.layout.widget_add).apply {
-        setInt(R.id.widget_bg, "setColorFilter", c.paper)
+    private fun small(context: Context, c: Content, bubble: android.graphics.Bitmap) = RemoteViews(context.packageName, R.layout.widget_add).apply {
+        setImageViewBitmap(R.id.widget_bg, bubble)
         common(context, c)
     }
 
