@@ -75,6 +75,10 @@ fun LiquidSurface(
     color: Color,
     modifier: Modifier = Modifier,
     maxAmplitude: Dp = 5.dp,
+    /** A bright line along the surface. Off: it reads as a stray line on a flat button. */
+    rim: Boolean = false,
+    /** A soft highlight under the surface. */
+    gloss: Boolean = true,
 ) {
     val reduced = FullaMotion.reduced()
     val shown = remember { Animatable(level) }
@@ -136,9 +140,9 @@ fun LiquidSurface(
         drawPath(layer(amp * 0.8f, ph + 1.9f, 2.5.dp.toPx(), closed = true), color.copy(alpha = color.alpha * 0.55f))
         drawPath(front, color)
         val top = h * (1f - lvl)
-        drawPath(front, Brush.verticalGradient(
-            listOf(Color.White.copy(alpha = 0.34f), Color.Transparent), startY = top, endY = top + h * 0.5f))
-        drawPath(layer(amp, ph, 0f, closed = false), Color.White.copy(alpha = 0.55f),
+        if (gloss) drawPath(front, Brush.verticalGradient(
+            listOf(Color.White.copy(alpha = 0.22f), Color.Transparent), startY = top, endY = top + h * 0.5f))
+        if (rim) drawPath(layer(amp, ph, 0f, closed = false), Color.White.copy(alpha = 0.55f),
             style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round))
     }
 }
@@ -163,31 +167,6 @@ fun Modifier.jelly(trigger: Any?): Modifier {
         scaleX = 1f + 0.08f * v
         scaleY = 1f - 0.11f * v
     }
-}
-
-/**
- * The neck of liquid between a pill and a drop leaving it (or entering it):
- * thick while they are close, thinner as they part, gone when they are
- * further than [reach] apart. [pillEnd] is the pill's right edge, [dropCenter]
- * the drop's centre, both in px along the same line [centerY].
- */
-fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNeck(
-    color: Color, pillEnd: Float, dropCenter: Float, dropRadius: Float, centerY: Float, reach: Float,
-) {
-    val gap = (dropCenter - dropRadius) - pillEnd
-    if (gap <= 0f || gap >= reach) return
-    val t = dropRadius * (1f - gap / reach) * 0.85f
-    val left = pillEnd
-    val right = dropCenter - dropRadius
-    val mid = (left + right) / 2f
-    val path = Path()
-    path.moveTo(left, centerY - dropRadius * 0.9f)
-    path.cubicTo(mid, centerY - t, mid, centerY - t, right, centerY - dropRadius * 0.9f)
-    path.lineTo(right, centerY + dropRadius * 0.9f)
-    path.cubicTo(mid, centerY + t, mid, centerY + t, left, centerY + dropRadius * 0.9f)
-    path.close()
-    drawPath(path, color)
-    drawCircle(color, dropRadius, Offset(dropCenter, centerY))
 }
 
 /**
@@ -226,7 +205,7 @@ fun HoldToConfirm(label: String, onConfirmed: () -> Unit, modifier: Modifier = M
             },
         contentAlignment = Alignment.Center,
     ) {
-        LiquidSurface(progress.value, c.danger, Modifier.matchParentSize(), maxAmplitude = 4.dp)
+        LiquidSurface(progress.value, c.danger, Modifier.matchParentSize(), maxAmplitude = 4.dp, gloss = false)
         Text(label, style = FullaType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
             color = if (progress.value > 0.55f) androidx.compose.ui.graphics.Color.White else c.danger,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))

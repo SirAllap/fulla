@@ -170,7 +170,7 @@ fun LiquidTabBar(items: List<TabItem>, selected: Int, center: Int? = null, dock:
  * The middle of the bar. A round "+" (Add); once something is being written, a pill that
  * grows out of it with the liquid rising inside; when it is all there, "Save · amount".
  * Beside it a red drop that throws the entry away: it comes out of the pill and goes back
- * into it, joined to it by a neck of liquid while they are close.
+ * into it.
  */
 @Composable
 private fun CenterButton(item: TabItem, onAdd: Boolean, dock: AddDock?, phase: AddPhase, onSelect: () -> Unit) {
@@ -213,12 +213,6 @@ private fun CenterButton(item: TabItem, onAdd: Boolean, dock: AddDock?, phase: A
         val dropP by animateFloatAsState(if (open) 1f else 0f,
             if (reduced) snap() else spring(dampingRatio = 0.7f, stiffness = 110f), label = "drop")
         val dropCx = mid + (dropEnd - mid) * dropP
-        val neck by animateColorAsState(if (phase == AddPhase.READY) c.accent else c.accent.copy(alpha = 0f), tween(350), label = "neck")
-
-        // The neck and the drop's own body, under everything.
-        Canvas(Modifier.fillMaxSize()) {
-            if (neck.alpha > 0.01f) drawNeck(neck, rightPx, dropCx, 20.dp.toPx(), size.height / 2f, 30.dp.toPx())
-        }
 
         if (dropP > 0.01f) {
             val scale = 0.4f + 0.6f * dropP.coerceIn(0f, 1f)
@@ -284,11 +278,11 @@ private fun CenterButton(item: TabItem, onAdd: Boolean, dock: AddDock?, phase: A
             val level = when (phase) {
                 AddPhase.IDLE -> 0f
                 AddPhase.NEEDS_AMOUNT, AddPhase.NEEDS_CATEGORY -> 0.28f
-                AddPhase.READY -> 0.74f
-                AddPhase.SAVED -> 1.02f
+                AddPhase.READY -> 1.05f
+                AddPhase.SAVED -> 1.05f
             }
-            val liquidColor = if (phase == AddPhase.READY || phase == AddPhase.SAVED) Color.White.copy(alpha = 0.28f) else c.highlight.copy(alpha = 0.6f)
-            LiquidSurface(level, liquidColor, Modifier.fillMaxSize(), maxAmplitude = 5.dp)
+            val liquidColor = if (phase == AddPhase.READY || phase == AddPhase.SAVED) androidx.compose.ui.graphics.lerp(c.accent, Color.White, 0.14f) else c.highlight.copy(alpha = 0.6f)
+            LiquidSurface(level, liquidColor, Modifier.fillMaxSize(), maxAmplitude = 5.dp, gloss = false)
             Icon(androidx.compose.material.icons.Icons.Filled.Add, null, tint = c.onHighlight, modifier = Modifier.size(30.dp).graphicsLayer { alpha = plusA })
             Icon(Icons.Filled.Check, null, tint = c.onAccent, modifier = Modifier.size(28.dp).graphicsLayer { alpha = checkA })
             FitText(kept, FullaType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), text,
