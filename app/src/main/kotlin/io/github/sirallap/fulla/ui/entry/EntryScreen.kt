@@ -57,6 +57,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -87,6 +89,8 @@ import io.github.sirallap.fulla.core.trips.Trips
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.guide.guideTarget
 import io.github.sirallap.fulla.ui.LocalContainer
+import io.github.sirallap.fulla.ui.components.AddDock
+import io.github.sirallap.fulla.ui.components.AddPhase
 import io.github.sirallap.fulla.ui.components.BackHeader
 import io.github.sirallap.fulla.ui.components.Chip
 import io.github.sirallap.fulla.ui.components.MemberBadge
@@ -204,7 +208,9 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
                 /** An income asked for from outside (a launcher shortcut): a new entry turns into one, then [onIncomeShown]. */
                 incomeAsked: Boolean = false, onIncomeShown: () -> Unit = {},
                 /** A category asked for from outside (the widget's shortcuts): a new expense starts in it, then [onCategoryShown]. */
-                categoryAsked: String? = null, onCategoryShown: () -> Unit = {}) {
+                categoryAsked: String? = null, onCategoryShown: () -> Unit = {},
+                /** The round button of the tab bar, when this is the Add tab: it becomes Save (see [AddDock]). */
+                dock: AddDock? = null) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val existing = remember(editingId) { editingId?.let { id -> view.rows.firstOrNull { it.id == id }?.transaction } }
@@ -258,6 +264,35 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
             onDone()
             saved = false
         }
+    }
+
+    // The tab bar's round button is this screen's Save: tell it where the entry stands.
+    if (dock != null) {
+        val pickCategory = stringResource(R.string.add_pick_category)
+        val needAmount = stringResource(R.string.add_need_amount)
+        val saveText = stringResource(R.string.save)
+        val amountText = view.formats.money(draft.keypad.totalMinor)
+        val hasAmount = draft.keypad.canSave
+        val needsCategory = draft.kind.isCategorised && draft.categoryId == null
+        val phase = when {
+            saved -> AddPhase.SAVED
+            hasAmount && !needsCategory -> AddPhase.READY
+            hasAmount -> AddPhase.NEEDS_CATEGORY
+            draft.categoryId != null -> AddPhase.NEEDS_AMOUNT
+            else -> AddPhase.IDLE
+        }
+        val words = when (phase) {
+            AddPhase.READY, AddPhase.SAVED -> "$saveText · $amountText"
+            AddPhase.NEEDS_CATEGORY -> pickCategory
+            AddPhase.NEEDS_AMOUNT -> needAmount
+            AddPhase.IDLE -> ""
+        }
+        SideEffect {
+            dock.publish(phase, words, onSave = ::save,
+                onDiscard = { draft.keypad = Keypad(view.formats.currency); draft.categoryId = null; problem = null },
+                onMissing = { if (phase == AddPhase.NEEDS_CATEGORY) problem = pickCategory })
+        }
+        DisposableEffect(dock) { onDispose { dock.clear() } }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -335,6 +370,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
 
         KeypadPad(
             aboveTabBar = headerActions != null,
+            showSave = dock == null,
             keypad = draft.keypad,
             decimal = view.formats.decimalStyle.decimal,
             amount = view.formats.money(draft.keypad.totalMinor),
@@ -614,7 +650,7 @@ private fun DateSheet(view: HouseholdView, draft: Draft, onDismiss: () -> Unit) 
  */
 @Composable
 private fun KeypadPad(keypad: Keypad, decimal: Char, amount: String, onChange: (Keypad) -> Unit, onSave: () -> Unit, saveLabel: String, saved: Boolean = false,
-                      aboveTabBar: Boolean = false) {
+                      aboveTabBar: Boolean = false, showSave: Boolean = true) {
     val c = FullaTheme.colors
     val gap = 6.dp
     val key = 52.dp
@@ -640,7 +676,7 @@ private fun KeypadPad(keypad: Keypad, decimal: Char, amount: String, onChange: (
                 Key("+", Modifier.fillMaxWidth().height(key * 2 + gap), description = stringResource(R.string.add_another)) { onChange(keypad.plus()) }
             }
         }
-        PrimaryButton(
+        if (showSave) PrimaryButton(
             if (keypad.canSave) "$saveLabel · $amount" else saveLabel,
             onClick = onSave,
             icon = if (saved) Icons.Outlined.Check else null,

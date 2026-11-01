@@ -897,4 +897,7 @@
     <string name="goal_delete">Supprimer l\'objectif</string>
     <string name="goal_delete_confirm">Supprimer %1$s ? Il disparaît pour tout le foyer. Pour le mettre de côté sans le perdre, archivez-le plutôt.</string>
     <string name="goal_db_update_delete">Pour supprimer un objectif, la base de données du foyer doit d\'abord être mise à jour : Réglages › Synchronisation.</string>
+    <string name="add_pick_category">Choisir la catégorie</string>
+    <string name="add_need_amount">Saisir le montant</string>
+    <string name="discard_entry">Abandonner</string>
 </resources>

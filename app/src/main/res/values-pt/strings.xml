@@ -897,4 +897,7 @@
     <string name="goal_delete">Eliminar meta</string>
     <string name="goal_delete_confirm">Eliminar %1$s? Desaparece para toda a casa. Para a pôr de lado sem a perder, arquiva-a.</string>
     <string name="goal_db_update_delete">Para eliminar uma meta, primeiro é preciso atualizar a base de dados da casa: Definições › Sincronização.</string>
+    <string name="add_pick_category">Escolhe a categoria</string>
+    <string name="add_need_amount">Indica o montante</string>
+    <string name="discard_entry">Descartar</string>
 </resources>

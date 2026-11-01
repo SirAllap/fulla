@@ -28,6 +28,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import io.github.sirallap.fulla.ui.components.AddDock
 import io.github.sirallap.fulla.ui.components.LiquidTabBar
 import io.github.sirallap.fulla.ui.components.TabItem
 import io.github.sirallap.fulla.ui.guide.GuideHost
@@ -139,6 +140,8 @@ private fun Household(state: HouseholdState) {
     val view = remember(state, rows, language) { HouseholdView(state, rows, language) }
     val nav = rememberNavController()
     var tab by rememberSaveable { mutableStateOf(Tab.ADD) }
+    /** What Add tells the tab bar's round button (Save, and the drop that discards). */
+    val addDock = remember { AddDock() }
     /** An income asked for from outside (a shortcut), until Add has turned to it. */
     var incomeAsked by remember { mutableStateOf(false) }
     /** A category asked for from outside (the widget's shortcuts), until Add has taken it. */
@@ -210,14 +213,14 @@ private fun Household(state: HouseholdState) {
                         when (shown) {
                             Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW },
                                 incomeAsked = incomeAsked, onIncomeShown = { incomeAsked = false },
-                                categoryAsked = categoryAsked, onCategoryShown = { categoryAsked = null })
+                                categoryAsked = categoryAsked, onCategoryShown = { categoryAsked = null }, dock = addDock)
                             Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { tab = Tab.INSIGHTS }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
                             Tab.INSIGHTS -> io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { tab = Tab.OVERVIEW }, onFixedCosts = { nav.navigate("settings/recurring") }, headerActions = headerActions)
                             Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") }, onGoals = { nav.navigate("settings/goals") }, onAccounts = { nav.navigate("settings/accounts") })
                         }
                     }
-                    LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal, center = Tab.ADD.ordinal) { tab = Tab.entries[it] }
+                    LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal, center = Tab.ADD.ordinal, dock = addDock) { tab = Tab.entries[it] }
                 }
             }
             composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->

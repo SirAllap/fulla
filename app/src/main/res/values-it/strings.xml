@@ -897,4 +897,7 @@
     <string name="goal_delete">Elimina obiettivo</string>
     <string name="goal_delete_confirm">Eliminare %1$s? Sparisce per tutta la casa. Per metterlo da parte senza perderlo, meglio archiviarlo.</string>
     <string name="goal_db_update_delete">Per eliminare un obiettivo, prima va aggiornato il database della casa: Impostazioni › Sincronizzazione.</string>
+    <string name="add_pick_category">Scegli la categoria</string>
+    <string name="add_need_amount">Inserisci l’importo</string>
+    <string name="discard_entry">Scarta</string>
 </resources>
