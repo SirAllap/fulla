@@ -80,15 +80,20 @@ fun LiquidSurface(
     /** A soft highlight under the surface. */
     gloss: Boolean = true,
 ) {
-    val reduced = FullaMotion.reduced()
-    val shown = remember { Animatable(level) }
-    val energy = remember { Animatable(0f) }
-    val phase = remember { Animatable(0f) }
-    val tilt = remember { Animatable(0f) }
-    LaunchedEffect(level, reduced) {
-        if (reduced) { shown.snapTo(level); return@LaunchedEffect }
+    val state = rememberLiquidState(level)
+    Canvas(modifier) { drawLiquid(state, listOf(color), maxAmplitude, gloss, rim) }
+}
+
+/** What moves in a liquid: the level on its spring, the waves' height, their phase and the tilt of the surface. */
+internal class LiquidState(level: Float) {
+    val shown = Animatable(level)
+    val energy = Animatable(0f)
+    val phase = Animatable(0f)
+    val tilt = Animatable(0f)
+
+    suspend fun settleTo(level: Float) {
         val change = level - shown.value
-        if (abs(change) < 0.001f) return@LaunchedEffect
+        if (abs(change) < 0.001f) return
         coroutineScope {
             launch { shown.animateTo(level, spring(dampingRatio = 0.55f, stiffness = 130f)) }
             launch {
@@ -102,49 +107,69 @@ fun LiquidSurface(
             }
         }
     }
-    Canvas(modifier) {
-        val lvl = shown.value
-        if (lvl <= 0.004f) return@Canvas
-        val w = size.width
-        val h = size.height
-        val amp = maxAmplitude.toPx() * energy.value
-        val ph = phase.value
-        val sl = tilt.value
-        val wavelength = max(70.dp.toPx(), w * 0.6f)
-        val steps = max(12, (w / 4.dp.toPx()).toInt())
-        val foot = h + 6.dp.toPx()
+}
 
-        fun surfaceY(x: Float, a: Float, p: Float, offset: Float): Float =
-            h * (1f - lvl) + offset +
-                a * sin(x / wavelength * TAU + p) +
-                a * 0.4f * sin(x / (wavelength * 0.55f) * TAU - p * 1.3f) +
-                sl * h * 0.14f * ((x / w) - 0.5f) * 2f
-
-        fun layer(a: Float, p: Float, offset: Float, closed: Boolean): Path {
-            val path = Path()
-            if (closed) {
-                path.moveTo(0f, foot)
-                path.lineTo(0f, surfaceY(0f, a, p, offset))
-            } else {
-                path.moveTo(0f, surfaceY(0f, a, p, offset))
-            }
-            for (i in 1..steps) {
-                val x = w * i / steps
-                path.lineTo(x, surfaceY(x, a, p, offset))
-            }
-            if (closed) { path.lineTo(w, foot); path.close() }
-            return path
-        }
-
-        val front = layer(amp, ph, 0f, closed = true)
-        drawPath(layer(amp * 0.8f, ph + 1.9f, 2.5.dp.toPx(), closed = true), color.copy(alpha = color.alpha * 0.55f))
-        drawPath(front, color)
-        val top = h * (1f - lvl)
-        if (gloss) drawPath(front, Brush.verticalGradient(
-            listOf(Color.White.copy(alpha = 0.22f), Color.Transparent), startY = top, endY = top + h * 0.5f))
-        if (rim) drawPath(layer(amp, ph, 0f, closed = false), Color.White.copy(alpha = 0.55f),
-            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round))
+@Composable
+internal fun rememberLiquidState(level: Float): LiquidState {
+    val reduced = FullaMotion.reduced()
+    val state = remember { LiquidState(level) }
+    LaunchedEffect(level, reduced) {
+        if (reduced) state.shown.snapTo(level) else state.settleTo(level)
     }
+    return state
+}
+
+/** Draws the liquid in the whole of this scope. [colors]: one for a flat liquid, several for a depth from the surface down. */
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLiquid(
+    state: LiquidState, colors: List<Color>, maxAmplitude: Dp, gloss: Boolean, rim: Boolean,
+) {
+    val lvl = state.shown.value
+    if (lvl <= 0.004f) return
+    val w = size.width
+    val h = size.height
+    val amp = maxAmplitude.toPx() * state.energy.value
+    val ph = state.phase.value
+    val sl = state.tilt.value
+    val wavelength = max(70.dp.toPx(), w * 0.6f)
+    val steps = max(12, (w / 4.dp.toPx()).toInt())
+    val foot = h + 6.dp.toPx()
+    val top = h * (1f - lvl)
+
+    fun surfaceY(x: Float, a: Float, p: Float, offset: Float): Float =
+        top + offset +
+            a * sin(x / wavelength * TAU + p) +
+            a * 0.4f * sin(x / (wavelength * 0.55f) * TAU - p * 1.3f) +
+            sl * h * 0.14f * ((x / w) - 0.5f) * 2f
+
+    fun layer(a: Float, p: Float, offset: Float, closed: Boolean): Path {
+        val path = Path()
+        if (closed) {
+            path.moveTo(0f, foot)
+            path.lineTo(0f, surfaceY(0f, a, p, offset))
+        } else {
+            path.moveTo(0f, surfaceY(0f, a, p, offset))
+        }
+        for (i in 1..steps) {
+            val x = w * i / steps
+            path.lineTo(x, surfaceY(x, a, p, offset))
+        }
+        if (closed) { path.lineTo(w, foot); path.close() }
+        return path
+    }
+
+    val front = layer(amp, ph, 0f, closed = true)
+    val back = layer(amp * 0.8f, ph + 1.9f, 2.5.dp.toPx(), closed = true)
+    if (colors.size == 1) {
+        drawPath(back, colors[0].copy(alpha = colors[0].alpha * 0.55f))
+        drawPath(front, colors[0])
+    } else {
+        drawPath(back, Brush.verticalGradient(colors.map { it.copy(alpha = it.alpha * 0.55f) }, startY = top, endY = h), alpha = 1f)
+        drawPath(front, Brush.verticalGradient(colors, startY = top, endY = h))
+    }
+    if (gloss) drawPath(front, Brush.verticalGradient(
+        listOf(Color.White.copy(alpha = 0.22f), Color.Transparent), startY = top, endY = top + h * 0.5f))
+    if (rim) drawPath(layer(amp, ph, 0f, closed = false), Color.White.copy(alpha = 0.55f),
+        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round))
 }
 
 /**

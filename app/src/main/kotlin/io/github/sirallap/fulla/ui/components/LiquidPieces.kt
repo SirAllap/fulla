@@ -90,10 +90,16 @@ private fun DrawScope.liquidSheet(level: Float, surface: Color, body: Color, ver
 fun Modifier.liquid(level: Float, tone: LiquidTone = LiquidTone.IN, vertical: Boolean = false, phase: Float = 0f): Modifier {
     val c = FullaTheme.colors
     val (surface, body) = toneColors(tone)
+    val alpha = if (c.isDark) 0.42f else 0.30f
+    if (vertical) {
+        // A jar filling up: the liquid with real physics (LiquidSurface), light at the surface and deeper below.
+        val state = rememberLiquidState(level)
+        return drawBehind { drawLiquid(state, listOf(surface.copy(alpha = alpha), body.copy(alpha = alpha), body.copy(alpha = alpha + 0.12f)), 6.dp, gloss = true, rim = false) }
+    }
     val reduced = FullaMotion.reduced()
     val shown = remember { Animatable(if (reduced) level else 0f) }
     LaunchedEffect(level) { shown.animateTo(level, FullaMotion.liquid(reduced)) }
-    return drawBehind { liquidSheet(shown.value, surface, body, vertical = vertical, phase = phase, alpha = if (c.isDark) 0.42f else 0.30f) }
+    return drawBehind { liquidSheet(shown.value, surface, body, vertical = false, phase = phase, alpha = alpha) }
 }
 
 /**
