@@ -31,6 +31,8 @@ data class Settings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val palette: MoneyPalette = MoneyPalette.DEFAULT,
     val accent: Accent = Accent.DEFAULT,
+    /** The colour of Add's Save button; null follows the app's primary button. */
+    val saveColor: Accent? = null,
     val lock: Boolean = false,
     val onboarded: Boolean = false,
     /** Set once a language has been chosen, first-run or from settings, so the picker is never shown twice. */
@@ -67,6 +69,7 @@ class SettingsStore(context: Context) {
         val theme = stringPreferencesKey("theme")
         val palette = stringPreferencesKey("palette")
         val accent = stringPreferencesKey("accent")
+        val saveColor = stringPreferencesKey("save_color")
         val lock = booleanPreferencesKey("lock")
         val onboarded = booleanPreferencesKey("onboarded")
         val languageChosen = booleanPreferencesKey("language_chosen")
@@ -95,6 +98,7 @@ class SettingsStore(context: Context) {
             theme = p[Keys.theme]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.SYSTEM,
             palette = p[Keys.palette]?.let { runCatching { MoneyPalette.valueOf(it) }.getOrNull() } ?: MoneyPalette.DEFAULT,
             accent = Accent.of(p[Keys.accent]),
+            saveColor = p[Keys.saveColor]?.let { n -> Accent.entries.firstOrNull { it.name == n } },
             lock = p[Keys.lock] ?: false,
             onboarded = p[Keys.onboarded] ?: false,
             languageChosen = p[Keys.languageChosen] ?: false,
@@ -131,6 +135,7 @@ class SettingsStore(context: Context) {
     suspend fun setTheme(mode: ThemeMode) { store.edit { it[Keys.theme] = mode.name } }
     suspend fun setPalette(palette: MoneyPalette) { store.edit { it[Keys.palette] = palette.name } }
     suspend fun setAccent(accent: Accent) { store.edit { it[Keys.accent] = accent.name } }
+    suspend fun setSaveColor(color: Accent?) { store.edit { if (color == null) it.remove(Keys.saveColor) else it[Keys.saveColor] = color.name } }
     suspend fun setLock(on: Boolean) { store.edit { it[Keys.lock] = on } }
     suspend fun setWidgetHideAmounts(on: Boolean) { store.edit { it[Keys.widgetHideAmounts] = on } }
     suspend fun setOnboarded(done: Boolean) { store.edit { it[Keys.onboarded] = done } }

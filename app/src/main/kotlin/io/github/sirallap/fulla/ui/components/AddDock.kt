@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.sirallap.fulla.ui.components
 
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,3 +54,6 @@ class AddDock {
     fun onDiscard() = discard()
     fun onMissing() { nudges++; missing() }
 }
+
+/** The colour the person chose for Save (Settings › Appearance); null: the app's primary button. */
+val LocalSaveColor = compositionLocalOf<io.github.sirallap.fulla.core.design.Accent?> { null }

@@ -130,7 +130,7 @@ fun FormScreen(
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 blocker?.let { Text(it, style = FullaType.secondary, color = c.warning) }
-                PrimaryButton(primaryLabel, onPrimary, enabled = primaryEnabled && blocker == null, busy = busy)
+                SaveDock(primaryLabel, onPrimary, enabled = primaryEnabled && blocker == null, busy = busy, onDiscard = onClose)
                 neutral?.invoke(this)
             }
         }

@@ -389,7 +389,7 @@ fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boo
                 subtitle?.let { Text(it, style = FullaType.secondary, color = c.inkMuted) }
             }
             // The row takes the tap, so TalkBack reads one control, not two.
-            Switch(checked = checked, onCheckedChange = null)
+            LiquidSwitch(checked)
         }
         Hairline(inset = LocalRowInset.current)
     }

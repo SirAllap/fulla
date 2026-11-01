@@ -901,4 +901,7 @@
     <string name="add_need_amount">Saisir le montant</string>
     <string name="discard_entry">Abandonner</string>
     <string name="hold_hint">Maintenir appuyé</string>
+    <string name="save_colour">Bouton Enregistrer</string>
+    <string name="save_colour_text">La couleur du bouton Enregistrer de la saisie.</string>
+    <string name="save_colour_ink">Par défaut</string>
 </resources>

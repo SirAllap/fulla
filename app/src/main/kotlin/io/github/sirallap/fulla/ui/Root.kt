@@ -80,7 +80,8 @@ fun FullaRoot(container: AppContainer, activity: androidx.fragment.app.FragmentA
     FullaTheme(mode = s?.theme ?: ThemeMode.SYSTEM, palette = s?.palette ?: io.github.sirallap.fulla.core.design.MoneyPalette.DEFAULT,
         accent = s?.accent ?: io.github.sirallap.fulla.core.design.Accent.DEFAULT) {
         val forms = remember { io.github.sirallap.fulla.ui.components.FormLayer() }
-        CompositionLocalProvider(LocalContainer provides container, io.github.sirallap.fulla.ui.components.LocalFormLayer provides forms) {
+        CompositionLocalProvider(LocalContainer provides container, io.github.sirallap.fulla.ui.components.LocalFormLayer provides forms,
+            io.github.sirallap.fulla.ui.components.LocalSaveColor provides s?.saveColor) {
           Box(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize().background(FullaTheme.colors.paper)) {
                 val l = loaded

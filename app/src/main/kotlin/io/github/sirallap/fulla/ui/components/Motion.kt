@@ -194,6 +194,9 @@ private fun CenterButton(item: TabItem, onAdd: Boolean, dock: AddDock?, phase: A
         shake.animateTo(0f, spring(dampingRatio = 0.2f, stiffness = 700f))
     }
     val discardText = stringResource(R.string.discard_entry)
+    val chosen = LocalSaveColor.current
+    val saveFill = chosen?.let { Color(it.fill) } ?: c.accent
+    val saveInk = chosen?.let { Color(it.onFill) } ?: c.onAccent
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
@@ -237,14 +240,14 @@ private fun CenterButton(item: TabItem, onAdd: Boolean, dock: AddDock?, phase: A
             when (phase) {
                 AddPhase.IDLE -> c.highlight
                 AddPhase.NEEDS_AMOUNT, AddPhase.NEEDS_CATEGORY -> c.paper
-                AddPhase.READY, AddPhase.SAVED -> c.accent
+                AddPhase.READY, AddPhase.SAVED -> saveFill
             }, tween(300), label = "base")
         val dashed by animateFloatAsState(if (phase == AddPhase.NEEDS_AMOUNT || phase == AddPhase.NEEDS_CATEGORY) 1f else 0f,
             FullaMotion.functional<Float>(reduced), label = "dashed")
         val plusA by animateFloatAsState(if (phase == AddPhase.IDLE) 1f else 0f, tween(180), label = "plus")
         val labelA by animateFloatAsState(if (open) 1f else 0f, tween(200), label = "label")
         val checkA by animateFloatAsState(if (phase == AddPhase.SAVED) 1f else 0f, tween(220), label = "check")
-        val text = if (phase == AddPhase.READY) c.onAccent else c.ink
+        val text = if (phase == AddPhase.READY) saveInk else c.ink
         val source = remember { MutableInteractionSource() }
         val described = if (phase == AddPhase.IDLE) item.label else kept
         Box(
@@ -281,10 +284,10 @@ private fun CenterButton(item: TabItem, onAdd: Boolean, dock: AddDock?, phase: A
                 AddPhase.READY -> 1.05f
                 AddPhase.SAVED -> 1.05f
             }
-            val liquidColor = if (phase == AddPhase.READY || phase == AddPhase.SAVED) androidx.compose.ui.graphics.lerp(c.accent, Color.White, 0.14f) else c.highlight.copy(alpha = 0.6f)
+            val liquidColor = if (phase == AddPhase.READY || phase == AddPhase.SAVED) androidx.compose.ui.graphics.lerp(saveFill, Color.White, 0.08f) else c.highlight.copy(alpha = 0.6f)
             LiquidSurface(level, liquidColor, Modifier.fillMaxSize(), maxAmplitude = 5.dp, gloss = false)
             Icon(androidx.compose.material.icons.Icons.Filled.Add, null, tint = c.onHighlight, modifier = Modifier.size(30.dp).graphicsLayer { alpha = plusA })
-            Icon(Icons.Filled.Check, null, tint = c.onAccent, modifier = Modifier.size(28.dp).graphicsLayer { alpha = checkA })
+            Icon(Icons.Filled.Check, null, tint = saveInk, modifier = Modifier.size(28.dp).graphicsLayer { alpha = checkA })
             FitText(kept, FullaType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), text,
                 Modifier.padding(horizontal = 18.dp).graphicsLayer { alpha = labelA })
         }

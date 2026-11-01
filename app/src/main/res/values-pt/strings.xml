@@ -901,4 +901,7 @@
     <string name="add_need_amount">Indica o montante</string>
     <string name="discard_entry">Descartar</string>
     <string name="hold_hint">Mantém premido</string>
+    <string name="save_colour">Botão Guardar</string>
+    <string name="save_colour_text">A cor do botão Guardar de Anotar.</string>
+    <string name="save_colour_ink">Predefinido</string>
 </resources>

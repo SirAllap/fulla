@@ -901,4 +901,7 @@
     <string name="add_need_amount">Betrag eingeben</string>
     <string name="discard_entry">Verwerfen</string>
     <string name="hold_hint">Gedrückt halten</string>
+    <string name="save_colour">Speichern-Taste</string>
+    <string name="save_colour_text">Die Farbe der Speichern-Taste beim Erfassen.</string>
+    <string name="save_colour_ink">Standard</string>
 </resources>

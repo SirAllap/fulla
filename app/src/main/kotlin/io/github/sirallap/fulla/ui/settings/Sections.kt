@@ -862,6 +862,30 @@ fun AppearanceSettings() {
                 }
             }
         }
+        Section(stringResource(R.string.save_colour))
+        Text(stringResource(R.string.save_colour_text), style = FullaType.secondary, color = FullaTheme.colors.inkMuted,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+        Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            val ink = stringResource(R.string.save_colour_ink)
+            Box(Modifier.size(52.dp).clip(CircleShape).clickable(onClickLabel = ink) { scope.launch { container.settings.setSaveColor(null) } }
+                .semantics { contentDescription = ink; selected = s.saveColor == null }, contentAlignment = Alignment.Center) {
+                Box(Modifier.size(40.dp).clip(CircleShape).background(FullaTheme.colors.accent), contentAlignment = Alignment.Center) {
+                    if (s.saveColor == null) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Outlined.Check, null,
+                        tint = FullaTheme.colors.onAccent, modifier = Modifier.size(20.dp))
+                }
+            }
+            for (a in io.github.sirallap.fulla.core.design.Accent.entries) {
+                val name = stringResource(accentName(a))
+                Box(Modifier.size(52.dp).clip(CircleShape).clickable(onClickLabel = name) { scope.launch { container.settings.setSaveColor(a) } }
+                    .semantics { contentDescription = name; selected = s.saveColor == a }, contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(40.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Color(a.fill)), contentAlignment = Alignment.Center) {
+                        if (s.saveColor == a) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Outlined.Check, null,
+                            tint = androidx.compose.ui.graphics.Color(a.onFill), modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+        }
         Section(stringResource(R.string.money_colours))
         Text(stringResource(R.string.money_colours_text), style = FullaType.secondary, color = FullaTheme.colors.inkMuted, modifier = Modifier.padding(20.dp))
         for (p in MoneyPalette.entries) {
