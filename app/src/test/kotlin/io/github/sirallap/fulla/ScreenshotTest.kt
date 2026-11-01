@@ -104,6 +104,18 @@ open class ScreenshotTest {
             }
         }
     }
+    @Test fun widgets() {
+        for ((name, paper) in listOf("light" to 0xFFFAF8F3.toInt(), "dark" to 0xFF1B1830.toInt())) {
+            val sets = listOf(
+                "pebble" to io.github.sirallap.fulla.widget.WidgetArt.card(700, 340, 50f, 0.3f, paper, 0xFFE9B949.toInt(), 0xFFC9971F.toInt(), 4f),
+                "bubble" to io.github.sirallap.fulla.widget.WidgetArt.card(320, 320, 50f, 0.5f, paper, 0xFFE9B949.toInt(), 0xFFC9971F.toInt(), 4f, io.github.sirallap.fulla.widget.WidgetArt.Shape.BUBBLE),
+            )
+            for ((shape, bitmap) in sets) {
+                val file = java.io.File("$dir/$prefix-11-widget-$shape-$name.png").apply { parentFile?.mkdirs() }
+                file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            }
+        }
+    }
     @Test fun appearance() = shot("9-appearance") { SettingsScreen(view, SettingsSection.APPEARANCE, {}, {}) }
 }
 
