@@ -125,7 +125,7 @@ fun LiquidTile(
         modifier.heightIn(min = 104.dp).clip(RoundedCornerShape(20.dp)).drawBehind {
             drawRect(c.paperHigh)
             if (level != null) liquidSheet(level * fill.value, surface, body, vertical = true, phase = phase, alpha = if (c.isDark) 0.42f else 0.30f)
-        }.clearAndSetSemantics { contentDescription = listOfNotNull(title, value, context).joinToString(", ") }
+        }.glass().clearAndSetSemantics { contentDescription = listOfNotNull(title, value, context).joinToString(", ") }
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -213,7 +213,7 @@ fun LiquidBarRow(
                 drawLiquidAcross(liquid, listOf(surface.copy(alpha = tint), body.copy(alpha = tint + 0.08f)), 5.dp)
             }
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 10.dp),
+            .glass(rim = false).heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

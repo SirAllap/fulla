@@ -66,6 +66,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.ui.components.glass
 import io.github.sirallap.fulla.client.remote.Endpoint
 import io.github.sirallap.fulla.client.remote.FullaError
 import io.github.sirallap.fulla.client.remote.InviteProblem
@@ -377,6 +378,7 @@ private fun BigChoice(title: String, text: String?, dark: Boolean, onClick: () -
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
     Column(
         Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(shape).background(if (dark) c.ink else c.paperHigh)
+            .glass()
             .then(if (dark) Modifier else Modifier.border(1.dp, c.line, shape))
             .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.Center,

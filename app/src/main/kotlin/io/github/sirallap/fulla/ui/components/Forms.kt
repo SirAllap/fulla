@@ -346,7 +346,7 @@ fun Notice(text: String, actionLabel: String, onAction: () -> Unit, modifier: Mo
     val c = FullaTheme.colors
     Column(
         modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(20.dp))
-            .background(c.paperHigh).border(1.dp, c.warning, RoundedCornerShape(20.dp)).padding(16.dp),
+            .background(c.paperHigh).glass().border(1.dp, c.warning, RoundedCornerShape(20.dp)).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         title?.let { Text(it, style = FullaType.body, color = c.ink, modifier = Modifier.semantics { heading() }) }
