@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -122,11 +123,12 @@ internal fun rememberLiquidState(level: Float): LiquidState {
 /** Draws the liquid in the whole of this scope. [colors]: one for a flat liquid, several for a depth from the surface down. */
 internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLiquid(
     state: LiquidState, colors: List<Color>, maxAmplitude: Dp, gloss: Boolean, rim: Boolean,
+    width: Float = size.width, height: Float = size.height,
 ) {
     val lvl = state.shown.value
     if (lvl <= 0.004f) return
-    val w = size.width
-    val h = size.height
+    val w = width
+    val h = height
     val amp = maxAmplitude.toPx() * state.energy.value
     val ph = state.phase.value
     val sl = state.tilt.value
@@ -235,4 +237,16 @@ fun HoldToConfirm(label: String, onConfirmed: () -> Unit, modifier: Modifier = M
             color = if (progress.value > 0.55f) androidx.compose.ui.graphics.Color.White else c.danger,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
     }
+}
+
+/** The same liquid, standing in a bar: it fills from the left to [LiquidState]'s level, the surface running up and down. */
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLiquidAcross(
+    state: LiquidState, colors: List<Color>, maxAmplitude: Dp, gloss: Boolean = false,
+) {
+    val across = size.width
+    val tall = size.height
+    withTransform({
+        translate(across, 0f)
+        rotate(90f, Offset.Zero)
+    }) { drawLiquid(state, colors, maxAmplitude, gloss, rim = false, width = tall, height = across) }
 }

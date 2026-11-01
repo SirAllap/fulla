@@ -203,8 +203,14 @@ fun PickSheet(title: String, onDismiss: () -> Unit, content: @Composable ColumnS
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.paper,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-            Text(title, style = FullaType.title, color = c.ink,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp).semantics { heading() })
+            // The sheet's head fills with a light liquid as it opens.
+            var open by remember { mutableStateOf(false) }
+            androidx.compose.runtime.LaunchedEffect(Unit) { open = true }
+            Box(Modifier.fillMaxWidth()) {
+                LiquidSurface(if (open) 1.05f else 0f, c.highlight.copy(alpha = if (c.isDark) 0.22f else 0.32f), Modifier.matchParentSize(), maxAmplitude = 5.dp, gloss = false)
+                Text(title, style = FullaType.title, color = c.ink,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp).semantics { heading() })
+            }
             content()
         }
     }
@@ -235,7 +241,7 @@ fun DetailChip(value: String, onClick: () -> Unit, modifier: Modifier = Modifier
             style = Stroke(width = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))))
     } else Modifier.border(1.dp, c.line, shape)
     Row(
-        modifier.minimumInteractiveComponentSize().yields(source).clip(shape).then(outline)
+        modifier.minimumInteractiveComponentSize().yields(source).jelly(value).clip(shape).then(outline)
             .clickable(source, LocalIndication.current, role = Role.Button, onClick = onClick)
             .heightIn(min = 32.dp).padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

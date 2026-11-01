@@ -51,7 +51,7 @@ fun RulesSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
                         Text("${r.pattern} → " + (view.categoryName(r.categoryId) ?: stringResource(R.string.uncategorized)),
                             style = FullaType.body, color = if (r.active) c.ink else c.inkMuted)
                     }
-                    androidx.compose.material3.Switch(checked = r.active, onCheckedChange = null, enabled = canEdit)
+                    io.github.sirallap.fulla.ui.components.LiquidSwitch(checked = r.active, enabled = canEdit)
                 }
             }
         }

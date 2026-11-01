@@ -106,7 +106,7 @@ fun SaveDock(label: String, onSave: () -> Unit, enabled: Boolean, busy: Boolean,
  * drop. Only the row around it takes the tap (SwitchRow).
  */
 @Composable
-fun LiquidSwitch(checked: Boolean, modifier: Modifier = Modifier) {
+fun LiquidSwitch(checked: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val c = FullaTheme.colors
     val reduced = FullaMotion.reduced()
     val density = LocalDensity.current
@@ -115,7 +115,7 @@ fun LiquidSwitch(checked: Boolean, modifier: Modifier = Modifier) {
     val track = 52.dp
     val thumb = 24.dp
     val pad = 4.dp
-    Box(modifier.size(width = track, height = 32.dp).clip(RoundedCornerShape(50)).background(c.line)) {
+    Box(modifier.graphicsLayer { alpha = if (enabled) 1f else 0.4f }.size(width = track, height = 32.dp).clip(RoundedCornerShape(50)).background(c.line)) {
         LiquidSurface(if (checked) 1.05f else 0f, c.accent, Modifier.fillMaxSize(), maxAmplitude = 3.dp, gloss = false)
         val run = track - thumb - pad * 2
         val stretch = (16f * 4f * p * (1f - p)).coerceAtLeast(0f)

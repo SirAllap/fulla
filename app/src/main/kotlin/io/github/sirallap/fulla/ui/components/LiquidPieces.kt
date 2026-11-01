@@ -96,10 +96,9 @@ fun Modifier.liquid(level: Float, tone: LiquidTone = LiquidTone.IN, vertical: Bo
         val state = rememberLiquidState(level)
         return drawBehind { drawLiquid(state, listOf(surface.copy(alpha = alpha), body.copy(alpha = alpha), body.copy(alpha = alpha + 0.12f)), 6.dp, gloss = true, rim = false) }
     }
-    val reduced = FullaMotion.reduced()
-    val shown = remember { Animatable(if (reduced) level else 0f) }
-    LaunchedEffect(level) { shown.animateTo(level, FullaMotion.liquid(reduced)) }
-    return drawBehind { liquidSheet(shown.value, surface, body, vertical = false, phase = phase, alpha = alpha) }
+    // A bar filling up, from the left, with the same physics.
+    val state = rememberLiquidState(level)
+    return drawBehind { drawLiquidAcross(state, listOf(surface.copy(alpha = alpha), body.copy(alpha = alpha + 0.08f)), 5.dp) }
 }
 
 /**
@@ -204,13 +203,14 @@ fun LiquidBarRow(
     onClick: (() -> Unit)? = null,
 ) {
     val c = FullaTheme.colors
-    val fill = rememberFill(fraction)
+    val liquid = rememberLiquidState(fraction)
     val (surface, body) = toneColors(tone)
+    val tint = if (c.isDark) 0.40f else 0.26f
     Row(
         modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clip(RoundedCornerShape(16.dp))
             .drawBehind {
                 drawRect(c.paperHigh)
-                liquidSheet(fraction * fill.value, surface, body, vertical = false, phase = phase, alpha = if (c.isDark) 0.40f else 0.26f)
+                drawLiquidAcross(liquid, listOf(surface.copy(alpha = tint), body.copy(alpha = tint + 0.08f)), 5.dp)
             }
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 10.dp),
