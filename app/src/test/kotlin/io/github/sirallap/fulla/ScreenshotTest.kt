@@ -18,7 +18,14 @@ import io.github.sirallap.fulla.core.sync.SyncState
 import io.github.sirallap.fulla.data.repo.HouseholdState
 import io.github.sirallap.fulla.ui.HouseholdView
 import io.github.sirallap.fulla.ui.LocalContainer
+import io.github.sirallap.fulla.ui.Tab
 import io.github.sirallap.fulla.ui.balances.BalancesScreen
+import io.github.sirallap.fulla.ui.components.AddDock
+import io.github.sirallap.fulla.ui.components.AddPhase
+import io.github.sirallap.fulla.ui.components.LiquidTabBar
+import io.github.sirallap.fulla.ui.components.TabItem
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.res.stringResource
 import io.github.sirallap.fulla.ui.entry.EntryScreen
 import io.github.sirallap.fulla.ui.history.HistoryScreen
 import io.github.sirallap.fulla.ui.home.HomeScreen
@@ -86,6 +93,17 @@ open class ScreenshotTest {
     @Test fun settings() = shot("6-settings") { SettingsScreen(view, SettingsSection.INDEX, {}, {}) }
     @Test fun people() = shot("7-people") { SettingsScreen(view, SettingsSection.MEMBERS, {}, {}) }
     @Test fun budgets() = shot("8-budgets") { SettingsScreen(view, SettingsSection.BUDGETS, {}, {}) }
+    @Test fun saveBar() {
+        for ((phase, words) in listOf(AddPhase.IDLE to "", AddPhase.NEEDS_CATEGORY to "Pick a category", AddPhase.READY to "Save · 25.00", AddPhase.SAVED to "Save · 25.00")) {
+            val dock = AddDock().also { it.publish(phase, words, {}, {}, {}) }
+            shot("10-bar-" + phase.name.lowercase()) {
+                Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.weight(1f))
+                    LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, Tab.ADD.ordinal, center = Tab.ADD.ordinal, dock = dock) {}
+                }
+            }
+        }
+    }
     @Test fun appearance() = shot("9-appearance") { SettingsScreen(view, SettingsSection.APPEARANCE, {}, {}) }
 }
 
