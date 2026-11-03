@@ -2,6 +2,7 @@
 package io.github.sirallap.fulla.ui.balances
 
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
@@ -191,7 +192,12 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                                 .liquid(share, vertical = true).glass().border(1.dp, c.line, shape).padding(12.dp),
                                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
                                 // On a filled tile the account's name must still read: full ink once the liquid reaches it.
-                                Text(a.name, style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = if (share > 0.4f) c.ink else c.inkMuted)
+                                androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                                    androidx.compose.material3.Icon(io.github.sirallap.fulla.ui.components.accountIcon(a.type), null,
+                                        tint = if (share > 0.4f) c.ink else c.inkMuted, modifier = Modifier.size(18.dp))
+                                    Text(a.name, style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = if (share > 0.4f) c.ink else c.inkMuted)
+                                }
                                 Text(f.money(amount), style = io.github.sirallap.fulla.ui.theme.FullaType.title, color = if (amount < 0) c.moneyOut else c.ink,
                                     maxLines = 1, softWrap = false)
                             }

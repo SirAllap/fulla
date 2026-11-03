@@ -135,6 +135,13 @@ open class ScreenshotTest {
             io.github.sirallap.fulla.ui.components.SearchPill("", {}, "Search")
         }
     }
+    @Test fun accountPick() = shot("14-account-pick") {
+        Column(Modifier.fillMaxSize().padding(top = 48.dp)) {
+            val open = view.config.accounts.filter { !it.archived }
+            io.github.sirallap.fulla.ui.components.AccountGrid(open + open.take(1), view.analytics.accountBalances(view.active, view.config.accounts, LocalDate.now()),
+                { v -> view.formats.money(v) }, {})
+        }
+    }
     @Test fun appearance() = shot("9-appearance") { SettingsScreen(view, SettingsSection.APPEARANCE, {}, {}) }
 }
 

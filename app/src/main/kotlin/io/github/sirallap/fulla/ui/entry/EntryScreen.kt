@@ -91,7 +91,9 @@ import io.github.sirallap.fulla.ui.guide.guideTarget
 import io.github.sirallap.fulla.ui.LocalContainer
 import io.github.sirallap.fulla.ui.components.AddDock
 import io.github.sirallap.fulla.ui.components.AddPhase
+import io.github.sirallap.fulla.ui.components.AccountPickSheet
 import io.github.sirallap.fulla.ui.components.BackHeader
+import io.github.sirallap.fulla.ui.components.accountIcon
 import io.github.sirallap.fulla.ui.components.LiquidSurface
 import io.github.sirallap.fulla.ui.components.jelly
 import io.github.sirallap.fulla.ui.components.Chip
@@ -233,6 +235,9 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
     val fieldProblem = stringResource(R.string.field_value_problem)
 
     var saved by remember { mutableStateOf(false) }
+    // A new entry asks which account it goes to when it is saved (more than one to choose from): big tiles, no default to forget.
+    var pickingAccount by remember { mutableStateOf(false) }
+    val askAccount = editingId == null && draft.kind != TransactionKind.TRANSFER && view.config.accounts.count { !it.archived } >= 2
     // Editing: nothing to apply until something is changed.
     val baseline = remember(editingId, view.id) { existing?.let { Draft(view, it).build() } }
     val dirty = baseline != null && draft.build() != baseline
@@ -293,7 +298,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
             AddPhase.IDLE -> ""
         }
         SideEffect {
-            dock.publish(phase, words, onSave = ::save,
+            dock.publish(phase, words, onSave = { if (askAccount) pickingAccount = true else save() },
                 onDiscard = { draft.keypad = Keypad(view.formats.currency); draft.categoryId = null; problem = null },
                 onMissing = { if (phase == AddPhase.NEEDS_CATEGORY) problem = pickCategory })
         }
@@ -390,6 +395,11 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
     }
 
     detail?.let { DetailSheet(view, draft, it, onDismiss = { detail = null }) }
+    if (pickingAccount) {
+        val balances = remember(view) { view.analytics.accountBalances(view.active, view.config.accounts, LocalDate.now()) }
+        AccountPickSheet(view.config.accounts.filter { !it.archived }, balances, { v -> view.formats.money(v) },
+            onPick = { a -> draft.accountId = a.id; pickingAccount = false; save() }, onDismiss = { pickingAccount = false })
+    }
 }
 
 /** "Starts the month", with what it does to the income already starting this month, if any. */
@@ -545,7 +555,7 @@ private fun DetailChips(view: HouseholdView, draft: Draft, onOpen: (Detail) -> U
             { onOpen(Detail.Date) }, icon = Icons.Outlined.Event,
         )
         DetailChip(view.accountName(draft.accountId) ?: stringResource(R.string.account), { onOpen(Detail.Account) },
-            icon = Icons.Outlined.AccountBalanceWallet)
+            icon = accountIcon(view.config.account(draft.accountId)?.type ?: io.github.sirallap.fulla.core.model.AccountType.OTHER))
         if (draft.kind == TransactionKind.TRANSFER) {
             val to = view.accountName(draft.toAccountId)
             DetailChip(to?.let { "→ $it" } ?: stringResource(R.string.to_account), { onOpen(Detail.ToAccount) }, empty = to == null)

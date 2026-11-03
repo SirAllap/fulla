@@ -957,4 +957,5 @@
     <string name="save_colour_ink">Default</string>
     <string name="apply_changes">Apply changes</string>
     <string name="no_changes">No changes</string>
+    <string name="account_pick_title">Which account?</string>
 </resources>

@@ -906,4 +906,5 @@
     <string name="save_colour_ink">Predefinito</string>
     <string name="apply_changes">Applica le modifiche</string>
     <string name="no_changes">Nessuna modifica</string>
+    <string name="account_pick_title">Su quale conto?</string>
 </resources>
