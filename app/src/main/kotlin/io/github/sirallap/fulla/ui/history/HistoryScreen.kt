@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -214,18 +216,36 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
                 )
             }
             undoId?.let { id ->
-                androidx.compose.foundation.layout.Row(
-                    Modifier.align(androidx.compose.ui.Alignment.BottomCenter).padding(horizontal = 16.dp).padding(bottom = 96.dp).fillMaxWidth()
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp)).background(c.paperHigh)
-                        .border(1.dp, c.line, androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
-                        .padding(start = 16.dp, end = 6.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                // The opposite of the screen (light on dark, dark on light), lifted on a shadow, with a red drop, a big
+                // gold button and a line that runs out over the six seconds: it cannot be missed.
+                val left = androidx.compose.runtime.remember(id) { androidx.compose.animation.core.Animatable(1f) }
+                androidx.compose.runtime.LaunchedEffect(id) {
+                    left.animateTo(0f, androidx.compose.animation.core.tween(6000, easing = androidx.compose.animation.core.LinearEasing))
+                }
+                val barShape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+                androidx.compose.foundation.layout.Column(
+                    Modifier.align(androidx.compose.ui.Alignment.BottomCenter).padding(horizontal = 16.dp).padding(bottom = 100.dp).fillMaxWidth()
+                        .shadow(14.dp, barShape).clip(barShape).background(c.ink),
                 ) {
-                    Text(stringResource(R.string.entry_deleted), style = FullaType.body, color = c.ink)
-                    androidx.compose.material3.TextButton(onClick = { undoId = null; scope.launch { container.ledger.restore(view.id, id) } }) {
-                        Text(stringResource(R.string.undo), color = c.accent)
+                    androidx.compose.foundation.layout.Row(
+                        Modifier.fillMaxWidth().padding(start = 14.dp, end = 10.dp, top = 12.dp, bottom = 12.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+                    ) {
+                        androidx.compose.foundation.layout.Box(Modifier.size(34.dp).clip(androidx.compose.foundation.shape.CircleShape).background(c.danger),
+                            contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            Icon(Icons.Outlined.DeleteOutline, null, tint = c.paper, modifier = Modifier.size(19.dp))
+                        }
+                        Text(stringResource(R.string.entry_deleted), style = FullaType.body, color = c.paper, modifier = Modifier.weight(1f))
+                        androidx.compose.foundation.layout.Box(
+                            Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(c.highlight)
+                                .clickable { undoId = null; scope.launch { container.ledger.restore(view.id, id) } }
+                                .padding(horizontal = 20.dp, vertical = 11.dp),
+                        ) {
+                            Text(stringResource(R.string.undo).uppercase(), style = FullaType.label, color = c.onHighlight)
+                        }
                     }
+                    androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth(left.value).height(4.dp).background(c.highlight))
                 }
             }
         }
