@@ -193,9 +193,10 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
     val deleted = t.status == Status.DELETED
     val moves = t.kind == TransactionKind.TRANSFER || t.kind == TransactionKind.SETTLEMENT
     val title = when (t.kind) {
+        // A transfer says what it is; the two accounts go below as labels, from one to the other.
         TransactionKind.TRANSFER ->
-            if (io.github.sirallap.fulla.core.roundup.RoundUps.isRoundUp(t)) stringResource(R.string.round_up_row, view.accountName(t.accountId) ?: "?", view.accountName(t.toAccountId) ?: "?")
-            else stringResource(R.string.transfer_between, view.accountName(t.accountId) ?: "?", view.accountName(t.toAccountId) ?: "?")
+            if (io.github.sirallap.fulla.core.roundup.RoundUps.isRoundUp(t)) stringResource(R.string.round_up_title)
+            else stringResource(R.string.kind_transfer)
         TransactionKind.SETTLEMENT -> stringResource(R.string.settlement_between, view.memberName(t.paidByMemberId), view.memberName(t.toMemberId))
         else -> t.note.ifBlank { category?.name ?: stringResource(R.string.uncategorized) }
     }
@@ -205,6 +206,8 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
     val icon = if (moves) androidx.compose.material.icons.Icons.Outlined.SwapHoriz else CategoryIcons.of(category?.icon ?: "label")
     val account = view.config.account(t.accountId)
     val showAccount = account != null && t.kind != TransactionKind.TRANSFER && view.config.accounts.count { !it.archived } >= 2
+    val fromAccount = account?.takeIf { t.kind == TransactionKind.TRANSFER }
+    val toAccount = view.config.account(t.toAccountId)?.takeIf { t.kind == TransactionKind.TRANSFER }
     val payer = view.config.member(t.paidByMemberId)
         ?.takeIf { view.config.activeMembers.size >= 2 && t.kind != TransactionKind.SETTLEMENT }
     val fields = io.github.sirallap.fulla.core.schema.SchemaEngine.fieldsForList(view.config.fields).mapNotNull { fd ->
@@ -253,13 +256,23 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
                     else -> c.ink
                 })
             }
-            if (showAccount || payer != null || refund != null || fields.isNotEmpty()) {
+            if (showAccount || fromAccount != null || payer != null || refund != null || fields.isNotEmpty()) {
                 androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 8.dp),
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
                     if (showAccount && account != null) {
                         io.github.sirallap.fulla.ui.components.AccountLabel(account,
                             io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, account.id))
+                    }
+                    if (fromAccount != null && toAccount != null) {
+                        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                            io.github.sirallap.fulla.ui.components.AccountLabel(fromAccount,
+                                io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, fromAccount.id))
+                            Text("→", style = FullaType.body, color = c.inkMuted)
+                            io.github.sirallap.fulla.ui.components.AccountLabel(toAccount,
+                                io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, toAccount.id))
+                        }
                     }
                     if (payer != null) io.github.sirallap.fulla.ui.components.PersonChip(payer.displayName, payer.initials, payer.colorIndex)
                     if (refund != null) io.github.sirallap.fulla.ui.components.InfoChip(refund)
