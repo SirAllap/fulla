@@ -365,7 +365,7 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
                 SubcategoryChips(view, draft)
                 CategoryFieldChips(view, draft)
             }
-            DetailChips(view, draft) { detail = it }
+            DetailChips(view, draft, askAccount) { detail = it }
             if (draft.offersStartsMonth) StartsMonthSwitch(view, draft)
             if (draft.kind == TransactionKind.INCOME) {
                 // A salary a recurring item wrote on its own starts no period until somebody saves it.
@@ -540,7 +540,7 @@ private sealed interface Detail {
  * asked who paid.
  */
 @Composable
-private fun DetailChips(view: HouseholdView, draft: Draft, onOpen: (Detail) -> Unit) {
+private fun DetailChips(view: HouseholdView, draft: Draft, accountAsked: Boolean, onOpen: (Detail) -> Unit) {
     val today = LocalDate.now()
     val language = java.util.Locale.getDefault().language
     val people = view.config.activeMembers.size > 1 && draft.kind != TransactionKind.TRANSFER && !SharedPot.isShared(view.config.household)
@@ -554,7 +554,8 @@ private fun DetailChips(view: HouseholdView, draft: Draft, onOpen: (Detail) -> U
             },
             { onOpen(Detail.Date) }, icon = Icons.Outlined.Event,
         )
-        DetailChip(view.accountName(draft.accountId) ?: stringResource(R.string.account), { onOpen(Detail.Account) },
+        // A new entry asks its account when saved, so the chip would only be a second way to the same answer.
+        if (!accountAsked) DetailChip(view.accountName(draft.accountId) ?: stringResource(R.string.account), { onOpen(Detail.Account) },
             icon = accountIcon(view.config.account(draft.accountId)?.type ?: io.github.sirallap.fulla.core.model.AccountType.OTHER))
         if (draft.kind == TransactionKind.TRANSFER) {
             val to = view.accountName(draft.toAccountId)
