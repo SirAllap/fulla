@@ -126,12 +126,19 @@ object AccountIcons {
 /** The colour an account wears is its place in the household's list, so every phone agrees. */
 fun accountColorIndex(accounts: List<Account>, id: String?): Int = accounts.indexOfFirst { it.id == id }.coerceAtLeast(0)
 
+/** Every small chip of a movement is this tall, with its content centred, so a row of them lines up. */
+private val ChipHeight = 26.dp
+
+/** A chip's fill: a touch of the ink over the card, so it shows on the card in both themes. */
+@Composable
+private fun ChipFill() = FullaTheme.colors.ink.copy(alpha = 0.10f)
+
 /** Which account, in a few words: its icon and its name inside a dashed outline of its colour. */
 @Composable
 fun AccountLabel(account: Account, colorIndex: Int, modifier: Modifier = Modifier) {
     val tint = FullaTheme.colors.category(colorIndex)
     Row(
-        modifier.drawBehind {
+        modifier.heightIn(min = ChipHeight).drawBehind {
             val r = size.height / 2
             drawRoundRect(tint, cornerRadius = CornerRadius(r, r),
                 style = Stroke(width = 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 3.dp.toPx()))))
@@ -148,7 +155,7 @@ fun AccountLabel(account: Account, colorIndex: Int, modifier: Modifier = Modifie
 @Composable
 fun InfoChip(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
     val c = FullaTheme.colors
-    Row(modifier.widthIn(max = 220.dp).clip(RoundedCornerShape(50)).background(c.paperHigh)
+    Row(modifier.heightIn(min = ChipHeight).widthIn(max = 220.dp).clip(RoundedCornerShape(50)).background(ChipFill())
         .padding(start = if (icon != null) 6.dp else 8.dp, end = 8.dp, top = 3.dp, bottom = 3.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         if (icon != null) Icon(icon, null, tint = c.inkMuted, modifier = Modifier.size(12.dp))
@@ -160,7 +167,7 @@ fun InfoChip(text: String, modifier: Modifier = Modifier, icon: ImageVector? = n
 @Composable
 fun PersonChip(name: String, initials: String, colorIndex: Int, modifier: Modifier = Modifier) {
     val c = FullaTheme.colors
-    Row(modifier.clip(RoundedCornerShape(50)).background(c.paperHigh).padding(start = 3.dp, end = 8.dp, top = 2.dp, bottom = 2.dp),
+    Row(modifier.heightIn(min = ChipHeight).clip(RoundedCornerShape(50)).background(ChipFill()).padding(start = 4.dp, end = 9.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
         Box(Modifier.size(18.dp).clip(CircleShape).background(c.member(colorIndex)), contentAlignment = Alignment.Center) {
             Text(initials.take(1).uppercase(), style = FullaType.label.copy(fontSize = 10.sp, lineHeight = 12.sp), color = c.paper, maxLines = 1)
