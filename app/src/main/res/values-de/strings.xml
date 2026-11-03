@@ -718,6 +718,8 @@
     <string name="forecast_too_early">Noch zu früh, um das Ende des Zeitraums zu schätzen (Tag %1$d von %2$d). Schau in ein paar Tagen wieder vorbei.</string>
     <string name="entry_deleted">Eintrag gelöscht</string>
     <string name="undo">Rückgängig</string>
+    <string name="delete_entry_title">Diesen Eintrag löschen?</string>
+    <string name="delete_entry_text">Er wandert zu „Gelöscht“. Du kannst es gleich rückgängig machen oder später über den Filter „Gelöscht“ wiederherstellen.</string>
     <string name="fixed_missed_skip_confirm">%1$d Abbuchungen auslassen? Sie werden nicht geschrieben und nicht wieder angeboten.</string>
     <string name="db_update_copied">Update kopiert. Füge es im SQL-Editor ein und drücke Run.</string>
     <string name="fixed_charged_group">Schon abgebucht (%1$d)</string>

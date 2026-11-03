@@ -718,6 +718,8 @@
     <string name="forecast_too_early">Troppo presto per stimare come finirà il periodo (giorno %1$d di %2$d). Torna tra qualche giorno.</string>
     <string name="entry_deleted">Movimento eliminato</string>
     <string name="undo">Annulla</string>
+    <string name="delete_entry_title">Eliminare questo movimento?</string>
+    <string name="delete_entry_text">Passa in «Eliminati». Puoi annullare subito, o ripristinarlo più tardi dal filtro «Eliminati».</string>
     <string name="fixed_missed_skip_confirm">Lasciar passare %1$d addebiti? Non verranno scritti né riproposti.</string>
     <string name="db_update_copied">Aggiornamento copiato. Incollalo nell’editor SQL e premi Run.</string>
     <string name="fixed_charged_group">Già addebitate (%1$d)</string>

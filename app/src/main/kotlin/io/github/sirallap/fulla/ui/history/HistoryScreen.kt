@@ -4,6 +4,8 @@ package io.github.sirallap.fulla.ui.history
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import io.github.sirallap.fulla.ui.components.listEndPadding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
@@ -15,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.ReceiptLong
@@ -33,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -90,6 +94,10 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
     // One account, or all of them: a transfer shows under both its accounts.
     var account by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshing by remember { mutableStateOf(false) }
+    // Swiping a row asks first; once deleted, an undo bar stays a few seconds.
+    var pendingDelete by remember { mutableStateOf<String?>(null) }
+    var undoId by remember { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.LaunchedEffect(undoId) { if (undoId != null) { kotlinx.coroutines.delay(6000); undoId = null } }
 
     val shown = remember(view, filter, query, account) {
         val q = query.trim().normalizeName()
@@ -167,9 +175,56 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
                         // A day's rows sit in one card under the day's name.
                         itemsIndexed(rows, key = { _, row -> row.id }) { i, row ->
                             CardItem(CardSlot.of(i, rows.size)) {
-                                HistoryRow(view, row, io.github.sirallap.fulla.core.roundup.RoundUps.underPurchase(row.transaction, byId)) { onOpen(row.id) }
+                                val deletable = row.transaction.status != Status.DELETED
+                                val dismiss = androidx.compose.material3.rememberSwipeToDismissBoxState(confirmValueChange = { v ->
+                                    // The row springs back; the dialog decides.
+                                    if (v == androidx.compose.material3.SwipeToDismissBoxValue.EndToStart) pendingDelete = row.id
+                                    false
+                                })
+                                androidx.compose.material3.SwipeToDismissBox(
+                                    state = dismiss,
+                                    enableDismissFromStartToEnd = false,
+                                    enableDismissFromEndToStart = deletable,
+                                    backgroundContent = {
+                                        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().background(c.danger),
+                                            contentAlignment = androidx.compose.ui.Alignment.CenterEnd) {
+                                            Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.delete), tint = c.paper, modifier = Modifier.padding(end = 24.dp))
+                                        }
+                                    },
+                                ) {
+                                    // Opaque, so the red is only seen once the row is pulled aside.
+                                    androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().background(c.paperHigh)) {
+                                        HistoryRow(view, row, io.github.sirallap.fulla.core.roundup.RoundUps.underPurchase(row.transaction, byId)) { onOpen(row.id) }
+                                    }
+                                }
                             }
                         }
+                    }
+                }
+            }
+            // Asking before deleting; the delete can still be undone for a few seconds.
+            pendingDelete?.let { id ->
+                io.github.sirallap.fulla.ui.components.ConfirmDialog(
+                    title = stringResource(R.string.delete_entry_title),
+                    text = stringResource(R.string.delete_entry_text),
+                    confirmLabel = stringResource(R.string.delete),
+                    danger = false,
+                    onConfirm = { pendingDelete = null; scope.launch { container.ledger.delete(view.id, id); undoId = id } },
+                    onDismiss = { pendingDelete = null },
+                )
+            }
+            undoId?.let { id ->
+                androidx.compose.foundation.layout.Row(
+                    Modifier.align(androidx.compose.ui.Alignment.BottomCenter).padding(horizontal = 16.dp).padding(bottom = 96.dp).fillMaxWidth()
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp)).background(c.paperHigh)
+                        .border(1.dp, c.line, androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
+                        .padding(start = 16.dp, end = 6.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                ) {
+                    Text(stringResource(R.string.entry_deleted), style = FullaType.body, color = c.ink)
+                    androidx.compose.material3.TextButton(onClick = { undoId = null; scope.launch { container.ledger.restore(view.id, id) } }) {
+                        Text(stringResource(R.string.undo), color = c.accent)
                     }
                 }
             }
@@ -225,63 +280,65 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
     val inset = io.github.sirallap.fulla.ui.components.LocalRowInset.current
     val divider = io.github.sirallap.fulla.ui.components.LocalCardSlot.current?.divider ?: true
     androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth()) {
-        androidx.compose.foundation.layout.Column(
+        // Every row has the same shape: the icon in its own column, then the title (always the same size) with the amount
+        // on its line, the category under it when the title is a note, and below that only what tells rows apart.
+        androidx.compose.foundation.layout.Row(
             Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = inset, vertical = 12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.Top,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
         ) {
-            if (hasNote) {
-                androidx.compose.foundation.layout.Row(Modifier.padding(bottom = 4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(5.dp)) {
-                    Icon(icon, null, tint = tint, modifier = Modifier.size(14.dp))
+            Icon(icon, null, tint = tint, modifier = Modifier.size(22.dp))
+            androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.Top,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                    androidx.compose.foundation.layout.Row(Modifier.weight(1f), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                        Text(title, style = FullaType.body, color = if (deleted) c.inkMuted else c.ink, maxLines = 3,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                        if (repeats) Icon(androidx.compose.material.icons.Icons.Outlined.Repeat, null, tint = c.inkMuted, modifier = Modifier.size(14.dp))
+                    }
+                    val amount = when (t.kind) {
+                        TransactionKind.INCOME, TransactionKind.REFUND -> f.money(t.amountMinor, signed = true)
+                        else -> f.money(t.amountMinor)
+                    }
+                    AmountText(amount, color = when {
+                        deleted -> c.inkMuted
+                        t.kind == TransactionKind.INCOME || t.kind == TransactionKind.REFUND -> c.moneyIn
+                        t.kind == TransactionKind.TRANSFER || t.kind == TransactionKind.SETTLEMENT -> c.inkMuted
+                        else -> c.ink
+                    })
+                }
+                if (hasNote) {
                     Text((category?.name ?: stringResource(R.string.uncategorized)).uppercase(), style = FullaType.label, color = tint,
                         maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
-            }
-            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.Top,
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
-                androidx.compose.foundation.layout.Row(Modifier.weight(1f), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-                    if (!hasNote) Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
-                    Text(title, style = FullaType.body, color = if (deleted) c.inkMuted else c.ink, maxLines = 3,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                    if (repeats) Icon(androidx.compose.material.icons.Icons.Outlined.Repeat, null, tint = c.inkMuted, modifier = Modifier.size(14.dp))
-                }
-                val amount = when (t.kind) {
-                    TransactionKind.INCOME, TransactionKind.REFUND -> f.money(t.amountMinor, signed = true)
-                    else -> f.money(t.amountMinor)
-                }
-                AmountText(amount, color = when {
-                    deleted -> c.inkMuted
-                    t.kind == TransactionKind.INCOME || t.kind == TransactionKind.REFUND -> c.moneyIn
-                    t.kind == TransactionKind.TRANSFER || t.kind == TransactionKind.SETTLEMENT -> c.inkMuted
-                    else -> c.ink
-                })
-            }
-            if (showAccount || fromAccount != null || payer != null || refund != null || fields.isNotEmpty()) {
-                androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 8.dp),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
-                    if (showAccount && account != null) {
-                        io.github.sirallap.fulla.ui.components.AccountLabel(account,
-                            io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, account.id))
-                    }
-                    if (fromAccount != null && toAccount != null) {
-                        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
-                            io.github.sirallap.fulla.ui.components.AccountLabel(fromAccount,
-                                io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, fromAccount.id))
-                            Text("→", style = FullaType.body, color = c.inkMuted)
-                            io.github.sirallap.fulla.ui.components.AccountLabel(toAccount,
-                                io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, toAccount.id))
+                if (showAccount || fromAccount != null || payer != null || refund != null || fields.isNotEmpty()) {
+                    androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 8.dp),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                        if (showAccount && account != null) {
+                            io.github.sirallap.fulla.ui.components.AccountLabel(account,
+                                io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, account.id))
                         }
+                        if (fromAccount != null && toAccount != null) {
+                            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                                io.github.sirallap.fulla.ui.components.AccountLabel(fromAccount,
+                                    io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, fromAccount.id))
+                                Text("→", style = FullaType.body, color = c.inkMuted)
+                                io.github.sirallap.fulla.ui.components.AccountLabel(toAccount,
+                                    io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, toAccount.id))
+                            }
+                        }
+                        if (payer != null) io.github.sirallap.fulla.ui.components.PersonChip(payer.displayName, payer.initials, payer.colorIndex)
+                        if (refund != null) io.github.sirallap.fulla.ui.components.InfoChip(refund)
+                        for (text in fields) io.github.sirallap.fulla.ui.components.InfoChip(text)
                     }
-                    if (payer != null) io.github.sirallap.fulla.ui.components.PersonChip(payer.displayName, payer.initials, payer.colorIndex)
-                    if (refund != null) io.github.sirallap.fulla.ui.components.InfoChip(refund)
-                    for (text in fields) io.github.sirallap.fulla.ui.components.InfoChip(text)
                 }
-            }
-            if (detail != null) {
-                Text(detail, style = FullaType.secondary, modifier = Modifier.padding(top = 6.dp),
-                    color = if (row.state == SyncState.REJECTED) c.warning else c.inkMuted)
+                if (detail != null) {
+                    Text(detail, style = FullaType.secondary, modifier = Modifier.padding(top = 6.dp),
+                        color = if (row.state == SyncState.REJECTED) c.warning else c.inkMuted)
+                }
             }
         }
         if (divider) io.github.sirallap.fulla.ui.components.Hairline(inset = inset)
