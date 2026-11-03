@@ -269,6 +269,10 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
         io.github.sirallap.fulla.ui.entry.fieldText(view, fd, t.extras[fd.key])
     }
     val refund = stringResource(R.string.kind_refund).takeIf { t.kind == TransactionKind.REFUND }
+    // A fixed payment with an end says which one it is ("Cuota 1 de 3"); one that never ends (a subscription) only carries the repeat symbol.
+    val installment = t.recurringRuleId?.let { id -> view.config.recurringRules.firstOrNull { it.id == id } }
+        ?.let { io.github.sirallap.fulla.core.recurring.Scheduler.installment(it, t.occurrenceDate ?: t.date) }
+        ?.let { (n, total) -> stringResource(R.string.installment_of, n, total) }
     // What went to savings with this purchase, as a line of its own under it.
     val rounded = roundUp?.let { stringResource(R.string.round_up_saved, f.money(it.amountMinor), view.accountName(it.toAccountId) ?: "") }
     val detail = listOfNotNull(when (row.state) {
@@ -312,7 +316,7 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
                 Text(t.note, style = FullaType.body, color = if (deleted) c.inkMuted else c.ink, maxLines = 3,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(start = textStart, top = 4.dp))
             }
-            if (showAccount || fromAccount != null || payer != null || refund != null || fields.isNotEmpty()) {
+            if (showAccount || fromAccount != null || payer != null || refund != null || installment != null || fields.isNotEmpty()) {
                 androidx.compose.foundation.layout.FlowRow(Modifier.padding(start = textStart, top = 8.dp),
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
@@ -331,6 +335,7 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
                         }
                     }
                     if (payer != null) io.github.sirallap.fulla.ui.components.PersonChip(payer.displayName, payer.initials, payer.colorIndex)
+                    if (installment != null) io.github.sirallap.fulla.ui.components.InfoChip(installment, icon = androidx.compose.material.icons.Icons.Outlined.Repeat)
                     if (refund != null) io.github.sirallap.fulla.ui.components.InfoChip(refund)
                     for (text in fields) io.github.sirallap.fulla.ui.components.InfoChip(text)
                 }

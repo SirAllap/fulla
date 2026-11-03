@@ -144,12 +144,16 @@ fun AccountLabel(account: Account, colorIndex: Int, modifier: Modifier = Modifie
     }
 }
 
-/** A small fact about a movement, in a quiet pill. */
+/** A small fact about a movement, in a quiet pill, with a symbol before it when it has one. */
 @Composable
-fun InfoChip(text: String, modifier: Modifier = Modifier) {
+fun InfoChip(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
     val c = FullaTheme.colors
-    Text(text, style = FullaType.label, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
-        modifier = modifier.widthIn(max = 220.dp).clip(RoundedCornerShape(50)).background(c.paperHigh).padding(horizontal = 8.dp, vertical = 3.dp))
+    Row(modifier.widthIn(max = 220.dp).clip(RoundedCornerShape(50)).background(c.paperHigh)
+        .padding(start = if (icon != null) 6.dp else 8.dp, end = 8.dp, top = 3.dp, bottom = 3.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (icon != null) Icon(icon, null, tint = c.inkMuted, modifier = Modifier.size(12.dp))
+        Text(text, style = FullaType.label, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
 
 /** A person as a small chip: their colour and initial, then their name. */
