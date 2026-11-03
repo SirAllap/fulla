@@ -58,6 +58,11 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -65,6 +70,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.sirallap.fulla.R
 import io.github.sirallap.fulla.core.model.Account
 import io.github.sirallap.fulla.core.model.AccountType
@@ -115,6 +121,48 @@ object AccountIcons {
         "diamond" to Icons.Outlined.Diamond,
         "public" to Icons.Outlined.Public,
     )
+}
+
+/** The colour an account wears is its place in the household's list, so every phone agrees. */
+fun accountColorIndex(accounts: List<Account>, id: String?): Int = accounts.indexOfFirst { it.id == id }.coerceAtLeast(0)
+
+/** Which account, in a few words: its icon and its name inside a dashed outline of its colour. */
+@Composable
+fun AccountLabel(account: Account, colorIndex: Int, modifier: Modifier = Modifier) {
+    val tint = FullaTheme.colors.category(colorIndex)
+    Row(
+        modifier.drawBehind {
+            val r = size.height / 2
+            drawRoundRect(tint, cornerRadius = CornerRadius(r, r),
+                style = Stroke(width = 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 3.dp.toPx()))))
+        }.padding(start = 6.dp, end = 8.dp, top = 3.dp, bottom = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(accountIcon(account), null, tint = tint, modifier = Modifier.size(13.dp))
+        Text(account.name, style = FullaType.label, color = tint, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 140.dp))
+    }
+}
+
+/** A small fact about a movement, in a quiet pill. */
+@Composable
+fun InfoChip(text: String, modifier: Modifier = Modifier) {
+    val c = FullaTheme.colors
+    Text(text, style = FullaType.label, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        modifier = modifier.widthIn(max = 220.dp).clip(RoundedCornerShape(50)).background(c.paperHigh).padding(horizontal = 8.dp, vertical = 3.dp))
+}
+
+/** A person as a small chip: their colour and initial, then their name. */
+@Composable
+fun PersonChip(name: String, initials: String, colorIndex: Int, modifier: Modifier = Modifier) {
+    val c = FullaTheme.colors
+    Row(modifier.clip(RoundedCornerShape(50)).background(c.paperHigh).padding(start = 3.dp, end = 8.dp, top = 2.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Box(Modifier.size(18.dp).clip(CircleShape).background(c.member(colorIndex)), contentAlignment = Alignment.Center) {
+            Text(initials.take(1).uppercase(), style = FullaType.label.copy(fontSize = 10.sp, lineHeight = 12.sp), color = c.paper, maxLines = 1)
+        }
+        Text(name, style = FullaType.label, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 120.dp))
+    }
 }
 
 /** The icon of one account: the one it was given, or else that of its kind. */

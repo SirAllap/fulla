@@ -4,7 +4,9 @@ package io.github.sirallap.fulla.ui.history
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import io.github.sirallap.fulla.ui.components.listEndPadding
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -47,7 +51,6 @@ import io.github.sirallap.fulla.ui.components.ChipRow
 import io.github.sirallap.fulla.ui.components.EmptyState
 import io.github.sirallap.fulla.ui.components.CardItem
 import io.github.sirallap.fulla.ui.components.CardSlot
-import io.github.sirallap.fulla.ui.components.ListRow
 import io.github.sirallap.fulla.ui.components.MenuItem
 import io.github.sirallap.fulla.ui.components.Section
 import io.github.sirallap.fulla.ui.components.TabHeader
@@ -174,12 +177,21 @@ fun HistoryScreen(view: HouseholdView, headerActions: @Composable () -> Unit, on
     }
 }
 
+/**
+ * One movement as a small card of its own: its category (icon and name, in the category's colour)
+ * above the title and amount, and under them only what tells this row apart from the others: the
+ * account it used, who wrote it down, its own fields. A fact that every row would repeat is left
+ * out: the account when there is only one, the person when the household is one person.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Transaction?, onClick: () -> Unit) {
     val c = FullaTheme.colors
     val f = view.formats
     val t = row.transaction
     val category = view.config.category(t.categoryId)
+    val deleted = t.status == Status.DELETED
+    val moves = t.kind == TransactionKind.TRANSFER || t.kind == TransactionKind.SETTLEMENT
     val title = when (t.kind) {
         TransactionKind.TRANSFER ->
             if (io.github.sirallap.fulla.core.roundup.RoundUps.isRoundUp(t)) stringResource(R.string.round_up_row, view.accountName(t.accountId) ?: "?", view.accountName(t.toAccountId) ?: "?")
@@ -187,20 +199,18 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
         TransactionKind.SETTLEMENT -> stringResource(R.string.settlement_between, view.memberName(t.paidByMemberId), view.memberName(t.toMemberId))
         else -> t.note.ifBlank { category?.name ?: stringResource(R.string.uncategorized) }
     }
+    // The category goes above the title when the title is the note; otherwise the title already is the category.
+    val hasNote = !moves && t.note.isNotBlank()
+    val tint = if (deleted) c.inkMuted else category?.let { c.category(it.colorIndex) } ?: c.inkMuted
+    val icon = if (moves) androidx.compose.material.icons.Icons.Outlined.SwapHoriz else CategoryIcons.of(category?.icon ?: "label")
+    val account = view.config.account(t.accountId)
+    val showAccount = account != null && t.kind != TransactionKind.TRANSFER && view.config.accounts.count { !it.archived } >= 2
     val payer = view.config.member(t.paidByMemberId)
-    // Who paid, in words, when more than one person shares the household (ux.md, piece 11: the row starts with its category).
-    val shared = io.github.sirallap.fulla.core.split.SharedPot.isShared(view.config.household)
-    val paidBy = payer?.takeIf { view.config.activeMembers.size >= 2 && t.kind != TransactionKind.SETTLEMENT }?.let {
-        stringResource(if (shared) R.string.added_by else R.string.paid_by, it.displayName)
+        ?.takeIf { view.config.activeMembers.size >= 2 && t.kind != TransactionKind.SETTLEMENT }
+    val fields = io.github.sirallap.fulla.core.schema.SchemaEngine.fieldsForList(view.config.fields).mapNotNull { fd ->
+        io.github.sirallap.fulla.ui.entry.fieldText(view, fd, t.extras[fd.key])
     }
-    val context = listOfNotNull(
-        category?.name?.takeIf { t.note.isNotBlank() },
-        view.accountName(t.accountId)?.takeIf { t.kind != TransactionKind.TRANSFER },
-        stringResource(R.string.kind_refund).takeIf { t.kind == TransactionKind.REFUND },
-        paidBy,
-    ).plus(io.github.sirallap.fulla.core.schema.SchemaEngine.fieldsForList(view.config.fields).mapNotNull { f ->
-        io.github.sirallap.fulla.ui.entry.fieldText(view, f, t.extras[f.key])
-    }).joinToString(" · ")
+    val refund = stringResource(R.string.kind_refund).takeIf { t.kind == TransactionKind.REFUND }
     // What went to savings with this purchase, as a line of its own under it.
     val rounded = roundUp?.let { stringResource(R.string.round_up_saved, f.money(it.amountMinor), view.accountName(it.toAccountId) ?: "") }
     val detail = listOfNotNull(when (row.state) {
@@ -208,27 +218,59 @@ private fun HistoryRow(view: HouseholdView, row: LocalTransaction, roundUp: Tran
         SyncState.PENDING -> stringResource(R.string.not_sent_yet)
         else -> null
     }, rounded).joinToString(" · ").ifBlank { null }
-    val deleted = t.status == Status.DELETED
-    ListRow(
-        title = title,
-        titleColor = if (deleted) c.inkMuted else c.ink,
-        context = context.ifBlank { null },
-        detail = detail,
-        detailColor = if (row.state == SyncState.REJECTED) c.warning else c.inkMuted,
-        start = { io.github.sirallap.fulla.ui.entry.CategoryBadge(category) },
-        onClick = onClick,
-        end = {
-            val amount = when (t.kind) {
-                TransactionKind.INCOME -> f.money(t.amountMinor, signed = true)
-                TransactionKind.REFUND -> f.money(t.amountMinor, signed = true)
-                else -> f.money(t.amountMinor)
+    val repeats = t.recurrence == io.github.sirallap.fulla.core.model.Recurrence.FIXED
+    val inset = io.github.sirallap.fulla.ui.components.LocalRowInset.current
+    val divider = io.github.sirallap.fulla.ui.components.LocalCardSlot.current?.divider ?: true
+    androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth()) {
+        androidx.compose.foundation.layout.Column(
+            Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = inset, vertical = 12.dp),
+        ) {
+            if (hasNote) {
+                androidx.compose.foundation.layout.Row(Modifier.padding(bottom = 4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(5.dp)) {
+                    Icon(icon, null, tint = tint, modifier = Modifier.size(14.dp))
+                    Text((category?.name ?: stringResource(R.string.uncategorized)).uppercase(), style = FullaType.label, color = tint,
+                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
             }
-            AmountText(amount, color = when {
-                deleted -> c.inkMuted
-                t.kind == TransactionKind.INCOME || t.kind == TransactionKind.REFUND -> c.moneyIn
-                t.kind == TransactionKind.TRANSFER || t.kind == TransactionKind.SETTLEMENT -> c.inkMuted
-                else -> c.ink
-            })
-        },
-    )
+            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.Top,
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                androidx.compose.foundation.layout.Row(Modifier.weight(1f), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    if (!hasNote) Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
+                    Text(title, style = FullaType.body, color = if (deleted) c.inkMuted else c.ink, maxLines = 3,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    if (repeats) Icon(androidx.compose.material.icons.Icons.Outlined.Repeat, null, tint = c.inkMuted, modifier = Modifier.size(14.dp))
+                }
+                val amount = when (t.kind) {
+                    TransactionKind.INCOME, TransactionKind.REFUND -> f.money(t.amountMinor, signed = true)
+                    else -> f.money(t.amountMinor)
+                }
+                AmountText(amount, color = when {
+                    deleted -> c.inkMuted
+                    t.kind == TransactionKind.INCOME || t.kind == TransactionKind.REFUND -> c.moneyIn
+                    t.kind == TransactionKind.TRANSFER || t.kind == TransactionKind.SETTLEMENT -> c.inkMuted
+                    else -> c.ink
+                })
+            }
+            if (showAccount || payer != null || refund != null || fields.isNotEmpty()) {
+                androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 8.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    if (showAccount && account != null) {
+                        io.github.sirallap.fulla.ui.components.AccountLabel(account,
+                            io.github.sirallap.fulla.ui.components.accountColorIndex(view.config.accounts, account.id))
+                    }
+                    if (payer != null) io.github.sirallap.fulla.ui.components.PersonChip(payer.displayName, payer.initials, payer.colorIndex)
+                    if (refund != null) io.github.sirallap.fulla.ui.components.InfoChip(refund)
+                    for (text in fields) io.github.sirallap.fulla.ui.components.InfoChip(text)
+                }
+            }
+            if (detail != null) {
+                Text(detail, style = FullaType.secondary, modifier = Modifier.padding(top = 6.dp),
+                    color = if (row.state == SyncState.REJECTED) c.warning else c.inkMuted)
+            }
+        }
+        if (divider) io.github.sirallap.fulla.ui.components.Hairline(inset = inset)
+    }
 }
