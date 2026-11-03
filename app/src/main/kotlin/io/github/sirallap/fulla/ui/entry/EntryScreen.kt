@@ -556,7 +556,7 @@ private fun DetailChips(view: HouseholdView, draft: Draft, accountAsked: Boolean
         )
         // A new entry asks its account when saved, so the chip would only be a second way to the same answer.
         if (!accountAsked) DetailChip(view.accountName(draft.accountId) ?: stringResource(R.string.account), { onOpen(Detail.Account) },
-            icon = accountIcon(view.config.account(draft.accountId)?.type ?: io.github.sirallap.fulla.core.model.AccountType.OTHER))
+            icon = accountIcon(view.config.account(draft.accountId)))
         if (draft.kind == TransactionKind.TRANSFER) {
             val to = view.accountName(draft.toAccountId)
             DetailChip(to?.let { "→ $it" } ?: stringResource(R.string.to_account), { onOpen(Detail.ToAccount) }, empty = to == null)

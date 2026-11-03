@@ -545,6 +545,8 @@
     <string name="opening_balance_debt_help">Una carta di credito o uno scoperto: il saldo conta come denaro dovuto.</string>
     <!-- Account form: round-up saving as banks offer it (every purchase rounded up to the next euro, the difference moved to savings) -->
     <string name="round_up_title">Risparmio con arrotondamento</string>
+    <string name="account_icon">Icona</string>
+    <string name="account_icon_default">L’icona del suo tipo</string>
     <string name="round_up_help">Attivalo solo se la tua banca lo fa già: ogni acquisto con carta, bolletta o abbonamento viene arrotondato all\'euro successivo e la differenza va sul tuo conto di risparmio. Così i saldi di Fulla coincidono con quelli della banca.</string>
     <string name="round_up_multiplier">Moltiplicatore</string>
     <string name="round_up_to">Sposta su</string>

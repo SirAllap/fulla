@@ -545,6 +545,8 @@
     <string name="opening_balance_debt_help">Una tarjeta de crédito o un descubierto: el saldo cuenta como dinero que se debe.</string>
     <!-- Account form: round-up saving as banks offer it (every purchase rounded up to the next euro, the difference moved to savings) -->
     <string name="round_up_title">Ahorro por redondeo</string>
+    <string name="account_icon">Icono</string>
+    <string name="account_icon_default">El icono de su tipo</string>
     <string name="round_up_help">Actívalo solo si tu banco ya lo hace: cada compra con tarjeta, recibo o suscripción se redondea al siguiente euro y los céntimos de diferencia pasan a tu cuenta de ahorro. Así los saldos de Fulla coinciden con los del banco.</string>
     <string name="round_up_multiplier">Multiplicador</string>
     <string name="round_up_to">Pasarlo a</string>

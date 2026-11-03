@@ -21,6 +21,28 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.ChildCare
+import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.Diamond
+import androidx.compose.material.icons.outlined.Euro
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.Flight
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocalCafe
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Pets
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.Smartphone
+import androidx.compose.material.icons.outlined.SportsEsports
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.Icon
@@ -57,6 +79,47 @@ fun accountIcon(type: AccountType): ImageVector = when (type) {
     AccountType.CREDIT_CARD -> Icons.Outlined.CreditCard
     AccountType.OTHER -> Icons.Outlined.AccountBalanceWallet
 }
+
+/**
+ * The icons an account can be given, by their stored name (the same kind of name a category's icon
+ * has), so an icon chosen on one phone shows on another. A name this phone does not know is drawn
+ * as the icon of the account's kind, never as nothing.
+ */
+object AccountIcons {
+    val all: Map<String, ImageVector> = linkedMapOf(
+        "payments" to Icons.Outlined.Payments,
+        "account_balance" to Icons.Outlined.AccountBalance,
+        "savings" to Icons.Outlined.Savings,
+        "credit_card" to Icons.Outlined.CreditCard,
+        "wallet" to Icons.Outlined.AccountBalanceWallet,
+        "euro" to Icons.Outlined.Euro,
+        "home" to Icons.Outlined.Home,
+        "shopping_cart" to Icons.Outlined.ShoppingCart,
+        "restaurant" to Icons.Outlined.Restaurant,
+        "local_cafe" to Icons.Outlined.LocalCafe,
+        "directions_car" to Icons.Outlined.DirectionsCar,
+        "flight" to Icons.Outlined.Flight,
+        "work" to Icons.Outlined.Work,
+        "school" to Icons.Outlined.School,
+        "child_care" to Icons.Outlined.ChildCare,
+        "pets" to Icons.Outlined.Pets,
+        "redeem" to Icons.Outlined.CardGiftcard,
+        "favorite" to Icons.Outlined.FavoriteBorder,
+        "fitness_center" to Icons.Outlined.FitnessCenter,
+        "sports_esports" to Icons.Outlined.SportsEsports,
+        "smartphone" to Icons.Outlined.Smartphone,
+        "bolt" to Icons.Outlined.Bolt,
+        "shield" to Icons.Outlined.Shield,
+        "lock" to Icons.Outlined.Lock,
+        "star" to Icons.Outlined.StarBorder,
+        "diamond" to Icons.Outlined.Diamond,
+        "public" to Icons.Outlined.Public,
+    )
+}
+
+/** The icon of one account: the one it was given, or else that of its kind. */
+fun accountIcon(account: Account?): ImageVector =
+    account?.icon?.let { AccountIcons.all[it] } ?: accountIcon(account?.type ?: AccountType.OTHER)
 
 /**
  * "Which account?": every account as a big tile, two across, with its icon, its name (emoji
@@ -99,7 +162,7 @@ private fun AccountTile(account: Account, balance: Long, money: (Long) -> String
             verticalArrangement = Arrangement.Center,
         ) {
             Box(Modifier.size(56.dp).clip(CircleShape).background(c.highlight).glass(), contentAlignment = Alignment.Center) {
-                Icon(accountIcon(account.type), null, tint = c.onHighlight, modifier = Modifier.size(30.dp))
+                Icon(accountIcon(account), null, tint = c.onHighlight, modifier = Modifier.size(30.dp))
             }
             Spacer(Modifier.size(10.dp))
             Text(account.name, style = FullaType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, textAlign = TextAlign.Center,

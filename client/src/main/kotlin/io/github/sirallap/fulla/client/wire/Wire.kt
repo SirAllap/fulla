@@ -203,7 +203,9 @@ object Wire {
                     it.str("opening_balance_date")?.let(LocalDate::parse),
                     it.int("sort") ?: 0, it.bool("archived") ?: false,
                     // Absent (an older bundle) and null both read as "round-up off".
-                    roundUp = it.str("round_up_to")?.let { to -> it.int("round_up_multiplier")?.takeIf { m -> m in RoundUps.MULTIPLIERS }?.let { m -> RoundUp(to, m) } })
+                    roundUp = it.str("round_up_to")?.let { to -> it.int("round_up_multiplier")?.takeIf { m -> m in RoundUps.MULTIPLIERS }?.let { m -> RoundUp(to, m) } },
+                    // Absent (an older bundle) and null both read as "the icon of its type".
+                    icon = it.str("icon"))
             },
             categories = o.arr("categories").map { it.jsonObject }.map {
                 Category(it.str("id")!!, it.str("name") ?: "", AppliesTo.of(it.str("applies_to")), it.str("parent_id"),
@@ -362,6 +364,7 @@ object Wire {
         put("opening_balance_minor", a.openingBalanceMinor)
         put("opening_balance_date", a.openingBalanceDate?.toString())
         put("round_up_to", a.roundUp?.toAccountId); put("round_up_multiplier", a.roundUp?.multiplier)
+        put("icon", a.icon)
         put("sort", a.sort); put("archived", a.archived)
     }
 

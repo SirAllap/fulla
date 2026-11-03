@@ -545,6 +545,8 @@
     <string name="opening_balance_debt_help">Une carte de crédit ou un découvert : le solde compte comme de l\'argent dû.</string>
     <!-- Account form: round-up saving as banks offer it (every purchase rounded up to the next euro, the difference moved to savings) -->
     <string name="round_up_title">Épargne par arrondi</string>
+    <string name="account_icon">Icône</string>
+    <string name="account_icon_default">L’icône de son type</string>
     <string name="round_up_help">Activez-le seulement si votre banque le fait déjà : chaque achat par carte, facture ou abonnement est arrondi à l\'euro supérieur et la différence va sur votre compte d\'épargne. Ainsi les soldes de Fulla correspondent à ceux de votre banque.</string>
     <string name="round_up_multiplier">Multiplicateur</string>
     <string name="round_up_to">Verser sur</string>

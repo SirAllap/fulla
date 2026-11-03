@@ -545,6 +545,8 @@
     <string name="opening_balance_debt_help">Um cartão de crédito ou um descoberto: o saldo conta como dinheiro em dívida.</string>
     <!-- Account form: round-up saving as banks offer it (every purchase rounded up to the next euro, the difference moved to savings) -->
     <string name="round_up_title">Poupança por arredondamento</string>
+    <string name="account_icon">Ícone</string>
+    <string name="account_icon_default">O ícone do seu tipo</string>
     <string name="round_up_help">Ativa-o só se o teu banco já o faz: cada compra com cartão, recibo ou subscrição é arredondada para o euro seguinte e a diferença vai para a tua conta de poupança. Assim os saldos do Fulla coincidem com os do banco.</string>
     <string name="round_up_multiplier">Multiplicador</string>
     <string name="round_up_to">Passar para</string>

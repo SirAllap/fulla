@@ -564,6 +564,25 @@ test('editing an account without opening_balance_minor or opening_balance_date k
   assert.equal(account.opening_balance_date, '2030-01-15');
 });
 
+test('account icon: a name of lowercase letters, absent keeps, null clears, anything else is refused', (ctx) => {
+  const save = (a) => rpc(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: a });
+  const fails = (a) => expectError(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: a }, 'validation_failed');
+  const id = uuid();
+  let cfg = save({ id, name: 'Vacation', type: 'savings', icon: 'flight' });
+  assert.equal(cfg.accounts.find((a) => a.id === id).icon, 'flight');
+
+  // The "rename only" payload of a phone that has never heard of icons leaves it as it is.
+  cfg = save({ id, name: 'Vacation 2', type: 'savings' });
+  assert.equal(cfg.accounts.find((a) => a.id === id).name, 'Vacation 2');
+  assert.equal(cfg.accounts.find((a) => a.id === id).icon, 'flight');
+
+  fails({ id, name: 'Vacation 2', type: 'savings', icon: 'Not An Icon' });
+  fails({ id, name: 'Vacation 2', type: 'savings', icon: 'x'.repeat(41) });
+
+  cfg = save({ id, name: 'Vacation 2', type: 'savings', icon: null });
+  assert.equal(cfg.accounts.find((a) => a.id === id).icon, null);
+});
+
 test('round-up: both keys together, to another account of the household, never from cash, absent keeps and null clears', (ctx) => {
   const save = (a) => rpc(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: a });
   const fails = (a) => expectError(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: a }, 'validation_failed');

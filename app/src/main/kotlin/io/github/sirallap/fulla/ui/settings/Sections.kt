@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import io.github.sirallap.fulla.ui.components.FullaDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -460,11 +461,14 @@ fun AccountsSettings(view: HouseholdView, canEdit: Boolean, change: Change) {
             io.github.sirallap.fulla.ui.components.ItemCard(dimmed = a.archived,
                 onClick = if (canEdit) ({ editing = bundleItem(view, Structure.ACCOUNT, a.id) }) else null) {
                 io.github.sirallap.fulla.ui.components.Spread(startShare = 0.5f, start = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(io.github.sirallap.fulla.ui.components.accountIcon(a), null, tint = if (a.archived) c.inkMuted else c.ink, modifier = Modifier.size(22.dp))
                     Column {
                         Text(a.name, style = FullaType.body, color = if (a.archived) c.inkMuted else c.ink)
                         val notes = listOfNotNull(stringResource(R.string.archived).takeIf { a.archived },
                             stringResource(R.string.round_up_title).takeIf { a.roundUp != null })
                         if (notes.isNotEmpty()) Text(notes.joinToString(" · "), style = FullaType.secondary, color = c.inkMuted)
+                    }
                     }
                 }, end = { AmountText(view.formats.money(balances[a.id] ?: 0L), color = if (a.archived) c.inkMuted else c.ink) })
             }
@@ -516,6 +520,19 @@ internal fun parseOpeningBalance(text: String, formats: io.github.sirallap.fulla
 /** The purchases of this period that a round-up already set up has not rounded yet, and the button that rounds them. */
 internal class RoundUpBackfill(val count: Int, val totalMinor: Long, val write: ((Int) -> Unit) -> Unit)
 
+/** One icon to choose from, round and 48 dp so it is easy to hit; the chosen one is filled. */
+@Composable
+private fun IconChoice(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, selected: Boolean, onClick: () -> Unit) {
+    val c = FullaTheme.colors
+    Box(Modifier.size(48.dp).clip(CircleShape).background(if (selected) c.highlight else c.paper)
+        .then(if (selected) Modifier else Modifier.border(1.dp, c.line, CircleShape))
+        .semantics { this.selected = selected; role = androidx.compose.ui.semantics.Role.RadioButton }
+        .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center) {
+        androidx.compose.material3.Icon(icon, description, tint = if (selected) c.onHighlight else c.ink, modifier = Modifier.size(24.dp))
+    }
+}
+
 /** Name, archive, (for categories) icon, and (for accounts) an opening balance. Nothing is ever deleted: archived things keep their history. */
 @Composable
 private fun StructureDialog(
@@ -565,6 +582,10 @@ private fun StructureDialog(
     var roundTo by remember { mutableStateOf((item["round_up_to"] as? JsonPrimitive)?.takeIf { it != JsonNull }?.content) }
     var roundMultiplier by remember { mutableStateOf((item["round_up_multiplier"] as? JsonPrimitive)?.takeIf { it != JsonNull }?.content?.toIntOrNull() ?: 2) }
     var roundTouched by remember { mutableStateOf(false) }
+    // An account's own icon: null is the icon of its kind. Sent only once the person touches it, as the balance is.
+    val accountKind = io.github.sirallap.fulla.core.model.AccountType.of((item["type"] as? JsonPrimitive)?.content)
+    var accountIconName by remember { mutableStateOf((item["icon"] as? JsonPrimitive)?.takeIf { it != JsonNull }?.content) }
+    var accountIconTouched by remember { mutableStateOf(false) }
     // What is in the field, as an amount; null when it is not one, which is said under the field and stops Save.
     val balanceValue = formats?.let { io.github.sirallap.fulla.core.guide.OpeningBalances.parse(balanceText, it.currency, it.decimalStyle, debt) }
     val balanceInvalid = formats != null && balanceValue == null
@@ -577,6 +598,7 @@ private fun StructureDialog(
         onPrimary = {
             onSave(JsonObject(item + mapOf("name" to JsonPrimitive(name.trim()), "archived" to JsonPrimitive(archived)) +
                 (if (iconPicker) mapOf("icon" to JsonPrimitive(icon)) else emptyMap()) +
+                (if (formats != null && accountIconTouched) mapOf("icon" to (accountIconName?.let { JsonPrimitive(it) } ?: JsonNull)) else emptyMap()) +
                 (if (showRoundUp && roundTouched) mapOf(
                     "round_up_to" to (roundTo?.let { JsonPrimitive(it) } ?: JsonNull),
                     "round_up_multiplier" to (if (roundTo != null) JsonPrimitive(roundMultiplier) else JsonNull),
@@ -593,6 +615,15 @@ private fun StructureDialog(
     ) {
                 OutlinedTextField(name, { name = it.take(40) }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.name)) }, singleLine = true)
                 if (formats != null) {
+                    // The icon the account shows on the "which account?" tiles, on Add and on Saldos: its kind's own, or one chosen.
+                    Text(stringResource(R.string.account_icon), style = FullaType.label, color = FullaTheme.colors.inkMuted)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        val kindIcon = io.github.sirallap.fulla.ui.components.accountIcon(accountKind)
+                        IconChoice(kindIcon, stringResource(R.string.account_icon_default), accountIconName == null) { accountIconName = null; accountIconTouched = true }
+                        for ((key, vector) in io.github.sirallap.fulla.ui.components.AccountIcons.all) {
+                            IconChoice(vector, key.replace('_', ' '), key == accountIconName) { accountIconName = key; accountIconTouched = true }
+                        }
+                    }
                     // The amount and its date one above the other: side by side, a large font squeezed the field.
                     OutlinedTextField(balanceText, { balanceText = it; balanceTouched = true }, modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.opening_balance)) }, isError = balanceInvalid,

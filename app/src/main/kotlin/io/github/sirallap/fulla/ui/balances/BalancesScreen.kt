@@ -194,7 +194,7 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                                 // On a filled tile the account's name must still read: full ink once the liquid reaches it.
                                 androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
-                                    androidx.compose.material3.Icon(io.github.sirallap.fulla.ui.components.accountIcon(a.type), null,
+                                    androidx.compose.material3.Icon(io.github.sirallap.fulla.ui.components.accountIcon(a), null,
                                         tint = if (share > 0.4f) c.ink else c.inkMuted, modifier = Modifier.size(18.dp))
                                     Text(a.name, style = io.github.sirallap.fulla.ui.theme.FullaType.secondary, color = if (share > 0.4f) c.ink else c.inkMuted)
                                 }

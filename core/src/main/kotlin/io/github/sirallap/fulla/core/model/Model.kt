@@ -134,6 +134,8 @@ data class Account(
     val archived: Boolean = false,
     /** Round-up saving: what every purchase on this account puts aside, and where. Null: off. */
     val roundUp: RoundUp? = null,
+    /** The icon this account was given (a name, as a category's); null: the icon of its [type]. */
+    val icon: String? = null,
 )
 
 /** Where the round-up of an account goes and how many times the difference to the next whole unit is put aside (1, 2, 5 or 10). */
