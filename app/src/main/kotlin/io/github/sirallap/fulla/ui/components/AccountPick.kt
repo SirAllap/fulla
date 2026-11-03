@@ -26,7 +26,13 @@ import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import io.github.sirallap.fulla.ui.theme.FullaMotion
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,10 +65,18 @@ fun accountIcon(type: AccountType): ImageVector = when (type) {
  */
 @Composable
 fun AccountGrid(accounts: List<Account>, balances: Map<String, Long>, money: (Long) -> String, onPick: (Account) -> Unit, modifier: Modifier = Modifier) {
+    // The tile that is touched fills with liquid and wobbles for a moment, then the account is chosen.
+    var chosen by remember { mutableStateOf<String?>(null) }
+    val reduced = FullaMotion.reduced()
+    LaunchedEffect(chosen) {
+        val id = chosen ?: return@LaunchedEffect
+        if (!reduced) delay(420)
+        accounts.firstOrNull { it.id == id }?.let(onPick)
+    }
     Column(modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         for (row in accounts.chunked(2)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                for (a in row) AccountTile(a, balances[a.id] ?: 0L, money, Modifier.weight(1f)) { onPick(a) }
+                for (a in row) AccountTile(a, balances[a.id] ?: 0L, money, chosen == a.id, Modifier.weight(1f)) { if (chosen == null) chosen = a.id }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
@@ -70,23 +84,28 @@ fun AccountGrid(accounts: List<Account>, balances: Map<String, Long>, money: (Lo
 }
 
 @Composable
-private fun AccountTile(account: Account, balance: Long, money: (Long) -> String, modifier: Modifier, onClick: () -> Unit) {
+private fun AccountTile(account: Account, balance: Long, money: (Long) -> String, chosen: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val c = FullaTheme.colors
     val shape = RoundedCornerShape(20.dp)
     val source = remember { MutableInteractionSource() }
-    Column(
-        modifier.heightIn(min = 132.dp).yields(source).clip(shape).background(c.paperHigh).glass().border(1.dp, c.line, shape)
-            .clickable(source, LocalIndication.current, role = Role.Button, onClick = onClick).padding(14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+    Box(
+        modifier.heightIn(min = 132.dp).yields(source).jelly(chosen).clip(shape).background(c.paperHigh).glass().border(1.dp, c.line, shape)
+            .clickable(source, LocalIndication.current, role = Role.Button, onClick = onClick),
     ) {
-        Box(Modifier.size(56.dp).clip(CircleShape).background(c.highlight), contentAlignment = Alignment.Center) {
-            Icon(accountIcon(account.type), null, tint = c.onHighlight, modifier = Modifier.size(30.dp))
+        LiquidSurface(if (chosen) 1.05f else 0f, c.highlight.copy(alpha = if (c.isDark) 0.45f else 0.55f), Modifier.matchParentSize(), maxAmplitude = 5.dp, gloss = false)
+        Column(
+            Modifier.fillMaxWidth().heightIn(min = 132.dp).padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Box(Modifier.size(56.dp).clip(CircleShape).background(c.highlight).glass(), contentAlignment = Alignment.Center) {
+                Icon(accountIcon(account.type), null, tint = c.onHighlight, modifier = Modifier.size(30.dp))
+            }
+            Spacer(Modifier.size(10.dp))
+            Text(account.name, style = FullaType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, textAlign = TextAlign.Center,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(money(balance), style = FullaType.secondary, color = if (balance < 0) c.danger else c.inkMuted, maxLines = 1, softWrap = false)
         }
-        Spacer(Modifier.size(10.dp))
-        Text(account.name, style = FullaType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, textAlign = TextAlign.Center,
-            maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(money(balance), style = FullaType.secondary, color = if (balance < 0) c.danger else c.inkMuted, maxLines = 1, softWrap = false)
     }
 }
 
