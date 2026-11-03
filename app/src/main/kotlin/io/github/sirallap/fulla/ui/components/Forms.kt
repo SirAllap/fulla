@@ -205,18 +205,24 @@ fun PickSheet(title: String, onDismiss: () -> Unit, content: @Composable ColumnS
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.paper,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-            // The sheet's title sits on a soft liquid pill that fills as it opens.
-            var open by remember { mutableStateOf(false) }
-            androidx.compose.runtime.LaunchedEffect(Unit) { open = true }
-            Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp).clip(RoundedCornerShape(16.dp))) {
-                LiquidSurface(if (open) 1.05f else 0f, c.highlight.copy(alpha = if (c.isDark) 0.22f else 0.32f), Modifier.matchParentSize(), maxAmplitude = 5.dp, gloss = false)
-                Text(title, style = FullaType.title, color = c.ink,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).semantics { heading() })
-            }
-            Spacer(Modifier.height(12.dp))
+            PickHead(title)
             content()
         }
     }
+}
+
+/** The title of a [PickSheet]: on a soft liquid pill that fills as the sheet opens, with room around it. */
+@Composable
+fun PickHead(title: String) {
+    val c = FullaTheme.colors
+    var open by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { open = true }
+    Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp).clip(RoundedCornerShape(16.dp))) {
+        LiquidSurface(if (open) 1.05f else 0f, c.highlight.copy(alpha = if (c.isDark) 0.22f else 0.32f), Modifier.matchParentSize(), maxAmplitude = 5.dp, gloss = false)
+        Text(title, style = FullaType.title, color = c.ink,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).semantics { heading() })
+    }
+    Spacer(Modifier.height(12.dp))
 }
 
 /** One option of a [PickSheet]: its name, maybe a line about it, a tick when it is the one chosen. */

@@ -137,6 +137,7 @@ open class ScreenshotTest {
     }
     @Test fun accountPick() = shot("14-account-pick") {
         Column(Modifier.fillMaxSize().padding(top = 48.dp)) {
+            io.github.sirallap.fulla.ui.components.PickHead(androidx.compose.ui.res.stringResource(io.github.sirallap.fulla.R.string.account_pick_title))
             val open = view.config.accounts.filter { !it.archived }
             io.github.sirallap.fulla.ui.components.AccountGrid(open + open.take(1), view.analytics.accountBalances(view.active, view.config.accounts, LocalDate.now()),
                 { v -> view.formats.money(v) }, {})
