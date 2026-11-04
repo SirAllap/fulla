@@ -115,5 +115,6 @@ The config bundle:
 |---|---|---|
 | `fulla_sync_push(p_household_id, p_mutations)` | member | See [sync.md](sync.md) |
 | `fulla_sync_pull(p_household_id, p_since, p_config_version, p_limit)` | member | See [sync.md](sync.md) |
+| `fulla_audit_list(p_household_id, p_account_id, p_entity_id, p_before, p_limit)` | member | The change history, newest first: `{events: [{id, at, entity, entity_id, action, actor_member_id, source, changed, before, after}], has_more}`. `p_account_id` keeps the lines that touch an account, `p_entity_id` those of one transaction or account, `p_before` is the id of the oldest line already read, `p_limit` is at most 500 |
 | `fulla_period_summary(p_household_id, p_from, p_to)` | member | `[{period, income_minor, expense_minor, savings_minor}]` |
 | `fulla_member_balances(p_household_id)` | member | `[{member_id, paid_minor, share_minor, balance_minor}]` |

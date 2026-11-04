@@ -240,6 +240,7 @@ test('a stranger gets not_member from every function that takes a household', (c
     ['fulla_trip_delete', { p_household_id: hh, p_trip_id: uuid() }],
     ['fulla_goal_delete', { p_household_id: hh, p_goal_id: uuid() }],
     ['fulla_goal_upsert', { p_household_id: hh, p_goal: {} }],
+    ['fulla_audit_list', { p_household_id: hh }],
     ['fulla_sync_push', { p_household_id: hh, p_mutations: [] }],
     ['fulla_sync_pull', { p_household_id: hh }],
     ['fulla_period_summary', { p_household_id: hh, p_from: '2030-01', p_to: '2030-12' }],
@@ -562,6 +563,85 @@ test('editing an account without opening_balance_minor or opening_balance_date k
   assert.equal(account.name, 'Checking Account');
   assert.equal(account.opening_balance_minor, 50000);
   assert.equal(account.opening_balance_date, '2030-01-15');
+});
+
+test('audit log: every create, edit, delete and restore leaves a line with who, which fields and before/after; sync bookkeeping leaves none; it only grows', (ctx) => {
+  const list = (args = {}, user = ctx.alice) => rpc(ctx.db, user, 'fulla_audit_list', { p_household_id: ctx.hh, ...args });
+  const tx = expense(ctx);
+  push(ctx, ctx.alice, [upsert(tx, iso(-50))]);
+  push(ctx, ctx.alice, [upsert({ ...tx, amount_minor: 1450 }, iso(-40))]);
+  // The same content again, only a newer stamp: the sync's own bookkeeping, not a change.
+  push(ctx, ctx.alice, [upsert({ ...tx, amount_minor: 1450 }, iso(-35))]);
+  push(ctx, ctx.alice, [del({ ...tx, amount_minor: 1450 }, iso(-30))]);
+  push(ctx, ctx.alice, [upsert({ ...tx, amount_minor: 1450 }, iso(-20))]);
+
+  const mine = list({ p_entity_id: tx.id }).events;
+  assert.deepEqual(mine.map((e) => e.action), ['restore', 'delete', 'update', 'create']);
+  const [restore, deleted, update, create] = mine;
+  assert.equal(create.actor_member_id, ctx.aliceMember);
+  assert.equal(create.source, 'live');
+  assert.equal(create.after.amount_minor, 1234);
+  assert.equal(create.before, null);
+  assert.deepEqual(update.changed, ['amount_minor']);
+  assert.equal(update.before.amount_minor, 1234);
+  assert.equal(update.after.amount_minor, 1450);
+  assert.deepEqual(deleted.changed, ['status']);
+  assert.equal(deleted.before.status, 'active');
+  assert.equal(deleted.after.status, 'deleted');
+  assert.deepEqual(restore.changed, ['status']);
+  assert.equal(restore.actor_member_id, ctx.aliceMember);
+
+  // Nothing in the log can be changed or removed, not even by the owner of the database.
+  assert.equal(ctx.db.admin(`update fulla.audit_log set action = 'create' where entity_id = ${h.literal(tx.id)};`, { expectFailure: true }).ok, false);
+  assert.equal(ctx.db.admin(`delete from fulla.audit_log where entity_id = ${h.literal(tx.id)};`, { expectFailure: true }).ok, false);
+  assert.equal(ctx.db.admin('truncate fulla.audit_log;', { expectFailure: true }).ok, false);
+  assert.equal(mine.length, list({ p_entity_id: tx.id }).events.length);
+});
+
+test('audit log: an account is logged too, and the list can be read by account and in pages', (ctx) => {
+  const list = (args = {}, user = ctx.alice) => rpc(ctx.db, user, 'fulla_audit_list', { p_household_id: ctx.hh, ...args });
+  const main = ctx.account('Main account');
+  const cash = ctx.account('Cash');
+  rpc(ctx.db, ctx.alice, 'fulla_account_upsert', { p_household_id: ctx.hh, p_account: { id: main, name: 'Main', type: 'checking' } });
+  const tx = expense(ctx, { account_id: main });
+  push(ctx, ctx.alice, [upsert(tx, iso(-30))]);
+  push(ctx, ctx.alice, [upsert({ ...tx, account_id: cash }, iso(-20))]);
+
+  const renamed = list({ p_entity_id: main }).events;
+  assert.equal(renamed[0].entity, 'account');
+  assert.equal(renamed[0].action, 'update');
+  assert.ok(renamed[0].changed.includes('name'));
+  assert.equal(renamed[0].after.name, 'Main');
+
+  // The transaction that left Main (before) and reached Cash (after) shows under both accounts.
+  assert.ok(list({ p_account_id: main }).events.some((e) => e.entity_id === tx.id && e.action === 'update'));
+  assert.ok(list({ p_account_id: cash }).events.some((e) => e.entity_id === tx.id && e.action === 'update'));
+
+  const first = list({ p_limit: 1 });
+  assert.equal(first.events.length, 1);
+  assert.equal(first.has_more, true);
+  const next = list({ p_limit: 1, p_before: first.events[0].id });
+  assert.ok(next.events[0].id < first.events[0].id);
+});
+
+test('audit log: what was written before it existed is filled in, deletions with who made the last change', (ctx) => {
+  const tx = expense(ctx);
+  push(ctx, ctx.alice, [upsert(tx, iso(-30))]);
+  push(ctx, ctx.alice, [del(tx, iso(-20))]);
+  // As if the log had never been there: empty it, and run the migration's backfill again by hand.
+  ctx.db.admin('alter table fulla.audit_log disable trigger audit_log_no_delete; delete from fulla.audit_log; alter table fulla.audit_log enable trigger audit_log_no_delete;');
+  ctx.db.admin(`insert into fulla.audit_log (household_id, at, entity, entity_id, action, actor_member_id, source)
+    select household_id, created_at, 'transaction', id, 'create', created_by_member_id, 'backfill' from fulla.transactions;
+    insert into fulla.audit_log (household_id, at, entity, entity_id, action, actor_user_id, source)
+    select household_id, client_updated_at, 'transaction', id, 'delete', updated_by_user_id, 'backfill' from fulla.transactions where status = 'deleted';`);
+  const events = rpc(ctx.db, ctx.alice, 'fulla_audit_list', { p_household_id: ctx.hh, p_entity_id: tx.id }).events;
+  assert.deepEqual(events.map((e) => e.action).sort(), ['create', 'delete']);
+  assert.ok(events.every((e) => e.source === 'backfill' && e.before === null && e.after === null));
+});
+
+test('audit log: only members read it, and a stranger is refused', (ctx) => {
+  const stranger = newUser(ctx.db, 'mallory@example.com');
+  expectError(ctx.db, stranger, 'fulla_audit_list', { p_household_id: ctx.hh }, 'not_member');
 });
 
 test('account icon: a name of lowercase letters, absent keeps, null clears, anything else is refused', (ctx) => {

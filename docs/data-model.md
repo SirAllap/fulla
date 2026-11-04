@@ -38,6 +38,7 @@ this page explains them.
 | `transactions` | Everything that happened |
 | `trips` | A trip or event with its own optional budget: name, date range, `in_category_budgets` |
 | `goals` | A savings goal: name, `target_minor`, an optional `target_date`, `archived`, and either a jar of its own (`contributions`: entries of `id`, `date`, signed `amount_minor`, `note`, `member_id`, `deleted`, merged by id on the server) or an account whose balance is what it has saved (`account_id`); `deleted` hides it from the bundle |
+| `audit_log` | Append-only history of every change to a transaction or an account, written by triggers: `entity`, `entity_id`, `action` (`create`, `update`, `delete`, `restore`), who (`actor_member_id`), which fields (`changed`) and the row `before` and `after`. Never changed or deleted (only erasing the whole household removes it). Lines from before it existed are `source = 'backfill'` and carry no before/after |
 
 ## Trips
 
