@@ -23,6 +23,12 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.EnterExitState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -183,7 +189,7 @@ private fun Household(state: HouseholdState) {
     CompositionLocalProvider(io.github.sirallap.fulla.ui.guide.LocalGuideTargets provides guideTargets) {
         val headerActions: @Composable () -> Unit = {
             SyncCloud(view, onClick = { syncOpen = true })
-            IconButton(onClick = { nav.navigate("settings") }, modifier = Modifier.guideTarget(io.github.sirallap.fulla.core.guide.TourStop.GEAR)) {
+            IconButton(onClick = { nav.go("settings") }, modifier = Modifier.guideTarget(io.github.sirallap.fulla.core.guide.TourStop.GEAR)) {
                 if (pendingUpdate != null) {
                     BadgedBox(badge = { Badge(containerColor = FullaTheme.colors.accent) }) {
                         Icon(Icons.Outlined.Settings, stringResource(R.string.settings), tint = FullaTheme.colors.inkMuted)
@@ -205,7 +211,7 @@ private fun Household(state: HouseholdState) {
             popEnterTransition = { slideInHorizontally(enterSpec) { -it / 28 } + fadeIn(fade) },
             popExitTransition = { slideOutHorizontally(enterSpec) { it / 14 } + fadeOut(fade) },
         ) {
-            composable("tabs") {
+            screen("tabs") {
                 Column(Modifier.fillMaxSize()) {
                     AnimatedContent(tab, Modifier.weight(1f), label = "tab", transitionSpec = {
                         val toRight = targetState.ordinal > initialState.ordinal
@@ -215,47 +221,47 @@ private fun Household(state: HouseholdState) {
                             Tab.ADD -> EntryScreen(view, editingId = null, headerActions = headerActions, onDone = { tab = Tab.OVERVIEW },
                                 incomeAsked = incomeAsked, onIncomeShown = { incomeAsked = false },
                                 categoryAsked = categoryAsked, onCategoryShown = { categoryAsked = null }, dock = addDock)
-                            Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { tab = Tab.INSIGHTS }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
-                            Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
-                            Tab.INSIGHTS -> io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { tab = Tab.OVERVIEW }, onFixedCosts = { nav.navigate("settings/recurring") }, headerActions = headerActions)
-                            Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") }, onGoals = { nav.navigate("settings/goals") }, onAccounts = { nav.navigate("settings/accounts") }, onActivity = { nav.navigate("activity") }, onOpenAccount = { nav.navigate("ledger/$it") })
+                            Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.go("edit/$it") }, onBudgets = { nav.go("settings/budgets") }, onFixedCosts = { nav.go("settings/recurring") }, onInsights = { tab = Tab.INSIGHTS }, onBackup = { nav.go("settings/backup") }, onTrip = { nav.go("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
+                            Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.go("edit/$it") }, onImport = { nav.go("settings/import") })
+                            Tab.INSIGHTS -> io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { tab = Tab.OVERVIEW }, onFixedCosts = { nav.go("settings/recurring") }, headerActions = headerActions)
+                            Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.go("settings/household") }, onGoals = { nav.go("settings/goals") }, onAccounts = { nav.go("settings/accounts") }, onActivity = { nav.go("activity") }, onOpenAccount = { nav.go("ledger/$it") })
                         }
                     }
                     LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal, center = Tab.ADD.ordinal, dock = addDock) { tab = Tab.entries[it] }
                 }
             }
-            composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() })
+            screen("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.back() })
             }
-            composable("activity") {
-                io.github.sirallap.fulla.ui.balances.ActivityScreen(view, accountId = null, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("edit/$it") })
+            screen("activity") {
+                io.github.sirallap.fulla.ui.balances.ActivityScreen(view, accountId = null, onBack = { nav.back() }, onOpen = { nav.go("edit/$it") })
             }
-            composable("activity/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                io.github.sirallap.fulla.ui.balances.ActivityScreen(view, accountId = entry.arguments?.getString("id"), onBack = { nav.popBackStack() }, onOpen = { nav.navigate("edit/$it") })
+            screen("activity/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                io.github.sirallap.fulla.ui.balances.ActivityScreen(view, accountId = entry.arguments?.getString("id"), onBack = { nav.back() }, onOpen = { nav.go("edit/$it") })
             }
-            composable("ledger/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+            screen("ledger/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
                 io.github.sirallap.fulla.ui.balances.AccountLedgerScreen(view, accountId = entry.arguments?.getString("id") ?: "",
-                    onBack = { nav.popBackStack() }, onOpen = { nav.navigate("edit/$it") },
-                    onChanges = { nav.navigate("activity/${entry.arguments?.getString("id")}") })
+                    onBack = { nav.back() }, onOpen = { nav.go("edit/$it") },
+                    onChanges = { nav.go("activity/${entry.arguments?.getString("id")}") })
             }
-            composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }, onFixedCosts = { nav.navigate("settings/recurring") }) }
-            composable("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+            screen("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.back() }, onFixedCosts = { nav.go("settings/recurring") }) }
+            screen("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
                 io.github.sirallap.fulla.ui.trips.TripScreen(view, tripId = entry.arguments?.getString("id") ?: "",
-                    onBack = { nav.popBackStack() }, onOpenTransaction = { nav.navigate("edit/$it") },
+                    onBack = { nav.back() }, onOpenTransaction = { nav.go("edit/$it") },
                     onAdd = { nav.popBackStack("tabs", inclusive = false); tab = Tab.ADD })
             }
-            composable("settings") {
-                SettingsScreen(view, SettingsSection.INDEX, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("settings/${it.route}") },
+            screen("settings") {
+                SettingsScreen(view, SettingsSection.INDEX, onBack = { nav.back() }, onOpen = { nav.go("settings/${it.route}") },
                     onUpdate = { updateOpen = true })
             }
-            composable("settings/{section}", arguments = listOf(navArgument("section") { type = NavType.StringType })) { entry ->
+            screen("settings/{section}", arguments = listOf(navArgument("section") { type = NavType.StringType })) { entry ->
                 val section = SettingsSection.entries.firstOrNull { it.route == entry.arguments?.getString("section") } ?: SettingsSection.INDEX
-                SettingsScreen(view, section, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("settings/${it.route}") },
+                SettingsScreen(view, section, onBack = { nav.back() }, onOpen = { nav.go("settings/${it.route}") },
                     onUpdate = { updateOpen = true })
             }
         }
 
-        if (syncOpen) SyncSheet(view, onDismiss = { syncOpen = false }, onSettings = { syncOpen = false; nav.navigate("settings/sync") })
+        if (syncOpen) SyncSheet(view, onDismiss = { syncOpen = false }, onSettings = { syncOpen = false; nav.go("settings/sync") })
         if (updateOpen) pendingUpdate?.let {
             io.github.sirallap.fulla.ui.settings.UpdateSheet(it, onDismiss = { updateOpen = false })
         }
@@ -296,4 +302,37 @@ private fun SyncCloud(view: HouseholdView, onClick: () -> Unit) {
             }
         }) { Icon(icon, description, tint = if (attention) c.warning else c.inkMuted) }
     }
+}
+
+
+/**
+ * A screen of the NavHost that stops listening the moment it starts leaving.
+ *
+ * While a screen slides and fades out it is still drawn, on top of the one coming back, and used to
+ * take the touches meant for the screen under it: Alice leaves the account book, taps an account on
+ * the Balances tab at once, and the tap lands on a row of the book that is on its way out. The
+ * entering screen is never blocked: its target is already `Visible`.
+ */
+private fun NavGraphBuilder.screen(
+    route: String,
+    arguments: List<androidx.navigation.NamedNavArgument> = emptyList(),
+    content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit,
+) = composable(route, arguments = arguments) { entry ->
+    val leaving = transition.targetState != EnterExitState.Visible
+    Box(Modifier.fillMaxSize()) {
+        content(entry)
+        if (leaving) {
+            Box(Modifier.fillMaxSize().pointerInput(Unit) {
+                awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } }
+            })
+        }
+    }
+}
+
+/** Opens a route once: a second tap on the same thing while it opens does not stack a second copy. */
+private fun NavController.go(route: String) = navigate(route) { launchSingleTop = true }
+
+/** Goes back once: a second tap on Back while the first is still animating must not pop the tabs away. */
+private fun NavController.back() {
+    if (previousBackStackEntry != null) popBackStack()
 }
