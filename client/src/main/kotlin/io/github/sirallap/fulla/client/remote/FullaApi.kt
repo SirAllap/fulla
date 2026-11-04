@@ -149,6 +149,14 @@ class FullaApi(private val supabase: Supabase) : SyncBackend {
     suspend fun goalDelete(householdId: String, goalId: String): JsonObject =
         obj("fulla_goal_delete", "p_household_id" to householdId, "p_goal_id" to goalId)
 
+    /**
+     * The change history (0027_audit_log.sql), newest first: of the whole household, or of what touches one account
+     * ([accountId]) or one transaction or account ([entityId]). [before] is the id of the oldest line already read.
+     */
+    suspend fun auditList(householdId: String, accountId: String? = null, entityId: String? = null, before: Long? = null, limit: Int = 100): Wire.AuditPage =
+        Wire.auditPage(obj("fulla_audit_list", "p_household_id" to householdId, "p_account_id" to accountId, "p_entity_id" to entityId,
+            "p_before" to before, "p_limit" to limit))
+
     // ── sync ─────────────────────────────────────────────────────────────────
 
     override suspend fun push(householdId: String, mutations: List<Mutation>): List<PushResult> {

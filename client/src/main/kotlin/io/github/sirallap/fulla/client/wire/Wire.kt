@@ -441,6 +441,42 @@ object Wire {
         val serverTime: String?,
     )
 
+    /** One change in the history (`fulla_audit_list`): who did what to which transaction or account, and the row before and after. */
+    data class AuditEvent(
+        val id: Long,
+        val at: String,
+        val entity: String,
+        val entityId: String,
+        val action: String,
+        val actorMemberId: String?,
+        /** Written when the history was started, from what was already there: no before and after. */
+        val backfill: Boolean,
+        val changed: List<String>,
+        val before: JsonObject?,
+        val after: JsonObject?,
+    )
+
+    data class AuditPage(val events: List<AuditEvent>, val hasMore: Boolean)
+
+    fun auditPage(o: JsonObject): AuditPage = AuditPage(
+        events = o.arr("events").mapNotNull { e ->
+            val x = e as? JsonObject ?: return@mapNotNull null
+            AuditEvent(
+                id = x.long("id") ?: return@mapNotNull null,
+                at = x.str("at") ?: return@mapNotNull null,
+                entity = x.str("entity") ?: "transaction",
+                entityId = x.str("entity_id") ?: return@mapNotNull null,
+                action = x.str("action") ?: "update",
+                actorMemberId = x.str("actor_member_id"),
+                backfill = x.str("source") == "backfill",
+                changed = x.arr("changed").mapNotNull { (it as? JsonPrimitive)?.contentOrNull },
+                before = x["before"] as? JsonObject,
+                after = x["after"] as? JsonObject,
+            )
+        },
+        hasMore = o.bool("has_more") ?: false,
+    )
+
     fun pullPage(o: JsonObject, since: Long): PullPage = PullPage(
         transactions = o.arr("transactions").map { transaction(it.jsonObject) },
         cursor = o.long("cursor") ?: since,

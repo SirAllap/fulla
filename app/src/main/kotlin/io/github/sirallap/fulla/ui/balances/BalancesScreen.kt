@@ -68,7 +68,7 @@ import java.util.UUID
  * stay hidden, and come back if the household splits again.
  */
 @Composable
-fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}, onGoals: () -> Unit = {}, onAccounts: () -> Unit = {}) {
+fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}, onGoals: () -> Unit = {}, onAccounts: () -> Unit = {}, onActivity: () -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
@@ -204,6 +204,11 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                         }
                     }
                     if (row.size == 1) Box(Modifier.weight(1f))
+                }
+            }
+            item(key = "activity") {
+                androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                    io.github.sirallap.fulla.ui.components.SecondaryButton(stringResource(R.string.balances_activity), onActivity)
                 }
             }
             // Savings goals, each with how far its account has got; tapping one opens them in Settings.

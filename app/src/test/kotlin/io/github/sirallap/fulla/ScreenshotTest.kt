@@ -143,6 +143,30 @@ open class ScreenshotTest {
                 { v -> view.formats.money(v) }, {})
         }
     }
+    @Test fun activity() = shot("17-activity") {
+        val txs = view.rows.map { it.transaction }.filter { it.isActive }.take(4)
+        fun json(vararg p: Pair<String, Any?>) = kotlinx.serialization.json.buildJsonObject {
+            for ((k, v) in p) when (v) {
+                is Number -> put(k, v)
+                is String -> put(k, v)
+                else -> put(k, kotlinx.serialization.json.JsonNull)
+            }
+        }
+        val who = view.config.members.firstOrNull()?.id
+        val now = java.time.Instant.now()
+        val events = listOf(
+            Wire.AuditEvent(6, now.toString(), "transaction", txs[0].id, "delete", who, false, listOf("status"), json("status" to "active"), json("status" to "deleted")),
+            Wire.AuditEvent(5, now.minusSeconds(600).toString(), "transaction", txs[1].id, "update", who, false, listOf("amount_minor", "note"),
+                json("amount_minor" to 1250, "note" to "copias"), json("amount_minor" to txs[1].amountMinor, "note" to "copias y carpeta", "client_updated_at" to now.minusSeconds(600).toString())),
+            Wire.AuditEvent(4, now.minusSeconds(1200).toString(), "transaction", txs[2].id, "create", who, false, emptyList(), null, json("note" to "Ternera", "amount_minor" to txs[2].amountMinor)),
+            Wire.AuditEvent(3, now.minusSeconds(1800).toString(), "transaction", txs[0].id, "restore", null, false, listOf("status"), json("status" to "deleted"), json("status" to "active")),
+            Wire.AuditEvent(1, now.minusSeconds(90_000).toString(), "transaction", txs[3].id, "delete", null, true, emptyList(), null, null),
+        )
+        Column(Modifier.fillMaxSize().padding(top = 48.dp)) {
+            io.github.sirallap.fulla.ui.balances.ActivityList(view, events, hasMore = true, loading = false, failed = false, loaded = true,
+                connected = true, onMore = {}, onRetry = {}, onOpen = {})
+        }
+    }
     @Test fun appearance() = shot("9-appearance") { SettingsScreen(view, SettingsSection.APPEARANCE, {}, {}) }
 }
 
