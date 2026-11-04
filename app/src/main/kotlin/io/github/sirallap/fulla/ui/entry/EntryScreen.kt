@@ -237,6 +237,9 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
     var saved by remember { mutableStateOf(false) }
     // A new entry asks which account it goes to when it is saved (more than one to choose from): big tiles, no default to forget.
     var pickingAccount by remember { mutableStateOf(false) }
+    // A transfer saved with no destination asks for it with the same tiles, and saves once it is chosen.
+    var pickingTo by remember { mutableStateOf(false) }
+    val accountBalances = remember(view) { view.analytics.accountBalances(view.active, view.config.accounts, LocalDate.now()) }
     val askAccount = editingId == null && draft.kind != TransactionKind.TRANSFER && view.config.accounts.count { !it.archived } >= 2
     // Editing: nothing to apply until something is changed.
     val baseline = remember(editingId, view.id) { existing?.let { Draft(view, it).build() } }
@@ -298,7 +301,13 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
             AddPhase.IDLE -> ""
         }
         SideEffect {
-            dock.publish(phase, words, onSave = { if (askAccount) pickingAccount = true else save() },
+            dock.publish(phase, words, onSave = {
+                when {
+                    askAccount -> pickingAccount = true
+                    draft.kind == TransactionKind.TRANSFER && draft.toAccountId == null && hasAmount -> pickingTo = true
+                    else -> save()
+                }
+            },
                 onDiscard = { draft.keypad = Keypad(view.formats.currency); draft.categoryId = null; problem = null },
                 onMissing = { if (phase == AddPhase.NEEDS_CATEGORY) problem = pickCategory })
         }
@@ -365,6 +374,13 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
                 SubcategoryChips(view, draft)
                 CategoryFieldChips(view, draft)
             }
+            if (draft.kind == TransactionKind.TRANSFER) {
+                io.github.sirallap.fulla.ui.components.TransferTiles(
+                    from = view.config.account(draft.accountId), to = view.config.account(draft.toAccountId),
+                    accounts = view.config.accounts, balances = accountBalances, amountMinor = draft.keypad.totalMinor,
+                    money = { v -> view.formats.money(v) }, onFrom = { detail = Detail.Account }, onTo = { detail = Detail.ToAccount },
+                )
+            }
             DetailChips(view, draft, askAccount) { detail = it }
             if (draft.offersStartsMonth) StartsMonthSwitch(view, draft)
             if (draft.kind == TransactionKind.INCOME) {
@@ -399,6 +415,11 @@ fun EntryScreen(view: HouseholdView, editingId: String?, headerActions: (@Compos
         val balances = remember(view) { view.analytics.accountBalances(view.active, view.config.accounts, LocalDate.now()) }
         AccountPickSheet(view.config.accounts.filter { !it.archived }, balances, { v -> view.formats.money(v) },
             onPick = { a -> draft.accountId = a.id; pickingAccount = false; save() }, onDismiss = { pickingAccount = false })
+    }
+    if (pickingTo) {
+        AccountPickSheet(view.config.accounts.filter { !it.archived && it.id != draft.accountId }, accountBalances, { v -> view.formats.money(v) },
+            onPick = { a -> draft.toAccountId = a.id; pickingTo = false; save() }, onDismiss = { pickingTo = false },
+            title = stringResource(R.string.to_account))
     }
 }
 
@@ -555,12 +576,8 @@ private fun DetailChips(view: HouseholdView, draft: Draft, accountAsked: Boolean
             { onOpen(Detail.Date) }, icon = Icons.Outlined.Event,
         )
         // A new entry asks its account when saved, so the chip would only be a second way to the same answer.
-        if (!accountAsked) DetailChip(view.accountName(draft.accountId) ?: stringResource(R.string.account), { onOpen(Detail.Account) },
+        if (!accountAsked && draft.kind != TransactionKind.TRANSFER) DetailChip(view.accountName(draft.accountId) ?: stringResource(R.string.account), { onOpen(Detail.Account) },
             icon = accountIcon(view.config.account(draft.accountId)))
-        if (draft.kind == TransactionKind.TRANSFER) {
-            val to = view.accountName(draft.toAccountId)
-            DetailChip(to?.let { "→ $it" } ?: stringResource(R.string.to_account), { onOpen(Detail.ToAccount) }, empty = to == null)
-        }
         if (people) {
             DetailChip(stringResource(R.string.paid_by, view.memberName(draft.paidBy)), { onOpen(Detail.Payer) }, icon = Icons.Outlined.Person)
             if (splits) DetailChip(
@@ -606,11 +623,18 @@ private fun DetailSheet(view: HouseholdView, draft: Draft, detail: Detail, onDis
     val done = stringResource(R.string.done)
     when (detail) {
         Detail.Date -> DateSheet(view, draft, onDismiss)
-        Detail.Account -> PickSheet(stringResource(if (draft.kind == TransactionKind.TRANSFER) R.string.from_account else R.string.account), onDismiss) {
+        Detail.Account -> if (draft.kind == TransactionKind.TRANSFER) {
+            val balances = remember(view) { view.analytics.accountBalances(view.active, view.config.accounts, LocalDate.now()) }
+            AccountPickSheet(accounts, balances, { v -> view.formats.money(v) },
+                onPick = { a -> draft.accountId = a.id; if (draft.toAccountId == a.id) draft.toAccountId = null; onDismiss() }, onDismiss = onDismiss,
+                title = stringResource(R.string.from_account))
+        } else PickSheet(stringResource(R.string.account), onDismiss) {
             for (a in accounts) PickRow(a.name, a.id == draft.accountId, { draft.accountId = a.id; onDismiss() })
         }
-        Detail.ToAccount -> PickSheet(stringResource(R.string.to_account), onDismiss) {
-            for (a in accounts.filter { it.id != draft.accountId }) PickRow(a.name, a.id == draft.toAccountId, { draft.toAccountId = a.id; onDismiss() })
+        Detail.ToAccount -> {
+            val balances = remember(view) { view.analytics.accountBalances(view.active, view.config.accounts, LocalDate.now()) }
+            AccountPickSheet(accounts.filter { it.id != draft.accountId }, balances, { v -> view.formats.money(v) },
+                onPick = { a -> draft.toAccountId = a.id; onDismiss() }, onDismiss = onDismiss, title = stringResource(R.string.to_account))
         }
         Detail.Payer -> PickSheet(stringResource(if (draft.kind == TransactionKind.INCOME) R.string.received_by else R.string.who_paid), onDismiss) {
             for (m in members) PickRow(m.displayName, m.id == draft.paidBy, { draft.paidBy = m.id; onDismiss() },

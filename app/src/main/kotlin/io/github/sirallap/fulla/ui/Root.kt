@@ -218,7 +218,7 @@ private fun Household(state: HouseholdState) {
                             Tab.OVERVIEW -> HomeScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onBudgets = { nav.navigate("settings/budgets") }, onFixedCosts = { nav.navigate("settings/recurring") }, onInsights = { tab = Tab.INSIGHTS }, onBackup = { nav.navigate("settings/backup") }, onTrip = { nav.navigate("trip/$it") }, onAccounts = { tab = Tab.BALANCES })
                             Tab.HISTORY -> HistoryScreen(view, headerActions, onOpen = { nav.navigate("edit/$it") }, onImport = { nav.navigate("settings/import") })
                             Tab.INSIGHTS -> io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { tab = Tab.OVERVIEW }, onFixedCosts = { nav.navigate("settings/recurring") }, headerActions = headerActions)
-                            Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") }, onGoals = { nav.navigate("settings/goals") }, onAccounts = { nav.navigate("settings/accounts") })
+                            Tab.BALANCES -> BalancesScreen(view, headerActions, onHouseholdSettings = { nav.navigate("settings/household") }, onGoals = { nav.navigate("settings/goals") }, onAccounts = { nav.navigate("settings/accounts") }, onOpenAccount = { nav.navigate("ledger/$it") })
                         }
                     }
                     LiquidTabBar(Tab.entries.map { TabItem(stringResource(it.label), it.icon) }, tab.ordinal, center = Tab.ADD.ordinal, dock = addDock) { tab = Tab.entries[it] }
@@ -226,6 +226,10 @@ private fun Household(state: HouseholdState) {
             }
             composable("edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
                 EntryScreen(view, editingId = entry.arguments?.getString("id"), headerActions = null, onDone = { nav.popBackStack() })
+            }
+            composable("ledger/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                io.github.sirallap.fulla.ui.balances.AccountLedgerScreen(view, accountId = entry.arguments?.getString("id") ?: "",
+                    onBack = { nav.popBackStack() }, onOpen = { nav.navigate("edit/$it") })
             }
             composable("insights") { io.github.sirallap.fulla.ui.insights.InsightsScreen(view, onBack = { nav.popBackStack() }, onFixedCosts = { nav.navigate("settings/recurring") }) }
             composable("trip/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
