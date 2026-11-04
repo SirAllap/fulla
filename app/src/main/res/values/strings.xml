@@ -776,6 +776,7 @@
     <string name="activity_more">Show older</string>
     <string name="activity_created">%1$s created %2$s</string>
     <string name="activity_updated">%1$s changed %2$s</string>
+    <string name="activity_moved">%1$s moved %2$s from %3$s to %4$s</string>
     <string name="activity_deleted">%1$s deleted %2$s</string>
     <string name="activity_restored">%1$s restored %2$s</string>
     <string name="activity_someone">Someone</string>
@@ -794,6 +795,8 @@
     <string name="activity_f_other">Other details</string>
     <string name="balances_activity">Household activity</string>
     <string name="ledger_changes">Changes in this account</string>
+    <string name="ledger_moved_title">Moved to another account</string>
+    <string name="ledger_moved_to">Moved to %1$s · %2$s</string>
     <string name="ledger_filter_in">In</string>
     <string name="ledger_filter_out">Out</string>
     <string name="ledger_balance_today">Balance today</string>

@@ -140,8 +140,13 @@ private fun stampOf(e: Wire.AuditEvent, zone: ZoneId): ZonedDateTime {
     return runCatching { OffsetDateTime.parse(text).atZoneSameInstant(zone) }.getOrElse { ZonedDateTime.now(zone) }
 }
 
-private fun JsonObject?.text(key: String): String? = (this?.get(key) as? JsonPrimitive)?.takeIf { it !is JsonNull }?.contentOrNull
-private fun JsonObject?.number(key: String): Long? = (this?.get(key) as? JsonPrimitive)?.takeIf { it !is JsonNull }?.longOrNull
+/** A change that only took a movement from one account to another (Alice booked it as cash, then saw she paid by card). */
+internal fun isMove(e: Wire.AuditEvent): Boolean =
+    e.action == "update" && e.entity == "transaction" && e.changed == listOf("account_id") &&
+        e.before.text("account_id") != null && e.after.text("account_id") != null
+
+internal fun JsonObject?.text(key: String): String? = (this?.get(key) as? JsonPrimitive)?.takeIf { it !is JsonNull }?.contentOrNull
+internal fun JsonObject?.number(key: String): Long? = (this?.get(key) as? JsonPrimitive)?.takeIf { it !is JsonNull }?.longOrNull
 
 @Composable
 private fun EventRow(view: HouseholdView, e: Wire.AuditEvent, zone: ZoneId, onOpen: (String) -> Unit) {
@@ -156,7 +161,10 @@ private fun EventRow(view: HouseholdView, e: Wire.AuditEvent, zone: ZoneId, onOp
         "«" + (note ?: category ?: stringResource(R.string.uncategorized)) + "»"
     } else stringResource(R.string.activity_account_named, snapshot.text("name") ?: view.accountName(e.entityId) ?: "?")
     val who = view.config.member(e.actorMemberId)?.displayName ?: stringResource(R.string.activity_someone)
-    val sentence = stringResource(when (e.action) {
+    val moved = isTx && isMove(e)
+    val sentence = if (moved) {
+        stringResource(R.string.activity_moved, who, what, view.accountName(e.before.text("account_id")) ?: "?", view.accountName(e.after.text("account_id")) ?: "?")
+    } else stringResource(when (e.action) {
         "create" -> R.string.activity_created
         "delete" -> R.string.activity_deleted
         "restore" -> R.string.activity_restored
@@ -172,7 +180,7 @@ private fun EventRow(view: HouseholdView, e: Wire.AuditEvent, zone: ZoneId, onOp
     val amount = (snapshot.number("amount_minor") ?: current?.amountMinor)?.let { f.money(it) }
     val accountName = view.accountName(snapshot.text("account_id") ?: current?.accountId)
     val where = listOfNotNull(time, amount.takeIf { isTx }, accountName.takeIf { isTx }).joinToString(" · ")
-    val diffs = if (e.action == "update") diffLines(view, e) else emptyList()
+    val diffs = if (e.action == "update" && !moved) diffLines(view, e) else emptyList()
     val inset = LocalRowInset.current
     val divider = LocalCardSlot.current?.divider ?: true
     val openable = isTx && current != null

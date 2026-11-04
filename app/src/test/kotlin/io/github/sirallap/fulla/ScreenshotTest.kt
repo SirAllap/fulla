@@ -160,6 +160,8 @@ open class ScreenshotTest {
             Wire.AuditEvent(5, now.minusSeconds(600).toString(), "transaction", txs[1].id, "update", who, false, listOf("amount_minor", "note"),
                 json("amount_minor" to 1250, "note" to "copias"), json("amount_minor" to txs[1].amountMinor, "note" to "copias y carpeta", "client_updated_at" to now.minusSeconds(600).toString())),
             Wire.AuditEvent(4, now.minusSeconds(1200).toString(), "transaction", txs[2].id, "create", who, false, emptyList(), null, json("note" to "Ternera", "amount_minor" to txs[2].amountMinor)),
+            Wire.AuditEvent(7, now.minusSeconds(300).toString(), "transaction", txs[3].id, "update", who, false, listOf("account_id"),
+                json("account_id" to view.config.accounts[0].id), json("account_id" to view.config.accounts[1].id)),
             Wire.AuditEvent(3, now.minusSeconds(1800).toString(), "transaction", txs[0].id, "restore", null, false, listOf("status"), json("status" to "deleted"), json("status" to "active")),
             Wire.AuditEvent(1, now.minusSeconds(90_000).toString(), "transaction", txs[3].id, "delete", null, true, emptyList(), null, null),
         )
@@ -169,7 +171,12 @@ open class ScreenshotTest {
         }
     }
     @Test fun accountLedger() = shot("15-account-ledger") {
-        io.github.sirallap.fulla.ui.balances.AccountLedgerScreen(view, accountId = view.config.accounts.first { !it.archived }.id, onBack = {}, onOpen = {})
+        val account = view.config.accounts.first { !it.archived }
+        val elsewhere = view.rows.map { it.transaction }.first { it.isActive && it.accountId != null && it.accountId != account.id }
+        val move = Wire.AuditEvent(9, java.time.Instant.now().toString(), "transaction", elsewhere.id, "update", null, false, listOf("account_id"),
+            kotlinx.serialization.json.buildJsonObject { put("account_id", account.id) },
+            kotlinx.serialization.json.buildJsonObject { put("account_id", elsewhere.accountId!!) })
+        io.github.sirallap.fulla.ui.balances.AccountLedgerScreen(view, accountId = account.id, onBack = {}, onOpen = {}, movedLines = listOf(move))
     }
     @Test fun transferTiles() = shot("16-transfer-tiles") {
         Column(Modifier.fillMaxSize().padding(top = 48.dp)) {

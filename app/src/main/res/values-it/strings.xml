@@ -726,6 +726,7 @@
     <string name="activity_more">Mostra più vecchi</string>
     <string name="activity_created">%1$s ha creato %2$s</string>
     <string name="activity_updated">%1$s ha modificato %2$s</string>
+    <string name="activity_moved">%1$s ha spostato %2$s da %3$s a %4$s</string>
     <string name="activity_deleted">%1$s ha eliminato %2$s</string>
     <string name="activity_restored">%1$s ha ripristinato %2$s</string>
     <string name="activity_someone">Qualcuno</string>
@@ -744,6 +745,8 @@
     <string name="activity_f_other">Altri dati</string>
     <string name="balances_activity">Attività della casa</string>
     <string name="ledger_changes">Modifiche a questo conto</string>
+    <string name="ledger_moved_title">Spostati in un altro conto</string>
+    <string name="ledger_moved_to">Spostato su %1$s · %2$s</string>
     <string name="ledger_filter_in">Entrate</string>
     <string name="ledger_filter_out">Uscite</string>
     <string name="ledger_balance_today">Saldo di oggi</string>

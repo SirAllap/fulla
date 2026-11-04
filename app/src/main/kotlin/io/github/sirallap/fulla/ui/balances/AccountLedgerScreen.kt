@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.sirallap.fulla.R
+import io.github.sirallap.fulla.client.wire.Wire
 import io.github.sirallap.fulla.core.analytics.AccountLedger
 import io.github.sirallap.fulla.core.analytics.LedgerLine
 import io.github.sirallap.fulla.core.analytics.LedgerNote
@@ -74,7 +75,7 @@ private enum class LedgerFilter(val label: Int) {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AccountLedgerScreen(view: HouseholdView, accountId: String, onBack: () -> Unit, onOpen: (String) -> Unit, onChanges: () -> Unit = {}) {
+fun AccountLedgerScreen(view: HouseholdView, accountId: String, onBack: () -> Unit, onOpen: (String) -> Unit, onChanges: () -> Unit = {}, movedLines: List<Wire.AuditEvent>? = null) {
     val c = FullaTheme.colors
     val f = view.formats
     val account = view.config.account(accountId)
@@ -82,6 +83,21 @@ fun AccountLedgerScreen(view: HouseholdView, accountId: String, onBack: () -> Un
     val today = io.github.sirallap.fulla.ui.components.rememberToday()
     val book = remember(view, accountId, today) { AccountLedger.of(view.rows, account, today) }
     var filter by rememberSaveable { mutableStateOf(LedgerFilter.ALL) }
+    // What was booked here and then moved to another account leaves this book, so the server's history says where it went.
+    val container = io.github.sirallap.fulla.ui.LocalContainer.current
+    var read by remember(view.id, accountId) { mutableStateOf<List<Wire.AuditEvent>>(emptyList()) }
+    if (movedLines == null) {
+        androidx.compose.runtime.LaunchedEffect(view.id, accountId, view.state.connected) {
+            if (!view.state.connected) return@LaunchedEffect
+            val api = container.api() ?: return@LaunchedEffect
+            runCatching { api.auditList(view.id, accountId = accountId) }.onSuccess { read = it.events }
+        }
+    }
+    val movedOut = remember(movedLines, read, view.rows, accountId) {
+        (movedLines ?: read).filter { isMove(it) && it.before.text("account_id") == accountId && it.after.text("account_id") != accountId }
+            .distinctBy { it.entityId }
+            .filter { e -> view.rows.firstOrNull { it.transaction.id == e.entityId }?.transaction?.let { it.isActive && it.accountId != accountId } == true }
+    }
     val shown = book.lines.filter { filter.keeps(it) }
     Column(Modifier.fillMaxSize()) {
         BackHeader(account.name, onBack)
@@ -115,6 +131,12 @@ fun AccountLedgerScreen(view: HouseholdView, accountId: String, onBack: () -> Un
                 item(key = "day-$day") { Section(f.day(day), top = 16.dp) }
                 items(lines.size, key = { "line-${lines[it].transaction.id}" }) { i ->
                     CardItem(CardSlot.of(i, lines.size)) { LedgerRow(view, account.id, lines[i]) { onOpen(lines[i].transaction.id) } }
+                }
+            }
+            if (filter == LedgerFilter.ALL && movedOut.isNotEmpty()) {
+                item(key = "moved-title") { Section(stringResource(R.string.ledger_moved_title), top = 16.dp) }
+                items(movedOut.size, key = { "moved-${movedOut[it].entityId}" }) { i ->
+                    CardItem(CardSlot.of(i, movedOut.size)) { MovedRow(view, movedOut[i]) { onOpen(movedOut[i].entityId) } }
                 }
             }
             if (filter == LedgerFilter.ALL) {
@@ -183,6 +205,33 @@ private fun LedgerRow(view: HouseholdView, accountId: String, line: LedgerLine, 
                 Text(if (line.counts) stringResource(R.string.ledger_balance_after, f.money(line.balanceAfterMinor)) else stringResource(R.string.ledger_not_counted),
                     style = FullaType.label, color = c.inkMuted, maxLines = 1, softWrap = false, modifier = Modifier.padding(top = 4.dp))
             }
+        }
+        if (divider) Hairline(inset = inset)
+    }
+}
+
+/** A movement that was booked on this account and later moved to another: it no longer counts here, and says where it went. */
+@Composable
+private fun MovedRow(view: HouseholdView, e: Wire.AuditEvent, onClick: () -> Unit) {
+    val c = FullaTheme.colors
+    val f = view.formats
+    val t = view.rows.firstOrNull { it.transaction.id == e.entityId }?.transaction ?: return
+    val category = view.config.category(t.categoryId)
+    val title = t.note.ifBlank { category?.name ?: stringResource(R.string.uncategorized) }
+    val to = view.accountName(e.after.text("account_id")) ?: "?"
+    val stamp = runCatching { java.time.OffsetDateTime.parse(e.at).atZoneSameInstant(java.time.ZoneId.systemDefault()).toLocalDate() }.getOrNull()
+    val inset = LocalRowInset.current
+    val divider = LocalCardSlot.current?.divider ?: true
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = inset, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            Icon(Icons.Outlined.Repeat, null, tint = c.inkMuted, modifier = Modifier.size(20.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = FullaType.body, color = c.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.ledger_moved_to, to, stamp?.let { f.day(it) } ?: ""), style = FullaType.label, color = c.inkMuted,
+                    modifier = Modifier.padding(top = 4.dp))
+            }
+            AmountText(f.money(t.amountMinor), color = c.inkMuted)
         }
         if (divider) Hairline(inset = inset)
     }
