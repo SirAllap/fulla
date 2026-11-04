@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.CreditCard
@@ -233,8 +234,57 @@ private fun AccountTile(account: Account, balance: Long, money: (Long) -> String
 
 /** Asked when an entry is saved: which account it goes to. Choosing one saves it. */
 @Composable
-fun AccountPickSheet(accounts: List<Account>, balances: Map<String, Long>, money: (Long) -> String, onPick: (Account) -> Unit, onDismiss: () -> Unit) {
-    PickSheet(stringResource(R.string.account_pick_title), onDismiss) {
+fun AccountPickSheet(accounts: List<Account>, balances: Map<String, Long>, money: (Long) -> String, onPick: (Account) -> Unit, onDismiss: () -> Unit,
+                     title: String = stringResource(R.string.account_pick_title)) {
+    PickSheet(title, onDismiss) {
         AccountGrid(accounts, balances, money, onPick)
+    }
+}
+
+/**
+ * A transfer is "from here to there": two big tiles with an arrow between them. Each shows the account, what it holds
+ * and, once there is an amount, what it will hold after; the empty one waits dashed for the account it goes to.
+ */
+@Composable
+fun TransferTiles(
+    from: Account?, to: Account?, accounts: List<Account>, balances: Map<String, Long>, amountMinor: Long, money: (Long) -> String,
+    onFrom: () -> Unit, onTo: () -> Unit, modifier: Modifier = Modifier,
+) {
+    val c = FullaTheme.colors
+    Row(modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        EndpointTile(from, balances[from?.id] ?: 0L, -amountMinor, accountColorIndex(accounts, from?.id), money, Modifier.weight(1f), onFrom)
+        Text("→", style = FullaType.title, color = c.accent)
+        EndpointTile(to, balances[to?.id] ?: 0L, amountMinor, accountColorIndex(accounts, to?.id), money, Modifier.weight(1f), onTo)
+    }
+}
+
+@Composable
+private fun EndpointTile(account: Account?, balance: Long, change: Long, colorIndex: Int, money: (Long) -> String, modifier: Modifier, onClick: () -> Unit) {
+    val c = FullaTheme.colors
+    val shape = RoundedCornerShape(18.dp)
+    val source = remember { MutableInteractionSource() }
+    val tint = if (account != null) c.category(colorIndex) else c.inkMuted
+    val outline = if (account == null) Modifier.drawBehind {
+        val r = 18.dp.toPx()
+        drawRoundRect(tint, cornerRadius = CornerRadius(r, r),
+            style = Stroke(width = 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 5.dp.toPx()))))
+    } else Modifier.border(1.5.dp, tint, shape)
+    Box(
+        modifier.heightIn(min = 116.dp).yields(source).jelly(account?.id).clip(shape).background(c.paperHigh).glass().then(outline)
+            .clickable(source, LocalIndication.current, role = Role.Button, onClick = onClick),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.size(34.dp).clip(CircleShape).background(tint.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                Icon(if (account != null) accountIcon(account) else Icons.Outlined.Add, null, tint = tint, modifier = Modifier.size(20.dp))
+            }
+            Text(account?.name ?: stringResource(R.string.transfer_pick_account), style = FullaType.body, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (account != null) {
+                Text(money(balance), style = FullaType.secondary, color = if (balance < 0) c.danger else c.inkMuted, maxLines = 1, softWrap = false)
+                if (change != 0L) {
+                    Text(stringResource(R.string.transfer_left, money(balance + change)), style = FullaType.label, color = c.ink, maxLines = 1, softWrap = false)
+                }
+            }
+        }
     }
 }

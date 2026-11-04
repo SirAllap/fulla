@@ -68,7 +68,7 @@ import java.util.UUID
  * stay hidden, and come back if the household splits again.
  */
 @Composable
-fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}, onGoals: () -> Unit = {}, onAccounts: () -> Unit = {}, onActivity: () -> Unit = {}) {
+fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, onHouseholdSettings: () -> Unit = {}, onGoals: () -> Unit = {}, onAccounts: () -> Unit = {}, onActivity: () -> Unit = {}, onOpenAccount: (String) -> Unit = {}) {
     val container = LocalContainer.current
     val scope = rememberCoroutineScope()
     val c = FullaTheme.colors
@@ -189,7 +189,8 @@ fun BalancesScreen(view: HouseholdView, headerActions: @Composable () -> Unit, o
                             val held = accounts.values.filter { it > 0 }.sum().coerceAtLeast(1)
                             val share = if (amount > 0) (amount.toFloat() / held).coerceIn(0f, 1f) else 0f
                             Column(Modifier.weight(1f).heightIn(min = 84.dp).clip(shape).background(c.paperHigh)
-                                .liquid(share, vertical = true).glass().border(1.dp, c.line, shape).padding(12.dp),
+                                .liquid(share, vertical = true).glass().border(1.dp, c.line, shape)
+                                .clickable(onClickLabel = stringResource(R.string.ledger_open, a.name)) { onOpenAccount(a.id) }.padding(12.dp),
                                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
                                 // On a filled tile the account's name must still read: full ink once the liquid reaches it.
                                 androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
