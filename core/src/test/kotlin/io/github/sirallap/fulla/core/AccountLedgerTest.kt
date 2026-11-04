@@ -9,6 +9,7 @@ import io.github.sirallap.fulla.core.model.AccountType
 import io.github.sirallap.fulla.core.model.Status
 import io.github.sirallap.fulla.core.model.Transaction
 import io.github.sirallap.fulla.core.model.TransactionKind
+import io.github.sirallap.fulla.core.rules.PeriodRule
 import io.github.sirallap.fulla.core.sync.LocalTransaction
 import io.github.sirallap.fulla.core.sync.SyncState
 import java.time.LocalDate
@@ -44,7 +45,7 @@ class AccountLedgerTest {
     @Test
     fun `it ends on the balance Saldos shows`() {
         val counted = rows.filter { it.transaction.isActive && it.state != SyncState.REJECTED }.map { it.transaction }
-        val expected = Analytics.accountBalances(counted, listOf(cash, bank), today).getValue("cash")
+        val expected = Analytics(Fixtures.config(), PeriodRule()).accountBalances(counted, listOf(cash, bank), today).getValue("cash")
         assertEquals(expected, AccountLedger.of(rows, cash, today).balanceMinor)
     }
 
