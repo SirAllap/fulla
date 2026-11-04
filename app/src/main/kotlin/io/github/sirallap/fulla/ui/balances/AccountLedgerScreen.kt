@@ -126,17 +126,17 @@ fun AccountLedgerScreen(view: HouseholdView, accountId: String, onBack: () -> Un
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
                 }
             }
+            if (filter == LedgerFilter.ALL && movedOut.isNotEmpty()) {
+                item(key = "moved-title") { Section(stringResource(R.string.ledger_moved_title), top = 16.dp) }
+                items(movedOut.size, key = { "moved-${movedOut[it].entityId}" }) { i ->
+                    CardItem(CardSlot.of(i, movedOut.size)) { MovedRow(view, movedOut[i]) { onOpen(movedOut[i].entityId) } }
+                }
+            }
             val days = shown.groupBy { it.transaction.date }
             for ((day, lines) in days) {
                 item(key = "day-$day") { Section(f.day(day), top = 16.dp) }
                 items(lines.size, key = { "line-${lines[it].transaction.id}" }) { i ->
                     CardItem(CardSlot.of(i, lines.size)) { LedgerRow(view, account.id, lines[i]) { onOpen(lines[i].transaction.id) } }
-                }
-            }
-            if (filter == LedgerFilter.ALL && movedOut.isNotEmpty()) {
-                item(key = "moved-title") { Section(stringResource(R.string.ledger_moved_title), top = 16.dp) }
-                items(movedOut.size, key = { "moved-${movedOut[it].entityId}" }) { i ->
-                    CardItem(CardSlot.of(i, movedOut.size)) { MovedRow(view, movedOut[i]) { onOpen(movedOut[i].entityId) } }
                 }
             }
             if (filter == LedgerFilter.ALL) {
