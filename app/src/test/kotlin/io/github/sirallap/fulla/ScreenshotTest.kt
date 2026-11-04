@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.sirallap.fulla.client.wire.Wire
+import kotlinx.serialization.json.put
 import io.github.sirallap.fulla.core.demo.DemoData
 import io.github.sirallap.fulla.core.design.MoneyPalette
 import io.github.sirallap.fulla.core.sync.LocalTransaction
