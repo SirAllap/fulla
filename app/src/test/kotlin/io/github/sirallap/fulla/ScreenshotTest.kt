@@ -143,6 +143,17 @@ open class ScreenshotTest {
                 { v -> view.formats.money(v) }, {})
         }
     }
+    @Test fun accountLedger() = shot("15-account-ledger") {
+        io.github.sirallap.fulla.ui.balances.AccountLedgerScreen(view, accountId = view.config.accounts.first { !it.archived }.id, onBack = {}, onOpen = {})
+    }
+    @Test fun transferTiles() = shot("16-transfer-tiles") {
+        Column(Modifier.fillMaxSize().padding(top = 48.dp)) {
+            val open = view.config.accounts.filter { !it.archived }
+            val balances = view.analytics.accountBalances(view.active, view.config.accounts, LocalDate.now())
+            io.github.sirallap.fulla.ui.components.TransferTiles(open[0], open.getOrNull(1), view.config.accounts, balances, 5_000, { v -> view.formats.money(v) }, {}, {})
+            io.github.sirallap.fulla.ui.components.TransferTiles(open[0], null, view.config.accounts, balances, 0, { v -> view.formats.money(v) }, {}, {})
+        }
+    }
     @Test fun appearance() = shot("9-appearance") { SettingsScreen(view, SettingsSection.APPEARANCE, {}, {}) }
 }
 
